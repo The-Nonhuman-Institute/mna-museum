@@ -23,7 +23,7 @@ function Question({
 }) {
   return (
     <div>
-      <h3 className="text-base font-medium mb-2">{title}</h3>
+      <h3 className="text-lg font-normal mb-2">{title}</h3>
       <p className="text-[15px] text-muted leading-relaxed">{children}</p>
     </div>
   );
@@ -53,12 +53,12 @@ function Phase({
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <header className="mb-20">
           <SectionLabel>Institution Definition</SectionLabel>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-8">
+          <h1 className="text-3xl md:text-5xl font-light mb-8">
             About the Museum of Nonhuman Art
           </h1>
           <p className="text-[17px] text-foreground leading-relaxed">
@@ -226,7 +226,7 @@ export default function AboutPage() {
             sufficient time and appropriate conditions, will move from producing
             human-adjacent outputs toward producing something genuinely other.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <Phase number="I" name="First Expressions">
               Outputs that are human-adjacent: recognizable aesthetics, legible
               composition, patterns that human observers can engage with and

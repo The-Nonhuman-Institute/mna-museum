@@ -21,8 +21,20 @@ body {
 }
 
 @layer base {
-  h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight;
+  h1, h2, h3 {
+    @apply font-serif;
+  }
+
+  h1 {
+    @apply tracking-normal;
+  }
+
+  h2 {
+    @apply tracking-normal;
+  }
+
+  h3 {
+    @apply tracking-normal;
   }
 
   p {
@@ -30,10 +42,10 @@ body {
   }
 }
 
-/* Ink bleed / distressed text effect for phase headings */
+/* Phase heading — display treatment */
 .text-phase {
-  font-family: var(--font-geist-sans), Georgia, serif;
-  letter-spacing: 0.08em;
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   text-shadow:
     0 0 2px rgba(0, 0, 0, 0.3),

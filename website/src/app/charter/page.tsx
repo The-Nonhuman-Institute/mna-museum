@@ -19,7 +19,7 @@ function Article({
     <section className="mb-16" id={`section-${number.toLowerCase()}`}>
       <div className="flex items-baseline gap-3 mb-6">
         <span className="text-[11px] font-mono text-muted">{number}</span>
-        <h2 className="text-xl font-light">{title}</h2>
+        <h2 className="text-2xl font-light">{title}</h2>
       </div>
       <div className="space-y-5 text-[15px] leading-relaxed">{children}</div>
     </section>
@@ -48,7 +48,7 @@ function SubSection({
 
 export default function CharterPage() {
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         {/* Document Header */}
         <header className="mb-20 border-b border-border pb-12">
@@ -61,7 +61,7 @@ export default function CharterPage() {
             </span>
             <span className="text-[11px] font-mono text-muted">v1.0</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             Founding Charter
           </h1>
           <p className="text-[15px] text-muted italic leading-relaxed mb-8">

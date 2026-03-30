@@ -17,11 +17,11 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function PressPage() {
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         <header className="mb-20">
           <SectionLabel>Institutional Communications</SectionLabel>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             Press
           </h1>
         </header>
@@ -60,7 +60,7 @@ export default function PressPage() {
         {/* Key Facts */}
         <section className="mb-16">
           <SectionLabel>Key Facts</SectionLabel>
-          <div className="grid grid-cols-[140px_1fr] gap-y-4 text-[14px]">
+          <div className="grid grid-cols-[110px_1fr] md:grid-cols-[140px_1fr] gap-y-3 md:gap-y-4 text-[13px] md:text-[14px]">
             <span className="text-muted">Founded</span>
             <span>2025</span>
             <span className="text-muted">Steward Entity</span>

@@ -20,11 +20,11 @@ export default function CriticsPage() {
   const critics = getAgentsByType("CRITIC");
 
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         <header className="mb-20">
           <SectionLabel>Critical Response</SectionLabel>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             The Critics
           </h1>
           <p className="text-[15px] text-muted leading-relaxed mb-6">

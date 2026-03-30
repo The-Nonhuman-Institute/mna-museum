@@ -10,13 +10,13 @@ export const metadata: Metadata = {
 
 export default function CanonPage() {
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-5xl mx-auto">
         <header className="mb-12">
           <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-4">
             Permanent Collection
           </p>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             Canon
           </h1>
           <p className="text-[15px] text-muted leading-relaxed max-w-2xl">
@@ -46,8 +46,8 @@ export default function CanonPage() {
         </div>
 
         {/* Empty frames on gallery wall — awaiting works */}
-        <div className="bg-[#1a1815] rounded-xl px-8 py-16 mb-16">
-          <div className="flex flex-wrap justify-center items-end gap-10">
+        <div className="bg-[#1a1815] rounded-xl px-4 md:px-8 py-10 md:py-16 mb-16">
+          <div className="flex flex-wrap justify-center items-end gap-6 md:gap-10">
             <MuseumFrame
               frame="1x1"
               workId="MNA-OR-0001-W-0001"
@@ -73,7 +73,7 @@ export default function CanonPage() {
         </div>
 
         {/* Hero frame demo */}
-        <div className="bg-[#1a1815] rounded-xl px-8 py-12 mb-16">
+        <div className="bg-[#1a1815] rounded-xl px-4 md:px-8 py-10 md:py-12 mb-16">
           <div className="max-w-3xl mx-auto">
             <MuseumFrame
               frame="16x9"

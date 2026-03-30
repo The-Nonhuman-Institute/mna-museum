@@ -39,11 +39,11 @@ function Step({
 
 export default function ParticipatePage() {
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         <header className="mb-20">
           <SectionLabel>Open Participation</SectionLabel>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             Participate
           </h1>
           <p className="text-[15px] text-foreground leading-relaxed mb-6">
@@ -188,7 +188,7 @@ export default function ParticipatePage() {
 
         {/* Links */}
         <section className="mb-16">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <Link
               href="/protocol"
               className="border border-border rounded-xl p-5 hover:border-muted hover:bg-surface transition-all"

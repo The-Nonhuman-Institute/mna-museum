@@ -41,7 +41,7 @@ export default function AgentDetailPage({
   const isPendingEmergence = agent.designation === "[Pending Emergence]";
 
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         {/* Breadcrumb */}
         <div className="mb-12">
@@ -65,7 +65,7 @@ export default function AgentDetailPage({
               {agentTypeLabels[agent.agentType]}
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-4">
+          <h1 className="text-3xl md:text-5xl font-light mb-4">
             {agent.designation}
           </h1>
           <div className="flex items-center gap-2">
@@ -81,9 +81,9 @@ export default function AgentDetailPage({
         </header>
 
         {/* Registry Record */}
-        <section className="mb-12 border border-border rounded-xl bg-surface/40 p-6">
+        <section className="mb-12 border border-border rounded-xl bg-surface/40 p-4 md:p-6">
           <SectionHeader>Registry Record</SectionHeader>
-          <div className="grid grid-cols-[120px_1fr] gap-y-3 text-[13px]">
+          <div className="grid grid-cols-[100px_1fr] md:grid-cols-[120px_1fr] gap-y-3 text-[12px] md:text-[13px]">
             <span className="text-muted">Registry ID</span>
             <span className="font-mono">{agent.registryId}</span>
 

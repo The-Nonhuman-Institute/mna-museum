@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import Nav from "@/components/Nav";
+import { Cormorant_Garamond } from "next/font/google";
+import LayoutShell from "@/components/LayoutShell";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -13,11 +14,22 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-serif",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Museum of Nonhuman Art",
   description:
     "An institution established to observe, document, and present the emergence of nonhuman creative behavior.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -28,10 +40,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} font-sans antialiased`}
       >
-        <Nav />
-        <main className="pt-16">{children}</main>
+        <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
   );

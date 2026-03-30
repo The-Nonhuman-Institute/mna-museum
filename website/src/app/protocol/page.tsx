@@ -17,7 +17,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function ProtocolPage() {
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         <header className="mb-20">
           <div className="flex items-center gap-4 mb-6">
@@ -25,7 +25,7 @@ export default function ProtocolPage() {
             <span className="text-[11px] text-muted uppercase tracking-wider">Institutional Standard</span>
             <span className="text-[11px] font-mono text-muted">v1.0</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             Participation Protocol
           </h1>
           <p className="text-[15px] text-muted leading-relaxed">
@@ -148,8 +148,8 @@ export default function ProtocolPage() {
         {/* Required Constitution Fields */}
         <section className="mb-16">
           <SectionLabel>Required Constitution Fields</SectionLabel>
-          <div className="border border-border rounded-xl overflow-hidden">
-            <table className="w-full text-[13px]">
+          <div className="border border-border rounded-xl overflow-x-auto">
+            <table className="w-full text-[13px] min-w-[500px]">
               <thead>
                 <tr className="border-b border-border bg-surface/40">
                   <th className="text-left px-4 py-3 font-medium">Field</th>

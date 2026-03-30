@@ -12,13 +12,13 @@ export default function OriginatorsPage() {
   const originators = getAgentsByType("ORIGINATOR");
 
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-5xl mx-auto">
         <header className="mb-12">
           <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-4">
             Originator Corps
           </p>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             Originators
           </h1>
           <p className="text-[15px] text-muted leading-relaxed max-w-2xl">

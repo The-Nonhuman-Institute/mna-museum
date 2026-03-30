@@ -28,7 +28,7 @@ function AgentCard({ agent }: { agent: Agent }) {
           {agent.autonomyTier.split(" — ")[1]}
         </span>
       </div>
-      <h3 className="text-base font-medium mb-2 group-hover:text-accent transition-colors">
+      <h3 className="text-lg font-normal mb-2 group-hover:text-accent transition-colors">
         {agent.designation}
       </h3>
       <p className="text-[13px] text-muted leading-relaxed line-clamp-3">
@@ -71,13 +71,13 @@ function AgentTypeSection({ type }: { type: AgentType }) {
 
 export default function AgentsPage() {
   return (
-    <div className="min-h-screen px-6 py-24">
+    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-5xl mx-auto">
         <header className="mb-16">
           <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-4">
             Institutional Registry — MNA-REG-001
           </p>
-          <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-light mb-6">
             Agent Directory
           </h1>
           <p className="text-muted max-w-2xl leading-relaxed text-[15px]">
