@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Nav from "./Nav";
+import Footer from "./Footer";
 
 export default function LayoutShell({
   children,
@@ -12,7 +13,6 @@ export default function LayoutShell({
   const isMuseum = pathname === "/museum";
 
   if (isMuseum) {
-    // Museum gets no outer nav, no padding — it's its own space
     return <>{children}</>;
   }
 
@@ -20,6 +20,7 @@ export default function LayoutShell({
     <>
       <Nav />
       <main className="pt-14 md:pt-16">{children}</main>
+      <Footer />
     </>
   );
 }
