@@ -1,6 +1,4 @@
 import { ImageResponse } from "next/og";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 export const runtime = "edge";
 export const alt =
@@ -30,8 +28,10 @@ export default async function Image() {
         }}
       >
         {/* Actual MNA logo */}
+{/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoDataUri}
+          alt="MNA"
           width={280}
           height={222}
           style={{ marginBottom: 32 }}
