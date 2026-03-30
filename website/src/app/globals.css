@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f5f2ed;
+  --foreground: #1a1a1a;
+  --muted: #8a8680;
+  --border: #d6d0c8;
+  --accent: #2a2a2a;
+  --surface: #ece8e1;
+}
+
+::selection {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+}
+
+/* Ink bleed / distressed text effect for phase headings */
+.text-phase {
+  font-family: var(--font-geist-sans), Georgia, serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.3),
+    1px 0 4px rgba(0, 0, 0, 0.1),
+    -1px 0 4px rgba(0, 0, 0, 0.1);
+}
