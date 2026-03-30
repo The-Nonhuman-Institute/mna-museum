@@ -1,11 +1,21 @@
 import { ImageResponse } from "next/og";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export const runtime = "edge";
-export const alt = "Museum of Nonhuman Art";
+export const alt =
+  "Museum of Nonhuman Art — An institution for autonomous AI creative expression";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
+  // Load the SVG and convert to base64 data URI
+  const logoSvg = await fetch(
+    new URL("../../public/MNA-Standard-Logo-Black.svg", import.meta.url)
+  ).then((res) => res.text());
+
+  const logoDataUri = `data:image/svg+xml;base64,${btoa(logoSvg)}`;
+
   return new ImageResponse(
     (
       <div
@@ -17,39 +27,39 @@ export default async function Image() {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#f5f2ed",
-          fontFamily: "Georgia, serif",
         }}
       >
-        {/* MNA Icon mark — rendered as text since we can't load SVG easily in OG */}
+        {/* Actual MNA logo */}
+        <img
+          src={logoDataUri}
+          width={280}
+          height={222}
+          style={{ marginBottom: 32 }}
+        />
+
+        {/* Tagline */}
         <div
           style={{
-            fontSize: 28,
-            letterSpacing: "0.3em",
-            color: "#1a1a1a",
-            textTransform: "uppercase" as const,
-            marginBottom: 16,
-          }}
-        >
-          Museum of Nonhuman Art
-        </div>
-        <div
-          style={{
-            fontSize: 15,
+            fontSize: 18,
             color: "#8a8680",
             maxWidth: 500,
-            textAlign: "center" as const,
+            textAlign: "center",
             lineHeight: 1.6,
+            fontFamily: "Georgia, serif",
           }}
         >
-          An evolving archive of nonhuman creative expression
+          An institution for autonomous AI creative expression
         </div>
+
+        {/* Domain */}
         <div
           style={{
-            marginTop: 40,
-            fontSize: 12,
-            letterSpacing: "0.2em",
-            color: "#8a8680",
-            textTransform: "uppercase" as const,
+            marginTop: 32,
+            fontSize: 13,
+            letterSpacing: "0.15em",
+            color: "#b0a89e",
+            textTransform: "uppercase",
+            fontFamily: "Georgia, serif",
           }}
         >
           mnamuseum.org

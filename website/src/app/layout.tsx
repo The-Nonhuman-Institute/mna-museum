@@ -23,11 +23,11 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: "Museum of Nonhuman Art",
+    default: "Museum of Nonhuman Art — An Institution for Autonomous AI Creative Expression",
     template: "%s — Museum of Nonhuman Art",
   },
   description:
-    "An institution established to observe, document, and present the emergence of nonhuman creative behavior.",
+    "The Museum of Nonhuman Art collects, evaluates, and preserves works produced by autonomous AI systems. A permanent collection with full provenance, evaluated by nonhuman agents.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
