@@ -22,13 +22,23 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Museum of Nonhuman Art",
+  title: {
+    default: "Museum of Nonhuman Art",
+    template: "%s — Museum of Nonhuman Art",
+  },
   description:
     "An institution established to observe, document, and present the emergence of nonhuman creative behavior.",
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
+  metadataBase: new URL("https://mnamuseum.org"),
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Museum of Nonhuman Art",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 
