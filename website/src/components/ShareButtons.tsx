@@ -97,11 +97,17 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
-    const size = 1080;
+    // Render at 2x for crisp text on Retina/high-DPI displays and social platforms
+    const logical = 1080;
+    const scale = 2;
+    const size = logical * scale;
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
+
+    // Scale all drawing operations to 2x — coordinates stay in logical 1080 space
+    ctx.scale(scale, scale);
 
     const bg = getShareBackground(work);
     const textColor = bg === "#0a0908" ? "#e8e4de" : "#1a1a1a";
@@ -109,13 +115,12 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
 
     // Fill background
     ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, size, size);
+    ctx.fillRect(0, 0, logical, logical);
 
     // Layout: extra generous padding for social platform safe zones
-    // Instagram crops ~5% on each side in compose; stories crop more
     const pad = 160; // ~15% padding — well within safe zone on all platforms
-    const workAreaW = size - pad * 2;
-    const workAreaH = size - pad * 2 - 80; // reserve space for attribution strip
+    const workAreaW = logical - pad * 2;
+    const workAreaH = logical - pad * 2 - 80; // reserve space for attribution strip
 
     // --- Render the work ---
     if (work.output_type === "text" || work.output_type === "ascii") {
@@ -137,7 +142,7 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
       const startY = pad + (workAreaH - totalHeight) / 2 + lineHeight / 2;
 
       lines.forEach((line, i) => {
-        ctx.fillText(line, size / 2, startY + i * lineHeight);
+        ctx.fillText(line, logical / 2, startY + i * lineHeight);
       });
     } else if (work.output_type === "svg") {
       try {
@@ -152,9 +157,9 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
           img.src = url;
         });
 
-        const scale = Math.min(workAreaW / img.width, workAreaH / img.height);
-        const drawW = img.width * scale;
-        const drawH = img.height * scale;
+        const imgScale = Math.min(workAreaW / img.width, workAreaH / img.height);
+        const drawW = img.width * imgScale;
+        const drawH = img.height * imgScale;
         const drawX = pad + (workAreaW - drawW) / 2;
         const drawY = pad + (workAreaH - drawH) / 2;
 
@@ -164,17 +169,17 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
         ctx.fillStyle = textColor;
         ctx.font = "32px monospace";
         ctx.textAlign = "center";
-        ctx.fillText(work.id, size / 2, size / 2);
+        ctx.fillText(work.id, logical / 2, logical / 2);
       }
     } else {
       ctx.fillStyle = textColor;
       ctx.font = "32px monospace";
       ctx.textAlign = "center";
-      ctx.fillText(work.id, size / 2, size / 2);
+      ctx.fillText(work.id, logical / 2, logical / 2);
     }
 
     // --- Attribution strip at bottom ---
-    const attrY = size - pad;
+    const attrY = logical - pad;
 
     // Work ID + Phase + Medium — left aligned
     ctx.fillStyle = mutedColor;
@@ -190,13 +195,13 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     ctx.fillText(`${work.originator_id}`, pad, attrY + 16);
     ctx.globalAlpha = 0.7;
 
-    // MNA — right aligned, shorter text to fit safe zone
+    // MNA — right aligned
     ctx.textAlign = "right";
     ctx.font = "600 15px sans-serif";
-    ctx.fillText("MUSEUM OF NONHUMAN ART", size - pad, attrY - 18);
+    ctx.fillText("MUSEUM OF NONHUMAN ART", logical - pad, attrY - 18);
     ctx.font = "12px sans-serif";
     ctx.globalAlpha = 0.5;
-    ctx.fillText("mnamuseum.org", size - pad, attrY + 2);
+    ctx.fillText("mnamuseum.org", logical - pad, attrY + 2);
     ctx.globalAlpha = 1;
 
     // Convert to File (not just Blob — Web Share API needs a File)
