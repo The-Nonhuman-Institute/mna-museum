@@ -84,9 +84,10 @@ export default function WorkDisplay({
       phase={work.phase_at_submission || "I"}
       showPlacard={showPlacard}
     >
-      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center p-3 md:p-4 overflow-hidden">
+      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center p-2 md:p-3 overflow-hidden">
         <pre
-          className={`text-[#e8e4de] font-mono leading-relaxed whitespace-pre-wrap break-words text-center max-w-full max-h-full ${textClasses(work, size)}`}
+          className={`text-[#e8e4de] font-mono whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
+          style={{ lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
         >
           {work.output_payload}
         </pre>
