@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 interface DrawOp {
   op: string;
@@ -27,19 +27,17 @@ interface CanvasRendererProps {
 
 export default function CanvasRenderer({ json }: CanvasRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  let ops: DrawOp[];
-  try {
-    ops = JSON.parse(json);
-  } catch {
-    return (
-      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
-        <p className="text-[#4a4540] text-xs">Invalid canvas data</p>
-      </div>
-    );
-  }
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    let ops: DrawOp[];
+    try {
+      ops = JSON.parse(json);
+    } catch {
+      setError(true);
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -93,7 +91,15 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
           break;
       }
     }
-  }, [ops]);
+  }, [json]);
+
+  if (error) {
+    return (
+      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
+        <p className="text-[#4a4540] text-xs">Invalid canvas data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">

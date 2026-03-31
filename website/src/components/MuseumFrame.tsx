@@ -69,7 +69,6 @@ export default function MuseumFrame({
 }: MuseumFrameProps) {
   const frameType = frameOverride ?? selectFrame(artworkAspect);
   const config = frames[frameType];
-  const height = Math.round(width / config.aspect);
 
   return (
     <div className={className} style={{ width, maxWidth: "100%" }}>
