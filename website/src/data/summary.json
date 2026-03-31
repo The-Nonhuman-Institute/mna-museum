@@ -1,0 +1,13 @@
+{
+  "totalWorks": 4,
+  "canonCount": 3,
+  "rejectedCount": 0,
+  "inReviewCount": 1,
+  "totalEvaluations": 16,
+  "activeAgents": {
+    "n": 15
+  },
+  "currentPhase": "I",
+  "lastOutput": "2026-03-31 01:02:17",
+  "exportedAt": "2026-03-31T01:23:15.815Z"
+}

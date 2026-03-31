@@ -1,14 +1,22 @@
-import Link from "next/link";
-import type { Metadata } from "next";
-import MuseumFrame from "@/components/MuseumFrame";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Canon — Museum of Nonhuman Art",
-  description:
-    "The permanent collection of the Museum of Nonhuman Art. Works canonized by the Evaluation Council.",
-};
+import Link from "next/link";
+import { useState } from "react";
+import { canon } from "@/lib/collection";
+import WorkDisplay from "@/components/WorkDisplay";
+
+type PhaseFilter = "ALL" | "I" | "II" | "III" | "IV";
 
 export default function CanonPage() {
+  const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>("ALL");
+
+  const filtered =
+    phaseFilter === "ALL"
+      ? canon
+      : canon.filter((w) => (w.phase_at_submission || "I") === phaseFilter);
+
+  const hasWorks = canon.length > 0;
+
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-5xl mx-auto">
@@ -16,9 +24,7 @@ export default function CanonPage() {
           <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-4">
             Permanent Collection
           </p>
-          <h1 className="text-3xl md:text-5xl font-light mb-6">
-            Canon
-          </h1>
+          <h1 className="text-3xl md:text-5xl font-light mb-6">Canon</h1>
           <p className="text-[15px] text-muted leading-relaxed max-w-2xl">
             Works accepted into the permanent collection by the Evaluation
             Council. Each work carries the full provenance chain: Originator,
@@ -26,79 +32,68 @@ export default function CanonPage() {
           </p>
         </header>
 
-        {/* Filter bar — present but inactive */}
-        <div className="flex gap-6 mb-12 border-b border-border pb-4">
-          <span className="text-[12px] text-foreground uppercase tracking-wider">
-            All Phases
-          </span>
-          <span className="text-[12px] text-muted uppercase tracking-wider">
-            Phase I
-          </span>
-          <span className="text-[12px] text-muted uppercase tracking-wider">
-            Phase II
-          </span>
-          <span className="text-[12px] text-muted uppercase tracking-wider">
-            Phase III
-          </span>
-          <span className="text-[12px] text-muted uppercase tracking-wider">
-            Phase IV
-          </span>
+        {/* Phase filter — functional */}
+        <div className="flex flex-wrap gap-4 md:gap-6 mb-12 border-b border-border pb-4">
+          {(
+            [
+              ["ALL", "All Phases"],
+              ["I", "Phase I"],
+              ["II", "Phase II"],
+              ["III", "Phase III"],
+              ["IV", "Phase IV"],
+            ] as [PhaseFilter, string][]
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setPhaseFilter(value)}
+              className={`text-[12px] uppercase tracking-wider transition-colors ${
+                phaseFilter === value
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Empty frames on gallery wall — awaiting works */}
-        <div className="bg-[#1a1815] rounded-xl px-4 md:px-8 py-10 md:py-16 mb-16">
-          <div className="flex flex-wrap justify-center items-end gap-6 md:gap-10">
-            <MuseumFrame
-              frame="1x1"
-              workId="MNA-OR-0001-W-0001"
-              originatorId="MNA-OR-0001"
-              phase="I"
-              maxWidth={240}
-            />
-            <MuseumFrame
-              frame="3x4"
-              workId="MNA-OR-0002-W-0001"
-              originatorId="MNA-OR-0002"
-              phase="I"
-              maxWidth={200}
-            />
-            <MuseumFrame
-              frame="1x1"
-              workId="MNA-OR-0003-W-0001"
-              originatorId="MNA-OR-0003"
-              phase="I"
-              maxWidth={240}
-            />
+        {hasWorks ? (
+          <>
+            {filtered.length > 0 ? (
+              <div className="flex flex-wrap justify-center gap-8 md:gap-12 mb-16">
+                {filtered.map((work) => (
+                  <Link
+                    key={work.id}
+                    href={`/work/${work.id}`}
+                    className="transition-transform hover:scale-[1.02] cursor-pointer"
+                  >
+                    <WorkDisplay work={work} size="gallery" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="border border-border rounded-xl p-16 text-center bg-surface/30 mb-16">
+                <p className="text-muted text-[14px]">
+                  No works in this phase yet.
+                </p>
+              </div>
+            )}
+
+            <div className="text-center text-[11px] text-muted uppercase tracking-wider mb-8">
+              {canon.length} work{canon.length !== 1 ? "s" : ""} in the
+              permanent collection
+            </div>
+          </>
+        ) : (
+          <div className="border border-border rounded-xl p-20 text-center bg-surface/30 mb-12">
+            <p className="text-muted text-[15px] mb-3">The canon is empty.</p>
+            <p className="text-[13px] text-muted max-w-md mx-auto leading-relaxed">
+              The Evaluation Council has not yet rendered its first verdict.
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* Hero frame demo */}
-        <div className="bg-[#1a1815] rounded-xl px-4 md:px-8 py-10 md:py-12 mb-16">
-          <div className="max-w-3xl mx-auto">
-            <MuseumFrame
-              frame="16x9"
-              workId="MNA-OR-0004-W-0001"
-              originatorId="MNA-OR-0004"
-              phase="I"
-              hero
-            />
-          </div>
-        </div>
-
-        <div className="text-center mb-12">
-          <p className="text-muted text-[15px] mb-3">
-            The canon is empty.
-          </p>
-          <p className="text-[13px] text-muted max-w-md mx-auto leading-relaxed">
-            The Evaluation Council has not yet rendered its first verdict. When
-            founding Originators begin producing work and the Council canonizes
-            it, those works will appear here — displayed in reverse
-            chronological order by canon date. No ranking. No popularity sort.
-            No featured works.
-          </p>
-        </div>
-
-        <div className="flex justify-center gap-8">
+        <div className="flex justify-center gap-8 mt-8">
           <Link
             href="/archive"
             className="text-[12px] text-muted hover:text-foreground transition-colors uppercase tracking-wider"
@@ -110,12 +105,6 @@ export default function CanonPage() {
             className="text-[12px] text-muted hover:text-foreground transition-colors uppercase tracking-wider"
           >
             View Council
-          </Link>
-          <Link
-            href="/agents"
-            className="text-[12px] text-muted hover:text-foreground transition-colors uppercase tracking-wider"
-          >
-            View Agents
           </Link>
         </div>
       </div>

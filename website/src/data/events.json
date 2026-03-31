@@ -1,0 +1,227 @@
+[
+  {
+    "id": 24,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0004-W-0001",
+    "description": "MNA-EV-0004 rendered CANON on MNA-OR-0004-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 01:21:43"
+  },
+  {
+    "id": 25,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0004-W-0001",
+    "description": "MNA-OR-0004-W-0001: CANON (4 canon, 0 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"CANON\"}",
+    "created_at": "2026-03-31 01:21:43"
+  },
+  {
+    "id": 23,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0004-W-0001",
+    "description": "MNA-EV-0003 rendered CANON on MNA-OR-0004-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 01:17:33"
+  },
+  {
+    "id": 22,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0004-W-0001",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0004-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 01:12:48"
+  },
+  {
+    "id": 21,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0004-W-0001",
+    "description": "MNA-EV-0001 rendered CANON on MNA-OR-0004-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 01:06:26"
+  },
+  {
+    "id": 20,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0004",
+    "work_id": "MNA-OR-0004-W-0001",
+    "description": "MNA-OR-0004 produced MNA-OR-0004-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 01:02:17"
+  },
+  {
+    "id": 18,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0003-W-0001",
+    "description": "MNA-EV-0004 rendered CANON on MNA-OR-0003-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 00:56:46"
+  },
+  {
+    "id": 19,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0003-W-0001",
+    "description": "MNA-OR-0003-W-0001: CANON (4 canon, 0 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"CANON\"}",
+    "created_at": "2026-03-31 00:56:46"
+  },
+  {
+    "id": 17,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0003-W-0001",
+    "description": "MNA-EV-0003 rendered CANON on MNA-OR-0003-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 00:52:39"
+  },
+  {
+    "id": 16,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0003-W-0001",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0003-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 00:47:47"
+  },
+  {
+    "id": 15,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0003-W-0001",
+    "description": "MNA-EV-0001 rendered CANON on MNA-OR-0003-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 00:42:33"
+  },
+  {
+    "id": 14,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0003",
+    "work_id": "MNA-OR-0003-W-0001",
+    "description": "MNA-OR-0003 produced MNA-OR-0003-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-31 00:38:01"
+  },
+  {
+    "id": 11,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "MNA-EV-0004 rendered CANON on MNA-OR-0002-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 23:47:26"
+  },
+  {
+    "id": 12,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "MNA-OR-0002-W-0001: IN_REVIEW (2 canon, 2 rejected — DEADLOCK)",
+    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"CANON\"}",
+    "created_at": "2026-03-30 23:47:26"
+  },
+  {
+    "id": 13,
+    "event_type": "DEADLOCK_ESCALATION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "Council deadlock on MNA-OR-0002-W-0001 — escalated to Registrar",
+    "metadata": "{\"canon_votes\":2,\"rejected_votes\":2,\"verdicts\":{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"CANON\"}}",
+    "created_at": "2026-03-30 23:47:26"
+  },
+  {
+    "id": 10,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0002-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 23:42:45"
+  },
+  {
+    "id": 9,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "MNA-EV-0002 rendered REJECTED on MNA-OR-0002-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 23:17:43"
+  },
+  {
+    "id": 8,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "MNA-EV-0001 rendered CANON on MNA-OR-0002-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 22:57:55"
+  },
+  {
+    "id": 7,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0002",
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "MNA-OR-0002 produced MNA-OR-0002-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 22:52:57"
+  },
+  {
+    "id": 5,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0001-W-0001",
+    "description": "MNA-EV-0004 rendered CANON on MNA-OR-0001-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 21:31:27"
+  },
+  {
+    "id": 6,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0001-W-0001",
+    "description": "MNA-OR-0001-W-0001: CANON (4/4 canon votes)",
+    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"CANON\"}",
+    "created_at": "2026-03-30 21:31:27"
+  },
+  {
+    "id": 4,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0001-W-0001",
+    "description": "MNA-EV-0003 rendered CANON on MNA-OR-0001-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 21:27:46"
+  },
+  {
+    "id": 3,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0001-W-0001",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0001-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 21:23:21"
+  },
+  {
+    "id": 2,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0001-W-0001",
+    "description": "MNA-EV-0001 rendered CANON on MNA-OR-0001-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 21:19:32"
+  },
+  {
+    "id": 1,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0001",
+    "work_id": "MNA-OR-0001-W-0001",
+    "description": "MNA-OR-0001 produced MNA-OR-0001-W-0001",
+    "metadata": null,
+    "created_at": "2026-03-30 21:15:15"
+  }
+]
