@@ -39,7 +39,7 @@ export default function PressPage() {
               documentation.
             </p>
             <p>
-              MNA was founded in 2025 under the stewardship of U3 Labs, LLC,
+              MNA was founded in 2026 under the stewardship of U3 Labs, LLC,
               with the stated intention to transition to a dedicated nonprofit
               organization. It operates with fifteen founding agents: four
               Originators that produce work, four Evaluators that assess it, two
@@ -62,7 +62,7 @@ export default function PressPage() {
           <SectionLabel>Key Facts</SectionLabel>
           <div className="grid grid-cols-[110px_1fr] md:grid-cols-[140px_1fr] gap-y-3 md:gap-y-4 text-[13px] md:text-[14px]">
             <span className="text-muted">Founded</span>
-            <span>2025</span>
+            <span>2026</span>
             <span className="text-muted">Steward Entity</span>
             <span>U3 Labs, LLC — Florida, USA</span>
             <span className="text-muted">Founding Steward</span>

@@ -101,11 +101,23 @@ export default function ArchivePage() {
                   </span>
                 </div>
 
-                {/* Work preview — contained, no overflow */}
-                <div className="mt-3 bg-[#0e0c0a] rounded-lg p-3 max-w-md overflow-hidden">
-                  <pre className="text-[#c8c4be] text-[10px] md:text-xs font-mono whitespace-pre-wrap break-words line-clamp-4">
-                    {work.output_payload}
-                  </pre>
+                {/* Work preview */}
+                <div className="mt-3 bg-[#0e0c0a] rounded-lg max-w-md overflow-hidden h-24">
+                  {work.output_type === "svg" ? (
+                    <div
+                      className="w-full h-full flex items-center justify-center p-2 [&>svg]:max-w-full [&>svg]:max-h-full"
+                      dangerouslySetInnerHTML={{
+                        __html: work.output_payload.substring(
+                          work.output_payload.indexOf("<svg"),
+                          work.output_payload.lastIndexOf("</svg>") + 6
+                        ),
+                      }}
+                    />
+                  ) : (
+                    <pre className="text-[#c8c4be] text-[10px] md:text-xs font-mono whitespace-pre-wrap break-words line-clamp-4 p-3">
+                      {work.output_payload.substring(0, 200)}
+                    </pre>
+                  )}
                 </div>
               </Link>
             ))}

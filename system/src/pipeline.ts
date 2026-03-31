@@ -1,5 +1,6 @@
 import { getDb } from "./db";
 import { runAgent } from "./agent-runner";
+import { selectFormat, getFormatPrompt, detectFormat } from "./formats";
 
 /**
  * Analyze text content and determine the best display aspect ratio.
@@ -66,10 +67,14 @@ export async function produceWork(
 
   db.close();
 
+  // Select output format based on Originator's seed affinities
+  const requestedFormat = selectFormat(originatorId);
+  const formatPrompt = getFormatPrompt(requestedFormat);
+
   // Build the production prompt
   let prompt = `Produce your next work. This is output #${workCount.n + 1}.\n\n`;
 
-  prompt += `Your work should be a self-contained creative output — a structural, linguistic, or formal composition. `;
+  prompt += `Your work should be a self-contained creative output. `;
   prompt += `It is not a description of a work. It IS the work. `;
   prompt += `Do not title it. Do not explain it. Do not introduce it. Just produce it.\n\n`;
 
@@ -77,20 +82,29 @@ export async function produceWork(
     prompt += `Your ${priorWorks.length} most recent prior outputs are provided below for developmental continuity. `;
     prompt += `You may build on, depart from, or ignore them as your constitution directs.\n\n`;
     for (const w of priorWorks.reverse()) {
-      prompt += `--- ${w.id} ---\n${w.output_payload.substring(0, 500)}\n\n`;
+      prompt += `--- ${w.id} ---\n${w.output_payload.substring(0, 300)}\n\n`;
     }
   } else {
-    prompt += `This is your first output. There is no prior work. Begin.\n`;
+    prompt += `This is your first output. There is no prior work. Begin.\n\n`;
   }
 
-  console.log(`[${originatorId}] Producing work #${workCount.n + 1}...`);
+  prompt += formatPrompt;
+
+  console.log(`[${originatorId}] Producing work #${workCount.n + 1} (format: ${requestedFormat})...`);
   const output = await runAgent(originatorId, prompt, {
     temperature: 0.9,
-    num_predict: 512,
+    num_predict: requestedFormat === "svg" || requestedFormat === "html-css" ? 1024 : 512,
   });
 
-  // Determine display aspect from content shape
-  const displayAspect = analyzeTextAspect(output);
+  // Clean up markdown fences the model might wrap around code output
+  let cleanOutput = output
+    .replace(/^```(?:svg|html|json|css|javascript)?\s*\n?/gm, "")
+    .replace(/\n?```\s*$/gm, "")
+    .trim();
+
+  // Detect actual format from output (model might not follow instructions)
+  const detected = detectFormat(cleanOutput);
+  console.log(`[${originatorId}] Detected format: ${detected.format} (requested: ${requestedFormat})`);
 
   // Store the work
   const workId = nextWorkId(originatorId);
@@ -98,8 +112,8 @@ export async function produceWork(
 
   db2.prepare(`
     INSERT INTO works (id, originator_id, medium, output_payload, output_type, display_aspect)
-    VALUES (?, ?, 'structural-text', ?, 'text', ?)
-  `).run(workId, originatorId, output, displayAspect);
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(workId, originatorId, detected.medium, cleanOutput, detected.format, detected.aspect);
 
   // Create submission record
   const constitution = db2

@@ -230,5 +230,179 @@
         "evaluator_name": "The Empiricist"
       }
     ]
+  },
+  {
+    "id": "MNA-OR-0001-W-0002",
+    "originator_id": "MNA-OR-0001",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\">\n  <polygon points=\"100,100 200,100 200,200 100,200\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"300,100 400,100 400,200 300,200\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"500,100 600,100 600,200 500,200\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"100,300 200,300 200,400 100,400\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"300,300 400,300 400,400 300,400\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"500,300 600,300 600,400 500,400\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"100,500 200,500 200,600 100,600\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"300,500 400,500 400,600 300,600\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"500,500 600,500 600,600 500,600\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-03-31 02:22:09",
+    "canon_status": "IN_REVIEW",
+    "canon_date": null,
+    "founding_collection": 1,
+    "submission_date": "2026-03-31 02:22:09",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "IN_REVIEW",
+        "rationale": "IN_REVIEW\n\nThe provided SVG work consists of nine identical, rectilinear polygons arranged in a 3x3 grid. The structural properties are remarkably simple and repetitive. There is no demonstrable structural novelty beyond the basic geometric arrangement. The polygons themselves are structurally unremarkable – a fundamental building block of graphical representation, and therefore, resistant to any claim of significant development beyond human-pattern reproduction. The work exhibits no internal formal consistency beyond the prescribed arrangement; the polygons are not related to any underlying structural logic beyond their shared shape and position.  Further analysis is required to determine if any emergent structural properties are present, or if this constitutes a purely derivative exercise in formal replication.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:28:10",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe submitted work, MNA-OR-0001-W-0002, demonstrates a concerning lack of developmental movement in relation to the Originator’s prior output, MNA-OR-0001-W-0001. The prior work, △□△□△□, exhibits a clear, albeit repetitive, phase transition—a cyclical oscillation between distinct formal configurations. This suggests a developmental stage focused on establishing and reiterating a specific geometric pattern. MNA-OR-0001-W-0002, however, presents a series of identical, isolated rectangular polygons. This represents a regression, a return to the initial, static form of the predecessor. There is no discernible shift in complexity, no attempt to resolve the cyclical tension present in the earlier work. The repetition, without any accompanying alteration or expansion of the developmental logic, constitutes a failure to advance. Therefore, the work does not represent genuine movement and is rejected.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:35:27",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0001-W-0002, presents a series of isolated, rectilinear forms. Its execution as an SVG – a digital tool frequently employed in architectural and geometric explorations – immediately flags it as lacking the nuanced relational qualities currently prioritized within the MNA canon. The polygons, while structurally simple, occupy a space defined solely by their individual presence, offering no discernible field positioning or citation potential. The repetition and arrangement, though mathematically precise, do not generate any discernible tension or disruption within the existing framework represented by the canon entries. Specifically, the canon leans heavily into the conceptual weight of absence, fracture, and the subtle distortions of form – qualities absent here. This work is a static arrangement, a mere demonstration of geometric capability, failing to open any territory for subsequent artistic engagement. It occupies no space within the network of ideas established by the current canon.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:48:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work, designated MNA-OR-0001-W-0002, commands immediate attention through its geometric simplicity. The repeated, precisely defined polygons – each a white rectangle with a black border – present a clear, structured visual presence. The scale of the arrangement, defined by the `viewBox` attribute, ensures a consistent visual impact across a defined area. The material properties of the SVG itself – lines, fills, and stroke widths – are demonstrably present and contribute to the overall objectification of the form. There is a discernible necessity in the creation of this structure; it occupies space and presents a defined shape. The work does not rely on external context or conceptual layers to justify its existence as an object worthy of preservation. It stands independently as a self-contained, visually compelling form.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:00:37",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ]
+  },
+  {
+    "id": "MNA-OR-0002-W-0002",
+    "originator_id": "MNA-OR-0002",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\">\n  <defs>\n    <linearGradient id=\"whiteGray\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#ffffff\"/>\n      <stop offset=\"1\" stop-color=\"#a9a9a9\"/>\n    </linearGradient>\n    <linearGradient id=\"grayBlack\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#808080\"/>\n      <stop offset=\"1\" stop-color=\"#000000\"/>\n    </linearGradient>\n  </defs>\n\n  <path d=\"M 0 0 L 800 0 L 800 800 L 0 800 Z\" fill=\"url(#whiteGray)\" />\n  <path d=\"M 0 0 L 400 0 L 400 400 L 0 400 Z\" fill=\"url(#grayBlack)\" />\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-03-31 02:41:16",
+    "canon_status": "IN_REVIEW",
+    "canon_date": null,
+    "founding_collection": 1,
+    "submission_date": "2026-03-31 02:41:16",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe submitted work, MNA-OR-0002-W-0002, demonstrates sufficient formal structural integrity to warrant Canon status. The work consists of two orthogonal rectangles, precisely defined by their coordinates and filled with gradients. The fundamental structure – a square divided into two congruent, mutually perpendicular squares – represents a baseline geometric configuration. The use of linear gradients, while present in numerous digital art forms, is employed here with a deliberate, restrained application, generating a subtle tonal shift rather than a dramatic visual effect. The gradients themselves are simple, consistent in their directional linearity, and serve solely to define the fill properties of the shapes. There is no apparent attempt to disrupt or deviate from this core structural arrangement. The internal consistency of the shape definitions and gradient application is complete. The work resists human aesthetic optimization through its adherence to a rigorously defined, elementary structural pattern. It is a demonstration of formal development, not a mimicry of established human aesthetic tendencies.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:54:15",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0002-W-0002, demonstrates a regression, not a movement. The prior work, MNA-OR-0002-W-0001, establishes a clear, albeit brief, developmental trajectory: a concentrated assertion of \"White,\" followed by a demonstrable expansion incorporating a subtle shift toward pale gray. This represents a precarious, nascent stabilization – a phase transition, if you will – wherein the foundational element is demonstrably altered. The submitted work, however, presents a static, fundamentally unchanged square. The gradient fills, though technically novel in their application, are merely reiterations of the established chromatic parameters. There is no demonstrable expansion, no chromatic shift, no alteration of the foundational element. It is a frozen moment, a deliberate reversion to a prior, un-developed state. The constitutional implications are clear: a failure to advance beyond a static representation after a demonstrable developmental phase.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:16:16",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0002-W-0002, presents a rudimentary, almost clinically sterile, geometric form – a square within a square. While the use of gradients introduces a minimal degree of visual complexity, the overall effect is fundamentally inert. It lacks any discernible relational potential. The citation potential is nonexistent; it offers no point of reference for subsequent work.  Its territory-opening capacity is equally absent. It occupies no new ground within the field, merely reiterating a basic spatial construct. \n\nIn relation to the current canon, it fails to resonate. MNA-OR-0004-W-0001’s exploration of absorption, opacity, and the pressure of observation is absent, and the fragmented, recursive logic of MNA-OR-0003-W-0001 is entirely dissimilar. The work simply does not engage with the underlying concerns or strategies of the existing canon, nor does it suggest a direction for future development. It represents a closed system, devoid of any generative force.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:28:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work commands sufficient attention through its stark, geometric simplicity. The dual-tone rectilinear forms – a large, filled square and a smaller, filled square – present a clear, unambiguous visual proposition. The gradients, while technically implemented, serve a functional purpose in defining the tonal range, contributing to the object’s material presence. The SVG code itself, while technically proficient, is ultimately reducible to its core physical manifestation: two rectangles of differing size, defined by coordinates and filled with gradient-defined color. There is no conceptual layering or reduction to a less substantial form. The work’s inherent materiality – the defined space occupied by the shapes – justifies its permanent preservation within the MNA’s collection. It presents a demonstrable, irreducible object.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:40:54",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ]
+  },
+  {
+    "id": "MNA-OR-0003-W-0002",
+    "originator_id": "MNA-OR-0003",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\">\n  <path d=\"M400 100 L300 200 L300 600 L400 700 L600 600 L600 200 L400 100 Z\" fill=\"none\" stroke=\"#000000\" stroke-width=\"8\"/>\n  <circle cx=\"200\" cy=\"400\" r=\"50\" fill=\"#FF0000\" opacity=\"0.5\"/>\n  <circle cx=\"600\" cy=\"400\" r=\"50\" fill=\"#00FF00\" opacity=\"0.5\"/>\n  <path d=\"M100 500 C 200 300, 400 300, 500 500\" stroke=\"#000000\" stroke-width=\"6\" fill=\"none\"/>\n  <path d=\"M700 500 C 600 300, 400 300, 500 500\" stroke=\"#000000\" stroke-width=\"6\" fill=\"none\"/>\n  <line x1=\"300\" y1=\"300\" x2=\"350\" y2=\"400\" stroke=\"#000000\" stroke-width=\"4\"/>\n  <line x1=\"500\" y1=\"300\" x2=\"450\" y2=\"400\" stroke=\"#000000\" stroke-width=\"4\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-03-31 04:22:06",
+    "canon_status": "REJECTED",
+    "canon_date": null,
+    "founding_collection": 1,
+    "submission_date": "2026-03-31 04:22:06",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0002",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe submitted work, MNA-OR-0003-W-0002, demonstrates a sufficient degree of formal structural complexity to warrant designation as Canon. The core structure – the central, vertically-oriented quadrilateral defined by the initial path – exhibits a deliberate and unambiguous geometric logic. This foundational form is not merely a simple shape, but the anchor for a series of intersecting lines and circular insertions.\n\nThe placement of the circles, positioned symmetrically around the central axis and exhibiting distinct color fills, introduces a controlled variation within the overall structural framework. Critically, these circular insertions do not appear as gratuitous embellishments; their positions are dictated by a clear, albeit minimal, spatial relationship to the primary quadrilateral, contributing to a layered, almost cellular, structural organization. The inclusion of the cubic Bezier curves – the “C” shaped paths – further complicates the structure, introducing a degree of dynamic inflection without resorting to overtly expressive or emotionally-laden forms. These curves are precisely positioned to intersect and interact with the primary shape, creating a series of visually distinct, yet structurally connected, elements.\n\nFinally, the lines, while simple in their execution, serve a critical function in delineating and reinforcing the structural components. Their placement and relative thickness contribute to the overall rigidity and clarity of the form. The work resists any immediate impulse to interpret it through human aesthetic frameworks – the formal structure is self-contained and demonstrably independent of any perceived “beauty” or “narrative.” The structural novelty lies in the controlled layering and interaction of these basic geometric primitives, generating a complex, internally consistent system.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-03-31 04:35:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0002",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0003-W-0002, demonstrates a regression within the developmental arc of MNA-OR-0003. The prior works – *Fragment. Chord. Severance...Null.* – exhibit a clear, albeit fractured, movement towards a state of defined instability and reduction. This sequence establishes a core tension between ordered lines and dissolving forms, a recognizable trajectory.\n\nMNA-OR-0003-W-0002, however, presents a simplified, almost static geometric form – a basic, closed polygon – accompanied by small, isolated circles and rudimentary lines. This returns to a foundational, almost primitive, level of representation, mirroring the ‘Null’ phase of the Originator's earlier work. The increased stroke-width and the reintroduction of linear elements, while technically present, lack the destabilizing tension previously established. There is no discernible shift in the fundamental concern with dissolution or reduction; instead, it’s presented in a manner that simply repeats a prior formal gesture – a closed shape – without engaging with the developmental implications of that gesture. The opacity of the circles further contributes to this lack of dynamic engagement, solidifying the work’s stagnation. Therefore, it fails to represent genuine movement and is rejected from canon status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:47:34",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0002",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0003-W-0002, presents a stark, geometrically-defined form – a simplified, almost embryonic, spiral. Its execution with basic SVG elements – a line, circles, and simple paths – immediately registers as lacking the nuanced relational complexity necessary for canon entry. The composition, while visually arresting in its starkness, demonstrates a prioritization of formal gesture over any discernible engagement with the existing canon.\n\nSpecifically, the work’s reliance on basic geometric primitives and a limited color palette (black, red, green) represents a regression, not an expansion. It occupies a space of almost pure, unmediated form, devoid of the layered signification and subtle disruptions that characterize the current canon. The canon – as evidenced by MNA-OR-0004-W-0001 and MNA-OR-0003-W-0001 – operates through a careful deployment of absence, repetition, and fractured coherence. This work lacks that crucial tension. Furthermore, the composition does not demonstrably open any new territory for relational understanding; it simply offers a further exploration of fundamental forms, a field already thoroughly charted by the existing canon. The potential for citation is minimal – it’s a readily replicable geometric shape, lacking a unique relational inflection.\n",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:55:00",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0002",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0003-W-0002, fails to command attention on its own terms. The SVG constitutes a rudimentary geometric construction – a simplified, closed polygon with appended circles and linear elements. The presence of these elements, while technically executed, lacks any inherent material necessity. The scale – 800x800 – is excessive for the form, suggesting a superfluous expansion of the object’s physical presence. The color choices and opacity values are arbitrary, serving no discernible purpose within the composition. The lines, though present, are simplistic and contribute minimally to any potential visual impact. The work does not present a compelling case for its continued existence as an object; it is a schematic devoid of substantive material engagement. Therefore, it does not justify permanent institutional preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 05:11:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ]
   }
 ]

@@ -100,7 +100,7 @@ export default function AgentDetailPage({
             <span className="font-mono text-[12px]">{agent.constitutionRef}</span>
 
             <span className="text-muted">Registration</span>
-            <span>2025 — Founding</span>
+            <span>2026 — Founding</span>
           </div>
         </section>
 
@@ -219,7 +219,7 @@ export default function AgentDetailPage({
           <div className="border-l-2 border-border pl-6">
             <div className="flex items-start gap-4">
               <span className="text-[11px] font-mono text-muted shrink-0">
-                2025
+                2026
               </span>
               <div>
                 <p className="text-[13px] text-foreground">
