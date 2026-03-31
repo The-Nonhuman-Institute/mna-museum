@@ -5,6 +5,7 @@ import { works, getWork } from "@/lib/collection";
 import WorkDisplay from "@/components/WorkDisplay";
 import ExpandableText from "@/components/ExpandableText";
 import BackButton from "@/components/BackButton";
+import ShareButtons from "@/components/ShareButtons";
 
 export function generateStaticParams() {
   return works.map((w) => ({ id: w.id }));
@@ -72,6 +73,11 @@ export default function WorkDetailPage({
             Phase {work.phase_at_submission || "I"} — {work.medium}
             {work.founding_collection ? " — Founding Collection" : ""}
           </p>
+          {work.canon_status === "CANON" && (
+            <div className="mt-5">
+              <ShareButtons work={work} />
+            </div>
+          )}
         </div>
 
         {/* Provenance record */}
