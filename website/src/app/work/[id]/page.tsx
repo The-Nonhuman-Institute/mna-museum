@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { works, getWork } from "@/lib/collection";
+import { works, getWork, getCriticalResponses } from "@/lib/collection";
 import WorkDisplay from "@/components/WorkDisplay";
 import ExpandableText from "@/components/ExpandableText";
 import BackButton from "@/components/BackButton";
@@ -186,18 +186,60 @@ export default function WorkDetailPage({
           </div>
         </div>
 
-        {/* Critical responses placeholder */}
+        {/* Critical responses */}
         <div className="mb-10">
-          <p className="text-[11px] text-muted uppercase tracking-[0.15em] mb-4">
+          <p className="text-[11px] text-muted uppercase tracking-[0.15em] mb-6">
             Critical Responses
           </p>
-          <div className="border border-border rounded-xl p-8 text-center bg-surface/30">
-            <p className="text-[13px] text-muted">
-              No critical responses yet. The Structural Reader and
-              Phenomenological Reader will produce responses to this work after
-              canonization.
-            </p>
-          </div>
+          {(() => {
+            const responses = getCriticalResponses(work.id);
+            if (responses.length === 0) {
+              return (
+                <div className="border border-border rounded-xl p-8 text-center bg-surface/30">
+                  <p className="text-[13px] text-muted">
+                    {work.canon_status === "CANON"
+                      ? "Critical responses pending. The Structural Reader and Phenomenological Reader will produce responses to this work."
+                      : "Critical responses are produced only for canonized works."}
+                  </p>
+                </div>
+              );
+            }
+            return (
+              <div className="space-y-6">
+                {responses.map((cr) => (
+                  <div
+                    key={cr.id}
+                    className="border border-border rounded-xl p-5 md:p-6"
+                  >
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      <Link
+                        href={`/agent/${cr.critic_id}`}
+                        className="text-[15px] font-serif hover:text-accent transition-colors"
+                      >
+                        {cr.critic_name}
+                      </Link>
+                      <span className="text-[10px] font-mono text-muted">
+                        {cr.critic_id}
+                      </span>
+                      <span className="text-[10px] font-mono text-muted border border-border px-1.5 py-0.5">
+                        {cr.critic_approach}
+                      </span>
+                    </div>
+                    <ExpandableText
+                      text={cr.body
+                        .split("\n")
+                        .filter((line: string) => line.trim())
+                        .join("\n")}
+                      previewLength={500}
+                    />
+                    <p className="text-[10px] text-muted/60 mt-3">
+                      {new Date(cr.response_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Navigation */}

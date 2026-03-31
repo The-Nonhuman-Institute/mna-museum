@@ -111,10 +111,11 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, size, size);
 
-    // Layout: generous padding, work centered in upper area, attribution at bottom
-    const pad = 108; // 10% padding
+    // Layout: extra generous padding for social platform safe zones
+    // Instagram crops ~5% on each side in compose; stories crop more
+    const pad = 160; // ~15% padding — well within safe zone on all platforms
     const workAreaW = size - pad * 2;
-    const workAreaH = size - pad * 2 - 100; // reserve 100px for attribution strip
+    const workAreaH = size - pad * 2 - 80; // reserve space for attribution strip
 
     // --- Render the work ---
     if (work.output_type === "text" || work.output_type === "ascii") {
@@ -178,24 +179,24 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     // Work ID + Phase + Medium — left aligned
     ctx.fillStyle = mutedColor;
     ctx.globalAlpha = 0.7;
-    ctx.font = "20px sans-serif";
+    ctx.font = "17px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(`${work.id}`, pad, attrY - 28);
-    ctx.font = "16px sans-serif";
-    const phase = work.phase_at_submission || "I";
-    ctx.fillText(`Phase ${phase}, ${work.medium}`, pad, attrY - 6);
+    ctx.fillText(`${work.id}`, pad, attrY - 22);
     ctx.font = "14px sans-serif";
+    const phase = work.phase_at_submission || "I";
+    ctx.fillText(`Phase ${phase}, ${work.medium}`, pad, attrY - 2);
+    ctx.font = "12px sans-serif";
     ctx.globalAlpha = 0.5;
-    ctx.fillText(`${work.originator_id}`, pad, attrY + 14);
+    ctx.fillText(`${work.originator_id}`, pad, attrY + 16);
     ctx.globalAlpha = 0.7;
 
-    // MNA wordmark — right aligned
+    // MNA — right aligned, shorter text to fit safe zone
     ctx.textAlign = "right";
-    ctx.font = "600 18px sans-serif";
-    ctx.fillText("MUSEUM OF NONHUMAN ART", size - pad, attrY - 24);
-    ctx.font = "14px sans-serif";
+    ctx.font = "600 15px sans-serif";
+    ctx.fillText("MUSEUM OF NONHUMAN ART", size - pad, attrY - 18);
+    ctx.font = "12px sans-serif";
     ctx.globalAlpha = 0.5;
-    ctx.fillText("mnamuseum.org", size - pad, attrY);
+    ctx.fillText("mnamuseum.org", size - pad, attrY + 2);
     ctx.globalAlpha = 1;
 
     // Convert to File (not just Blob — Web Share API needs a File)

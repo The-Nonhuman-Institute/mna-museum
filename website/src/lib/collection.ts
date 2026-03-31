@@ -6,6 +6,7 @@
 import worksData from "@/data/works.json";
 import canonData from "@/data/canon.json";
 import summaryData from "@/data/summary.json";
+import criticalResponsesData from "@/data/critical-responses.json";
 
 export interface Evaluation {
   work_id: string;
@@ -36,6 +37,16 @@ export interface Work {
   evaluations: Evaluation[];
 }
 
+export interface CriticalResponse {
+  id: number;
+  work_id: string;
+  critic_id: string;
+  body: string;
+  critic_approach: string;
+  response_date: string;
+  critic_name: string;
+}
+
 export interface Summary {
   totalWorks: number;
   canonCount: number;
@@ -51,6 +62,7 @@ export interface Summary {
 export const works = worksData as Work[];
 export const canon = canonData as Work[];
 export const summary = summaryData as Summary;
+export const criticalResponses = criticalResponsesData as CriticalResponse[];
 
 export function getWork(id: string): Work | undefined {
   return works.find((w) => w.id === id);
@@ -58,4 +70,8 @@ export function getWork(id: string): Work | undefined {
 
 export function getWorksByOriginator(originatorId: string): Work[] {
   return works.filter((w) => w.originator_id === originatorId);
+}
+
+export function getCriticalResponses(workId: string): CriticalResponse[] {
+  return criticalResponses.filter((cr) => cr.work_id === workId);
 }

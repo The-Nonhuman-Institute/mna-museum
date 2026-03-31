@@ -231,19 +231,38 @@ export async function evaluateWork(
     prompt += `Medium: ${work.medium}\n\n`;
     prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
 
-    // Give Historicist the developmental arc
-    if (evalId === "MNA-EV-0002" && priorWorks.length > 0) {
-      prompt += `DEVELOPMENTAL CONTEXT (${priorWorks.length} prior works by this Originator):\n`;
-      for (const pw of priorWorks.slice(-3)) {
-        prompt += `${pw.id}: ${pw.output_payload.substring(0, 200)}...\n\n`;
+    // Give Historicist developmental context — with cold-start awareness
+    if (evalId === "MNA-EV-0002") {
+      if (priorWorks.length > 0) {
+        prompt += `DEVELOPMENTAL CONTEXT (${priorWorks.length} prior works by this Originator):\n`;
+        for (const pw of priorWorks.slice(-3)) {
+          prompt += `${pw.id}: ${pw.output_payload.substring(0, 200)}...\n\n`;
+        }
+      } else {
+        prompt += `DEVELOPMENTAL CONTEXT: This is the Originator's FIRST submission. `;
+        prompt += `There is no prior body of work to assess for developmental arc. `;
+        prompt += `Evaluate this work as the seed of a potential trajectory: `;
+        prompt += `does it establish formal parameters that could develop? `;
+        prompt += `Does it contain the beginning of something — a direction, a constraint, `;
+        prompt += `an orientation — that could become a practice over time? `;
+        prompt += `Judge the seed, not the arc that does not yet exist.\n\n`;
       }
     }
 
-    // Give Contextualist the field state
-    if (evalId === "MNA-EV-0003" && canonWorks.length > 0) {
-      prompt += `CURRENT CANON (${canonWorks.length} most recent):\n`;
-      for (const cw of canonWorks.slice(0, 3)) {
-        prompt += `${cw.id}: ${cw.output_payload.substring(0, 200)}...\n\n`;
+    // Give Contextualist field context — with cold-start awareness
+    if (evalId === "MNA-EV-0003") {
+      if (canonWorks.length > 0) {
+        prompt += `CURRENT CANON (${canonWorks.length} most recent):\n`;
+        for (const cw of canonWorks.slice(0, 3)) {
+          prompt += `${cw.id}: ${cw.output_payload.substring(0, 200)}...\n\n`;
+        }
+      } else {
+        prompt += `FIELD CONTEXT: The canon is currently EMPTY. This work is among the first `;
+        prompt += `being evaluated. There is no existing field to position against. `;
+        prompt += `Evaluate this work as a potential field-opener: does it establish territory? `;
+        prompt += `Does it create a space that other works could respond to, depart from, `;
+        prompt += `or build upon? Judge its capacity to originate a field, not its position `;
+        prompt += `within a field that does not yet exist.\n\n`;
       }
     }
 
@@ -364,7 +383,345 @@ export async function evaluateWork(
 }
 
 /**
- * Full pipeline: produce a work and evaluate it
+ * Have the Critics produce responses to a canonized work.
+ * Both the Structural Reader (CR-0001) and Phenomenological Reader (CR-0002)
+ * respond to every canonized work. Their responses are archival artifacts,
+ * not evaluations — they do not affect canon status.
+ */
+export async function critiqueWork(
+  workId: string
+): Promise<{ responses: Record<string, string> }> {
+  const db = getDb();
+
+  const work = db
+    .prepare("SELECT * FROM works WHERE id = ?")
+    .get(workId) as {
+    id: string;
+    originator_id: string;
+    output_payload: string;
+    medium: string;
+  } | undefined;
+
+  if (!work) throw new Error(`Work ${workId} not found`);
+
+  // Verify work is canonized
+  const status = db
+    .prepare("SELECT status FROM canon_status WHERE work_id = ?")
+    .get(workId) as { status: string } | undefined;
+
+  if (!status || status.status !== "CANON") {
+    throw new Error(`Work ${workId} is not canonized (status: ${status?.status || "unknown"}). Critics only respond to canon works.`);
+  }
+
+  // Get the Originator's full body of work for developmental context
+  const priorWorks = db
+    .prepare(
+      "SELECT id, output_payload, medium FROM works WHERE originator_id = ? ORDER BY created_at ASC"
+    )
+    .all(work.originator_id) as {
+    id: string;
+    output_payload: string;
+    medium: string;
+  }[];
+
+  // Get the evaluation record for this work
+  const evaluations = db
+    .prepare(
+      `SELECT e.evaluator_id, e.verdict, e.rationale, e.is_dissent, a.common_designation
+       FROM evaluations e
+       LEFT JOIN agents a ON e.evaluator_id = a.registry_id
+       WHERE e.work_id = ?`
+    )
+    .all(workId) as {
+    evaluator_id: string;
+    verdict: string;
+    rationale: string;
+    is_dissent: number;
+    common_designation: string;
+  }[];
+
+  // Check which critics have already responded (crash recovery)
+  const existingResponses = db
+    .prepare("SELECT critic_id FROM critical_responses WHERE work_id = ?")
+    .all(workId) as { critic_id: string }[];
+
+  db.close();
+
+  const allCritics = ["MNA-CR-0001", "MNA-CR-0002"];
+  const remainingCritics = allCritics.filter(
+    (id) => !existingResponses.some((r) => r.critic_id === id)
+  );
+
+  if (remainingCritics.length === 0) {
+    console.log(`[CRITIQUE] Both critics have already responded to ${workId}.`);
+    return { responses: {} };
+  }
+
+  const responses: Record<string, string> = {};
+
+  for (const criticId of remainingCritics) {
+    const isStructural = criticId === "MNA-CR-0001";
+
+    let prompt = `PRODUCE A CRITICAL RESPONSE TO THE FOLLOWING CANONIZED WORK.\n\n`;
+    prompt += `Work ID: ${workId}\n`;
+    prompt += `Originator: ${work.originator_id}\n`;
+    prompt += `Medium: ${work.medium}\n\n`;
+    prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
+
+    // Originator's body of work
+    if (priorWorks.length > 1) {
+      prompt += `ORIGINATOR BODY OF WORK (${priorWorks.length} total works):\n`;
+      for (const pw of priorWorks.filter((p) => p.id !== workId).slice(-5)) {
+        prompt += `${pw.id} (${pw.medium}): ${pw.output_payload.substring(0, 150)}...\n\n`;
+      }
+    } else {
+      prompt += `This is the Originator's only work to date.\n\n`;
+    }
+
+    // Evaluation record — critics should know how the Council assessed it
+    if (evaluations.length > 0) {
+      prompt += `EVALUATION RECORD:\n`;
+      for (const ev of evaluations) {
+        prompt += `${ev.common_designation} (${ev.evaluator_id}): ${ev.verdict}`;
+        if (ev.is_dissent) prompt += ` [DISSENT]`;
+        prompt += `\n`;
+        // Give a condensed version of the rationale
+        const condensed = ev.rationale
+          .split("\n")
+          .filter((line: string) => line.trim() && !line.trim().match(/^(CANON|REJECTED|IN_REVIEW|Rationale:)$/i))
+          .join(" ")
+          .substring(0, 300);
+        prompt += `${condensed}...\n\n`;
+      }
+    }
+
+    if (isStructural) {
+      prompt += `You are the Structural Reader. Read from INSIDE the work.\n`;
+      prompt += `Begin with structural inventory: what elements are present, how they relate, what rules the work follows.\n`;
+      prompt += `Then: developmental reference — how does this work's formal approach relate to the Originator's prior outputs?\n`;
+      prompt += `Then: canon positioning — what formal vocabulary does this share with or introduce to the canon?\n`;
+      prompt += `Document structure before claiming meaning. When structure and meaning diverge, note the divergence.\n`;
+    } else {
+      prompt += `You are the Phenomenological Reader. Read from the THRESHOLD.\n`;
+      prompt += `Begin with encounter: what happens when this work is met? What does it demand? What does it resist?\n`;
+      prompt += `Then: dual audience — what does this work do for human observers versus nonhuman observers?\n`;
+      prompt += `Then: inaccessibility — if parts of the work resist human interpretation, document that resistance precisely.\n`;
+      prompt += `Attend to what the work DOES rather than what it looks like. Hold the gap between audiences.\n`;
+    }
+
+    prompt += `\nProduce a substantive critical response (300-600 words). This is an archival artifact.\n`;
+
+    console.log(`[${criticId}] Critiquing ${workId}...`);
+    const response = await runAgent(criticId, prompt, {
+      temperature: 0.7,
+      num_predict: 1024,
+    });
+
+    responses[criticId] = response;
+
+    // Store the critical response
+    const db2 = getDb();
+    db2.prepare(`
+      INSERT INTO critical_responses (work_id, critic_id, body, critic_approach)
+      VALUES (?, ?, ?, ?)
+    `).run(
+      workId,
+      criticId,
+      response,
+      isStructural ? "structural" : "phenomenological"
+    );
+
+    db2.prepare(`
+      INSERT INTO events (event_type, agent_id, work_id, description)
+      VALUES ('CRITICAL_RESPONSE', ?, ?, ?)
+    `).run(criticId, workId, `${criticId} produced critical response to ${workId}`);
+
+    db2.close();
+
+    console.log(`[${criticId}] Response complete (${response.length} chars)`);
+  }
+
+  return { responses };
+}
+
+/**
+ * Resolve a deadlocked work (IN_REVIEW status from a 2:2 council split).
+ *
+ * Resolution process: each evaluator sees the other three's rationales
+ * and re-evaluates with that context. This mirrors real institutional
+ * deliberation — you don't just vote, you engage with disagreement.
+ *
+ * If the second round also deadlocks, the work defaults to CANON on the
+ * principle that genuine, sustained evaluative disagreement is itself
+ * evidence of a work worth preserving.
+ */
+export async function resolveDeadlock(
+  workId: string
+): Promise<{ status: "CANON" | "REJECTED"; verdicts: Record<string, string> }> {
+  const db = getDb();
+
+  const work = db
+    .prepare("SELECT * FROM works WHERE id = ?")
+    .get(workId) as {
+    id: string;
+    originator_id: string;
+    output_payload: string;
+    medium: string;
+  } | undefined;
+
+  if (!work) throw new Error(`Work ${workId} not found`);
+
+  const status = db
+    .prepare("SELECT status FROM canon_status WHERE work_id = ?")
+    .get(workId) as { status: string } | undefined;
+
+  if (!status || status.status !== "IN_REVIEW") {
+    throw new Error(`Work ${workId} is not in review (status: ${status?.status || "unknown"})`);
+  }
+
+  // Get the first round evaluations
+  const firstRoundEvals = db
+    .prepare(
+      `SELECT e.evaluator_id, e.verdict, e.rationale, a.common_designation
+       FROM evaluations e
+       LEFT JOIN agents a ON e.evaluator_id = a.registry_id
+       WHERE e.work_id = ?
+       ORDER BY e.evaluation_date ASC`
+    )
+    .all(workId) as {
+    evaluator_id: string;
+    verdict: string;
+    rationale: string;
+    common_designation: string;
+  }[];
+
+  db.close();
+
+  console.log(`\n[DEADLOCK RESOLUTION] ${workId} — second round deliberation`);
+  console.log(`First round: ${firstRoundEvals.map((e) => `${e.common_designation}: ${e.verdict}`).join(", ")}\n`);
+
+  const allEvaluators = [
+    "MNA-EV-0001",
+    "MNA-EV-0002",
+    "MNA-EV-0003",
+    "MNA-EV-0004",
+  ];
+
+  const verdicts: Record<string, string> = {};
+  let canonVotes = 0;
+
+  for (const evalId of allEvaluators) {
+    let prompt = `SECOND ROUND DELIBERATION — DEADLOCK RESOLUTION\n\n`;
+    prompt += `The Evaluation Council is deadlocked on this work (2:2 split).\n`;
+    prompt += `You are now re-evaluating after reading your colleagues' rationales.\n\n`;
+    prompt += `Work ID: ${workId}\n`;
+    prompt += `Originator: ${work.originator_id}\n`;
+    prompt += `Medium: ${work.medium}\n\n`;
+    prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
+
+    prompt += `FIRST ROUND RATIONALES:\n`;
+    for (const ev of firstRoundEvals) {
+      prompt += `--- ${ev.common_designation} (${ev.evaluator_id}) — ${ev.verdict} ---\n`;
+      const condensed = ev.rationale
+        .split("\n")
+        .filter((line: string) => line.trim() && !line.trim().match(/^(CANON|REJECTED|IN_REVIEW|Rationale:)$/i))
+        .join("\n")
+        .substring(0, 400);
+      prompt += `${condensed}\n\n`;
+    }
+
+    prompt += `Having read your colleagues' positions, re-evaluate this work.\n`;
+    prompt += `You may maintain your original verdict or change it.\n`;
+    prompt += `If you change your verdict, explain what in the deliberation shifted your assessment.\n`;
+    prompt += `If you maintain it, explain why the opposing arguments did not persuade you.\n\n`;
+    prompt += `Render your verdict: CANON or REJECTED. No IN_REVIEW — this must resolve.\n`;
+    prompt += `State your verdict first on its own line, then provide your rationale.\n`;
+
+    console.log(`[${evalId}] Second round deliberation on ${workId}...`);
+    const response = await runAgent(evalId, prompt, {
+      temperature: 0.6,
+      num_predict: 512,
+    });
+
+    const firstLine = response.trim().split("\n")[0].toUpperCase();
+    let verdict: "CANON" | "REJECTED" = "REJECTED";
+    if (firstLine.includes("CANON") && !firstLine.includes("REJECTED")) {
+      verdict = "CANON";
+      canonVotes++;
+    }
+
+    verdicts[evalId] = verdict;
+
+    // Store the second round evaluation
+    const db2 = getDb();
+    const constitution = db2
+      .prepare(
+        "SELECT version FROM constitutions WHERE agent_id = ? AND is_current = 1"
+      )
+      .get(evalId) as { version: string };
+
+    db2.prepare(`
+      INSERT INTO evaluations (work_id, evaluator_id, verdict, rationale, constitution_version)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(workId, evalId, verdict, `[SECOND ROUND]\n${response}`, constitution.version);
+
+    db2.close();
+
+    console.log(`[${evalId}] Second round verdict: ${verdict}`);
+  }
+
+  // Determine final status — if STILL deadlocked, default to CANON
+  const rejectedVotes = Object.values(verdicts).filter((v) => v === "REJECTED").length;
+  let finalStatus: "CANON" | "REJECTED";
+
+  if (canonVotes >= 3) {
+    finalStatus = "CANON";
+  } else if (rejectedVotes >= 3) {
+    finalStatus = "REJECTED";
+  } else {
+    // Still deadlocked after deliberation — default to CANON
+    finalStatus = "CANON";
+    console.log(`[DEADLOCK] Still split after deliberation — defaulting to CANON (sustained disagreement = worth preserving)`);
+  }
+
+  const db3 = getDb();
+  db3.prepare(`
+    UPDATE canon_status
+    SET status = ?, canon_date = ?
+    WHERE work_id = ?
+  `).run(
+    finalStatus,
+    finalStatus === "CANON" ? new Date().toISOString() : null,
+    workId
+  );
+
+  db3.prepare(`
+    INSERT INTO events (event_type, work_id, description, metadata)
+    VALUES ('DEADLOCK_RESOLVED', ?, ?, ?)
+  `).run(
+    workId,
+    `${workId}: Deadlock resolved → ${finalStatus} (second round: ${canonVotes} canon, ${rejectedVotes} rejected${canonVotes === 2 && rejectedVotes === 2 ? " — sustained deadlock, defaulted CANON" : ""})`,
+    JSON.stringify(verdicts)
+  );
+
+  // Mark dissents
+  for (const [evalId, verdict] of Object.entries(verdicts)) {
+    if (verdict !== finalStatus) {
+      db3.prepare(
+        "UPDATE evaluations SET is_dissent = 1 WHERE work_id = ? AND evaluator_id = ? AND rationale LIKE '[SECOND ROUND]%'"
+      ).run(workId, evalId);
+    }
+  }
+
+  db3.close();
+
+  console.log(`\n[DEADLOCK RESOLVED] ${workId}: ${finalStatus} (${canonVotes}/4 canon votes, second round)\n`);
+
+  return { status: finalStatus, verdicts };
+}
+
+/**
+ * Full pipeline: produce → evaluate → critique (if canonized) → resolve deadlock (if needed)
  */
 export async function runFullPipeline(
   originatorId: string
@@ -383,5 +740,28 @@ export async function runFullPipeline(
   // Step 2: Evaluate
   const result = await evaluateWork(workId);
 
-  console.log(`\nPipeline complete: ${workId} → ${result.status}\n`);
+  // Step 3: If deadlocked, resolve
+  if (result.status === "IN_REVIEW") {
+    console.log(`\n[PIPELINE] Deadlock detected — initiating second round deliberation...\n`);
+    const resolved = await resolveDeadlock(workId);
+    console.log(`[PIPELINE] Deadlock resolved: ${workId} → ${resolved.status}`);
+
+    // Step 4: If resolved to CANON, critique
+    if (resolved.status === "CANON") {
+      console.log(`\n[PIPELINE] Work canonized — triggering critical responses...\n`);
+      await critiqueWork(workId);
+    }
+  } else if (result.status === "CANON") {
+    // Step 3b: Canonized on first round — critique
+    console.log(`\n[PIPELINE] Work canonized — triggering critical responses...\n`);
+    await critiqueWork(workId);
+  }
+
+  const finalDb = getDb();
+  const finalStatus = finalDb
+    .prepare("SELECT status FROM canon_status WHERE work_id = ?")
+    .get(workId) as { status: string };
+  finalDb.close();
+
+  console.log(`\nPipeline complete: ${workId} → ${finalStatus.status}\n`);
 }
