@@ -72,9 +72,9 @@ export default function MuseumFrame({
   const height = Math.round(width / config.aspect);
 
   return (
-    <div className={className} style={{ width }}>
-      {/* Frame container — explicit width and height */}
-      <div style={{ position: "relative", width, height }}>
+    <div className={className} style={{ width, maxWidth: "100%" }}>
+      {/* Frame container — aspect-ratio based, scales with container */}
+      <div style={{ position: "relative", width: "100%", aspectRatio: `${config.aspect}` }}>
         {/* Layer 1: Artwork — positioned inside the frame cutout */}
         <div
           style={{
@@ -107,10 +107,10 @@ export default function MuseumFrame({
         <Image
           src={config.src}
           alt=""
-          width={width}
-          height={height}
-          className="pointer-events-none relative"
-          style={{ zIndex: 1, display: "block" }}
+          fill
+          className="pointer-events-none"
+          style={{ zIndex: 1, objectFit: "fill" }}
+          sizes={`${width}px`}
           priority
         />
       </div>

@@ -114,9 +114,9 @@ export default function Home() {
                     className="block border border-border rounded-xl p-4 hover:border-muted hover:bg-surface/30 transition-all"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="shrink-0 w-16 h-16 bg-[#0e0c0a] rounded-lg flex items-center justify-center">
-                        <pre className="text-[#c8c4be] text-[8px] font-mono whitespace-pre text-center leading-tight">
-                          {work.output_payload.substring(0, 50)}
+                      <div className="shrink-0 w-16 h-16 bg-[#0e0c0a] rounded-lg flex items-center justify-center overflow-hidden">
+                        <pre className="text-[#c8c4be] text-[6px] font-mono whitespace-pre-wrap break-words text-center leading-tight p-1 max-w-full max-h-full overflow-hidden">
+                          {work.output_payload.substring(0, 30)}
                         </pre>
                       </div>
                       <div>

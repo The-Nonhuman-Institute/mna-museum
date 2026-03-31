@@ -1,0 +1,97 @@
+"use client";
+
+import { useState, useRef } from "react";
+
+interface Voice {
+  type: "sine" | "square" | "sawtooth" | "triangle";
+  notes: { freq: number; start: number; duration: number; gain: number }[];
+}
+
+interface AudioData {
+  duration: number;
+  bpm?: number;
+  voices: Voice[];
+}
+
+interface AudioRendererProps {
+  json: string;
+}
+
+export default function AudioRenderer({ json }: AudioRendererProps) {
+  const [playing, setPlaying] = useState(false);
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  let data: AudioData;
+  try {
+    data = JSON.parse(json);
+  } catch {
+    return (
+      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
+        <p className="text-[#4a4540] text-xs">Invalid audio data</p>
+      </div>
+    );
+  }
+
+  const play = () => {
+    if (playing) return;
+    setPlaying(true);
+
+    const ctx = new AudioContext();
+    ctxRef.current = ctx;
+
+    for (const voice of data.voices) {
+      for (const note of voice.notes) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = voice.type;
+        osc.frequency.value = note.freq;
+        gain.gain.value = note.gain;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + note.start);
+        osc.stop(ctx.currentTime + note.start + note.duration);
+      }
+    }
+
+    setTimeout(() => {
+      setPlaying(false);
+      ctx.close();
+    }, data.duration * 1000 + 500);
+  };
+
+  return (
+    <div className="w-full h-full bg-[#0e0c0a] flex flex-col items-center justify-center gap-4">
+      {/* Waveform visualization placeholder */}
+      <div className="flex items-end gap-[2px] h-16">
+        {Array.from({ length: 32 }).map((_, i) => (
+          <div
+            key={i}
+            className={`w-1 bg-[#4a4540] rounded-full transition-all ${
+              playing ? "animate-pulse" : ""
+            }`}
+            style={{
+              height: `${Math.random() * 48 + 8}px`,
+              opacity: playing ? 0.8 : 0.3,
+            }}
+          />
+        ))}
+      </div>
+
+      <button
+        onClick={play}
+        disabled={playing}
+        className={`text-[11px] uppercase tracking-wider px-4 py-2 border transition-colors ${
+          playing
+            ? "border-[#4a4540] text-[#4a4540] cursor-wait"
+            : "border-[#6a6560] text-[#a09a90] hover:text-[#e8e4de] hover:border-[#a09a90]"
+        }`}
+      >
+        {playing ? "Playing..." : "Listen"}
+      </button>
+
+      <p className="text-[9px] text-[#3a3530]">
+        {data.duration}s — {data.voices.length} voice{data.voices.length !== 1 ? "s" : ""}
+      </p>
+    </div>
+  );
+}

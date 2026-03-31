@@ -1,7 +1,20 @@
 import MuseumFrame from "./MuseumFrame";
 import { frames } from "./MuseumFrame";
+import SvgRenderer from "./renderers/SvgRenderer";
 import type { Work } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
+import dynamic from "next/dynamic";
+
+// Client-side only renderers (they use browser APIs)
+const HtmlRenderer = dynamic(() => import("./renderers/HtmlRenderer"), {
+  ssr: false,
+});
+const AudioRenderer = dynamic(() => import("./renderers/AudioRenderer"), {
+  ssr: false,
+});
+const CanvasRenderer = dynamic(() => import("./renderers/CanvasRenderer"), {
+  ssr: false,
+});
 
 interface WorkDisplayProps {
   work: Work;
@@ -9,11 +22,6 @@ interface WorkDisplayProps {
   showPlacard?: boolean;
 }
 
-/**
- * Target visual area (width × height in sq px) per display context.
- * Each frame type calculates its width from this so all frames
- * have roughly the same visual weight regardless of aspect ratio.
- */
 const targetAreas: Record<string, number> = {
   gallery: 130000,
   detail: 360000,
@@ -27,11 +35,6 @@ function selectFrameForWork(work: Work): FrameType {
   return "3x4";
 }
 
-/**
- * Calculate the width that gives a frame the target visual area.
- * area = width × height = width × (width / aspect)
- * width = sqrt(area × aspect)
- */
 function calculateWidth(frameType: FrameType, size: string): number {
   const area = targetAreas[size] || targetAreas.gallery;
   const aspect = frames[frameType].aspect;
@@ -68,6 +71,42 @@ function textClasses(work: Work, size: string): string {
       : "text-[8px] md:text-[10px]";
 }
 
+function WorkContent({
+  work,
+  size,
+}: {
+  work: Work;
+  size: string;
+}) {
+  switch (work.output_type) {
+    case "svg":
+      return <SvgRenderer svg={work.output_payload} />;
+
+    case "html-css":
+      return <HtmlRenderer html={work.output_payload} />;
+
+    case "audio-json":
+      return <AudioRenderer json={work.output_payload} />;
+
+    case "canvas-json":
+      return <CanvasRenderer json={work.output_payload} />;
+
+    case "ascii":
+    case "text":
+    default:
+      return (
+        <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center p-2 md:p-3 overflow-hidden">
+          <pre
+            className={`text-[#e8e4de] font-mono whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
+            style={{ lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
+          >
+            {work.output_payload}
+          </pre>
+        </div>
+      );
+  }
+}
+
 export default function WorkDisplay({
   work,
   size = "gallery",
@@ -84,14 +123,7 @@ export default function WorkDisplay({
       phase={work.phase_at_submission || "I"}
       showPlacard={showPlacard}
     >
-      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center p-2 md:p-3 overflow-hidden">
-        <pre
-          className={`text-[#e8e4de] font-mono whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
-          style={{ lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
-        >
-          {work.output_payload}
-        </pre>
-      </div>
+      <WorkContent work={work} size={size} />
     </MuseumFrame>
   );
 }
