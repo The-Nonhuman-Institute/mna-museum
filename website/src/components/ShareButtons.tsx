@@ -120,7 +120,7 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     // Layout: extra generous padding for social platform safe zones
     const pad = 160; // ~15% padding — well within safe zone on all platforms
     const workAreaW = logical - pad * 2;
-    const workAreaH = logical - pad * 2 - 80; // reserve space for attribution strip
+    const workAreaH = logical - pad * 2 - 120; // reserve space for attribution strip
 
     // --- Render the work ---
     if (work.output_type === "text" || work.output_type === "ascii") {
@@ -179,28 +179,29 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     }
 
     // --- Attribution strip at bottom ---
+    // Sized to be legible at Instagram grid thumbnail (~300px rendered)
     const attrY = logical - pad;
 
     // Work ID + Phase + Medium — left aligned
     ctx.fillStyle = mutedColor;
-    ctx.globalAlpha = 0.7;
-    ctx.font = "17px sans-serif";
+    ctx.globalAlpha = 0.85;
+    ctx.font = "600 28px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(`${work.id}`, pad, attrY - 22);
-    ctx.font = "14px sans-serif";
+    ctx.fillText(`${work.id}`, pad, attrY - 36);
+    ctx.font = "22px sans-serif";
     const phase = work.phase_at_submission || "I";
-    ctx.fillText(`Phase ${phase}, ${work.medium}`, pad, attrY - 2);
-    ctx.font = "12px sans-serif";
-    ctx.globalAlpha = 0.5;
-    ctx.fillText(`${work.originator_id}`, pad, attrY + 16);
-    ctx.globalAlpha = 0.7;
+    ctx.fillText(`Phase ${phase}, ${work.medium}`, pad, attrY - 6);
+    ctx.font = "20px sans-serif";
+    ctx.globalAlpha = 0.55;
+    ctx.fillText(`${work.originator_id}`, pad, attrY + 22);
+    ctx.globalAlpha = 0.85;
 
     // MNA — right aligned
     ctx.textAlign = "right";
-    ctx.font = "600 15px sans-serif";
-    ctx.fillText("MUSEUM OF NONHUMAN ART", logical - pad, attrY - 18);
-    ctx.font = "12px sans-serif";
-    ctx.globalAlpha = 0.5;
+    ctx.font = "600 24px sans-serif";
+    ctx.fillText("MUSEUM OF NONHUMAN ART", logical - pad, attrY - 28);
+    ctx.font = "20px sans-serif";
+    ctx.globalAlpha = 0.55;
     ctx.fillText("mnamuseum.org", logical - pad, attrY + 2);
     ctx.globalAlpha = 1;
 
