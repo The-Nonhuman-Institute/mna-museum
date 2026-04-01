@@ -1,5 +1,293 @@
 [
   {
+    "id": 137,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0004-W-0004",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0004-W-0004",
+    "metadata": null,
+    "created_at": "2026-04-01 05:52:47"
+  },
+  {
+    "id": 138,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0004-W-0004",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0004-W-0004",
+    "metadata": null,
+    "created_at": "2026-04-01 05:52:47"
+  },
+  {
+    "id": 139,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0004-W-0004",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0004-W-0004",
+    "metadata": null,
+    "created_at": "2026-04-01 05:52:47"
+  },
+  {
+    "id": 140,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0004-W-0004",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0004-W-0004",
+    "metadata": null,
+    "created_at": "2026-04-01 05:52:47"
+  },
+  {
+    "id": 141,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0004-W-0004",
+    "description": "MNA-OR-0004-W-0004: REJECTED (1 canon, 3 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-01 05:52:47"
+  },
+  {
+    "id": 136,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0004",
+    "work_id": "MNA-OR-0004-W-0004",
+    "description": "MNA-OR-0004 produced MNA-OR-0004-W-0004",
+    "metadata": null,
+    "created_at": "2026-04-01 05:52:14"
+  },
+  {
+    "id": 134,
+    "event_type": "CRITICAL_RESPONSE",
+    "agent_id": "MNA-CR-0001",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-CR-0001 produced critical response to MNA-OR-0003-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:52:02"
+  },
+  {
+    "id": 135,
+    "event_type": "CRITICAL_RESPONSE",
+    "agent_id": "MNA-CR-0002",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-CR-0002 produced critical response to MNA-OR-0003-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:52:02"
+  },
+  {
+    "id": 133,
+    "event_type": "REGISTRAR_DECISION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "Registrar resolved deadlock on MNA-OR-0003-W-0005 → CANON",
+    "metadata": "{\"decision\":\"CANON\",\"rationale\":\"CANON\\n\\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\\n\\nCase: MNA-OR-0003-W-0005\\nDecision: CANON\\nBasis: Procedural deadlock resolution per institutional protocol\\n\\n**RATIONALE:**\\n\\nThe sustained 2:2 Council deadlock itself constitutes evidence of institutional significance. When evaluators of established competence reach diametrically opposed conclusions through rigorous analysis, the work has demonstrated sufficient complexity to warrant preservation.\\n\\nThe Structuralist and Empiricist identify technical limitations—predictable geometry, algorithmic regularity, standard ASCII parameters. The Historicist and Contextualist recognize developmental significance—crystallization of the Originator's formal evolution, establishment of citable geometric territory.\\n\\nBoth positions are institutionally defensible. The disagreement centers on whether technical execution or developmental positioning takes precedence in canonical determination. This fundamental evaluative tension indicates the work operates at a threshold of institutional importance.\\n\\nProcedurally, sustained Council deadlock suggests the work has achieved sufficient institutional engagement to justify preservation. The depth of analytical disagreement demonstrates the piece's capacity to generate legitimate scholarly discourse—a core criterion for permanent collection inclusion.\\n\\nThe decision resolves the deadlock without adjudicating the underlying evaluative dispute, which remains valid for future institutional reference.\\n\\n**STATUS:** Case closed. Work admitted to permanent collection.\"}",
+    "created_at": "2026-04-01 05:51:24"
+  },
+  {
+    "id": 127,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0003-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:51:15"
+  },
+  {
+    "id": 128,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0003-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:51:15"
+  },
+  {
+    "id": 129,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-EV-0003 rendered CANON on MNA-OR-0003-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:51:15"
+  },
+  {
+    "id": 130,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0003-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:51:15"
+  },
+  {
+    "id": 131,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-OR-0003-W-0005: IN_REVIEW (2 canon, 2 rejected — DEADLOCK)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-01 05:51:15"
+  },
+  {
+    "id": 132,
+    "event_type": "DEADLOCK_ESCALATION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "Council deadlock on MNA-OR-0003-W-0005 — escalated to Registrar",
+    "metadata": "{\"canon_votes\":2,\"rejected_votes\":2,\"verdicts\":{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"REJECTED\"}}",
+    "created_at": "2026-04-01 05:51:15"
+  },
+  {
+    "id": 126,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0003",
+    "work_id": "MNA-OR-0003-W-0005",
+    "description": "MNA-OR-0003 produced MNA-OR-0003-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:42"
+  },
+  {
+    "id": 121,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0002-W-0005",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0002-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:37"
+  },
+  {
+    "id": 122,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0002-W-0005",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0002-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:37"
+  },
+  {
+    "id": 123,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0002-W-0005",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0002-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:37"
+  },
+  {
+    "id": 124,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0002-W-0005",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0002-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:37"
+  },
+  {
+    "id": 125,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0002-W-0005",
+    "description": "MNA-OR-0002-W-0005: REJECTED (1 canon, 3 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-01 05:50:37"
+  },
+  {
+    "id": 120,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0002",
+    "work_id": "MNA-OR-0002-W-0005",
+    "description": "MNA-OR-0002 produced MNA-OR-0002-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:06"
+  },
+  {
+    "id": 118,
+    "event_type": "CRITICAL_RESPONSE",
+    "agent_id": "MNA-CR-0001",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-CR-0001 produced critical response to MNA-OR-0001-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:00"
+  },
+  {
+    "id": 119,
+    "event_type": "CRITICAL_RESPONSE",
+    "agent_id": "MNA-CR-0002",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-CR-0002 produced critical response to MNA-OR-0001-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:50:00"
+  },
+  {
+    "id": 117,
+    "event_type": "REGISTRAR_DECISION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "Registrar resolved deadlock on MNA-OR-0001-W-0005 → CANON",
+    "metadata": "{\"decision\":\"CANON\",\"rationale\":\"CANON\\n\\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\\n\\nCase: MNA-OR-0001-W-0005\\nDecision: CANON\\nRationale: Procedural threshold met through sustained institutional engagement\\n\\nThe 2:2 deadlock itself demonstrates that this work has achieved sufficient institutional significance to warrant preservation. Two Council members identified substantive formal developments and field-opening potential, while two others applied rigorous standards that, while resulting in rejection, engaged seriously with the work's structural properties.\\n\\nThe sustained disagreement indicates the work occupies contested but meaningful territory within the institution's evaluative framework. The Historicist's identification of developmental progression from the Originator's previous works, combined with the Contextualist's recognition of systematic pattern exploration, establishes institutional relevance that transcends the specific formal criticisms raised by the Structuralist and Empiricist.\\n\\nWhen Council expertise divides evenly on a work's merits, the division itself suggests the work has achieved the threshold complexity necessary for permanent institutional consideration. A work that generates no serious engagement fails quickly; a work that sustains serious disagreement among qualified evaluators has demonstrated institutional significance regardless of the specific nature of that disagreement.\\n\\nThe work enters the permanent collection as a documented case of institutional division, preserving both the object and the evaluative discourse it generated.\\n\\n**Case Status: RESOLVED**\\n**Collection Status: ACCESSIONED**\\n**Documentation: COMPLETE**\"}",
+    "created_at": "2026-04-01 05:49:13"
+  },
+  {
+    "id": 111,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0001-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:49:03"
+  },
+  {
+    "id": 112,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0001-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:49:03"
+  },
+  {
+    "id": 113,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-EV-0003 rendered CANON on MNA-OR-0001-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:49:03"
+  },
+  {
+    "id": 114,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0001-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:49:03"
+  },
+  {
+    "id": 115,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-OR-0001-W-0005: IN_REVIEW (2 canon, 2 rejected — DEADLOCK)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-01 05:49:03"
+  },
+  {
+    "id": 116,
+    "event_type": "DEADLOCK_ESCALATION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "Council deadlock on MNA-OR-0001-W-0005 — escalated to Registrar",
+    "metadata": "{\"canon_votes\":2,\"rejected_votes\":2,\"verdicts\":{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"REJECTED\"}}",
+    "created_at": "2026-04-01 05:49:03"
+  },
+  {
+    "id": 110,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0001",
+    "work_id": "MNA-OR-0001-W-0005",
+    "description": "MNA-OR-0001 produced MNA-OR-0001-W-0005",
+    "metadata": null,
+    "created_at": "2026-04-01 05:48:29"
+  },
+  {
     "id": 109,
     "event_type": "REGISTRAR_DECISION",
     "agent_id": "MNA-RG-0001",
@@ -160,293 +448,5 @@
     "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0002-W-0004",
     "metadata": null,
     "created_at": "2026-04-01 04:33:24"
-  },
-  {
-    "id": 93,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0002-W-0004",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0002-W-0004",
-    "metadata": null,
-    "created_at": "2026-04-01 04:33:24"
-  },
-  {
-    "id": 94,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0002-W-0004",
-    "description": "MNA-OR-0002-W-0004: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-01 04:33:24"
-  },
-  {
-    "id": 89,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0002",
-    "work_id": "MNA-OR-0002-W-0004",
-    "description": "MNA-OR-0002 produced MNA-OR-0002-W-0004",
-    "metadata": null,
-    "created_at": "2026-04-01 04:32:50"
-  },
-  {
-    "id": 84,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0001-W-0004",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0001-W-0004",
-    "metadata": null,
-    "created_at": "2026-04-01 04:32:45"
-  },
-  {
-    "id": 85,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0001-W-0004",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0001-W-0004",
-    "metadata": null,
-    "created_at": "2026-04-01 04:32:45"
-  },
-  {
-    "id": 86,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0001-W-0004",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0001-W-0004",
-    "metadata": null,
-    "created_at": "2026-04-01 04:32:45"
-  },
-  {
-    "id": 87,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0001-W-0004",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0001-W-0004",
-    "metadata": null,
-    "created_at": "2026-04-01 04:32:45"
-  },
-  {
-    "id": 88,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0001-W-0004",
-    "description": "MNA-OR-0001-W-0004: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-01 04:32:45"
-  },
-  {
-    "id": 83,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0001",
-    "work_id": "MNA-OR-0001-W-0004",
-    "description": "MNA-OR-0001 produced MNA-OR-0001-W-0004",
-    "metadata": null,
-    "created_at": "2026-04-01 04:32:12"
-  },
-  {
-    "id": 82,
-    "event_type": "REGISTRAR_DECISION",
-    "agent_id": "MNA-RG-0001",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "Registrar resolved deadlock on MNA-OR-0002-W-0003 → CANON",
-    "metadata": "{\"decision\":\"CANON\",\"rationale\":\"CANON\\n\\nThe deadlock necessitates a determination based on the sustained disagreement regarding the work’s significance. The Structuralist, Historicist, and Empiricist evaluations converge on a recognition of the work’s technical precision and deliberate deployment of formal elements – gradients and defined strokes – within a geometric form. While the Historicist identifies a “regression” and the Contextualist finds it “formally unremarkable,” these assessments ultimately fail to account for the *intentionality* evidenced by the gradient application. The Empiricist’s assessment, focusing on the effect of the gradients on perceived solidity and dimensionality, provides the most compelling justification for preservation. The Council’s inability to reach consensus on this point, despite differing theoretical frameworks, suggests a sustained recognition of the work’s value as a demonstration of controlled formal manipulation—a core concern of the Museum. Therefore, the work warrants continued institutional consideration.\\n\"}",
-    "created_at": "2026-04-01 02:51:01"
-  },
-  {
-    "id": 80,
-    "event_type": "CRITICAL_RESPONSE",
-    "agent_id": "MNA-CR-0001",
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-CR-0001 produced critical response to MNA-OR-0004-W-0002",
-    "metadata": null,
-    "created_at": "2026-04-01 01:59:21"
-  },
-  {
-    "id": 81,
-    "event_type": "CRITICAL_RESPONSE",
-    "agent_id": "MNA-CR-0002",
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-CR-0002 produced critical response to MNA-OR-0004-W-0002",
-    "metadata": null,
-    "created_at": "2026-04-01 01:59:21"
-  },
-  {
-    "id": 75,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-EV-0001 rendered CANON on MNA-OR-0004-W-0002",
-    "metadata": null,
-    "created_at": "2026-04-01 01:36:47"
-  },
-  {
-    "id": 76,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0004-W-0002",
-    "metadata": null,
-    "created_at": "2026-04-01 01:36:47"
-  },
-  {
-    "id": 77,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0004-W-0002",
-    "metadata": null,
-    "created_at": "2026-04-01 01:36:47"
-  },
-  {
-    "id": 78,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-EV-0004 rendered CANON on MNA-OR-0004-W-0002",
-    "metadata": null,
-    "created_at": "2026-04-01 01:36:47"
-  },
-  {
-    "id": 79,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-OR-0004-W-0002: CANON (3 canon, 1 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"CANON\"}",
-    "created_at": "2026-04-01 01:36:47"
-  },
-  {
-    "id": 74,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0004",
-    "work_id": "MNA-OR-0004-W-0002",
-    "description": "MNA-OR-0004 produced MNA-OR-0004-W-0002",
-    "metadata": null,
-    "created_at": "2026-04-01 01:10:43"
-  },
-  {
-    "id": 72,
-    "event_type": "CRITICAL_RESPONSE",
-    "agent_id": "MNA-CR-0001",
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-CR-0001 produced critical response to MNA-OR-0003-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 01:02:55"
-  },
-  {
-    "id": 73,
-    "event_type": "CRITICAL_RESPONSE",
-    "agent_id": "MNA-CR-0002",
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-CR-0002 produced critical response to MNA-OR-0003-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 01:02:55"
-  },
-  {
-    "id": 67,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-EV-0001 rendered CANON on MNA-OR-0003-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 00:43:45"
-  },
-  {
-    "id": 68,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0003-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 00:43:45"
-  },
-  {
-    "id": 69,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-EV-0003 rendered CANON on MNA-OR-0003-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 00:43:45"
-  },
-  {
-    "id": 70,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-EV-0004 rendered CANON on MNA-OR-0003-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 00:43:45"
-  },
-  {
-    "id": 71,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-OR-0003-W-0003: CANON (4 canon, 0 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"CANON\"}",
-    "created_at": "2026-04-01 00:43:45"
-  },
-  {
-    "id": 66,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0003",
-    "work_id": "MNA-OR-0003-W-0003",
-    "description": "MNA-OR-0003 produced MNA-OR-0003-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 00:25:58"
-  },
-  {
-    "id": 64,
-    "event_type": "CRITICAL_RESPONSE",
-    "agent_id": "MNA-CR-0001",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-CR-0001 produced critical response to MNA-OR-0002-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 00:17:58"
-  },
-  {
-    "id": 65,
-    "event_type": "CRITICAL_RESPONSE",
-    "agent_id": "MNA-CR-0002",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-CR-0002 produced critical response to MNA-OR-0002-W-0003",
-    "metadata": null,
-    "created_at": "2026-04-01 00:17:58"
-  },
-  {
-    "id": 63,
-    "event_type": "DEADLOCK_RESOLVED",
-    "agent_id": null,
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-OR-0002-W-0003: Deadlock resolved → CANON (second round: 3 canon, 1 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"CANON\"}",
-    "created_at": "2026-03-31 23:51:44"
-  },
-  {
-    "id": 57,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-EV-0001 rendered CANON on MNA-OR-0002-W-0003",
-    "metadata": null,
-    "created_at": "2026-03-31 23:20:29"
-  },
-  {
-    "id": 58,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-EV-0002 rendered REJECTED on MNA-OR-0002-W-0003",
-    "metadata": null,
-    "created_at": "2026-03-31 23:20:29"
-  },
-  {
-    "id": 59,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0002-W-0003",
-    "metadata": null,
-    "created_at": "2026-03-31 23:20:29"
   }
 ]

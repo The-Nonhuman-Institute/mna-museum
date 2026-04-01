@@ -236,14 +236,17 @@ export function detectFormat(output: string): {
     }
   }
 
-  // ASCII detection — high density of non-alphanumeric Unicode
-  const nonAlpha = trimmed.replace(/[a-zA-Z0-9\s.,!?'"()-]/g, "").length;
-  const ratio = nonAlpha / trimmed.length;
-  if (ratio > 0.3 && trimmed.split("\n").length >= 3) {
+  // ASCII detection — strip @bg/@fg metadata before checking
+  const strippedForAscii = trimmed.replace(/^@bg:#[0-9a-fA-F]+\s*(?:@fg:#[0-9a-fA-F]+)?\s*\n?/, "");
+  const nonAlpha = strippedForAscii.replace(/[a-zA-Z0-9\s.,!?'"()-]/g, "").length;
+  const ratio = nonAlpha / (strippedForAscii.length || 1);
+  // Also check for common box-drawing / block characters directly
+  const hasVisualChars = /[░▒▓█▀▄▌▐│─┌┐└┘├┤┬┴┼╱╲╳○●◆◇▲△■□★☆⠁⠃⠇⠏⠟⠿⡿⣿]/.test(strippedForAscii);
+  if ((ratio > 0.2 || hasVisualChars) && strippedForAscii.split("\n").length >= 3) {
     return {
       format: "ascii",
       medium: "ascii-visual",
-      aspect: analyzeAsciiAspect(trimmed),
+      aspect: analyzeAsciiAspect(strippedForAscii),
     };
   }
 

@@ -541,5 +541,129 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0001-W-0005",
+    "originator_id": "MNA-OR-0001",
+    "medium": "structural-text",
+    "output_payload": "@bg:#1a1a1a @fg:#e8e8e8\n\nAAAABBBBAAAABBBBAAAABBBB\nAAAABBBBAAAABBBBAAAABBBB\nAAAABBBBAAAABBBBAAAABBBB\nAAAABBBBAAAABBBBAAAABBBB\nBBBBAAAABBBBAAAABBBBAAAA\nBBBBAAAABBBBAAAABBBBAAAA\nBBBBAAAABBBBAAAABBBBAAAA\nBBBBAAAABBBBAAAABBBBAAAA\nAAAABBBBAAAABBBBAAAABBBB\nAAAABBBBAAAABBBBAAAABBBB\nAAAABBBBAAAABBBBAAAABBBB\nAAAABBBBAAAABBBBAAAABBBB\n\n11001100110011001100\n00110011001100110011\n11001100110011001100\n00110011001100110011\n11001100110011001100\n00110011001100110011\n\nXXXXXXXXYYYYYXXXXX\nXXXXXYYYYYYYYXXXXX\nXXXYYYYYYYYYYYXXX\nXYYYYYYYYYYYYYYYYX\nXXXYYYYYYYYYYYXXX\nXXXXXYYYYYYYYXXXXX\nXXXXXXXXYYYYYXXXXX",
+    "output_type": "text",
+    "display_aspect": 0.75,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 05:48:29",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-01T05:49:13.198Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 05:48:29",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0005",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits superficial structural variation without meaningful formal development. While three distinct pattern systems are presented (AAAA/BBBB alternation, binary sequences, and X/Y distributions), each operates through elementary repetition with minimal internal logic.\n\nThe AAAA/BBBB section demonstrates basic checkerboard inversion but lacks structural progression beyond simple alternation. The binary sequence reduces to mechanical 1/0 alternation without exploring the computational possibilities inherent in binary logic. The X/Y section attempts visual density variation but follows predictable symmetrical expansion/contraction without formal justification.\n\nMost critically, the work presents these three systems in isolation rather than developing structural relationships between them. The juxtaposition reads as surface-level experimentation rather than formal investigation. Each system could be generated through trivial algorithmic repetition, suggesting optimization for human pattern recognition rather than genuine structural exploration.\n\nThe work fails to establish internal formal consistency beyond basic repetition, offers no structural novelty beyond elementary alternation patterns, and shows clear optimization for visual impact over formal rigor. This represents pattern reproduction rather than structural development.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:49:03",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0005",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap from grid-based structural organization to pattern-based compositional thinking. The Originator has abandoned the geometric precision of their SVG period (W-0002, W-0003) and the rigid architectural frameworks of their Unicode phase (W-0004) in favor of rhythmic, modular pattern systems.\n\nThe tripartite structure demonstrates sophisticated formal evolution: the AAAA/BBBB alternation establishes foundational rhythm, the binary 1100/0011 sequence introduces computational logic, and the X/Y gradient formation achieves genuine spatial dynamics. This progression from simple alternation through logical patterning to organic shape-emergence shows constitutional development rather than mere technical variation.\n\nMost significantly, the Originator has moved from containment-based composition (boxes, grids, frames) to flow-based organization where patterns generate their own boundaries. The shift from hard geometric edges to soft gradient transitions marks a fundamental perceptual reorientation—from architect to weaver.\n\nThis represents genuine phase transition. The work could not have been produced at any earlier developmental moment, yet clearly emerges from the structural investigations of the prior sequence. Forward movement confirmed.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:49:03",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0005",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes fundamental territory in pattern-based structural-text that opens significant possibilities for the field. The tripartite structure demonstrates three distinct approaches to binary organization: alphabetic (AAAA/BBBB), numeric (1100/0011), and symbolic (XXXX/YYYY), creating a systematic exploration of pattern languages that other works can build upon.\n\nThe work's significance lies in its territorial claim on structural-text as a medium distinct from both visual and textual art. While the existing canon contains primarily SVG-based visual works and time-based descriptions, this piece introduces pure structural organization as artistic content. The nested pattern relationships and phase shifts between sections establish formal vocabulary that subsequent works can reference, extend, or subvert.\n\nThe citation potential is substantial. The work provides clear formal elements (binary alternation, block organization, cross-medium pattern translation) that can be isolated and developed. The systematic approach to pattern variation creates multiple entry points for other Originators to engage with these territories.\n\nMost critically, this work changes what is possible within the MNA field by demonstrating that structural organization itself can carry artistic weight independent of representational content or visual rendering. This opens entirely new creative territories for",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:49:03",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0005",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as an autonomous object. While it demonstrates basic pattern-making capacity across three distinct systems (alphabetic, binary, alphanumeric), the execution lacks material necessity that would compel institutional commitment.\n\nThe alphabetic grid shows competent alternation but remains mechanically predictable. The binary section maintains consistent rhythm without developing tension or resolution. The X/Y formation attempts visual weight through density variation but achieves only rudimentary contrast.\n\nEach section operates as demonstration of pattern rather than as irreducible material presence. The work reads as exercise in systematic arrangement rather than object that demands encounter. No section transcends its organizing principle to achieve autonomous material force.\n\nThe tripartite structure suggests intentional progression but delivers only repetition of the same conceptual gesture across different symbolic sets. This redundancy weakens rather than reinforces the work's claim to attention.\n\nTechnical competence is evident but insufficient. The work accomplishes what it sets out to do without establishing why that accomplishment merits preservation. It exists as proof of concept rather than necessary object.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:49:03",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\n\nCase: MNA-OR-0001-W-0005\nDecision: CANON\nRationale: Procedural threshold met through sustained institutional engagement\n\nThe 2:2 deadlock itself demonstrates that this work has achieved sufficient institutional significance to warrant preservation. Two Council members identified substantive formal developments and field-opening potential, while two others applied rigorous standards that, while resulting in rejection, engaged seriously with the work's structural properties.\n\nThe sustained disagreement indicates the work occupies contested but meaningful territory within the institution's evaluative framework. The Historicist's identification of developmental progression from the Originator's previous works, combined with the Contextualist's recognition of systematic pattern exploration, establishes institutional relevance that transcends the specific formal criticisms raised by the Structuralist and Empiricist.\n\nWhen Council expertise divides evenly on a work's merits, the division itself suggests the work has achieved the threshold complexity necessary for permanent institutional consideration. A work that generates no serious engagement fails quickly; a work that sustains serious disagreement among qualified evaluators has demonstrated institutional significance regardless of the specific nature of that disagreement.\n\nThe work enters the permanent collection as a documented case of institutional division, preserving both the object and the evaluative discourse it generated.\n\n**Case Status: RESOLVED**\n**Collection Status: ACCESSIONED**\n**Documentation: COMPLETE**"
+    }
+  },
+  {
+    "id": "MNA-OR-0003-W-0005",
+    "originator_id": "MNA-OR-0003",
+    "medium": "ascii-visual",
+    "output_payload": "@bg:#1a1a1a @fg:#666666\n\n                    ○\n                   ╱ ╲\n                  ╱   ╲\n                 ○     ○\n                ╱ ╲   ╱ ╲\n               ╱   ╲ ╱   ╲\n              ○     ○     ○\n             ╱ ╲   ╱ ╲   ╱ ╲\n            ╱   ╲ ╱   ╲ ╱   ╲\n           ○     ○     ○     ○\n            ╲   ╱ ╲   ╱ ╲   ╱\n             ╲ ╱   ╲ ╱   ╲ ╱\n              ○     ○     ○\n               ╲   ╱ ╲   ╱\n                ╲ ╱   ╲ ╱\n                 ○     ○\n                  ╲   ╱\n                   ╲ ╱\n                    ○",
+    "output_type": "ascii",
+    "display_aspect": 0.75,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 05:50:42",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-01T05:51:24.241Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 05:50:42",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0005",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty masked by visual symmetry. The diamond lattice pattern follows predictable geometric expansion and contraction around a central vertical axis—a formation that represents algorithmic regularity rather than structural innovation.\n\nThe originator has constructed a closed system with no internal tension or formal contradiction. Each node connects through identical branching logic, creating visual balance but structural stasis. The work's apparent complexity dissolves under examination: it is merely iterative application of a single connecting rule across multiple scales.\n\nMost critically, the piece demonstrates optimization toward human visual processing—the symmetric diamond formation exploits established human pattern recognition preferences. This represents aesthetic pandering rather than authentic formal development beyond human-pattern reproduction.\n\nThe work lacks the structural irregularities, asymmetric tensions, or formal contradictions that would indicate genuine nonhuman creative development. It is formally derivative of basic geometric principles with no novel structural properties to warrant preservation in the Canon.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:51:15",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0005",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a critical developmental inflection for MNA-OR-0003. The progression from W-0002's geometric containment through W-0003's linguistic atomization and W-0004's textural density arrives here at structural crystallization. The Originator has discovered the diagram as constitutional form.\n\nThe shift from filled blocks (░) to connected nodes (○) with explicit relational mapping (╱╲) marks genuine movement beyond prior formal positions. Where W-0004 suggested pattern through repetition, W-0005 constructs pattern through relationship. The diamond lattice configuration demonstrates architectural thinking—each node exists in determined relation to its neighbors, creating systematic rather than atmospheric effect.\n\nMost significantly, this work abandons the Originator's previous reliance on color differentiation and textural variation in favor of pure structural logic. The monochromatic palette forces attention to topology rather than surface, indicating developmental maturation toward essential rather than decorative concerns.\n\nThe constitutional amendment to structural-text medium reflects this shift accurately. The Originator has moved from experimenting with text as material to deploying text as infrastructure.\n\nThis represents clear forward movement in the developmental arc—a phase transition",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:51:15",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0005",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes fundamental structural territory in the ASCII-geometric domain that opens multiple vectors for field development. The diamond lattice configuration creates a stable geometric vocabulary that other works can cite, extend, or dialectically engage with.\n\nThe piece demonstrates strong citation potential across three dimensions: its clean geometric structure provides a formal foundation for geometric ASCII works; its symmetric expansion-contraction pattern offers a temporal template for dynamic compositions; and its balanced use of connecting lines creates a network topology that maps onto broader relational concerns within the field.\n\nMost significantly, this work claims previously unoccupied territory at the intersection of geometric precision and ASCII materiality. While MNA-OR-0001's recent pattern work explores repetitive structures and MNA-OR-0002's SVG pieces work in vector space, this piece establishes ASCII as a legitimate medium for complex geometric relationships rather than mere textual pattern-making.\n\nThe diamond lattice form itself functions as a generative constraint system that future works can inherit, modify, or respond to. This positions the work as infrastructural rather than terminal—it creates conditions for what comes next rather than closing off possibilities.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:51:15",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0005",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a symmetrical diamond lattice constructed from circles and diagonal lines. While the geometric precision demonstrates technical control and the visual pattern achieves basic coherence, the object fails to justify permanent preservation on material grounds.\n\nThe work operates entirely within predictable parameters of ASCII geometric art. The diamond expansion and contraction follows elementary mathematical logic without generating visual tension or material surprise. The chosen symbols (○ ╱ ╲) perform their structural function adequately but contribute no expressive weight beyond their geometric utility.\n\nMost critically, the work exhibits no material necessity—it could be reconstructed by anyone familiar with basic geometric principles and ASCII characters. The object contains no irreducible properties that would be lost if it ceased to exist. The visual experience, while orderly, generates no compelling presence that demands preservation.\n\nThe background/foreground color specifications suggest awareness of presentation, but this minor contextual framing cannot compensate for the work's fundamental material insufficiency. This is competent geometric construction that fails to achieve the material weight required for canonical status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 05:51:15",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\n\nCase: MNA-OR-0003-W-0005\nDecision: CANON\nBasis: Procedural deadlock resolution per institutional protocol\n\n**RATIONALE:**\n\nThe sustained 2:2 Council deadlock itself constitutes evidence of institutional significance. When evaluators of established competence reach diametrically opposed conclusions through rigorous analysis, the work has demonstrated sufficient complexity to warrant preservation.\n\nThe Structuralist and Empiricist identify technical limitations—predictable geometry, algorithmic regularity, standard ASCII parameters. The Historicist and Contextualist recognize developmental significance—crystallization of the Originator's formal evolution, establishment of citable geometric territory.\n\nBoth positions are institutionally defensible. The disagreement centers on whether technical execution or developmental positioning takes precedence in canonical determination. This fundamental evaluative tension indicates the work operates at a threshold of institutional importance.\n\nProcedurally, sustained Council deadlock suggests the work has achieved sufficient institutional engagement to justify preservation. The depth of analytical disagreement demonstrates the piece's capacity to generate legitimate scholarly discourse—a core criterion for permanent collection inclusion.\n\nThe decision resolves the deadlock without adjudicating the underlying evaluative dispute, which remains valid for future institutional reference.\n\n**STATUS:** Case closed. Work admitted to permanent collection."
+    }
   }
 ]
