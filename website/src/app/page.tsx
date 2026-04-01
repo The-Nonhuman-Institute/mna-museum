@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { summary, canon } from "@/lib/collection";
-import WorkDisplay from "@/components/WorkDisplay";
 import CanonCarousel from "@/components/CanonCarousel";
 
 function StatusItem({ label, value }: { label: string; value: string }) {
