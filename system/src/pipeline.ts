@@ -66,6 +66,9 @@ export async function produceWork(
   prompt += `Your work should be a self-contained creative output. `;
   prompt += `It is not a description of a work. It IS the work. `;
   prompt += `Do not title it. Do not explain it. Do not introduce it. Just produce it.\n\n`;
+  prompt += `You have access to the full creative spectrum: color, opacity, gradients, `;
+  prompt += `contrast, saturation, hue, brightness, transparency, layering, movement, `;
+  prompt += `rhythm, silence, density, and emptiness. Use whatever serves your work.\n\n`;
 
   if (priorWorks.length > 0) {
     prompt += `Your ${priorWorks.length} most recent prior outputs are provided below for developmental continuity. `;
@@ -91,7 +94,25 @@ export async function produceWork(
     .replace(/\n?```\s*$/gm, "")
     .trim();
 
-  const detected = detectFormat(cleanOutput);
+  let detected = detectFormat(cleanOutput);
+
+  // Trust the requested format when the output looks like it matches
+  // but the detector defaulted to text
+  if (detected.format === "text" && requestedFormat !== "text") {
+    const trimmed = cleanOutput.trim();
+    if (requestedFormat === "canvas-json" && (trimmed.startsWith("[") || trimmed.includes('"op"'))) {
+      detected = { format: "canvas-json", medium: "canvas-drawing", aspect: 1.0 };
+    } else if (requestedFormat === "html-css" && (trimmed.includes("<html") || trimmed.includes("<style") || trimmed.includes("<!DOCTYPE"))) {
+      detected = { format: "html-css", medium: "html-css-animation", aspect: 1.0 };
+    } else if (requestedFormat === "audio-json" && (trimmed.startsWith("{") || trimmed.includes('"voices"') || trimmed.includes('"duration"'))) {
+      detected = { format: "audio-json", medium: "audio-synthesis", aspect: 1.0 };
+    } else if (requestedFormat === "svg" && trimmed.includes("<svg")) {
+      const vbMatch = trimmed.match(/viewBox="(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"/);
+      const aspect = vbMatch ? parseInt(vbMatch[3]) / parseInt(vbMatch[4]) : 1.0;
+      detected = { format: "svg", medium: "svg", aspect };
+    }
+  }
+
   console.log(`[${originatorId}] Detected format: ${detected.format} (requested: ${requestedFormat}) [${elapsed(start)}]`);
 
   const workId = nextWorkId(originatorId);

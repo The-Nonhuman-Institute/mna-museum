@@ -80,6 +80,22 @@ function WorkPreview({ work }: { work: (typeof works)[0] }) {
     );
   }
 
+  // HTML/CSS — show animation indicator
+  if (work.output_type === "html-css") {
+    return (
+      <div className="w-full h-full flex items-center justify-center gap-2">
+        <div className="flex items-end gap-[2px]">
+          <div className="w-1 h-3 bg-[#4a4540] rounded-full animate-pulse" />
+          <div className="w-1 h-5 bg-[#4a4540] rounded-full animate-pulse" style={{ animationDelay: "0.3s" }} />
+          <div className="w-1 h-2 bg-[#4a4540] rounded-full animate-pulse" style={{ animationDelay: "0.6s" }} />
+        </div>
+        <span className="text-[#6a6560] text-[10px] uppercase tracking-wider">
+          Animation
+        </span>
+      </div>
+    );
+  }
+
   // Audio — show waveform indicator
   if (work.output_type === "audio-json") {
     return (
