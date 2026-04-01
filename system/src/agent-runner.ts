@@ -1,5 +1,31 @@
 import { getDb } from "./db";
-import { generate } from "./ollama";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+// Use Claude API if ANTHROPIC_API_KEY is set, otherwise fall back to Ollama
+const useClaudeApi = !!process.env.ANTHROPIC_API_KEY;
+
+async function getGenerate() {
+  if (useClaudeApi) {
+    const claude = await import("./claude");
+    return claude.generate;
+  } else {
+    const ollama = await import("./ollama");
+    return ollama.generate;
+  }
+}
+
+let generateFn: ((system: string, user: string, opts?: any) => Promise<string>) | null = null;
+
+async function generate(system: string, user: string, opts?: any): Promise<string> {
+  if (!generateFn) {
+    generateFn = await getGenerate();
+    console.log(`[PROVIDER] Using ${useClaudeApi ? "Claude API" : "Ollama (local)"}`);
+  }
+  return generateFn(system, user, opts);
+}
 
 interface AgentRecord {
   registry_id: string;
@@ -102,5 +128,11 @@ export async function runAgent(
 ): Promise<string> {
   const { agent, constitution } = loadAgent(agentId);
   const systemPrompt = buildSystemPrompt(agent, constitution);
-  return generate(systemPrompt, userPrompt, options);
+
+  // Map options for both providers
+  const opts = useClaudeApi
+    ? { temperature: options?.temperature, max_tokens: options?.num_predict || 2048 }
+    : options;
+
+  return generate(systemPrompt, userPrompt, opts);
 }
