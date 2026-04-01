@@ -220,18 +220,19 @@ export function detectFormat(output: string): {
     return { format: "html-css", medium: "html-css-animation", aspect: 1.0 };
   }
 
-  // JSON detection (audio or canvas)
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+  // JSON detection (audio or canvas) — try to find JSON anywhere in the output
+  const jsonMatch = trimmed.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+  if (jsonMatch) {
     try {
-      const parsed = JSON.parse(trimmed);
+      const parsed = JSON.parse(jsonMatch[1]);
       if (parsed.voices || parsed.duration) {
         return { format: "audio-json", medium: "audio-synthesis", aspect: 1.0 };
       }
-      if (Array.isArray(parsed) && parsed[0]?.op) {
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.op) {
         return { format: "canvas-json", medium: "canvas-drawing", aspect: 1.0 };
       }
     } catch {
-      // Not valid JSON — fall through to text
+      // Not valid JSON — fall through
     }
   }
 

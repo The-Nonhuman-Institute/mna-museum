@@ -34,8 +34,21 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
     try {
       ops = JSON.parse(json);
     } catch {
-      setError(true);
-      return;
+      // Try to salvage truncated JSON by closing the array
+      try {
+        // Find the last complete object (ends with })
+        const lastBrace = json.lastIndexOf("}");
+        if (lastBrace > 0) {
+          const salvaged = json.substring(0, lastBrace + 1) + "]";
+          ops = JSON.parse(salvaged);
+        } else {
+          setError(true);
+          return;
+        }
+      } catch {
+        setError(true);
+        return;
+      }
     }
 
     const canvas = canvasRef.current;

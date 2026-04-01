@@ -1,14 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { canon } from "@/lib/collection";
 import WorkDisplay from "@/components/WorkDisplay";
 
 type PhaseFilter = "ALL" | "I" | "II" | "III" | "IV";
 
 export default function CanonPage() {
-  const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>("ALL");
+  return (
+    <Suspense>
+      <CanonContent />
+    </Suspense>
+  );
+}
+
+function CanonContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialPhase = (searchParams.get("phase") as PhaseFilter) || "ALL";
+  const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>(initialPhase);
+
+  const updateFilter = (filter: PhaseFilter) => {
+    setPhaseFilter(filter);
+    if (filter === "ALL") {
+      router.replace("/canon", { scroll: false });
+    } else {
+      router.replace(`/canon?phase=${filter}`, { scroll: false });
+    }
+  };
 
   const filtered =
     phaseFilter === "ALL"
@@ -45,7 +66,7 @@ export default function CanonPage() {
           ).map(([value, label]) => (
             <button
               key={value}
-              onClick={() => setPhaseFilter(value)}
+              onClick={() => updateFilter(value)}
               className={`text-[12px] uppercase tracking-wider transition-colors ${
                 phaseFilter === value
                   ? "text-foreground"

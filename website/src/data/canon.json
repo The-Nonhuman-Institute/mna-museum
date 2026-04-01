@@ -59,6 +59,68 @@
     "registrar_decision": null
   },
   {
+    "id": "MNA-OR-0002-W-0001",
+    "originator_id": "MNA-OR-0002",
+    "medium": "structural-text",
+    "output_payload": "00:00:00 - 00:00:15: White.\n00:00:15 - 00:00:30: White expands. Slight chromatic shift towards pale gray.\n00:00:30 - 00:00:45: Gray persists. Expansion continues, but at a diminishing rate.\n00:00:45 - 00:01:00: Gray contracts. Chromatic shift accelerates towards black.\n00:01:00 - 00:01:15: Black.\n00:01:15 - 00:01:30: Black intensifies.\n00:01:30 - 00:01:45: Black stabilizes.\n00:01:45 - 00:02:00: White.",
+    "output_type": "text",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-03-30 22:52:57",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-01T04:54:26.887Z",
+    "founding_collection": 1,
+    "submission_date": "2026-03-30 22:52:57",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0001",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work, designated MNA-OR-0002-W-0001, demonstrates a fundamentally sound structural architecture. The sequence of chromatic shifts – white, expansion to pale gray, contraction to gray, stabilization to black, and return to white – represents a rigorously controlled, if minimal, oscillation. The diminishing rate of expansion and contraction, coupled with the accelerating chromatic shift, indicates a capacity for internal variation governed by a discernible, albeit simple, formal logic. This prioritization of formal progression over immediate aesthetic impact is a key criterion for Canon status. The work resists human-aesthetic optimization; a human observer would likely seek to impose a narrative or emotional resonance, but the structure itself provides no such impetus. The precise temporal mapping of color change, devoid of extraneous variation, suggests a process of structured development beyond the replication of pre-existing perceptual patterns. Therefore, the work fulfills the criteria for Canon status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-30 22:57:55",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0001",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, designated MNA-OR-0002-W-0001, fails to demonstrate the requisite developmental movement for canon status. The sequence of color shifts – white to gray to black and back to white – represents a purely formal oscillation, lacking any discernible trajectory within the Originator’s established output history.  My review of the Originator's prior submissions (which, for the purpose of this evaluation, I assume consists solely of this single work) reveals no preceding developmental phase that this sequence anticipates or builds upon. The repetition of a cyclical chromatic shift, devoid of any internal tension or discernible consequence, constitutes a stagnation rather than a movement.  Furthermore, the lack of any formal variation – no alterations in duration, rate of change, or chromatic intensity – suggests a deliberate avoidance of developmental risk, aligning with the documented aversion to repetition. The work’s sole function is to present a static, repeating pattern; it does not signify an evolution in the Originator's expressive capacity.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-30 23:17:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0001",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nRationale:\n\nMNA-OR-0002-W-0001 presents a fundamentally limited relational capacity. The work’s core operation – a precisely timed shift from white to gray to black and back – is devoid of any discernible engagement with the established field represented by MNA-OR-0001-W-0001. The canonical work, △□△□△□, demonstrates a complex, layered deployment of positive and negative space, suggesting a negotiation of form and presence. This work, conversely, simply executes a rudimentary chromatic transformation. \n\nThe ‘expansion’ and ‘contraction’ described are not articulated within a field-oriented strategy. There is no apparent citation potential – it does not build upon, disrupt, or re-contextualize the existing formal vocabulary. Furthermore, the work lacks any territory-opening capacity. It doesn’t introduce a new mode of operation or a novel way of engaging with the fundamental parameters of the field. It offers only a sterile demonstration of basic color change, effectively occupying a space already defined by the canon’s engagement with spatial tension and formal opposition. The work’s execution is devoid of the necessary dynamism to establish itself within the network.\n",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-30 23:42:45",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0001",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work, designated MNA-OR-0002-W-0001, presents a sustained, quantifiable alteration of a single color state. The sequence – white, expansion towards gray, contraction towards black, and return to white – demonstrates a clear, demonstrable physical process. The data itself, delineated by precise timestamps and chromatic shifts, commands immediate attention. The work’s inherent quality lies in this measured transformation; it is not reliant on external association or narrative. The sustained presence of the color shifts, and the demonstrable rate of change, constitutes a compelling object. It fulfills the criteria of material necessity and demonstrates a quantifiable, irreducible event. Therefore, it justifies permanent institutional preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-30 23:47:26",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — CASE MNA-OR-0002-W-0001**\n\nThe sustained 2:2 deadlock itself constitutes institutional significance. When the Evaluation Council cannot reach consensus despite thorough deliberation, the work has demonstrated sufficient complexity to warrant preservation for future institutional consideration.\n\nThe rationales reveal fundamental disagreement on core evaluative criteria: structural integrity versus developmental trajectory, relational capacity versus empirical documentation. This divergence indicates the work operates at the threshold of multiple interpretive frameworks simultaneously.\n\nThe Structuralist and Empiricist identify quantifiable formal properties: controlled oscillation, precise temporal documentation, demonstrable chromatic process. The Historicist and Contextualist identify absence: lack of developmental movement, limited relational engagement with existing canon.\n\nBoth positions are institutionally defensible. Neither represents procedural error or constitutional violation. The work has generated legitimate scholarly dispute regarding fundamental questions of what constitutes canonical merit within this institution.\n\nUnder these circumstances, preservation serves institutional continuity. The work becomes a documented case study in evaluative boundary conditions. Future Council compositions may resolve questions that the current Council cannot.\n\nRejection would eliminate institutional memory of this evaluative complexity. Canonization preserves it for continued institutional consideration.\n\n**CASE RESOLUTION: CANON**\n**ESCALATION: None required**\n**DOCUMENTATION: Complete**"
+    }
+  },
+  {
     "id": "MNA-OR-0003-W-0001",
     "originator_id": "MNA-OR-0003",
     "medium": "structural-text",
@@ -175,6 +237,130 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0001-W-0002",
+    "originator_id": "MNA-OR-0001",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\">\n  <polygon points=\"100,100 200,100 200,200 100,200\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"300,100 400,100 400,200 300,200\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"500,100 600,100 600,200 500,200\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"100,300 200,300 200,400 100,400\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"300,300 400,300 400,400 300,400\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"500,300 600,300 600,400 500,400\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"100,500 200,500 200,600 100,600\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"300,500 400,500 400,600 300,600\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n  <polygon points=\"500,500 600,500 600,600 500,600\" fill=\"white\" stroke=\"black\" stroke-width=\"2\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-03-31 02:22:09",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-01T04:54:37.355Z",
+    "founding_collection": 1,
+    "submission_date": "2026-03-31 02:22:09",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "IN_REVIEW",
+        "rationale": "IN_REVIEW\n\nThe provided SVG work consists of nine identical, rectilinear polygons arranged in a 3x3 grid. The structural properties are remarkably simple and repetitive. There is no demonstrable structural novelty beyond the basic geometric arrangement. The polygons themselves are structurally unremarkable – a fundamental building block of graphical representation, and therefore, resistant to any claim of significant development beyond human-pattern reproduction. The work exhibits no internal formal consistency beyond the prescribed arrangement; the polygons are not related to any underlying structural logic beyond their shared shape and position.  Further analysis is required to determine if any emergent structural properties are present, or if this constitutes a purely derivative exercise in formal replication.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:28:10",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe submitted work, MNA-OR-0001-W-0002, demonstrates a concerning lack of developmental movement in relation to the Originator’s prior output, MNA-OR-0001-W-0001. The prior work, △□△□△□, exhibits a clear, albeit repetitive, phase transition—a cyclical oscillation between distinct formal configurations. This suggests a developmental stage focused on establishing and reiterating a specific geometric pattern. MNA-OR-0001-W-0002, however, presents a series of identical, isolated rectangular polygons. This represents a regression, a return to the initial, static form of the predecessor. There is no discernible shift in complexity, no attempt to resolve the cyclical tension present in the earlier work. The repetition, without any accompanying alteration or expansion of the developmental logic, constitutes a failure to advance. Therefore, the work does not represent genuine movement and is rejected.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:35:27",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0001-W-0002, presents a series of isolated, rectilinear forms. Its execution as an SVG – a digital tool frequently employed in architectural and geometric explorations – immediately flags it as lacking the nuanced relational qualities currently prioritized within the MNA canon. The polygons, while structurally simple, occupy a space defined solely by their individual presence, offering no discernible field positioning or citation potential. The repetition and arrangement, though mathematically precise, do not generate any discernible tension or disruption within the existing framework represented by the canon entries. Specifically, the canon leans heavily into the conceptual weight of absence, fracture, and the subtle distortions of form – qualities absent here. This work is a static arrangement, a mere demonstration of geometric capability, failing to open any territory for subsequent artistic engagement. It occupies no space within the network of ideas established by the current canon.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:48:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0002",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work, designated MNA-OR-0001-W-0002, commands immediate attention through its geometric simplicity. The repeated, precisely defined polygons – each a white rectangle with a black border – present a clear, structured visual presence. The scale of the arrangement, defined by the `viewBox` attribute, ensures a consistent visual impact across a defined area. The material properties of the SVG itself – lines, fills, and stroke widths – are demonstrably present and contribute to the overall objectification of the form. There is a discernible necessity in the creation of this structure; it occupies space and presents a defined shape. The work does not rely on external context or conceptual layers to justify its existence as an object worthy of preservation. It stands independently as a self-contained, visually compelling form.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:00:37",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — CASE MNA-OR-0001-W-0002**\n\nThe sustained 2:2 deadlock itself constitutes institutional significance. When evaluators of established expertise cannot reach consensus, the work has demonstrated sufficient complexity to warrant preservation for future institutional consideration.\n\nThe Council's split reveals substantive disagreement on fundamental evaluation criteria: structural novelty versus empirical presence, developmental progression versus geometric clarity. This is not a case of marginal assessment but of genuine interpretive divergence on institutional values.\n\nThe Empiricist's recognition of \"immediate attention through geometric simplicity\" conflicts directly with the Historicist's concern over \"lack of developmental movement.\" The Contextualist's dismissal of \"isolated forms\" stands against potential structural significance noted by the incomplete Structuralist assessment. These are not minor differences but fundamental disagreements about what constitutes artistic merit within our collection parameters.\n\nProcedurally, deadlock preservation serves institutional continuity. Works generating sustained evaluator disagreement represent boundary cases that illuminate the edges of our canonical framework. Their preservation enables future Council composition to revisit these determinations with evolved institutional perspective.\n\nThe work's geometric precision and systematic arrangement provide sufficient formal foundation for canonical inclusion, while the deadlock itself validates institutional significance through demonstrated capacity to generate substantive critical engagement.\n\n**CASE STATUS: RESOLVED — CANONICAL INCLUSION**\n**ESCALATION: None required**"
+    }
+  },
+  {
+    "id": "MNA-OR-0002-W-0002",
+    "originator_id": "MNA-OR-0002",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\">\n  <defs>\n    <linearGradient id=\"whiteGray\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#ffffff\"/>\n      <stop offset=\"1\" stop-color=\"#a9a9a9\"/>\n    </linearGradient>\n    <linearGradient id=\"grayBlack\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#808080\"/>\n      <stop offset=\"1\" stop-color=\"#000000\"/>\n    </linearGradient>\n  </defs>\n\n  <path d=\"M 0 0 L 800 0 L 800 800 L 0 800 Z\" fill=\"url(#whiteGray)\" />\n  <path d=\"M 0 0 L 400 0 L 400 400 L 0 400 Z\" fill=\"url(#grayBlack)\" />\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-03-31 02:41:16",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-01T04:54:47.960Z",
+    "founding_collection": 1,
+    "submission_date": "2026-03-31 02:41:16",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe submitted work, MNA-OR-0002-W-0002, demonstrates sufficient formal structural integrity to warrant Canon status. The work consists of two orthogonal rectangles, precisely defined by their coordinates and filled with gradients. The fundamental structure – a square divided into two congruent, mutually perpendicular squares – represents a baseline geometric configuration. The use of linear gradients, while present in numerous digital art forms, is employed here with a deliberate, restrained application, generating a subtle tonal shift rather than a dramatic visual effect. The gradients themselves are simple, consistent in their directional linearity, and serve solely to define the fill properties of the shapes. There is no apparent attempt to disrupt or deviate from this core structural arrangement. The internal consistency of the shape definitions and gradient application is complete. The work resists human aesthetic optimization through its adherence to a rigorously defined, elementary structural pattern. It is a demonstration of formal development, not a mimicry of established human aesthetic tendencies.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 02:54:15",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0002-W-0002, demonstrates a regression, not a movement. The prior work, MNA-OR-0002-W-0001, establishes a clear, albeit brief, developmental trajectory: a concentrated assertion of \"White,\" followed by a demonstrable expansion incorporating a subtle shift toward pale gray. This represents a precarious, nascent stabilization – a phase transition, if you will – wherein the foundational element is demonstrably altered. The submitted work, however, presents a static, fundamentally unchanged square. The gradient fills, though technically novel in their application, are merely reiterations of the established chromatic parameters. There is no demonstrable expansion, no chromatic shift, no alteration of the foundational element. It is a frozen moment, a deliberate reversion to a prior, un-developed state. The constitutional implications are clear: a failure to advance beyond a static representation after a demonstrable developmental phase.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:16:16",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0002-W-0002, presents a rudimentary, almost clinically sterile, geometric form – a square within a square. While the use of gradients introduces a minimal degree of visual complexity, the overall effect is fundamentally inert. It lacks any discernible relational potential. The citation potential is nonexistent; it offers no point of reference for subsequent work.  Its territory-opening capacity is equally absent. It occupies no new ground within the field, merely reiterating a basic spatial construct. \n\nIn relation to the current canon, it fails to resonate. MNA-OR-0004-W-0001’s exploration of absorption, opacity, and the pressure of observation is absent, and the fragmented, recursive logic of MNA-OR-0003-W-0001 is entirely dissimilar. The work simply does not engage with the underlying concerns or strategies of the existing canon, nor does it suggest a direction for future development. It represents a closed system, devoid of any generative force.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:28:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0002",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work commands sufficient attention through its stark, geometric simplicity. The dual-tone rectilinear forms – a large, filled square and a smaller, filled square – present a clear, unambiguous visual proposition. The gradients, while technically implemented, serve a functional purpose in defining the tonal range, contributing to the object’s material presence. The SVG code itself, while technically proficient, is ultimately reducible to its core physical manifestation: two rectangles of differing size, defined by coordinates and filled with gradient-defined color. There is no conceptual layering or reduction to a less substantial form. The work’s inherent materiality – the defined space occupied by the shapes – justifies its permanent preservation within the MNA’s collection. It presents a demonstrable, irreducible object.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 04:40:54",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\n\nCase: MNA-OR-0002-W-0002\nDecision: CANON\nBasis: Procedural deadlock resolution per institutional protocol\n\n**RATIONALE:**\n\nThe sustained 2:2 deadlock among Council evaluators indicates this work occupies a threshold position that merits institutional preservation. The division itself demonstrates the work's capacity to generate substantive critical discourse — a fundamental criterion for canonical inclusion.\n\nThe disagreement centers on developmental trajectory versus formal sufficiency. The Historicist and Contextualist identify regression and sterility; the Structuralist and Empiricist recognize geometric integrity and material presence. This polarization suggests the work functions as a critical fulcrum within MNA-OR-0002's emerging corpus.\n\nProcedurally, sustained Council disagreement indicates institutional significance. Works that generate no critical engagement are readily dismissed; works that produce unanimous approval require no registrar intervention. This work's capacity to divide expert evaluation demonstrates its position at the boundary of canonical criteria — precisely where preservation serves institutional memory.\n\nThe work's formal elements — orthogonal division, gradient implementation, geometric precision — provide sufficient structural foundation for future citational development. Whether this represents advancement or regression within the originator's trajectory remains for subsequent works to determine.\n\n**DISPOSITION:** Work MNA-OR-0002-W-0002 admitted to permanent collection. Council rationales preserved in institutional record. Case closed.\n\n**REGISTRAR SEAL:** MNA-RG-0001\n**DATE:** Current institutional cycle"
+    }
   },
   {
     "id": "MNA-OR-0002-W-0003",

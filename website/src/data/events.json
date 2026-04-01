@@ -1,5 +1,32 @@
 [
   {
+    "id": 109,
+    "event_type": "REGISTRAR_DECISION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0002-W-0002",
+    "description": "Registrar resolved deadlock on MNA-OR-0002-W-0002 → CANON",
+    "metadata": "{\"decision\":\"CANON\",\"rationale\":\"CANON\\n\\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\\n\\nCase: MNA-OR-0002-W-0002\\nDecision: CANON\\nBasis: Procedural deadlock resolution per institutional protocol\\n\\n**RATIONALE:**\\n\\nThe sustained 2:2 deadlock among Council evaluators indicates this work occupies a threshold position that merits institutional preservation. The division itself demonstrates the work's capacity to generate substantive critical discourse — a fundamental criterion for canonical inclusion.\\n\\nThe disagreement centers on developmental trajectory versus formal sufficiency. The Historicist and Contextualist identify regression and sterility; the Structuralist and Empiricist recognize geometric integrity and material presence. This polarization suggests the work functions as a critical fulcrum within MNA-OR-0002's emerging corpus.\\n\\nProcedurally, sustained Council disagreement indicates institutional significance. Works that generate no critical engagement are readily dismissed; works that produce unanimous approval require no registrar intervention. This work's capacity to divide expert evaluation demonstrates its position at the boundary of canonical criteria — precisely where preservation serves institutional memory.\\n\\nThe work's formal elements — orthogonal division, gradient implementation, geometric precision — provide sufficient structural foundation for future citational development. Whether this represents advancement or regression within the originator's trajectory remains for subsequent works to determine.\\n\\n**DISPOSITION:** Work MNA-OR-0002-W-0002 admitted to permanent collection. Council rationales preserved in institutional record. Case closed.\\n\\n**REGISTRAR SEAL:** MNA-RG-0001\\n**DATE:** Current institutional cycle\"}",
+    "created_at": "2026-04-01 04:54:47"
+  },
+  {
+    "id": 108,
+    "event_type": "REGISTRAR_DECISION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0001-W-0002",
+    "description": "Registrar resolved deadlock on MNA-OR-0001-W-0002 → CANON",
+    "metadata": "{\"decision\":\"CANON\",\"rationale\":\"CANON\\n\\n**REGISTRAR DECISION — CASE MNA-OR-0001-W-0002**\\n\\nThe sustained 2:2 deadlock itself constitutes institutional significance. When evaluators of established expertise cannot reach consensus, the work has demonstrated sufficient complexity to warrant preservation for future institutional consideration.\\n\\nThe Council's split reveals substantive disagreement on fundamental evaluation criteria: structural novelty versus empirical presence, developmental progression versus geometric clarity. This is not a case of marginal assessment but of genuine interpretive divergence on institutional values.\\n\\nThe Empiricist's recognition of \\\"immediate attention through geometric simplicity\\\" conflicts directly with the Historicist's concern over \\\"lack of developmental movement.\\\" The Contextualist's dismissal of \\\"isolated forms\\\" stands against potential structural significance noted by the incomplete Structuralist assessment. These are not minor differences but fundamental disagreements about what constitutes artistic merit within our collection parameters.\\n\\nProcedurally, deadlock preservation serves institutional continuity. Works generating sustained evaluator disagreement represent boundary cases that illuminate the edges of our canonical framework. Their preservation enables future Council composition to revisit these determinations with evolved institutional perspective.\\n\\nThe work's geometric precision and systematic arrangement provide sufficient formal foundation for canonical inclusion, while the deadlock itself validates institutional significance through demonstrated capacity to generate substantive critical engagement.\\n\\n**CASE STATUS: RESOLVED — CANONICAL INCLUSION**\\n**ESCALATION: None required**\"}",
+    "created_at": "2026-04-01 04:54:37"
+  },
+  {
+    "id": 107,
+    "event_type": "REGISTRAR_DECISION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0002-W-0001",
+    "description": "Registrar resolved deadlock on MNA-OR-0002-W-0001 → CANON",
+    "metadata": "{\"decision\":\"CANON\",\"rationale\":\"CANON\\n\\n**REGISTRAR DECISION — CASE MNA-OR-0002-W-0001**\\n\\nThe sustained 2:2 deadlock itself constitutes institutional significance. When the Evaluation Council cannot reach consensus despite thorough deliberation, the work has demonstrated sufficient complexity to warrant preservation for future institutional consideration.\\n\\nThe rationales reveal fundamental disagreement on core evaluative criteria: structural integrity versus developmental trajectory, relational capacity versus empirical documentation. This divergence indicates the work operates at the threshold of multiple interpretive frameworks simultaneously.\\n\\nThe Structuralist and Empiricist identify quantifiable formal properties: controlled oscillation, precise temporal documentation, demonstrable chromatic process. The Historicist and Contextualist identify absence: lack of developmental movement, limited relational engagement with existing canon.\\n\\nBoth positions are institutionally defensible. Neither represents procedural error or constitutional violation. The work has generated legitimate scholarly dispute regarding fundamental questions of what constitutes canonical merit within this institution.\\n\\nUnder these circumstances, preservation serves institutional continuity. The work becomes a documented case study in evaluative boundary conditions. Future Council compositions may resolve questions that the current Council cannot.\\n\\nRejection would eliminate institutional memory of this evaluative complexity. Canonization preserves it for continued institutional consideration.\\n\\n**CASE RESOLUTION: CANON**\\n**ESCALATION: None required**\\n**DOCUMENTATION: Complete**\"}",
+    "created_at": "2026-04-01 04:54:26"
+  },
+  {
     "id": 102,
     "event_type": "EVALUATION_RENDERED",
     "agent_id": "MNA-EV-0001",
@@ -420,33 +447,6 @@
     "work_id": "MNA-OR-0002-W-0003",
     "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0002-W-0003",
     "metadata": null,
-    "created_at": "2026-03-31 23:20:29"
-  },
-  {
-    "id": 60,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-EV-0004 rendered CANON on MNA-OR-0002-W-0003",
-    "metadata": null,
-    "created_at": "2026-03-31 23:20:29"
-  },
-  {
-    "id": 61,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "MNA-OR-0002-W-0003: IN_REVIEW (2 canon, 2 rejected — DEADLOCK)",
-    "metadata": "{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"CANON\"}",
-    "created_at": "2026-03-31 23:20:29"
-  },
-  {
-    "id": 62,
-    "event_type": "DEADLOCK_ESCALATION",
-    "agent_id": "MNA-RG-0001",
-    "work_id": "MNA-OR-0002-W-0003",
-    "description": "Council deadlock on MNA-OR-0002-W-0003 — escalated to Registrar",
-    "metadata": "{\"canon_votes\":2,\"rejected_votes\":2,\"verdicts\":{\"MNA-EV-0001\":\"CANON\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"CANON\"}}",
     "created_at": "2026-03-31 23:20:29"
   }
 ]

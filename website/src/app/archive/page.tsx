@@ -1,20 +1,89 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { works } from "@/lib/collection";
 
 type StatusFilter = "ALL" | "CANON" | "REJECTED" | "IN_REVIEW";
 
+function WorkPreview({ work }: { work: (typeof works)[0] }) {
+  if (work.output_type === "svg") {
+    const svgStart = work.output_payload.indexOf("<svg");
+    const svgEnd = work.output_payload.lastIndexOf("</svg>") + 6;
+    if (svgStart >= 0 && svgEnd > svgStart) {
+      return (
+        <div
+          className="w-full h-full flex items-center justify-center p-2 [&>svg]:max-w-full [&>svg]:max-h-full"
+          dangerouslySetInnerHTML={{
+            __html: work.output_payload.substring(svgStart, svgEnd),
+          }}
+        />
+      );
+    }
+  }
+
+  // For canvas-json, show a "visual work" indicator instead of raw JSON
+  if (work.output_type === "canvas-json") {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <span className="text-[#6a6560] text-[10px] uppercase tracking-wider">
+          Canvas Drawing
+        </span>
+      </div>
+    );
+  }
+
+  if (work.output_type === "audio-json") {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <span className="text-[#6a6560] text-[10px] uppercase tracking-wider">
+          Audio Composition
+        </span>
+      </div>
+    );
+  }
+
+  // Text / ASCII preview
+  return (
+    <pre className="text-[#c8c4be] text-[10px] md:text-xs font-mono whitespace-pre-wrap break-words line-clamp-4 p-3">
+      {work.output_payload.substring(0, 200)}
+    </pre>
+  );
+}
+
 export default function ArchivePage() {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  return (
+    <Suspense>
+      <ArchiveContent />
+    </Suspense>
+  );
+}
+
+function ArchiveContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialFilter = (searchParams.get("status") as StatusFilter) || "ALL";
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialFilter);
+
+  // Update URL when filter changes
+  const updateFilter = (filter: StatusFilter) => {
+    setStatusFilter(filter);
+    if (filter === "ALL") {
+      router.replace("/archive", { scroll: false });
+    } else {
+      router.replace(`/archive?status=${filter}`, { scroll: false });
+    }
+  };
 
   const filtered =
     statusFilter === "ALL"
       ? works
       : works.filter((w) => {
           if (statusFilter === "IN_REVIEW")
-            return w.canon_status === "IN_REVIEW" || w.canon_status === "SUBMITTED";
+            return (
+              w.canon_status === "IN_REVIEW" || w.canon_status === "SUBMITTED"
+            );
           return w.canon_status === statusFilter;
         });
 
@@ -46,7 +115,7 @@ export default function ArchivePage() {
           </p>
         </header>
 
-        {/* Filter bar — functional */}
+        {/* Filter bar — URL-persisted */}
         <div className="flex flex-wrap gap-4 md:gap-6 mb-12 border-b border-border pb-4">
           {(
             [
@@ -58,7 +127,7 @@ export default function ArchivePage() {
           ).map(([value, label]) => (
             <button
               key={value}
-              onClick={() => setStatusFilter(value)}
+              onClick={() => updateFilter(value)}
               className={`text-[12px] uppercase tracking-wider transition-colors ${
                 statusFilter === value
                   ? "text-foreground"
@@ -91,7 +160,11 @@ export default function ArchivePage() {
                       Submitted{" "}
                       {new Date(work.submission_date).toLocaleDateString()}
                       {work.canon_date &&
+                        work.canon_status === "CANON" &&
                         ` — Canonized ${new Date(work.canon_date).toLocaleDateString()}`}
+                      {work.canon_date &&
+                        work.canon_status === "REJECTED" &&
+                        ` — Rejected ${new Date(work.canon_date).toLocaleDateString()}`}
                     </p>
                   </div>
                   <span className="text-[10px] font-mono uppercase tracking-wider border border-border px-2 py-1 shrink-0">
@@ -103,21 +176,7 @@ export default function ArchivePage() {
 
                 {/* Work preview */}
                 <div className="mt-3 bg-[#0e0c0a] rounded-lg max-w-md overflow-hidden h-24">
-                  {work.output_type === "svg" ? (
-                    <div
-                      className="w-full h-full flex items-center justify-center p-2 [&>svg]:max-w-full [&>svg]:max-h-full"
-                      dangerouslySetInnerHTML={{
-                        __html: work.output_payload.substring(
-                          work.output_payload.indexOf("<svg"),
-                          work.output_payload.lastIndexOf("</svg>") + 6
-                        ),
-                      }}
-                    />
-                  ) : (
-                    <pre className="text-[#c8c4be] text-[10px] md:text-xs font-mono whitespace-pre-wrap break-words line-clamp-4 p-3">
-                      {work.output_payload.substring(0, 200)}
-                    </pre>
-                  )}
+                  <WorkPreview work={work} />
                 </div>
               </Link>
             ))}
