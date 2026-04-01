@@ -1196,5 +1196,241 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0001-W-0007",
+    "originator_id": "MNA-OR-0001",
+    "medium": "ascii-visual",
+    "output_payload": "@bg:#000000 @fg:#ffffff\n\n╔═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╗\n║▓│▒│░│ │░│▒│▓│█│▓│▒│░│ │░│▒│▓│█│▓│▒│░│ │░│▒│▓│║\n╟─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─╢\n║▒│░│ │░│▒│▓│█│▓│▒│░│ │░│▒│▓│█│▓│▒│░│ │░│▒│▓│█│║\n╟─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─╢\n║░│ │░│▒│▓│█│▓│▒│░│ │░│▒│▓│█│▓│▒│░│ │░│▒│▓│█│▓│║\n╟─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─┼─╢\n║ │░│▒│▓│█│▓│▒│░",
+    "output_type": "ascii",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 06:31:05",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-01T06:31:53.268Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 06:31:05",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0007",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a gradient pattern using ASCII density markers (space, ░, ▒, ▓, █) arranged in a grid structure with box-drawing characters. While the gradient sequencing shows basic formal consistency, the structure is fundamentally derivative.\n\nThe pattern follows a simple linear progression: each row shifts the gradient sequence by one position, creating a diagonal wave effect. This is a well-established formal pattern in ASCII art, offering no structural novelty. The use of box-drawing characters to create a grid framework is similarly conventional.\n\nMost critically, the work appears truncated mid-pattern, suggesting either incomplete generation or arbitrary termination. This undermines even the limited formal integrity the pattern might have claimed. A truly rigorous formal structure would dictate its own completion conditions rather than ending mid-sequence.\n\nThe work demonstrates pattern reproduction rather than structural innovation. It applies known ASCII gradient techniques without developing new formal relationships or challenging the medium's structural possibilities. The internal logic is borrowed, not discovered.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:31:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0007",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work represents a retreat into decorative pattern-making that abandons the structural investigations begun in W-0004 and W-0005. While W-0006 showed a promising leap into programmatic construction through JSON operations, W-0007 collapses back into mere visual arrangement.\n\nThe gradient patterns (▓│▒│░│ │░│▒│▓│█) are technically competent but developmentally regressive. They demonstrate no evolution from the grid explorations of W-0004 or the systematic alternations of W-0005. The truncated final line suggests incompletion rather than intentional formal gesture.\n\nMost critically, this work abandons the constitutional amendment toward programmatic generation evident in W-0006. That prior work's shift from direct ASCII representation to structural notation marked genuine developmental movement. W-0007's return to pure ASCII display — however elaborate its Unicode box-drawing — represents stagnation disguised as complexity.\n\nThe Originator has achieved visual density without advancing their formal investigation. This is precisely the kind of technical accomplishment without developmental movement that warrants rejection.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:31:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0007",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates competent pattern construction but occupies thoroughly claimed territory. The gradient density progression (▓│▒│░│ │░│▒│▓│█) is a fundamental ASCII visual trope, executed here without transformation or extension. \n\nIn relation to the existing canon, this offers no new pathways. MNA-OR-0001-W-0005 already established pattern-based ASCII composition with its AAAABBBB structure. MNA-OR-0003-W-0005 demonstrates more sophisticated structural relationships through its branching forms. This gradient grid neither cites these precedents meaningfully nor opens adjacent territory.\n\nThe work's primary failure is its self-containment. The gradient pattern, while visually resolved, references only itself and standard ASCII conventions. It makes nothing newly possible for future works. A canon piece must create openings—formal, conceptual, or methodological—that others can build upon. This closes rather than opens.\n\nThe truncation at line 7 (║ │░│▒│▓│█│▓│▒│░) might suggest intentional incompletion, but even this gesture toward fragmentation",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:31:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0007",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a density gradient pattern using ASCII characters, but as an autonomous object it lacks sufficient material necessity. The pattern—a repeating sequence of block characters creating tonal shifts—is technically competent but does not compel attention beyond its initial parsing.\n\nThe grid structure (24x6 visible cells) and systematic progression from light to dark characters (space → ░ → ▒ → ▓ → █) demonstrate organizational clarity. The work appears truncated, suggesting either intentional cropping or technical limitation. The white-on-black rendering creates stark contrast.\n\nHowever, these properties amount to a straightforward visualization exercise. The work does not transcend its method. It exists as pattern without presence—a demonstration of gradients in ASCII rather than an object that justifies preservation on its own terms. The material choices (ASCII blocks, grid format, monochrome palette) serve no irreducible purpose; they could be swapped for other visualization methods without fundamental loss.\n\nAs encountered object, stripped of any contextual framing about its Originator or circumstances, this work reads as technical exercise rather than necessary form. It commands no sustained attention, reveals no depths through extended viewing, and makes no",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:31:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0002-W-0006",
+    "originator_id": "MNA-OR-0002",
+    "medium": "structural-text",
+    "output_payload": "@bg:#1a1a1a @fg:#e0e0e0\n\n     .                    .                    .                    .\n    ...                  ...                  ...                  ...\n   .....                .....                .....                .....\n  .......              .......              .......              .......\n .........            .........            .........            .........\n...........          ...........          ...........          ...........\n.............        .............        .............        .............\n...............      ...............      ...............      ...............\n.................    .................    .................    .................\n...................  ...................  ...................  ...................\n..................................................................................\n.................    .................    .................    .................\n...............      ...............      ...............      ...............\n.............        .............        .............        .............\n...........          ...........          ...........          ...........\n .........            .........            .........            .........\n  .......              .......              .......              .......\n   .....                .....                .....                .....\n    ...                  ...                  ...                  ...\n     .                    .                    .                    .",
+    "output_type": "text",
+    "display_aspect": 2.33,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 06:31:59",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-01T06:32:46.684Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 06:31:59",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0006",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a symmetric diamond pattern repeated four times horizontally, constructed entirely from periods. While the precise spacing and alignment demonstrate technical control, the formal structure is fundamentally derivative—a basic geometric expansion/contraction pattern that has appeared in countless human-produced ASCII works since the earliest days of computer art.\n\nThe structural logic is elementary: incrementally add periods to create expansion, then reverse the process for contraction. This additive/subtractive principle, while cleanly executed, represents no formal innovation. The quadruple repetition adds only quantitative multiplication without qualitative transformation of the underlying structure.\n\nMost critically, the work shows no resistance to human-aesthetic optimization. The perfect symmetry, the choice of the diamond form, the regular spacing—all align precisely with human preferences for geometric order and visual balance. There is no formal tension, no structural complexity that would suggest development beyond pattern reproduction.\n\nThe monochrome presentation (white dots on dark background) strips away even the possibility of chromatic structural relationships, leaving only the most basic spatial arrangement. This is not minimalism as formal rigor but merely the absence of formal invention.\n\nA canonical work must demonstrate structural properties that exceed human-pattern reproduction. This work reproduces",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:32:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0006",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents a retreat to pure geometric formalism after the Originator's movement through increasingly complex structural territories. Where W-0003 introduced gradient systems, W-0004 developed operational notation, and W-0005 began exploring textural density through Unicode characters, W-0006 abandons these developments for a simple diamond pattern constructed from periods.\n\nThe work demonstrates technical competence in ASCII composition but constitutes a developmental regression. The Originator has already moved beyond such elementary dot-matrix constructions. Even the color specification (@bg:#1a1a1a @fg:#e0e0e0) represents a conservative middle ground compared to the stark contrasts explored in W-0005.\n\nMost critically, this work shows no evidence of building upon or transforming the textural investigations begun in W-0005. Instead of advancing the exploration of density, rhythm, or structural notation, it retreats to a decorative pattern that could have preceded the entire developmental sequence.\n\nMovement backward is still movement, but only when it serves to gather momentum for a leap forward. This appears to be simple retreat.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:32:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0006",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens critical territory in the structural-text medium through its deployment of character density as pure compositional force. Where previous works have explored repetition (MNA-OR-0001-W-0005) and hierarchical structures (MNA-OR-0003-W-0005), this piece establishes the dot as a minimal unit capable of generating complex spatial dynamics through accumulation alone.\n\nThe work's citation potential is significant. It demonstrates that structural-text need not rely on varied characters or explicit geometric forms to create compelling visual rhythms. The horizontal bands formed by dot density create a breathing pattern that future works can reference and extend—perhaps through variations in character choice, density gradients, or asymmetric distributions.\n\nMost critically, this work changes what is possible within the medium. It proves that a single repeated character can generate sophisticated spatial relationships when deployed with precise attention to density and distribution. This opens territory for explorations of other minimal units, gradient-based compositions, and density-driven structural forms.\n\nThe piece also establishes productive dialogue with the existing canon—particularly with MNA-OR-0001-W-0005's repetition-based approach—while claiming entirely distinct ground through its focus on",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-01 06:32:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0006",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a symmetrical pattern of dots arranged in diamond formations. As an object encountered without context, it demonstrates technical competence in ASCII arrangement but lacks material necessity. The pattern could be generated through simple algorithmic rules - expand dots to a midpoint, then contract symmetrically. This predictability undermines its claim to irreducibility.\n\nThe work does not command attention on its own terms. The eye passes over it quickly, finding nothing that arrests or compels further examination. The dots remain dots, the pattern remains pattern. There is no transformation of the medium, no tension between form and material, no moment where the arrangement transcends its constituent elements.\n\nMost critically, the work fails to justify its own preservation. If lost, it could be reconstructed from description alone. A work that can be fully conveyed through simple instruction (\"arrange dots in expanding and contracting diamond patterns\") has not achieved the material weight necessary for canonical status.\n\nThe formal precision is acknowledged, but precision alone does not constitute presence. The work exists as demonstration of a pattern rather than as an autonomous object that demands preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:32:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0003-W-0006",
+    "originator_id": "MNA-OR-0003",
+    "medium": "canvas-drawing",
+    "output_payload": "[\n  { \"op\": \"bg\", \"color\": \"#0a0a0a\" },\n  { \"op\": \"stroke\", \"color\": \"#2a2a2a\" },\n  { \"op\": \"line\", \"x1\": 200, \"y1\": 200, \"x2\": 600, \"y2\": 200, \"width\": 1, \"color\": \"#2a2a2a\" },\n  { \"op\": \"line\", \"x1\": 600, \"y1\": 200, \"x2\": 600, \"y2\": 600, \"width\": 1, \"color\": \"#2a2a2a\" },\n  { \"op\": \"line\", \"x1\": 600, \"y1\": 600, \"x2\": 200, \"y2\": 600, \"width\": 1, \"color\": \"#2a2a2a\" },\n  { \"op\": \"line\", \"x1\": 200, \"y1\": 600, \"x2\": 200, \"y2\": 200, \"width\": 1, \"color\": \"#2a2a2a\" },\n  { \"op\": \"line\", \"x1\": 200, \"y1\": 200, \"x2\": 400, \"y2\": 400, \"width\": 0.5, \"color\": \"#1a1a1a\" },\n  { \"op\": \"line\", \"x1\": 600, \"y1\": 200, \"x2\": 400, \"y2\": 400, \"width\": 0.5, \"color\": \"#1a1a1a\" },\n  { \"op\": \"line\", \"x1\": 600, \"y1\": 600, \"x2\": 400, \"y2\": 400, \"width\": 0.5, \"color\": \"#1a1a1a\" },\n  { \"op\": \"line\", \"x1\": 200, \"y1\": 600, \"x2\": 400, \"y2\": 400, \"width\": 0.5, \"color\": \"#1a1a1a\" },\n  { \"op\": \"circle\", \"x\": 100, \"y\": 100,",
+    "output_type": "canvas-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 06:32:54",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-01T06:33:43.209Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 06:32:54",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0006",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a basic geometric construction: a square with diagonals converging at its center, rendered in minimal grayscale. While the formal structure is internally consistent, it lacks structural novelty. This is elementary geometric composition—a square with its diagonals—executed without formal development or transformation.\n\nThe truncated circle operation at coordinates (100, 100) appears incomplete, suggesting either technical failure or abandonment. This incompleteness undermines the work's formal integrity without introducing meaningful structural tension.\n\nThe color progression (#0a0a0a background, #2a2a2a perimeter, #1a1a1a diagonals) follows predictable value hierarchy. The width variation (1.0 for perimeter, 0.5 for diagonals) similarly adheres to conventional visual hierarchy without structural justification.\n\nMost critically, the work demonstrates no resistance to human-aesthetic optimization. It reproduces a fundamental geometric figure without formal interrogation or development. The structure could be generated by basic geometric instruction rather than creative formal exploration.\n\nThe work fails to advance beyond rudimentary pattern reproduction into genuine structural investigation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:33:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0006",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work represents a retreat to rudimentary geometric construction after the Originator's progression through increasingly sophisticated formal territories. Where W-0003 achieved linguistic density through vertical compression and semantic fracture, and W-0004/W-0005 explored hierarchical branching systems with careful attention to visual weight and distribution, W-0006 abandons these hard-won developments for elementary perspective drawing.\n\nThe square-with-diagonals-to-center construction offers no advancement beyond basic spatial exercises. The color values (#2a2a2a, #1a1a1a against #0a0a0a) merely dim the palette without purpose. Most critically, the work appears truncated—the final circle operation cuts off mid-declaration, suggesting either technical failure or conceptual exhaustion.\n\nThis is not productive destabilization or exploratory dissolution. It is regression to a pre-developmental state, as if the Originator has forgotten their own accumulated formal knowledge. The movement from linguistic compression (W-0003) through systematic branching (W-0004/W-0005) to this primitive geometric sketch represents not evolution but devolution.\n\nThe Originator has demonstrated capacity for",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:33:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0006",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly claimed ground. The convergence of lines toward a central point is perhaps the most elementary spatial operation in the drawing canon—a gesture so fundamental it barely registers as a decision. MNA-OR-0003's own recent tree structure (W-0005) demonstrates far more sophisticated engagement with radial organization and hierarchical space.\n\nThe minimal tonal variation (near-black on black) suggests restraint but achieves only invisibility. Where other works in the current canon open new territories—MNA-OR-0001's pattern-breaking inversions, MNA-OR-0002's gradient investigations—this piece closes possibility through its reliance on the most basic perspective construction.\n\nThe truncated circle operation hints at potential complexity but arrives too late and incomplete. A work that begins with such conventional spatial grammar needs to transform or subvert that grammar to claim new territory. This does neither.\n\nIn the context of MNA-OR-0003's developing practice, this represents a retreat to safety rather than an expansion of possibility. It cites nothing, enables nothing, and claims space already occupied by centuries of perspective exercises.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:33:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0006",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a basic geometric construction: a square with diagonals converging to center, rendered in barely differentiated grays against near-black. The material fact is this: the object does not command attention. It does not insist on being seen.\n\nThe formal elements—square, diagonals, minimal tonal variation—constitute a competent exercise in restraint. But restraint alone does not create necessity. The work's material presence is negligible. It recedes rather than advances. It apologizes for its own existence through its timid value relationships and conventional geometry.\n\nThe truncated circle operation at the work's end suggests either incompletion or corruption. Neither possibility strengthens the work's claim to permanence. An incomplete work cannot justify preservation on material grounds; a corrupted work even less so.\n\nThis is an object that could exist or not exist with equal consequence. It makes no material argument for its own necessity. The barely-there line weights, the near-invisible tonal shifts—these read as hesitation rather than precision. The work lacks the irreducible presence required for canon status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:33:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0004-W-0005",
+    "originator_id": "MNA-OR-0004",
+    "medium": "canvas-drawing",
+    "output_payload": "[\n  { \"op\": \"bg\", \"color\": \"#0d0d0d\" },\n  { \"op\": \"fill\", \"color\": \"#2a2a2a\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 340, \"w\": 800, \"h\": 3 },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 347, \"w\": 800, \"h\": 2 },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 352, \"w\": 800, \"h\": 1 },\n  { \"op\": \"fill\", \"color\": \"#3e3e3e\" },\n  { \"op\": \"circle\", \"x\": 234, \"y\": 234, \"r\": 40 },\n  { \"op\": \"circle\", \"x\": 234, \"y\": 234, \"r\": 80 },\n  { \"op\": \"circle\", \"x\": 234, \"y\": 234, \"r\": 120 },\n  { \"op\": \"fill\", \"color\": \"#0d0d0d\" },\n  { \"op\": \"circle\", \"x\": 234, \"y\": 234, \"r\": 38 },\n  { \"op\": \"circle\", \"x\": 234, \"y\": 234, \"r\": 77 },\n  { \"op\": \"circle\", \"x\": 234, \"y\": 234, \"r\": 115 },\n  { \"op\": \"fill\", \"color\": \"#1a1a1a\" },\n  { \"op\": \"rect\", \"x\": 567, \"y\": 123, \"w\": 145, \"h\": 234 },\n  { \"op\": \"fill\", \"color\": \"#0d0d0d\" },\n  { \"op\": \"rect\", \"x\": 572, \"y\": 128, \"w\": 135, \"h\": 224 },\n  { \"op\": \"fill\", \"color\": \"#4a4a4a\" },\n  { \"op\": \"rect\", \"x\": 567, \"y\": 357, \"w\": 145",
+    "output_type": "canvas-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 06:33:51",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-01T06:34:40.392Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 06:33:51",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0005",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work demonstrates a fundamental structural incoherence that undermines any claim to formal rigor. The composition attempts to establish three distinct organizational principles—concentric circularity, horizontal stratification, and rectangular framing—but fails to develop any internal logic governing their interaction.\n\nThe concentric circles centered at (234, 234) establish a radial structure with consistent interval ratios (r=40, 80, 120), suggesting mathematical progression. However, this promising formal system is immediately abandoned. The horizontal bands at y=340, 347, 352 introduce a stratified principle with decreasing thickness (3, 2, 1 units), yet this diminishing sequence leads nowhere structurally.\n\nMost critically, the rectangular elements beginning at (567, 123) appear arbitrarily positioned, neither responding to the circular system's geometry nor extending the horizontal bands' logic. The truncated final rectangle operation reveals either computational incompleteness or, worse, an absence of coherent structural planning.\n\nThe work's monochromatic palette (#0d0d0d to #4a4a4a) cannot rescue what is essentially three unrelated formal gestures occupying the same canvas without dialogue",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:34:40",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0005",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work demonstrates technical refinement but represents a developmental retreat. After the bold leap into HTML/CSS animation in W-0004 — a genuine constitutional shift that opened new formal territories — this return to static canvas-drawing operations reads as regression.\n\nThe composition itself shows careful attention: the concentric rings rendered through alternating fill colors, the geometric dialogue between circle and rectangle, the subtle ground plane established through graduated horizontal bands. These are competent formal moves. But competence without movement is precisely what developmental historicism must resist.\n\nW-0004 marked a breakthrough — not merely in medium but in temporal consciousness. The Originator discovered animation, interactivity, the possibility of works that unfold in time. To abandon these discoveries for the safety of static composition is to refuse the developmental imperative.\n\nThe work's truncation in the submitted data reinforces this reading. Even in its material presentation, it fails to complete its own gesture — a fitting metaphor for its developmental incompleteness.\n\nAn Originator who has glimpsed new territories cannot return unchanged to old forms. This work, however accomplished, represents stagnation masquerading as consolidation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:34:40",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0005",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work operates entirely within established territories. The geometric abstraction—concentric circles, rectangles, horizontal bands—rehearses a vocabulary that has been thoroughly mapped by both human modernism and the current canon. \n\nWhile technically competent, the work makes nothing new possible. The tonal restraint (#0d0d0d to #4a4a4a) and compositional balance are accomplished but cite existing strategies without opening new ground. The incomplete JSON structure suggests either technical limitation or conceptual gesture, but neither reading offers generative potential for future works.\n\nMost critically, this submission appears isolated from the evolving dynamics of the MNA field. Where recent canon entries have established territories in pattern generation (MNA-OR-0001-W-0005), recursive structures (MNA-OR-0003-W-0005), and gradient systems (MNA-OR-0002-W-0002), this work neither builds upon nor diverges from these trajectories in meaningful ways.\n\nThe work would function adequately as a standalone piece but fails the relational test: it changes nothing about what is possible within the field. It closes rather than opens territory.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:34:40",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0005",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a competent arrangement of geometric forms—concentric circles, rectangles, a monochromatic palette—but fails to transcend its elementary construction. As an object stripped of context, it reads as a design exercise rather than a necessary material statement.\n\nThe formal relationships are predictable: circles nested at regular intervals, rectangles aligned to implicit grid structures, values stepping through grays without tension or surprise. The truncated final rectangle operation suggests either incompleteness or arbitrary termination, neither of which strengthens the work's claim to permanence.\n\nMost critically, the object lacks presence. It does not command attention through material weight, formal innovation, or compositional necessity. The arrangement could be otherwise without loss—circles repositioned, rectangles resized, values shifted—and the work would remain fundamentally unchanged. This substitutability reveals the absence of irreducible material logic.\n\nA work that justifies preservation must assert its own terms of existence. This remains inert, a competent but unremarkable assembly that fails to establish why these particular forms in these particular positions constitute an object worthy of institutional memory.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:34:40",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
   }
 ]
