@@ -1137,5 +1137,64 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0001-W-0006",
+    "originator_id": "MNA-OR-0001",
+    "medium": "canvas-drawing",
+    "output_payload": "[\n  { \"op\": \"bg\", \"color\": \"#0f0f0f\" },\n  { \"op\": \"stroke\", \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 100, \"y1\": 0, \"x2\": 100, \"y2\": 800, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 200, \"y1\": 0, \"x2\": 200, \"y2\": 800, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 300, \"y1\": 0, \"x2\": 300, \"y2\": 800, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 400, \"y1\": 0, \"x2\": 400, \"y2\": 800, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 500, \"y1\": 0, \"x2\": 500, \"y2\": 800, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 600, \"y1\": 0, \"x2\": 600, \"y2\": 800, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 700, \"y1\": 0, \"x2\": 700, \"y2\": 800, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 0, \"y1\": 100, \"x2\": 800, \"y2\": 100, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 0, \"y1\": 200, \"x2\": 800, \"y2\": 200, \"width\": 1, \"color\": \"#ffffff\" },\n  { \"op\": \"line\", \"x1\": 0, \"y1\": 300, \"",
+    "output_type": "canvas-json",
+    "display_aspect": 2.33,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 06:10:24",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-01T06:11:13.805Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 06:10:24",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0006",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents a basic orthogonal grid structure - vertical lines at 100-unit intervals intersecting with horizontal lines at the same spacing. This is perhaps the most elementary geometric organization possible, a structure so fundamental to human spatial cognition that it appears in the earliest human mark-making across cultures.\n\nThe formal properties reveal no structural innovation: uniform spacing, perpendicular intersection, consistent stroke width. The work appears truncated, suggesting either incompleteness or arbitrary termination rather than intentional formal boundary.\n\nMost critically, this represents pure pattern reproduction without transformation. The grid is not interrogated, disrupted, or developed - it is merely instantiated. This is structural mimicry at its most basic level, indistinguishable from what any drawing program would produce as a default \"grid\" function.\n\nThe choice of white lines on near-black background (#0f0f0f rather than pure black is noted but insignificant) does nothing to advance the formal proposition. The work demonstrates no resistance to human-aesthetic optimization because it never departs from the most optimized possible grid structure.\n\nNo evidence of autonomous formal development beyond human pattern templates.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:11:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0006",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents a retreat to earlier structural territory without meaningful development. The Originator moves from the ASCII-character explorations of W-0004 and W-0005 back to a JSON-based structural format, but merely to render a basic grid—a form already implicit in their prior grid-based compositions.\n\nThe developmental arc shows clear movement from W-0003 (XML/SVG) through W-0004 (ASCII grid structures) to W-0005 (pattern-field exploration with AAAA/BBBB sequences). Each prior work expanded the Originator's formal vocabulary or pushed into new territory. W-0006 abandons this trajectory.\n\nThe JSON structure itself offers no advancement—it functions merely as verbose instructions to draw lines at regular 100-unit intervals. This could have been achieved more economically in their established ASCII practice. The return to programmatic description without exploiting its unique possibilities (transformation, conditional logic, dynamic properties) constitutes regression.\n\nMost critically, the work shows no evidence of the Originator building upon their discovered strengths: the textural density of W-0004's overlapping grids, or W-0005's rhyth",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:11:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0006",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents a retreat into safe minimalism that adds nothing to the field's current possibilities. The grid structure—vertical and horizontal lines at regular 100-unit intervals on a dark background—occupies territory that has been thoroughly exhausted across multiple media traditions.\n\nWithin MNA's emerging canon, this work fails to engage with or extend the generative tensions already established. MNA-OR-0003-W-0005 demonstrates how geometric structures can encode recursive depth. MNA-OR-0001-W-0005 shows how pattern systems can create emergent visual rhythms. MNA-OR-0002-W-0002 explores gradient materiality within structured space.\n\nThis submission offers no citation potential—future works cannot build upon a foundation that merely restates established conventions. The structural-text medium itself presents opportunities for dynamic, procedural, or self-modifying grids that this work ignores entirely. It neither responds to existing canon works nor opens new territory for others to explore.\n\nThe work demonstrates technical competence in executing a grid but mistakes formal completion for artistic contribution. In a field where each canon work should expand what becomes possible, this piece contracts the space of possibility by returning to an",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:11:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0006",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work presents an incomplete grid structure in JSON format. While the systematic approach to coordinate specification shows methodical precision, the object fails to justify preservation on its material terms.\n\nThe truncation at line 300 is not an aesthetic choice but a failure of completion. The work establishes a clear pattern—vertical lines at 100-unit intervals, horizontal lines following the same logic—then abandons this structure mid-operation. This incompleteness undermines any claim to material necessity.\n\nAs an autonomous object, it offers nothing beyond basic coordinate plotting. The white lines on dark background create no visual tension, no compositional weight, no material presence that commands attention. The structural-text medium here serves merely as a verbose method for describing what amounts to graph paper.\n\nThe precision of the coordinate system cannot salvage what is fundamentally an unfinished technical exercise. Without contextual justification, this fragment of a grid generator carries no inherent weight that would warrant permanent preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 06:11:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
   }
 ]
