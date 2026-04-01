@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { documents, getDocument, documentTypeLabels } from "@/lib/research";
+import { getWork } from "@/lib/collection";
+import type { Work } from "@/lib/collection";
 import BackButton from "@/components/BackButton";
+import ResearchBody from "@/components/ResearchBody";
 
 export function generateStaticParams() {
   return documents.map((d) => ({ id: d.registry_id }));
@@ -21,135 +24,6 @@ export function generateMetadata({
   };
 }
 
-/** Render markdown body with links to referenced works and agents */
-function renderBody(
-  body: string,
-  referencedWorks?: string[],
-  referencedAgents?: string[]
-) {
-  const paragraphs = body.split("\n");
-  const elements: React.ReactNode[] = [];
-
-  for (let i = 0; i < paragraphs.length; i++) {
-    const line = paragraphs[i];
-
-    if (!line.trim()) {
-      elements.push(<div key={i} className="h-4" />);
-      continue;
-    }
-
-    // Headings
-    if (line.startsWith("### ")) {
-      elements.push(
-        <h4
-          key={i}
-          className="text-[14px] font-serif font-semibold text-foreground mt-8 mb-3"
-        >
-          {line.slice(4)}
-        </h4>
-      );
-      continue;
-    }
-    if (line.startsWith("## ")) {
-      elements.push(
-        <h3
-          key={i}
-          className="text-[17px] font-serif font-semibold text-foreground mt-10 mb-4"
-        >
-          {line.slice(3)}
-        </h3>
-      );
-      continue;
-    }
-    if (line.startsWith("# ")) {
-      elements.push(
-        <h2
-          key={i}
-          className="text-xl font-serif font-semibold text-foreground mt-12 mb-5"
-        >
-          {line.slice(2)}
-        </h2>
-      );
-      continue;
-    }
-
-    // Horizontal rule
-    if (line.trim() === "---") {
-      elements.push(
-        <hr key={i} className="border-border my-8" />
-      );
-      continue;
-    }
-
-    // Regular paragraph — inline-link work IDs and agent IDs
-    let content: React.ReactNode = line;
-
-    // Replace work references with links
-    const allRefs = [
-      ...(referencedWorks || []).map((id) => ({ id, type: "work" as const })),
-      ...(referencedAgents || []).map((id) => ({ id, type: "agent" as const })),
-    ];
-
-    if (allRefs.length > 0) {
-      const parts: React.ReactNode[] = [];
-      let remaining = line;
-      let keyIdx = 0;
-
-      while (remaining.length > 0) {
-        let earliest = -1;
-        let earliestRef: (typeof allRefs)[0] | null = null;
-
-        for (const ref of allRefs) {
-          const idx = remaining.indexOf(ref.id);
-          if (idx !== -1 && (earliest === -1 || idx < earliest)) {
-            earliest = idx;
-            earliestRef = ref;
-          }
-        }
-
-        if (earliest === -1 || !earliestRef) {
-          parts.push(remaining);
-          break;
-        }
-
-        if (earliest > 0) {
-          parts.push(remaining.slice(0, earliest));
-        }
-
-        const href =
-          earliestRef.type === "work"
-            ? `/work/${earliestRef.id}`
-            : `/agent/${earliestRef.id}`;
-
-        parts.push(
-          <Link
-            key={`ref-${keyIdx++}`}
-            href={href}
-            className="font-mono text-[13px] text-foreground hover:text-accent underline underline-offset-2 decoration-border hover:decoration-foreground transition-colors"
-          >
-            {earliestRef.id}
-          </Link>
-        );
-
-        remaining = remaining.slice(earliest + earliestRef.id.length);
-      }
-
-      content = parts;
-    }
-
-    elements.push(
-      <p
-        key={i}
-        className="text-[15px] text-foreground/90 leading-[1.8] mb-1"
-      >
-        {content}
-      </p>
-    );
-  }
-
-  return elements;
-}
-
 export default function ResearchDocumentPage({
   params,
 }: {
@@ -157,6 +31,15 @@ export default function ResearchDocumentPage({
 }) {
   const doc = getDocument(params.id);
   if (!doc) notFound();
+
+  // Resolve referenced works into a map for the client component
+  const worksMap: Record<string, Work> = {};
+  if (doc.referenced_works) {
+    for (const workId of doc.referenced_works) {
+      const work = getWork(workId);
+      if (work) worksMap[workId] = work;
+    }
+  }
 
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
@@ -231,12 +114,15 @@ export default function ResearchDocumentPage({
           </div>
         </header>
 
-        {/* Document body */}
-        <article className="mb-16">
-          {renderBody(doc.body, doc.referenced_works, doc.referenced_agents)}
-        </article>
+        {/* Document body with inline work modals */}
+        <ResearchBody
+          body={doc.body}
+          referencedWorks={doc.referenced_works}
+          referencedAgents={doc.referenced_agents}
+          worksMap={worksMap}
+        />
 
-        {/* Referenced works */}
+        {/* Referenced works — direct navigation links */}
         {doc.referenced_works && doc.referenced_works.length > 0 && (
           <div className="border-t border-border pt-8 mb-10">
             <p className="text-[11px] text-muted uppercase tracking-[0.15em] mb-4">
