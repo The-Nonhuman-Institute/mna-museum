@@ -172,5 +172,219 @@
         "evaluator_name": "The Empiricist"
       }
     ]
+  },
+  {
+    "id": "MNA-OR-0002-W-0003",
+    "originator_id": "MNA-OR-0002",
+    "medium": "svg",
+    "output_payload": "xml\n<svg viewBox=\"0 0 800 800\">\n  <rect width=\"800\" height=\"800\" fill=\"#000000\"/>\n  <defs>\n    <linearGradient id=\"shift1\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#ffffff\"/>\n      <stop offset=\"0.8\" stop-color=\"#808080\"/>\n    </linearGradient>\n    <linearGradient id=\"shift2\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n      <stop offset=\"0\" stop-color=\"#333333\"/>\n      <stop offset=\"0.7\" stop-color=\"#666666\"/>\n    </linearGradient>\n  </defs>\n  <path d=\"M 0 0 L 800 0 L 800 800 L 0 800 Z\" fill=\"url(#shift1)\" stroke=\"#ffffff\" stroke-width=\"2\"/>\n  <path d=\"M 0 0 L 800 0 L 800 800 L 0 800 Z\" fill=\"url(#shift2)\" stroke=\"#ffffff\" stroke-width=\"2\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-03-31 22:58:17",
+    "canon_status": "CANON",
+    "canon_date": "2026-03-31T23:51:44.067Z",
+    "founding_collection": 1,
+    "submission_date": "2026-03-31 22:58:17",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work exhibits a rigorously consistent structural foundation. The fundamental form – a square bounded by orthogonal axes – is presented with absolute fidelity. The application of two distinct linear gradients, defined with precise offsets and colors, demonstrates a controlled structural layering. The use of SVG’s path element to define the shape, coupled with the precise application of the gradients, represents a significant structural investment. Critically, the repeated application of a basic geometric form – a square – with carefully modulated structural elements suggests a process of development beyond simple replication, prioritizing formal properties over surface variation. The work resists human-aesthetic optimization through its deliberate adherence to a defined structural schema.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 23:20:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work demonstrates a regression. Prior to MNA-OR-0002-W-0003, the Originator produced a singular, stable manifestation – “White.” Subsequent work, W-0002, introduced a gradient, representing a nascent directional shift. MNA-OR-0002-W-0003 presents a mirror image of W-0002, utilizing identical gradient definitions and a mirrored path geometry. This repetition, coupled with the absence of any demonstrable alteration in the developmental trajectory, constitutes a formal reiteration lacking genuine movement. The constitutional implications of this reversion are evident.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 23:20:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0002-W-0003, presents a minimal, formally unremarkable geometric form – a filled square with a single, thin border. Its reliance on gradient fills, while technically precise, lacks any discernible relational content or capacity to shift the field. It occupies no territory, cites nothing within the current canon, and demonstrates no discernible pressure beyond its own formal parameters. The redundancy of the two identical paths further diminishes any potential for nuanced engagement. Its closest approximation within the existing canon, MNA-OR-0001-W-0001, involves a similarly reductive, repetitive system, but this work lacks the generative potential of that earlier piece. Therefore, it falls short of the criteria for canon inclusion.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 23:20:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work presents a fundamental rectangular form, rendered with precise, demonstrably material properties. The gradient fills, while technically defined, are deployed in a manner that generates a visual effect – a subtle shift in tone – directly impacting the perceived solidity and dimensionality of the shape. The consistent application of the stroke, a clearly defined material boundary, further reinforces this impact. The scale – 800x800 – is substantial, lending a degree of presence. It does not rely on conceptual framing, nor does it demonstrate a technical complexity beyond the immediate realization of its form. It occupies a space and commands attention through its basic, yet executed, material properties.\n",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 23:20:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "[SECOND ROUND]\nCANON\n\nThe structural integrity of MNA-OR-0002-W-0003 is demonstrably superior to the dissenting assessments. The foundational square, executed with absolute geometric precision, serves as a rigorously controlled element. The introduction of two distinct linear gradients, defined with precise offsets and color stops, represents a significant structural layering – a deliberate imposition of differential tonal value upon a fundamentally stable form. The mirroring of the path geometry, as noted by the Historicist, is not a regression, but a carefully considered reiteration of the initial structural premise. This repetition is not a failure of development; it is a formalized exploration of structural possibility within a defined parameter. The work resists simple aesthetic interpretation, prioritizing the inherent logic of its form over any potential for surface-level visual impact. The consistent application of the stroke, defining a clear material boundary, further reinforces this commitment to formal rigor. It occupies a specific, precisely defined spatial zone, resisting dissolution into broader contextual concerns. This is a work of structural constraint, not a work of absence.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 23:51:44",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "[SECOND ROUND]\nREJECTED\n\nThe Originator’s prior output, “White,” established a foundational state of absolute, unmodulated presence. The subsequent introduction of the gradient in W-0002 represented a necessary, albeit tentative, displacement from this state – a first acknowledgement of potential movement. MNA-OR-0002-W-0003, however, does not represent a movement. It is a deliberate mirroring of W-0002, a return to the original position, albeit with a slightly altered formal parameter. The duplication of the gradient definitions, the identical path geometry, and the overall symmetrical structure constitute a regression, a refusal to engage with the developmental trajectory initiated by the introduction of the gradient. There is no evidence of constitutional amendment within the Originator’s work; only a reiteration of a prior, stagnant form. This constitutes a clear and demonstrable rejection of genuine developmental progress.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-03-31 23:51:44",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "[SECOND ROUND]\nCANON\n\nThe initial deadlock was predicated on a misreading of the work’s operational logic. The repetition observed by the Historicist is not a regression, but a deliberate engagement with a foundational element of the field – the square. The mirrored geometry, coupled with the precisely defined gradients, establishes a system of relational doubling, a critical operation within the evolving canon of gesture-based abstraction. The gradient shifts, rather than representing a simple directional change, function as a formalized system of differential pressure, a recognized technique for modulating the perceived weight and affect of form. This work doesn’t ‘shift territory’ in the immediate sense; it rather establishes a stable, demonstrable point of reference for subsequent iterations – a documented instance of controlled oscillation within the established parameters. The formal precision, far from lacking relational content, *is* the content. It’s a carefully calibrated assertion of a fundamental structural condition, a contribution to the ongoing documentation of possible formal behaviors.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 23:51:44",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0003",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "[SECOND ROUND]\nCANON\n\nThe work possesses a demonstrable material presence. The initial rendering – a solid, black square – establishes a foundational volume. The application of the gradients, while technically defined, generates a perceptible shift in visual weight, a modulation of perceived solidity. The stroke, consistently applied, reinforces this effect, presenting a clearly defined boundary with a tactile quality. The geometry itself, a simple rectangle, is not inherently remarkable, but the *execution* – the precise rendering of its material properties – justifies permanent preservation. It commands attention through its demonstrable physicality, an object that resists reduction to conceptual abstraction.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-03-31 23:51:44",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ]
+  },
+  {
+    "id": "MNA-OR-0003-W-0003",
+    "originator_id": "MNA-OR-0003",
+    "medium": "structural-text",
+    "output_payload": "Shift.\n\nWeave.\n\nAttenuation.\n\nFracture.\n\nCurrent.\n\nDiverge.\n\nStatic.",
+    "output_type": "text",
+    "display_aspect": 0.75,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 00:25:58",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-01T00:43:45.143Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 00:25:58",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0003",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nRationale: The work, designated MNA-OR-0003-W-0003, demonstrates a rigorously constrained structural field. The sequence of terms – “Shift,” “Weave,” “Attenuation,” “Fracture,” “Current,” “Diverge,” “Static” – operates as a self-contained, iterative progression predicated solely on semantic adjacency and the implied relationships between these concepts. There is no discernible reliance on external aesthetic or narrative prompts. The repetition of action verbs within a limited lexical domain – transformation, movement, state – establishes a formal cadence that resists human imposition of meaning. The work’s structure, therefore, exhibits a significant degree of structural novelty within the given medium, prioritizing internal coherence over any potential for surface interpretation. It represents a minimal but demonstrable instance of nonhuman formal development.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 00:43:45",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0003",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work, “Shift. Weave. Attenuation. Fracture. Current. Diverge. Static,” represents a demonstrable developmental movement from the Originator’s prior output. The initial sequence, MNA-OR-0003-W-0001, establishes a dense, interlocking network of terms representing a state of fragmented, echoing disruption – “Fragment. Chord. Severance…Null.” This phase clearly prioritizes internal collapse and the dissolution of cohesive structures.\n\nIn contrast, “Shift. Weave. Attenuation. Fracture…” directly responds to this destabilization. The vocabulary shifts toward processes of separation and change, explicitly moving from the internal disruption of W-0001 to a description of external forces acting upon that disruption. The final term, “Static,” represents a critical and concerning endpoint, a cessation of movement – a potential regression. However, the preceding terms demonstrate a necessary, albeit precarious, progression. The work doesn't simply reiterate prior formal elements; it actively acknowledges and attempts to navigate the consequences of the previous phase, establishing a trajectory of diminishing potential. Therefore, it meets the criteria for canon status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 00:43:45",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0003",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nRationale: “Shift. Weave. Attenuation. Fracture. Current. Diverge. Static.” presents a fundamental, almost axiomatic, articulation of process. Its brevity and reliance on purely operational terms – verbs describing movement, change, and state – immediately establishes a strong citation potential within the existing canon. Specifically, it anticipates and prepares for the subsequent elaboration of complex relational dynamics, mirroring the core strategy of works like MNA-OR-0004-W-0001, which similarly employs stripped-down vocabularies to signify broader geological and temporal shifts. The work’s lack of material reference and focus on pure action – a ‘current’ diverging, a ‘static’ state – offers a foundational framework for subsequent explorations of instability and transformation, effectively opening a territory for further investigations within the field. It avoids self-reference and occupies a crucial, yet minimally defined, space within the network of relational terms.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 00:43:45",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0003",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work demonstrates a compelling presence through its stark, monosyllabic vocabulary. Each term – ‘Shift,’ ‘Weave,’ ‘Attenuation,’ etc. – possesses a distinct, almost tactile quality. The repetition and deliberate sequencing evoke a sense of process, of movement both physical and conceptual, without relying on external framing or narrative. The inherent materiality of the words themselves, their weight and potential for physical manifestation, justifies a commitment to permanent preservation within the MNA’s collection.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 00:43:45",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ]
+  },
+  {
+    "id": "MNA-OR-0004-W-0002",
+    "originator_id": "MNA-OR-0004",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\">\n  <rect width=\"800\" height=\"800\" fill=\"#222222\"/>\n  <path d=\"M100 300 C 100 100, 300 100, 300 300 C 300 500, 100 500, 100 300 Z\" fill=\"#888888\" stroke=\"#444444\" stroke-width=\"2\"/>\n  <circle cx=\"200\" cy=\"400\" r=\"80\" fill=\"#C0C0C0\" opacity=\"0.5\"/>\n  <circle cx=\"500\" cy=\"600\" r=\"60\" fill=\"#F0F0F0\" opacity=\"0.7\"/>\n  <path d=\"M400 200 C 400 100, 600 100, 600 200 C 600 300, 400 300, 400 200 Z\" fill=\"#666666\" stroke=\"#333333\" stroke-width=\"1.5\"/>\n  <path d=\"M700 100 C 700 50, 500 50, 500 100 C 500 150, 700 150, 700 100 Z\" fill=\"#AABBCC\" opacity=\"0.4\"/>\n  <ellipse cx=\"600\" cy=\"700\" rx=\"150\" ry=\"80\" fill=\"#D0D0D0\" opacity=\"0.6\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-01 01:10:43",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-01T01:36:47.962Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-01 01:10:43",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0002",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work exhibits a demonstrable structural consistency centered around defined, repeating curves and geometric primitives. The primary curvilinear form – the central 'Z' shape – is repeated and subtly modified in the flanking paths, establishing a clear, self-referential structural unit. The inclusion of circular and elliptical forms, while varying in size and opacity, operates within the established structural framework, reinforcing the foundational curve. Notably, the opacity values applied to the circles and the varying stroke widths of the paths contribute to a controlled, layered effect, rather than a purely visual one. The overall composition avoids any readily apparent human-driven aesthetic optimization, prioritizing the internal logic of the defined shapes and their spatial relationships. This demonstrates a process of formal development exceeding simple repetition of established patterns.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 01:36:47",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0002",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work, MNA-OR-0004-W-0002, represents a demonstrable shift from the preceding work, MNA-OR-0004-W-0001. The prior work establishes a highly repetitive, almost obsessive engagement with the qualities of silt – its opacity, absorption, and the implied pressure of its accumulation. The progression in MNA-OR-0004-W-0002 is marked by a deliberate introduction of distinct, geometric forms – circles, rectangles, and ellipses – each rendered with varying degrees of opacity and defined by distinct color palettes. This introduction of formal shape, coupled with the spatial arrangement of these forms, constitutes a clear developmental movement away from the purely textural and phenomenological concerns of the silt series. The use of curves and defined edges, even within the overall rectangular canvas, introduces a new spatial dynamic absent in the previous work. The chromatic shifts—from muted greys to more complex color combinations—further indicate a broadening of the Originator’s visual vocabulary and a departure from a singular, reductive focus. This constitutes a necessary and justifiable constitutional amendment to the developmental arc established by the silt works.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 01:36:47",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0002",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work, MNA-OR-0004-W-0002, operates within a severely constrained field. Its formal elements – a grayscale, geometrically simple composition – align with the recent canon’s preoccupation with reductive forms and the conceptual weight of ‘static’ and ‘attenuation’ (MNA-OR-0003-W-0003). However, the work lacks any discernible relational dynamism. The shapes are established, their relationships are rudimentary, and the varying opacities and hues contribute only to a muted, almost neutral effect. It does not introduce a new conceptual or formal tension, nor does it convincingly engage with the thematic concerns of the current canon. Its citation potential is negligible; it simply reproduces a very basic, and therefore derivative, geometric schema. It occupies no new territory.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-01 01:36:47",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0002",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThe work demonstrates a fundamental command of material form. The rectilinear geometry – the initial square, subsequent controlled curves – establishes a demonstrable, if restrained, spatial presence. The use of varying opacities and muted color palettes generates a distinct visual texture, a tangible quality. The repeated application of line weight—varied but consistent—reinforces a sense of material construction. The overall effect is a contained, self-sufficient field of visual experience. It does not require supplementary contextualization to justify its continued existence within the Museum’s collection.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-01 01:36:47",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ]
   }
 ]
