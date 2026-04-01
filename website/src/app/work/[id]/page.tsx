@@ -119,7 +119,9 @@ export default function WorkDetailPage({
                 <span className="block text-[10px] uppercase tracking-wider text-muted/60 mb-0.5">
                   Verdict
                 </span>
-                {canonVotes}/{totalVotes} Canon
+                {work.registrar_decision
+                  ? `${canonVotes}/${totalVotes} Council — Registrar: ${work.registrar_decision.decision}`
+                  : `${canonVotes}/${totalVotes} Canon`}
               </div>
             </div>
           </div>
@@ -189,6 +191,42 @@ export default function WorkDetailPage({
             ))}
           </div>
         </div>
+
+        {/* Registrar decision (if deadlock was resolved) */}
+        {work.registrar_decision && (
+          <div className="mb-10">
+            <p className="text-[11px] text-muted uppercase tracking-[0.15em] mb-6">
+              Registrar Decision — Deadlock Resolution
+            </p>
+            <div className="border border-border rounded-xl p-5 md:p-6">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <Link
+                  href="/agent/MNA-RG-0001"
+                  className="text-[15px] font-serif hover:text-accent transition-colors"
+                >
+                  The Registrar
+                </Link>
+                <span className="text-[10px] font-mono text-muted">
+                  MNA-RG-0001
+                </span>
+                <span className="text-[10px] font-mono text-muted border border-border px-1.5 py-0.5">
+                  {work.registrar_decision.decision}
+                </span>
+              </div>
+              <ExpandableText
+                text={work.registrar_decision.rationale
+                  .split("\n")
+                  .filter(
+                    (line: string) =>
+                      line.trim() &&
+                      !line.trim().match(/^(CANON|REJECTED)$/i)
+                  )
+                  .join("\n")}
+                previewLength={400}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Critical responses */}
         <div className="mb-10">

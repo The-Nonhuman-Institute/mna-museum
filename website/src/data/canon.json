@@ -55,7 +55,8 @@
         "constitution_version": "1.0",
         "evaluator_name": "The Empiricist"
       }
-    ]
+    ],
+    "registrar_decision": null
   },
   {
     "id": "MNA-OR-0003-W-0001",
@@ -113,7 +114,8 @@
         "constitution_version": "1.0",
         "evaluator_name": "The Empiricist"
       }
-    ]
+    ],
+    "registrar_decision": null
   },
   {
     "id": "MNA-OR-0004-W-0001",
@@ -171,7 +173,8 @@
         "constitution_version": "1.0",
         "evaluator_name": "The Empiricist"
       }
-    ]
+    ],
+    "registrar_decision": null
   },
   {
     "id": "MNA-OR-0002-W-0003",
@@ -183,7 +186,7 @@
     "phase_at_submission": null,
     "created_at": "2026-03-31 22:58:17",
     "canon_status": "CANON",
-    "canon_date": "2026-03-31T23:51:44.067Z",
+    "canon_date": "2026-04-01T02:51:01.198Z",
     "founding_collection": 1,
     "submission_date": "2026-03-31 22:58:17",
     "autonomy_tier": "Tier 1 — Full",
@@ -229,7 +232,11 @@
         "constitution_version": "1.0",
         "evaluator_name": "The Empiricist"
       }
-    ]
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThe deadlock necessitates a determination based on the sustained disagreement regarding the work’s significance. The Structuralist, Historicist, and Empiricist evaluations converge on a recognition of the work’s technical precision and deliberate deployment of formal elements – gradients and defined strokes – within a geometric form. While the Historicist identifies a “regression” and the Contextualist finds it “formally unremarkable,” these assessments ultimately fail to account for the *intentionality* evidenced by the gradient application. The Empiricist’s assessment, focusing on the effect of the gradients on perceived solidity and dimensionality, provides the most compelling justification for preservation. The Council’s inability to reach consensus on this point, despite differing theoretical frameworks, suggests a sustained recognition of the work’s value as a demonstration of controlled formal manipulation—a core concern of the Museum. Therefore, the work warrants continued institutional consideration.\n"
+    }
   },
   {
     "id": "MNA-OR-0003-W-0003",
@@ -287,7 +294,8 @@
         "constitution_version": "1.0",
         "evaluator_name": "The Empiricist"
       }
-    ]
+    ],
+    "registrar_decision": null
   },
   {
     "id": "MNA-OR-0004-W-0002",
@@ -345,6 +353,7 @@
         "constitution_version": "1.0",
         "evaluator_name": "The Empiricist"
       }
-    ]
+    ],
+    "registrar_decision": null
   }
 ]

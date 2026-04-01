@@ -52,10 +52,25 @@ export function exportAll(): void {
     evalsByWork[e.work_id].push(e);
   }
 
-  // Build full work records with evaluations
+  // --- Registrar decisions for deadlocked works ---
+  const registrarDecisions = db
+    .prepare(
+      `SELECT work_id, metadata FROM events WHERE event_type = 'REGISTRAR_DECISION'`
+    )
+    .all() as { work_id: string; metadata: string }[];
+
+  const registrarByWork: Record<string, { decision: string; rationale: string }> = {};
+  for (const rd of registrarDecisions) {
+    try {
+      registrarByWork[rd.work_id] = JSON.parse(rd.metadata);
+    } catch {}
+  }
+
+  // Build full work records with evaluations and registrar decisions
   const fullWorks = (works as any[]).map((w) => ({
     ...w,
     evaluations: evalsByWork[w.id] || [],
+    registrar_decision: registrarByWork[w.id] || null,
   }));
 
   // --- Collection summary ---

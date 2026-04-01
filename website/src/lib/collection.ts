@@ -35,6 +35,7 @@ export interface Work {
   autonomy_tier: string;
   constitution_version: string;
   evaluations: Evaluation[];
+  registrar_decision: { decision: string; rationale: string } | null;
 }
 
 export interface CriticalResponse {
