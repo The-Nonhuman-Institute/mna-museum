@@ -3,6 +3,7 @@ import { frames } from "./MuseumFrame";
 import SvgRenderer from "./renderers/SvgRenderer";
 import type { Work } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
+import { parseWorkColors } from "@/lib/work-colors";
 import dynamic from "next/dynamic";
 
 // Client-side only renderers (they use browser APIs)
@@ -93,17 +94,22 @@ function WorkContent({
 
     case "ascii":
     case "text":
-    default:
+    default: {
+      const colors = parseWorkColors(work.output_payload, work.output_type);
       return (
-        <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center p-2 md:p-3 overflow-hidden">
+        <div
+          className="w-full h-full flex items-center justify-center p-2 md:p-3 overflow-hidden"
+          style={{ backgroundColor: colors.bg }}
+        >
           <pre
-            className={`text-[#e8e4de] font-mono whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
-            style={{ lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
+            className={`font-mono whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
+            style={{ color: colors.fg, lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
           >
-            {work.output_payload}
+            {colors.payload}
           </pre>
         </div>
       );
+    }
   }
 }
 

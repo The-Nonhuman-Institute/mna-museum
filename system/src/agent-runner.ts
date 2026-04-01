@@ -98,7 +98,7 @@ export function buildSystemPrompt(
 export async function runAgent(
   agentId: string,
   userPrompt: string,
-  options?: { temperature?: number; num_predict?: number }
+  options?: { temperature?: number; num_predict?: number; num_ctx?: number }
 ): Promise<string> {
   const { agent, constitution } = loadAgent(agentId);
   const systemPrompt = buildSystemPrompt(agent, constitution);

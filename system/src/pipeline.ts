@@ -320,7 +320,7 @@ export async function evaluateWork(
     UPDATE canon_status SET status = ?, canon_date = ?, council_agents = ? WHERE work_id = ?
   `).run(
     finalStatus,
-    finalStatus === "CANON" ? new Date().toISOString() : null,
+    new Date().toISOString(),
     JSON.stringify(allEvaluators),
     workId
   );
@@ -521,9 +521,15 @@ export async function critiqueWork(
  * Second round: evaluators read each other's rationales, run in PARALLEL.
  * If still deadlocked: defaults to CANON.
  */
+/**
+ * Resolve a deadlocked work (2:2 split) via the Registrar.
+ * The Registrar reviews the work, all 4 evaluation rationales,
+ * and renders a binding final decision: CANON or REJECTED.
+ * No second round of evaluator voting.
+ */
 export async function resolveDeadlock(
   workId: string
-): Promise<{ status: "CANON" | "REJECTED"; verdicts: Record<string, string> }> {
+): Promise<{ status: "CANON" | "REJECTED"; registrarDecision: string }> {
   const start = Date.now();
   const db = getDb();
 
@@ -543,7 +549,7 @@ export async function resolveDeadlock(
     throw new Error(`Work ${workId} is not in review (status: ${status?.status || "unknown"})`);
   }
 
-  const firstRoundEvals = db
+  const evaluations = db
     .prepare(
       `SELECT e.evaluator_id, e.verdict, e.rationale, a.common_designation
        FROM evaluations e LEFT JOIN agents a ON e.evaluator_id = a.registry_id
@@ -555,116 +561,73 @@ export async function resolveDeadlock(
 
   db.close();
 
-  console.log(`\n[DEADLOCK RESOLUTION] ${workId} — second round (parallel)`);
-  console.log(`First round: ${firstRoundEvals.map((e) => `${e.common_designation}: ${e.verdict}`).join(", ")}\n`);
+  console.log(`\n[REGISTRAR REVIEW] ${workId} — deadlock resolution`);
+  console.log(`Council split: ${evaluations.map((e) => `${e.common_designation}: ${e.verdict}`).join(", ")}\n`);
 
-  const allEvaluators = ["MNA-EV-0001", "MNA-EV-0002", "MNA-EV-0003", "MNA-EV-0004"];
+  // Build the Registrar's review prompt
+  let prompt = `REGISTRAR REVIEW — DEADLOCK RESOLUTION\n\n`;
+  prompt += `The Evaluation Council has deadlocked on this work with a 2:2 split.\n`;
+  prompt += `As Registrar, you must render the final binding decision: CANON or REJECTED.\n\n`;
+  prompt += `Your decision should be based on the work itself and the Council's rationales.\n`;
+  prompt += `You are not a fifth evaluator — you are resolving a procedural deadlock.\n`;
+  prompt += `Consider: does the sustained disagreement itself suggest the work has sufficient\n`;
+  prompt += `institutional significance to preserve? Or does the lack of consensus indicate\n`;
+  prompt += `the work does not meet the threshold for the permanent collection?\n\n`;
 
-  // Build shared deliberation context
-  let deliberationContext = `Work ID: ${workId}\nOriginator: ${work.originator_id}\nMedium: ${work.medium}\n\n`;
-  deliberationContext += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
-  deliberationContext += `FIRST ROUND RATIONALES:\n`;
-  for (const ev of firstRoundEvals) {
-    deliberationContext += `--- ${ev.common_designation} (${ev.evaluator_id}) — ${ev.verdict} ---\n`;
+  prompt += `Work ID: ${workId}\n`;
+  prompt += `Originator: ${work.originator_id}\n`;
+  prompt += `Medium: ${work.medium}\n\n`;
+  prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
+
+  prompt += `COUNCIL RATIONALES:\n`;
+  for (const ev of evaluations) {
+    prompt += `--- ${ev.common_designation} (${ev.evaluator_id}) — ${ev.verdict} ---\n`;
     const condensed = ev.rationale
       .split("\n")
       .filter((line: string) => line.trim() && !line.trim().match(/^(CANON|REJECTED|IN_REVIEW|Rationale:)$/i))
       .join("\n")
       .substring(0, 400);
-    deliberationContext += `${condensed}\n\n`;
+    prompt += `${condensed}\n\n`;
   }
 
-  // Run evaluators SEQUENTIALLY for second round
-  const evalResults: { evalId: string; verdict: "CANON" | "REJECTED"; response: string }[] = [];
-  for (const evalId of allEvaluators) {
-    const result = await (async (evalId: string) => {
-      const evalStart = Date.now();
-      let prompt = `SECOND ROUND DELIBERATION — DEADLOCK RESOLUTION\n\n`;
-      prompt += `The Evaluation Council is deadlocked on this work (2:2 split).\n`;
-      prompt += `You are re-evaluating after reading your colleagues' rationales.\n\n`;
-      prompt += deliberationContext;
-      prompt += `Re-evaluate this work. You may maintain or change your verdict.\n`;
-      prompt += `Render your verdict: CANON or REJECTED. No IN_REVIEW — this must resolve.\n`;
-      prompt += `State your verdict first on its own line, then provide your rationale.\n`;
+  prompt += `Render your decision: CANON or REJECTED.\n`;
+  prompt += `State your decision first on its own line, then provide your rationale.\n`;
 
-      console.log(`  [${evalId}] Deliberating...`);
-      const response = await runAgent(evalId, prompt, {
-        temperature: 0.6,
-        num_predict: 256,
-        num_ctx: 2048,
-      });
+  console.log(`  [MNA-RG-0001] Reviewing...`);
+  const response = await runAgent("MNA-RG-0001", prompt, {
+    temperature: 0.5,
+    num_predict: 512,
+    num_ctx: 2048,
+  });
 
-      const firstLine = response.trim().split("\n")[0].toUpperCase();
-      let verdict: "CANON" | "REJECTED" = "REJECTED";
-      if (firstLine.includes("CANON") && !firstLine.includes("REJECTED")) {
-        verdict = "CANON";
-      }
-
-      console.log(`  [${evalId}] ${verdict} [${elapsed(evalStart)}]`);
-      return { evalId, verdict, response };
-    })(evalId);
-    evalResults.push(result);
-  }
-
-  // Store and tally
-  const verdicts: Record<string, string> = {};
-  let canonVotes = 0;
-
-  for (const { evalId, verdict, response } of evalResults) {
-    verdicts[evalId] = verdict;
-    if (verdict === "CANON") canonVotes++;
-
-    const db2 = getDb();
-    const constitution = db2
-      .prepare("SELECT version FROM constitutions WHERE agent_id = ? AND is_current = 1")
-      .get(evalId) as { version: string };
-
-    db2.prepare(`
-      INSERT INTO evaluations (work_id, evaluator_id, verdict, rationale, constitution_version)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(workId, evalId, verdict, `[SECOND ROUND]\n${response}`, constitution.version);
-
-    db2.close();
-  }
-
-  const rejectedVotes = Object.values(verdicts).filter((v) => v === "REJECTED").length;
-  let finalStatus: "CANON" | "REJECTED";
-
-  if (canonVotes >= 3) {
+  const firstLine = response.trim().split("\n")[0].toUpperCase();
+  let finalStatus: "CANON" | "REJECTED" = "REJECTED";
+  if (firstLine.includes("CANON") && !firstLine.includes("REJECTED")) {
     finalStatus = "CANON";
-  } else if (rejectedVotes >= 3) {
-    finalStatus = "REJECTED";
-  } else {
-    finalStatus = "CANON";
-    console.log(`[DEADLOCK] Still split — defaulting to CANON (sustained disagreement = worth preserving)`);
   }
 
-  const db3 = getDb();
-  db3.prepare(`
+  console.log(`  [MNA-RG-0001] Decision: ${finalStatus} [${elapsed(start)}]`);
+
+  // Store the Registrar's decision
+  const db2 = getDb();
+
+  db2.prepare(`
     UPDATE canon_status SET status = ?, canon_date = ? WHERE work_id = ?
-  `).run(finalStatus, finalStatus === "CANON" ? new Date().toISOString() : null, workId);
+  `).run(finalStatus, new Date().toISOString(), workId);
 
-  db3.prepare(`
-    INSERT INTO events (event_type, work_id, description, metadata)
-    VALUES ('DEADLOCK_RESOLVED', ?, ?, ?)
+  db2.prepare(`
+    INSERT INTO events (event_type, agent_id, work_id, description, metadata)
+    VALUES ('REGISTRAR_DECISION', 'MNA-RG-0001', ?, ?, ?)
   `).run(
     workId,
-    `${workId}: Deadlock resolved → ${finalStatus} (second round: ${canonVotes} canon, ${rejectedVotes} rejected)`,
-    JSON.stringify(verdicts)
+    `Registrar resolved deadlock on ${workId} → ${finalStatus}`,
+    JSON.stringify({ decision: finalStatus, rationale: response })
   );
 
-  for (const [evalId, verdict] of Object.entries(verdicts)) {
-    if (verdict !== finalStatus) {
-      db3.prepare(
-        "UPDATE evaluations SET is_dissent = 1 WHERE work_id = ? AND evaluator_id = ? AND rationale LIKE '[SECOND ROUND]%'"
-      ).run(workId, evalId);
-    }
-  }
+  db2.close();
 
-  db3.close();
-
-  console.log(`\n[DEADLOCK RESOLVED] ${workId}: ${finalStatus} (${canonVotes}/4 canon, second round) [${elapsed(start)}]\n`);
-  return { status: finalStatus, verdicts };
+  console.log(`\n[DEADLOCK RESOLVED] ${workId}: ${finalStatus} (Registrar decision) [${elapsed(start)}]\n`);
+  return { status: finalStatus, registrarDecision: response };
 }
 
 /**

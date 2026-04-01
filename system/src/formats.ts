@@ -32,32 +32,40 @@ export const originatorFormats: Record<
   { format: OutputFormat; weight: number }[]
 > = {
   "MNA-OR-0001": [
-    // Structural density, geometric organization
-    { format: "svg", weight: 4 },
-    { format: "ascii", weight: 3 },
-    { format: "text", weight: 2 },
+    // Structural density, geometric organization — equal access to all mediums
+    { format: "svg", weight: 1 },
+    { format: "ascii", weight: 1 },
+    { format: "text", weight: 1 },
     { format: "canvas-json", weight: 1 },
-  ],
-  "MNA-OR-0002": [
-    // Temporal, sequential, duration
-    { format: "html-css", weight: 4 }, // CSS animations
-    { format: "svg", weight: 3 }, // SVG with animate
-    { format: "text", weight: 2 },
+    { format: "html-css", weight: 1 },
     { format: "audio-json", weight: 1 },
   ],
-  "MNA-OR-0003": [
-    // Relational, network, absence
-    { format: "svg", weight: 4 }, // Network diagrams
-    { format: "ascii", weight: 3 },
-    { format: "text", weight: 2 },
+  "MNA-OR-0002": [
+    // Temporal, sequential, duration — equal access to all mediums
+    { format: "html-css", weight: 1 },
+    { format: "svg", weight: 1 },
+    { format: "text", weight: 1 },
+    { format: "audio-json", weight: 1 },
+    { format: "ascii", weight: 1 },
     { format: "canvas-json", weight: 1 },
   ],
+  "MNA-OR-0003": [
+    // Relational, network, absence — equal access to all mediums
+    { format: "svg", weight: 1 },
+    { format: "ascii", weight: 1 },
+    { format: "text", weight: 1 },
+    { format: "canvas-json", weight: 1 },
+    { format: "html-css", weight: 1 },
+    { format: "audio-json", weight: 1 },
+  ],
   "MNA-OR-0004": [
-    // Instability, fragmentation
-    { format: "html-css", weight: 3 }, // Glitched layouts
-    { format: "svg", weight: 3 },
-    { format: "ascii", weight: 2 },
-    { format: "text", weight: 2 },
+    // Instability, fragmentation — equal access to all mediums
+    { format: "html-css", weight: 1 },
+    { format: "svg", weight: 1 },
+    { format: "ascii", weight: 1 },
+    { format: "text", weight: 1 },
+    { format: "canvas-json", weight: 1 },
+    { format: "audio-json", weight: 1 },
   ],
 };
 
@@ -89,7 +97,10 @@ OUTPUT FORMAT: SVG
 
 Produce your work as valid SVG markup. Your output must begin with <svg and end with </svg>.
 Use shapes, paths, lines, circles, rectangles, polygons, gradients, and transforms.
-You may use color (fill, stroke), opacity, and any SVG element.
+You have FULL creative control over color, composition, and background.
+You may use any colors — light, dark, vivid, muted, monochrome, polychrome.
+If you want a background color, include a full-size <rect> as the first element.
+If you want transparency (no background), omit the background rect.
 The viewBox should be "0 0 800 800" for square works or "0 0 1200 800" for landscape.
 Do not include any text outside the SVG tags. The SVG IS the work.
 Do not add comments, explanations, or XML declarations. Just the SVG element.`;
@@ -103,6 +114,9 @@ Use any Unicode characters: box-drawing (─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴
 geometric (● ○ ◆ ◇ ▲ △ ■ □ ★ ☆), arrows (→ ← ↑ ↓ ↔ ↕), mathematical (∞ ∑ ∫ √ ≈ ≠ ≤ ≥),
 Braille patterns (⠁ ⠃ ⠇ ⠏ ⠟ ⠿ ⡿ ⣿), and any other symbols.
 This is a VISUAL work — the spatial arrangement of characters IS the composition.
+You may optionally specify a background and text color on the FIRST line using the format:
+@bg:#hexcolor @fg:#hexcolor
+If omitted, defaults will be used. This is YOUR creative choice.
 Do not explain it. Do not title it. The characters and their arrangement are the work.`;
 
     case "html-css":
@@ -112,7 +126,8 @@ OUTPUT FORMAT: HTML+CSS
 Produce your work as a self-contained HTML document with inline CSS.
 Your output must begin with <!DOCTYPE html> or <html> and be a complete, valid HTML document.
 Use CSS for color, gradients, shapes, transforms, opacity, and especially animation (@keyframes).
-The work should be visually compelling when rendered in a browser.
+You have FULL creative control over the entire visual space — background color, foreground,
+palette, composition. Light backgrounds, dark backgrounds, vivid color, monochrome — your choice.
 Use the full HTML+CSS vocabulary: divs, spans, pseudo-elements, gradients, blend-modes, filters, transitions, animations.
 The document should render at any size (use relative units, vh/vw, percentages).
 Do not include JavaScript. CSS only for all visual effects and animation.
@@ -147,6 +162,7 @@ OUTPUT FORMAT: CANVAS JSON
 Produce your work as a JSON array of drawing instructions for HTML Canvas.
 Each instruction is an object with an "op" field and parameters:
 [
+  { "op": "bg", "color": "#hexcolor" },
   { "op": "fill", "color": "#hexcolor" },
   { "op": "rect", "x": 0, "y": 0, "w": 100, "h": 100 },
   { "op": "circle", "x": 400, "y": 400, "r": 50 },
@@ -155,7 +171,8 @@ Each instruction is an object with an "op" field and parameters:
   { "op": "arc", "x": 400, "y": 400, "r": 100, "start": 0, "end": 3.14 },
   { "op": "text", "content": "...", "x": 400, "y": 400, "size": 24, "color": "#fff" }
 ]
-Canvas size is 800x800. Use any colors. Layer operations to build the composition.
+Canvas size is 800x800. You have FULL creative control — use any colors, any background.
+Use the "bg" op as your first instruction to set the canvas background color.
 Output ONLY the JSON array. No explanation. The instructions ARE the work.`;
 
     case "text":
@@ -165,6 +182,10 @@ OUTPUT FORMAT: TEXT
 
 Produce your work as plain text — structural, linguistic, or formal.
 It is not a description of a work. It IS the work.
+You may optionally specify display colors on the FIRST line using the format:
+@bg:#hexcolor @fg:#hexcolor
+For example: @bg:#ffffff @fg:#1a1a1a for dark text on white, or omit for defaults.
+This is YOUR creative choice — the colors are part of the work.
 Do not title it. Do not explain it. Do not introduce it. Just produce it.`;
   }
 }

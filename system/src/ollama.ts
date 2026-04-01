@@ -16,19 +16,24 @@ interface OllamaResponse {
 export function generate(
   systemPrompt: string,
   userPrompt: string,
-  options?: { temperature?: number; num_predict?: number }
+  options?: { temperature?: number; num_predict?: number; num_ctx?: number }
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    const ollamaOptions: Record<string, number> = {
+      temperature: options?.temperature ?? 0.8,
+      num_predict: options?.num_predict ?? 2048,
+    };
+    if (options?.num_ctx) {
+      ollamaOptions.num_ctx = options.num_ctx;
+    }
+
     const body = JSON.stringify({
       model: MODEL,
       system: systemPrompt,
       prompt: userPrompt,
       stream: false,
       keep_alive: "10m",
-      options: {
-        temperature: options?.temperature ?? 0.8,
-        num_predict: options?.num_predict ?? 2048,
-      },
+      options: ollamaOptions,
     });
 
     const url = new URL(`${OLLAMA_URL}/api/generate`);

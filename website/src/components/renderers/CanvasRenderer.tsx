@@ -45,11 +45,18 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
 
     canvas.width = 800;
     canvas.height = 800;
-    ctx.fillStyle = "#0e0c0a";
+
+    // Check if first op sets background, otherwise use default
+    const firstOp = ops[0];
+    const bgColor = firstOp?.op === "bg" ? (firstOp.color || "#0e0c0a") : "#0e0c0a";
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, 800, 800);
 
     for (const op of ops) {
       switch (op.op) {
+        case "bg":
+          // Already handled above
+          break;
         case "fill":
           ctx.fillStyle = op.color || "#fff";
           break;

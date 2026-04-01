@@ -2,36 +2,33 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { Work } from "@/lib/collection";
+import { parseWorkColors, detectSvgBackground, isLightColor } from "@/lib/work-colors";
 
 /**
- * Adaptive background logic:
- * If the work is predominantly white/light (text on dark bg, white SVG, etc.)
- * → dark share background (#0a0908)
- * Otherwise → cream (#f5f2ed)
+ * Adaptive share image background:
+ * Uses the Originator's own color choices when available.
+ * Falls back to contrast-based logic when no colors are specified.
  */
-function isLightWork(work: Work): boolean {
-  const type = work.output_type;
-  const payload = work.output_payload;
-
-  // Text/ASCII works render white text on dark backgrounds
-  if (type === "text" || type === "ascii") return true;
-
-  // SVG: check if fill/stroke colors are predominantly white/light
-  if (type === "svg") {
-    const whitePatterns =
-      /(?:fill|stroke)\s*[:=]\s*["']?\s*(?:#fff|#ffffff|white|#e|#f|rgb\s*\(\s*2[2-5]\d)/gi;
-    const darkPatterns =
-      /(?:fill|stroke)\s*[:=]\s*["']?\s*(?:#0|#1|#2|#3|black|rgb\s*\(\s*[0-5]\d)/gi;
-    const whiteMatches = (payload.match(whitePatterns) || []).length;
-    const darkMatches = (payload.match(darkPatterns) || []).length;
-    return whiteMatches >= darkMatches;
+function getShareColors(work: Work): { bg: string; fg: string } {
+  // Text/ASCII works: use Originator-defined colors if present
+  if (work.output_type === "text" || work.output_type === "ascii") {
+    const colors = parseWorkColors(work.output_payload, work.output_type);
+    return { bg: colors.bg, fg: colors.fg };
   }
 
-  return true;
-}
+  // SVG works: detect background from the SVG itself
+  if (work.output_type === "svg") {
+    const svgBg = detectSvgBackground(work.output_payload);
+    if (svgBg) {
+      return {
+        bg: svgBg,
+        fg: isLightColor(svgBg) ? "#1a1a1a" : "#e8e4de",
+      };
+    }
+  }
 
-function getShareBackground(work: Work): string {
-  return isLightWork(work) ? "#0a0908" : "#f5f2ed";
+  // Default: dark background, light text
+  return { bg: "#0a0908", fg: "#e8e4de" };
 }
 
 /** Small share icon — an arrow leaving a box */
@@ -109,9 +106,10 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     // Scale all drawing operations to 2x — coordinates stay in logical 1080 space
     ctx.scale(scale, scale);
 
-    const bg = getShareBackground(work);
-    const textColor = bg === "#0a0908" ? "#e8e4de" : "#1a1a1a";
-    const mutedColor = "#8a8680";
+    const shareColors = getShareColors(work);
+    const bg = shareColors.bg;
+    const textColor = shareColors.fg;
+    const mutedColor = isLightColor(bg) ? "#6a6560" : "#8a8680";
 
     // Fill background
     ctx.fillStyle = bg;
@@ -124,11 +122,12 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
 
     // --- Render the work ---
     if (work.output_type === "text" || work.output_type === "ascii") {
-      ctx.fillStyle = textColor;
+      const colors = parseWorkColors(work.output_payload, work.output_type);
+      ctx.fillStyle = colors.fg;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      const lines = work.output_payload.trim().split("\n");
+      const lines = colors.payload.trim().split("\n");
       const maxLineLen = Math.max(...lines.map((l) => l.length));
       const fontSize = Math.min(
         Math.round(workAreaW / (maxLineLen * 0.62)),

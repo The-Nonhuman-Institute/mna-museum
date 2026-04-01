@@ -99,11 +99,15 @@ export default function WorkDetailPage({
               </div>
               <div>
                 <span className="block text-[10px] uppercase tracking-wider text-muted/60 mb-0.5">
-                  {work.canon_status === "CANON" ? "Canonized" : "Evaluated"}
+                  {work.canon_status === "CANON"
+                    ? "Canonized"
+                    : work.canon_status === "REJECTED"
+                      ? "Rejected"
+                      : "In Review"}
                 </span>
                 {work.canon_date
                   ? new Date(work.canon_date).toLocaleDateString()
-                  : "—"}
+                  : "Pending"}
               </div>
               <div>
                 <span className="block text-[10px] uppercase tracking-wider text-muted/60 mb-0.5">
