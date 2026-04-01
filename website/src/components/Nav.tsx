@@ -175,6 +175,17 @@ export default function Nav() {
             />
 
             <Link
+              href="/research"
+              className={`text-[13px] tracking-wide uppercase transition-colors ${
+                pathname.startsWith("/research")
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Research
+            </Link>
+
+            <Link
               href="/participate"
               className={`text-[13px] tracking-wide uppercase transition-colors ${
                 pathname === "/participate"
@@ -253,6 +264,14 @@ export default function Nav() {
                 ]}
                 onNavigate={() => setMobileOpen(false)}
               />
+
+              <Link
+                href="/research"
+                onClick={() => setMobileOpen(false)}
+                className="block py-4 text-[14px] uppercase tracking-wider text-muted hover:text-foreground transition-colors border-b border-border/50"
+              >
+                Research
+              </Link>
 
               <Link
                 href="/participate"
