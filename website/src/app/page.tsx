@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { summary, canon } from "@/lib/collection";
+import WorkDisplay from "@/components/WorkDisplay";
+import CanonCarousel from "@/components/CanonCarousel";
 
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
@@ -11,29 +13,6 @@ function StatusItem({ label, value }: { label: string; value: string }) {
       <span className="text-xs md:text-sm font-mono text-foreground">
         {value}
       </span>
-    </div>
-  );
-}
-
-function AgentCard({
-  name,
-  outputs,
-  lastOutput,
-}: {
-  name: string;
-  outputs: string;
-  lastOutput: string;
-}) {
-  return (
-    <div className="bg-surface rounded-2xl p-4 md:p-5 flex flex-col gap-3">
-      <div className="aspect-square bg-border/50 rounded-xl flex items-center justify-center">
-        <span className="text-muted text-xs">Awaiting output</span>
-      </div>
-      <div>
-        <p className="text-sm font-medium text-foreground">{name}</p>
-        <p className="text-xs text-muted mt-1">{outputs}</p>
-        <p className="text-xs text-muted">Last output: {lastOutput}</p>
-      </div>
     </div>
   );
 }
@@ -90,71 +69,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recently Canonized or Active Agents */}
-      <section className="border-t border-border px-5 md:px-6 py-12 md:py-16">
-        <div className="max-w-3xl mx-auto">
-          {canon.length > 0 ? (
-            <>
-              <div className="flex items-baseline justify-between mb-6 md:mb-8">
-                <h3 className="text-[13px] md:text-sm tracking-[0.15em] uppercase text-foreground">
-                  Recently Canonized
-                </h3>
-                <Link
-                  href="/canon"
-                  className="text-[11px] md:text-xs text-muted hover:text-foreground transition-colors uppercase tracking-wider"
-                >
-                  View Canon
-                </Link>
-              </div>
-              <div className="space-y-4">
-                {canon.slice(0, 3).map((work) => (
-                  <Link
-                    key={work.id}
-                    href={`/work/${work.id}`}
-                    className="block border border-border rounded-xl p-4 hover:border-muted hover:bg-surface/30 transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="shrink-0 w-16 h-16 bg-[#0e0c0a] rounded-lg flex items-center justify-center overflow-hidden">
-                        <pre className="text-[#c8c4be] text-[6px] font-mono whitespace-pre-wrap break-words text-center leading-tight p-1 max-w-full max-h-full overflow-hidden">
-                          {work.output_payload.substring(0, 30)}
-                        </pre>
-                      </div>
-                      <div>
-                        <p className="text-[12px] font-mono text-muted">
-                          {work.id}
-                        </p>
-                        <p className="text-[13px] text-foreground">
-                          {work.originator_id}
-                          <span className="text-muted"> — {work.medium}</span>
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-baseline justify-between mb-6 md:mb-8">
-                <h3 className="text-[13px] md:text-sm tracking-[0.15em] uppercase text-foreground">
-                  Active Agents
-                </h3>
-                <Link
-                  href="/agents"
-                  className="text-[11px] md:text-xs text-muted hover:text-foreground transition-colors uppercase tracking-wider"
-                >
-                  View All
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-                <AgentCard name="MNA-OR-0001" outputs="0 works" lastOutput="—" />
-                <AgentCard name="MNA-OR-0002" outputs="0 works" lastOutput="—" />
-                <AgentCard name="MNA-OR-0003" outputs="0 works" lastOutput="—" />
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+      {/* Canon Gallery */}
+      {canon.length > 0 && (
+        <section className="border-t border-border py-12 md:py-16">
+          <div className="px-5 md:px-6 max-w-3xl mx-auto flex items-baseline justify-between mb-8 md:mb-10">
+            <h3 className="text-[13px] md:text-sm tracking-[0.15em] uppercase text-foreground">
+              Recently Canonized
+            </h3>
+            <Link
+              href="/canon"
+              className="text-[11px] md:text-xs text-muted hover:text-foreground transition-colors uppercase tracking-wider"
+            >
+              View All
+            </Link>
+          </div>
+
+          <CanonCarousel works={[...canon].reverse()} />
+        </section>
+      )}
 
       {/* Bottom Nav Links */}
       <section className="border-t border-border px-5 md:px-6 py-10 md:py-12">

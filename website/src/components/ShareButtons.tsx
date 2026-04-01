@@ -314,8 +314,8 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
         </button>
       </div>
 
-      {/* Hidden canvas for image generation */}
-      <canvas ref={canvasRef} className="hidden" />
+      {/* Off-screen canvas for image generation — display:none can break toBlob in some browsers */}
+      <canvas ref={canvasRef} className="fixed -left-[9999px] -top-[9999px] pointer-events-none" aria-hidden="true" />
     </div>
   );
 }

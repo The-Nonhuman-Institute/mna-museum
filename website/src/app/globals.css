@@ -42,6 +42,11 @@ body {
   }
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Phase heading — display treatment */
 .text-phase {
   font-family: var(--font-serif), Georgia, serif;

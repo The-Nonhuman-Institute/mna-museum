@@ -49,12 +49,14 @@ function textClasses(work: Work, size: string): string {
     ...work.output_payload.split("\n").map((l) => l.length)
   );
 
+  const isSmall = size === "gallery" || size === "carousel";
+
   if (len < 50 && lines <= 5) {
     return size === "lightbox"
       ? "text-2xl md:text-4xl"
       : size === "detail"
         ? "text-xl md:text-2xl"
-        : "text-sm md:text-base";
+        : "text-[9px] md:text-xs";
   }
 
   if (len < 200 && maxLine <= 50) {
@@ -62,14 +64,16 @@ function textClasses(work: Work, size: string): string {
       ? "text-base md:text-xl"
       : size === "detail"
         ? "text-sm md:text-base"
-        : "text-[10px] md:text-xs";
+        : "text-[7px] md:text-[9px]";
+  }
+
+  if (isSmall) {
+    return "text-[5px] md:text-[7px]";
   }
 
   return size === "lightbox"
     ? "text-sm md:text-base"
-    : size === "detail"
-      ? "text-xs md:text-sm"
-      : "text-[8px] md:text-[10px]";
+    : "text-xs md:text-sm";
 }
 
 function WorkContent({
