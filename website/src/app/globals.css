@@ -47,6 +47,17 @@ body {
   display: none;
 }
 
+/* Infinite carousel — CSS transform animation for reliable mobile support */
+@keyframes canon-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.canon-scroll {
+  animation: canon-scroll 60s linear infinite;
+  will-change: transform;
+}
+
 /* Phase heading — display treatment */
 .text-phase {
   font-family: var(--font-serif), Georgia, serif;
