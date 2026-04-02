@@ -720,11 +720,19 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
         }
         break;
       }
-      default:
+      default: {
+        // Fallback for any medium — always show the work ID and medium
+        const centerY = PAD + WORK_AREA_H / 2;
         ctx.fillStyle = colors.fg;
-        ctx.font = "32px monospace";
+        ctx.globalAlpha = 0.7;
+        ctx.font = "600 42px monospace";
         ctx.textAlign = "center";
-        ctx.fillText(work.id, LOGICAL / 2, LOGICAL / 2);
+        ctx.fillText(work.id, LOGICAL / 2, centerY - 15);
+        ctx.globalAlpha = 0.3;
+        ctx.font = "22px sans-serif";
+        ctx.fillText(`${work.medium} — mnamuseum.org`, LOGICAL / 2, centerY + 25);
+        ctx.globalAlpha = 1;
+      }
     }
   } catch {
     // Fallback

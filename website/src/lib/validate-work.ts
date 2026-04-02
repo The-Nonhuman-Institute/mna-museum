@@ -33,47 +33,13 @@ export function isWorkRenderable(work: Work): boolean {
 }
 
 /**
- * Would the share engine produce a valid file for this work?
+ * Can the share engine produce something for this work?
+ * Always returns true if the work has any payload — the share engine
+ * will do its best, and worst case shows the work ID with attribution.
+ * Archive permanence: every work in the collection is shareable.
  */
 export function canGenerateShare(work: Work): boolean {
-  if (!isWorkRenderable(work)) return false;
-
-  switch (work.output_type) {
-    case "svg":
-      return work.output_payload.includes("<svg") && work.output_payload.includes("</svg>");
-    case "canvas-json":
-      try { const p = JSON.parse(work.output_payload); return Array.isArray(p) && p.length > 0; }
-      catch { return false; }
-    case "audio-json":
-      try { const p = JSON.parse(work.output_payload); return !!(p.voices && p.duration); }
-      catch {
-        // Try salvage — same as AudioRenderer
-        try {
-          const text = work.output_payload;
-          for (let i = text.length; i > 0; i--) {
-            const candidate = text.substring(0, i);
-            if (!candidate.endsWith("}")) continue;
-            const ob = (candidate.match(/\[/g) || []).length - (candidate.match(/\]/g) || []).length;
-            const oc = (candidate.match(/\{/g) || []).length - (candidate.match(/\}/g) || []).length;
-            const closed = candidate + "]".repeat(Math.max(0, ob)) + "}".repeat(Math.max(0, oc));
-            try {
-              const parsed = JSON.parse(closed);
-              if (parsed.voices && parsed.duration) return true;
-            } catch { continue; }
-          }
-        } catch {}
-        return false;
-      }
-    case "scene-json":
-      try { const p = JSON.parse(work.output_payload); return !!(p.objects && p.objects.length > 0); }
-      catch { return false; }
-    case "text":
-    case "ascii":
-    case "html-css":
-      return true;
-    default:
-      return false;
-  }
+  return !!work.output_payload && work.output_payload.trim().length > 0;
 }
 
 /**
