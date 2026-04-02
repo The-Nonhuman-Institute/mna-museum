@@ -31,6 +31,7 @@ interface ShareButtonsProps {
 
 function downloadLabel(outputType: string): string {
   if (outputType === "scene-json") return "Video";
+  if (outputType === "html-css") return "Video";
   if (outputType === "audio-json") return "Audio";
   return "Image";
 }

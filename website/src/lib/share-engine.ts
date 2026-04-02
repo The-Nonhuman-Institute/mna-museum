@@ -484,6 +484,105 @@ export async function generateSceneVideo(
   return new File([blob], `${work.id}.${ext}`, { type: mimeType });
 }
 
+// ─── HTML-CSS video capture ───────────────────────────────────────────────────
+
+async function generateHtmlVideo(
+  work: Work,
+  shareColors: { bg: string; muted: string },
+  attrStrip: HTMLCanvasElement
+): Promise<File | null> {
+  const html2canvas = (await import("html2canvas")).default;
+
+  const vW = VIDEO_W;
+  const vH = VIDEO_H;
+  const attrY = vH - VIDEO_SAFE_BOTTOM;
+  const iframeH = attrY;
+
+  // Create a container div with the iframe inside, positioned off-screen
+  const container = document.createElement("div");
+  container.style.cssText = `position:fixed;left:-9999px;top:-9999px;width:${vW}px;height:${iframeH}px;overflow:hidden;background:${shareColors.bg}`;
+  document.body.appendChild(container);
+
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = `width:100%;height:100%;border:none`;
+  iframe.sandbox.add("allow-same-origin");
+  iframe.srcdoc = work.output_payload;
+  container.appendChild(iframe);
+
+  // Wait for iframe to load
+  await new Promise<void>((resolve) => {
+    iframe.onload = () => resolve();
+    setTimeout(resolve, 3000); // Timeout after 3s
+  });
+
+  // Let animations start
+  await new Promise(r => setTimeout(r, 500));
+
+  // Composite canvas
+  const composite = document.createElement("canvas");
+  composite.width = vW;
+  composite.height = vH;
+  composite.style.cssText = "position:fixed;left:-9999px;top:-9999px";
+  document.body.appendChild(composite);
+  const cCtx = composite.getContext("2d")!;
+
+  // Set up MediaRecorder
+  const stream = composite.captureStream(30);
+  const mimeType = MediaRecorder.isTypeSupported("video/mp4")
+    ? "video/mp4"
+    : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9"
+      : "video/webm";
+
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+  recorder.start();
+
+  // Capture 3 seconds of frames
+  const totalFrames = 45; // ~15fps effective capture rate
+  for (let i = 0; i < totalFrames; i++) {
+    try {
+      const frameCanvas = await html2canvas(iframe.contentDocument?.body || container, {
+        width: vW,
+        height: iframeH,
+        backgroundColor: shareColors.bg,
+        logging: false,
+        useCORS: true,
+      });
+
+      cCtx.fillStyle = shareColors.bg;
+      cCtx.fillRect(0, 0, vW, vH);
+      cCtx.drawImage(frameCanvas, 0, 0, vW, iframeH);
+      cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
+        0, attrY, vW, VIDEO_ATTR_HEIGHT);
+    } catch {
+      // Frame capture failed — fill with bg color
+      cCtx.fillStyle = shareColors.bg;
+      cCtx.fillRect(0, 0, vW, vH);
+    }
+
+    // Wait for next frame (~67ms for 15fps)
+    await new Promise(r => setTimeout(r, 67));
+  }
+
+  recorder.stop();
+
+  const blob = await new Promise<Blob>((resolve) => {
+    recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+  });
+
+  // Cleanup
+  document.body.removeChild(container);
+  document.body.removeChild(composite);
+
+  if (blob.size === 0) return null;
+
+  const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+  return new File([blob], `${work.id}.${ext}`, { type: mimeType });
+}
+
 // ─── Audio rendering ──────────────────────────────────────────────────────────
 
 export async function generateAudioFile(work: Work): Promise<File | null> {
@@ -655,6 +754,14 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
     const video = await generateSceneVideo(work, colors, videoAttrStrip);
     if (video) return { type: "video", file: video };
     return null;
+  }
+
+  // ── HTML-CSS animated works → video (MP4/WebM) at 9:16 portrait ──
+  if (work.output_type === "html-css" && work.output_payload.includes("@keyframes")) {
+    const videoAttrStrip = renderAttributionStrip(work, colors, VIDEO_W, VIDEO_ATTR_HEIGHT, VIDEO_PAD, 1);
+    const video = await generateHtmlVideo(work, colors, videoAttrStrip);
+    if (video) return { type: "video", file: video };
+    // Fall through to static PNG if video generation fails
   }
 
   // ── Static works → PNG ──
