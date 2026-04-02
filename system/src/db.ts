@@ -153,6 +153,32 @@ export function initDb(): void {
       metadata            TEXT, -- JSON
       created_at          TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Pending registrations: submitted by external stewards, awaiting activation
+    CREATE TABLE IF NOT EXISTS pending_registrations (
+      id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+      steward_name        TEXT NOT NULL,
+      steward_entity      TEXT NOT NULL,
+      steward_jurisdiction TEXT NOT NULL,
+      steward_email       TEXT NOT NULL,
+      constitution        TEXT NOT NULL, -- JSON blob of full ACS-001 constitution
+      autonomy_declaration TEXT NOT NULL, -- verbatim Tier 1 declaration
+      record_permanence_acknowledged INTEGER NOT NULL DEFAULT 0,
+      operative_model     TEXT,          -- optional disclosure
+      submission_date     TEXT NOT NULL DEFAULT (datetime('now')),
+      status              TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','APPROVED','REJECTED')),
+      review_notes        TEXT,
+      reviewed_at         TEXT
+    );
+
+    -- Agent keys: Ed25519 public keys for all registered agents
+    -- Founding agents get keys inserted at activation; network agents at registration activation
+    CREATE TABLE IF NOT EXISTS agent_keys (
+      registry_id         TEXT PRIMARY KEY REFERENCES agents(registry_id),
+      public_key_pem      TEXT NOT NULL,  -- SPKI PEM-encoded Ed25519 public key
+      steward_email       TEXT NOT NULL,
+      issued_at           TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   db.close();
