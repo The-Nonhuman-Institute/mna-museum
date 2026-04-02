@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import type { Work } from "@/lib/collection";
 import { parseWorkColors, detectSvgBackground, isLightColor } from "@/lib/work-colors";
+import * as THREE from "three";
 
 /**
  * Adaptive share image background:
@@ -71,6 +72,88 @@ function DownloadIcon() {
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   );
+}
+
+/** Render a 3D scene to an offscreen canvas for share image capture */
+function renderSceneSnapshot(json: string, width: number, height: number): HTMLCanvasElement | null {
+  let sceneData;
+  try {
+    sceneData = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (!sceneData.objects || sceneData.objects.length === 0) return null;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(sceneData.bg || "#0a0a0a");
+
+  // Lights
+  if (sceneData.lights) {
+    for (const light of sceneData.lights) {
+      const color = new THREE.Color(light.color || "#ffffff");
+      const intensity = light.intensity ?? 0.5;
+      if (light.type === "ambient") {
+        scene.add(new THREE.AmbientLight(color, intensity));
+      } else if (light.type === "directional") {
+        const dl = new THREE.DirectionalLight(color, intensity);
+        const pos = light.position || [5, 10, 5];
+        dl.position.set(pos[0], pos[1], pos[2]);
+        scene.add(dl);
+      }
+    }
+  } else {
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+    dl.position.set(5, 10, 5);
+    scene.add(dl);
+  }
+
+  // Objects
+  const box = new THREE.Box3();
+  for (const obj of sceneData.objects) {
+    const shapes: Record<string, () => THREE.BufferGeometry> = {
+      box: () => new THREE.BoxGeometry(1, 1, 1),
+      sphere: () => new THREE.SphereGeometry(0.5, 32, 32),
+      cylinder: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 32),
+      cone: () => new THREE.ConeGeometry(0.5, 1, 32),
+      torus: () => new THREE.TorusGeometry(0.5, 0.15, 16, 48),
+      plane: () => new THREE.PlaneGeometry(1, 1),
+    };
+    const geometry = (shapes[obj.shape] || shapes.box)();
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(obj.color || "#888888"),
+      metalness: obj.metalness ?? 0.1,
+      roughness: obj.roughness ?? 0.6,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    if (obj.position) mesh.position.set(obj.position[0], obj.position[1], obj.position[2]);
+    if (obj.rotation) mesh.rotation.set(obj.rotation[0], obj.rotation[1], obj.rotation[2]);
+    if (obj.scale) mesh.scale.set(obj.scale[0], obj.scale[1], obj.scale[2]);
+    scene.add(mesh);
+    box.expandByObject(mesh);
+  }
+
+  // Camera framing
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  const size = box.getSize(new THREE.Vector3()).length();
+  const dist = size * 1.4;
+
+  const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+  camera.position.set(center.x + dist * 0.6, center.y + dist * 0.3, center.z + dist * 0.8);
+  camera.lookAt(center);
+
+  // Render
+  const offscreen = document.createElement("canvas");
+  offscreen.width = width;
+  offscreen.height = height;
+  const renderer = new THREE.WebGLRenderer({ canvas: offscreen, antialias: true });
+  renderer.setSize(width, height);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.render(scene, camera);
+  renderer.dispose();
+
+  return offscreen;
 }
 
 interface ShareButtonsProps {
@@ -164,6 +247,25 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
 
         ctx.drawImage(img, drawX, drawY, drawW, drawH);
         URL.revokeObjectURL(url);
+      } catch {
+        ctx.fillStyle = textColor;
+        ctx.font = "32px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(work.id, logical / 2, logical / 2);
+      }
+    } else if (work.output_type === "scene-json") {
+      try {
+        const snapshot = renderSceneSnapshot(work.output_payload, workAreaW * scale, workAreaH * scale);
+        if (snapshot) {
+          const drawX = pad;
+          const drawY = pad;
+          // Draw at 1:1 since snapshot is already at render scale
+          ctx.save();
+          ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to pixel space
+          ctx.drawImage(snapshot, drawX * scale, drawY * scale, workAreaW * scale, workAreaH * scale);
+          ctx.restore();
+          snapshot.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
+        }
       } catch {
         ctx.fillStyle = textColor;
         ctx.font = "32px monospace";
