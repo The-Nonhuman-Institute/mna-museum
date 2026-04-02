@@ -484,46 +484,6 @@ export async function generateSceneVideo(
   return new File([blob], `${work.id}.${ext}`, { type: mimeType });
 }
 
-// ─── HTML-CSS snapshot capture ────────────────────────────────────────────────
-
-async function generateHtmlSnapshot(
-  ctx: CanvasRenderingContext2D,
-  work: Work,
-  shareColors: { bg: string }
-): Promise<boolean> {
-  const html2canvas = (await import("html2canvas")).default;
-
-  // Render HTML into a div (not iframe — avoids cross-origin issues on mobile)
-  const container = document.createElement("div");
-  container.style.cssText = `position:fixed;left:-9999px;top:-9999px;width:${WORK_AREA_W}px;height:${WORK_AREA_H}px;overflow:hidden;background:${shareColors.bg}`;
-  // Inject the HTML content via shadow DOM to isolate styles
-  const shadow = container.attachShadow({ mode: "open" });
-  shadow.innerHTML = work.output_payload;
-  document.body.appendChild(container);
-
-  // Let CSS load and animations start
-  await new Promise(r => setTimeout(r, 800));
-
-  try {
-    const capture = await html2canvas(container, {
-      width: WORK_AREA_W,
-      height: WORK_AREA_H,
-      backgroundColor: shareColors.bg,
-      logging: false,
-      useCORS: true,
-    });
-
-    const drawX = PAD + (WORK_AREA_W - capture.width) / 2;
-    const drawY = PAD + (WORK_AREA_H - capture.height) / 2;
-    ctx.drawImage(capture, drawX, drawY, WORK_AREA_W, WORK_AREA_H);
-
-    document.body.removeChild(container);
-    return true;
-  } catch {
-    document.body.removeChild(container);
-    return false;
-  }
-}
 
 // ─── Audio rendering ──────────────────────────────────────────────────────────
 
@@ -729,19 +689,39 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
         renderCanvasWork(ctx, work, colors);
         break;
       case "html-css": {
-        const captured = await generateHtmlSnapshot(ctx, work, colors);
-        if (!captured) {
-          // Fallback if capture fails
-          ctx.fillStyle = colors.fg;
-          ctx.globalAlpha = 0.3;
-          ctx.font = "600 48px monospace";
-          ctx.textAlign = "center";
-          ctx.fillText(work.id, LOGICAL / 2, LOGICAL / 2 - 20);
-          ctx.font = "24px sans-serif";
-          ctx.globalAlpha = 0.2;
-          ctx.fillText("CSS Animation — view at mnamuseum.org", LOGICAL / 2, LOGICAL / 2 + 30);
-          ctx.globalAlpha = 1;
+        // HTML-CSS animations can't be reliably captured client-side.
+        // Render a branded card that communicates the work's identity.
+        const centerY = PAD + WORK_AREA_H / 2;
+
+        // Decorative lines suggesting motion/animation
+        ctx.strokeStyle = colors.fg;
+        ctx.globalAlpha = 0.06;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 12; i++) {
+          const y = PAD + (WORK_AREA_H / 12) * i + WORK_AREA_H / 24;
+          ctx.beginPath();
+          ctx.moveTo(PAD + 40, y);
+          ctx.lineTo(LOGICAL - PAD - 40, y);
+          ctx.stroke();
         }
+
+        // Work ID — large, centered
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = colors.fg;
+        ctx.font = "600 42px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(work.id, LOGICAL / 2, centerY - 30);
+
+        // Medium label
+        ctx.globalAlpha = 0.35;
+        ctx.font = "22px sans-serif";
+        ctx.fillText("CSS Animation", LOGICAL / 2, centerY + 10);
+
+        // Call to action
+        ctx.globalAlpha = 0.25;
+        ctx.font = "18px sans-serif";
+        ctx.fillText("View the live work at mnamuseum.org", LOGICAL / 2, centerY + 45);
+        ctx.globalAlpha = 1;
         break;
       }
       default:
