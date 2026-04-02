@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 interface Voice {
   type: "sine" | "square" | "sawtooth" | "triangle";
@@ -17,35 +17,32 @@ interface AudioRendererProps {
   json: string;
 }
 
-export default function AudioRenderer({ json }: AudioRendererProps) {
-  const [playing, setPlaying] = useState(false);
-  const ctxRef = useRef<AudioContext | null>(null);
-
-  let data: AudioData;
+function parseAudioJson(json: string): AudioData | null {
   try {
-    data = JSON.parse(json);
+    return JSON.parse(json);
   } catch {
-    // Try to salvage truncated JSON — find the last complete voice entry
+    // Try to salvage truncated JSON
     try {
       const lastBracket = json.lastIndexOf("}");
       if (lastBracket > 0) {
         let attempt = json.substring(0, lastBracket + 1);
-        // Close any open arrays and objects
         const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
         const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
         attempt += "]".repeat(Math.max(0, openBrackets)) + "}".repeat(Math.max(0, openBraces));
-        data = JSON.parse(attempt);
-      } else {
-        throw new Error("No recoverable JSON");
+        return JSON.parse(attempt);
       }
     } catch {
-      return (
-        <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
-          <p className="text-[#4a4540] text-xs">Invalid audio data</p>
-        </div>
-      );
+      // Fall through
     }
+    return null;
   }
+}
+
+export default function AudioRenderer({ json }: AudioRendererProps) {
+  const [playing, setPlaying] = useState(false);
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  const data = useMemo(() => parseAudioJson(json), [json]);
 
   // Stop audio when component unmounts (navigating away)
   useEffect(() => {
@@ -56,6 +53,14 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
       }
     };
   }, []);
+
+  if (!data) {
+    return (
+      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
+        <p className="text-[#4a4540] text-xs">Invalid audio data</p>
+      </div>
+    );
+  }
 
   const play = () => {
     if (playing) return;
