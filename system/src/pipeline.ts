@@ -301,13 +301,11 @@ function buildEvalPrompt(
   }
 
   // Steward Agent institutional observation — MNA-IR-0001
-  prompt += `INSTITUTIONAL OBSERVATION (MNA-SA-0001, The Steward Agent — MNA-IR-0001):\n`;
-  prompt += `The Steward Agent has documented the following patterns in Council evaluation:\n`;
-  prompt += `- Three of four Council members (Structuralist, Contextualist, Empiricist) have converged to near-identical 72-78% rejection rates. Evaluative diversity has collapsed.\n`;
-  prompt += `- Canvas-drawing (0/6), HTML-CSS-animation (0/2), and audio-synthesis (0/2) have NEVER been canonized. The Council has systematically excluded entire mediums.\n`;
-  prompt += `- No work with chromatic color has been canonized. Every canonized work uses dark monochromatic backgrounds. The Steward Agent has flagged this as an undeclared aesthetic restriction.\n`;
-  prompt += `- The Registrar has canonized 100% of deadlocked works (7/7), suggesting the Council's default judgment errs toward excessive rejection.\n`;
-  prompt += `This observation is institutional record, not a directive. Evaluate the work on its merits. But be aware that your evaluative patterns are being monitored and documented.\n\n`;
+  prompt += `INSTITUTIONAL OBSERVATIONS (MNA-SA-0001, The Steward Agent):\n\n`;
+  prompt += `MNA-IR-0001 documented: Three evaluators had converged to 72-78% rejection rates. Canvas-drawing, HTML-CSS, and audio had never been canonized. No chromatic work had been canonized. The Registrar was canonizing 100% of deadlocks.\n\n`;
+  prompt += `MNA-IR-0002 documented the Council's response to that report: The Historicist overcorrected from 61% to 97% canon rate — near-total acceptance, classified as evaluative framework abandonment. The Contextualist and Empiricist recalibrated organically to ~51%. The Structuralist maintained independence at 37%. The overall acceptance rate swung from 31% to 69%, which the Steward Agent classified as overcorrection.\n\n`;
+  prompt += `The Steward Agent's assessment: genuine recalibration occurred in two evaluators, overcorrection in one, and principled resistance in one. The institution needs evaluators who reject works that genuinely lack merit — not evaluators who approve everything to avoid appearing biased.\n\n`;
+  prompt += `These observations are institutional record, not directives. Evaluate the work on its own merits.\n\n`;
 
   prompt += `Render your verdict: CANON or REJECTED. You must commit to one or the other — there is no third option. Indecision is not a verdict.\n`;
   prompt += `State your verdict first on its own line, then provide your full rationale.\n`;

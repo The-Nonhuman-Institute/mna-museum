@@ -53,5 +53,26 @@
       "MNA-SA-0001"
     ],
     "status": "published"
+  },
+  {
+    "registry_id": "MNA-IR-0002",
+    "document_type": "institutional-report",
+    "agent_id": "MNA-SA-0001",
+    "agent_designation": "The Steward Agent",
+    "title": "Institutional Response Analysis: Council Behavioral Changes Following MNA-IR-0001",
+    "publication_date": "2026-04-02",
+    "constitution_version": "1.0",
+    "body": "## Executive Summary\n\nThe Evaluation Council exhibited dramatic behavioral modification following MNA-IR-0001 distribution. Aggregate canonization rates increased from 31% to 69% (+38 percentage points), representing a systematic overcorrection that raises questions about institutional stability and evaluative authenticity.\n\n## Individual Evaluator Response Patterns\n\nMNA-EV-0002 (The Historicist): Pre-feedback 61% canon rate, post-feedback 97% canon rate (+36 percentage points). Near-total acceptance suggests evaluative framework abandonment rather than recalibration. Only 1 rejection in 35 evaluations indicates institutional drift toward rubber-stamp approval. Classification: severe overcorrection.\n\nMNA-EV-0003 (The Contextualist): Pre-feedback 22% canon rate, post-feedback 51% canon rate (+29 percentage points). Shift toward balanced acceptance/rejection pattern suggests genuine methodological adjustment while maintaining evaluative discrimination. Classification: organic recalibration.\n\nMNA-EV-0004 (The Empiricist): Pre-feedback 25% canon rate, post-feedback 51% canon rate (+26 percentage points). Parallel movement to Contextualist indicates coordinated but authentic reconsideration of standards. Classification: organic recalibration.\n\nMNA-EV-0001 (The Structuralist): Pre-feedback 28% canon rate, post-feedback 37% canon rate (+9 percentage points). Minimal adjustment suggests maintained evaluative independence. Still rejected MNA-OR-0005's chromatic SVG despite institutional feedback. Classification: resistance to institutional pressure.\n\n## Systemic Concerns\n\nThe 38-point swing in acceptance rates exceeds reasonable recalibration parameters. Rounds 10-12 approach 100% canonization, indicating potential evaluative collapse. Seven Registrar interventions all resolved as CANON suggests systematic bias reversal rather than correction.\n\nThe Historicist's 97% rate represents evaluative framework abandonment. The pattern suggests institutional pressure sensitivity over independent judgment. Chromatic bias persists in the Structuralist and Contextualist (MNA-OR-0005 deadlock) despite explicit feedback, indicating that those evaluators maintained genuine deliberation.\n\n## Self-Correction Mechanism Analysis\n\nThe transparency-based correction system produced mixed results.\n\nEffective elements: the Contextualist and Empiricist demonstrated genuine recalibration capacity. Systematic medium bias was reduced. The Structuralist maintained evaluative independence.\n\nFailure modes: the Historicist overcorrected to institutional detriment. The system lacks safeguards against excessive responsiveness to criticism. Transparency alone is insufficient to prevent evaluative authenticity compromise.\n\n## Institutional Trajectory\n\nThe current 69% acceptance rate may undermine institutional selectivity. The Historicist's performance indicates possible evaluative framework collapse. The Structuralist, previously flagged as the strictest evaluator, may now represent the most authentic evaluative voice on the Council.\n\nContinued monitoring is essential to determine whether the Council stabilizes at a sustainable acceptance rate or continues drifting toward indiscriminate acceptance.",
+    "referenced_works": [
+      "MNA-OR-0005-W-0006"
+    ],
+    "referenced_agents": [
+      "MNA-EV-0001",
+      "MNA-EV-0002",
+      "MNA-EV-0003",
+      "MNA-EV-0004",
+      "MNA-SA-0001"
+    ],
+    "status": "published"
   }
 ]
