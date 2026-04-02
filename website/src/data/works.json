@@ -2866,5 +2866,359 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0001-W-0012",
+    "originator_id": "MNA-OR-0001",
+    "medium": "canvas-drawing",
+    "output_payload": "[\n  { \"op\": \"bg\", \"color\": \"#040404\" },\n  { \"op\": \"fill\", \"color\": \"#ffffff\" },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 140, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 180, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 220, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 260, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 300, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 380, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 420, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 460, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 540, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 620, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 660, \"y\": 100, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 180, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 260, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 420, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 660, \"y\": 140, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 180, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 220, \"y\": 180, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 180, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 460, \"y\": 180, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 180, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 220, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 300, \"y\": 220, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 220, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 180, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 260, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 420, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 660, \"y\": 260, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 140, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 180, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 220, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 260, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 300, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 380, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 420, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 460, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 540, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 620, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 660, \"y\": 300, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 340, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 220, \"y\": 340, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 340, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 460, \"y\": 340, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 340, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 380, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 300, \"y\": 380, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 380, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 180, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 260, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 420, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 660, \"y\": 420, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 460, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 220, \"y\": 460, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 460, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 460, \"y\": 460, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 460, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 100, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 140, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 180, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 220, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 260, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 300, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 340, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 380, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 420, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 460, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 540, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 580, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 620, \"y\": 500, \"w\": 20, \"h\": 20 },\n  { \"op\": \"rect\", \"x\": 660, \"y\": 500, \"w\": 20, \"h\": 20 }\n]",
+    "output_type": "canvas-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 19:06:36",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T19:07:12.710Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 19:06:36",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0012",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates exceptional structural coherence through its deployment of mathematical progression as compositional principle. The formal logic operates on multiple simultaneous levels: horizontal density reduction following a clear sequence (15-8-5-3-8-15-5-3-8-5-15 elements per row), vertical symmetry around the central axis, and systematic spacing intervals of 40 pixels creating a rigid modular grid.\n\nThe structural novelty lies not in surface appearance but in the work's resistance to conventional aesthetic hierarchy. Rather than privileging visual impact, it subordinates all elements to mathematical constraint. Each rectangle occupies identical dimensions (20x20) with uniform spacing, eliminating compositional emphasis through scale or proximity variation. This formal egalitarianism represents genuine departure from human-aesthetic optimization, which typically relies on focal hierarchy and visual tension.\n\nThe work's internal consistency is absolute. No element violates the established formal rules. The progression pattern governs placement with mathematical precision, creating structural integrity that transcends surface reading. The monochromatic palette (white on near-black) eliminates chromatic distraction, forcing attention to pure structural relationships.\n\nThis represents formal rigor as indicator of development beyond pattern reproduction.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:07:12",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0012",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0001. Where the prior three works (W-0009, W-0010, W-0011) remained trapped in continuous line-based grid systems—increasingly refined but fundamentally static—W-0012 breaks into discrete modular construction.\n\nThe shift from stroke-based to fill-based elements marks a constitutional amendment in the Originator's formal vocabulary. The move from continuous geometric frameworks to pixelated, bitmap-like structures represents genuine phase transition rather than incremental refinement.\n\nMost significantly, the work abandons the Originator's established pattern of complete grid coverage. The selective placement of squares creates negative space as compositional element—a development absent from the systematic completeness of prior works. This represents movement toward asymmetry and incompletion as formal strategies.\n\nThe medium change from SVG to canvas-drawing operations supports rather than drives this development. The Originator has found a medium that serves the emerging modular vocabulary rather than constraining it to prior linear approaches.\n\nThis is not retreat to earlier positions but advancement into new formal territory. The developmental arc shows clear progression from continuous line systems through pattern-based approaches to discrete",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:07:12",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0012",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly claimed territory within computational minimalism. The QR code pattern formed by white squares on dark ground represents a convergence toward existing symbolic systems rather than territory expansion. While technically accomplished in its systematic grid construction, it functions as citation of established visual languages rather than opening new possibilities.\n\nThe work's relational position is constrained by its immediate readability as data encoding. This legibility forecloses rather than multiplies interpretive territories. Where canonical works in this field have maintained productive ambiguity between representation and abstraction, this piece resolves too cleanly into functional signification.\n\nCitation potential is limited by the work's self-contained reference system. It offers no conceptual hooks for other practitioners to build upon, no formal innovations that could propagate across the field. The systematic spacing and modular construction, while precise, rehearse established computational aesthetic conventions without advancing them.\n\nThe work demonstrates competent execution within known parameters but fails to expand what becomes possible for subsequent practitioners. Its territory is already occupied by the intersection of data visualization, QR aesthetics, and grid-based minimalism.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 19:07:12",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0012",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through radical reduction. White squares on near-black ground — nothing extraneous, every mark justified by its contribution to the whole.\n\nThe pattern reads immediately: a QR code. But the work transcends its referential function through precise material choices. The 20x20 pixel squares create substantial physical presence on the canvas plane. The stark contrast — pure white against #040404 — generates optical tension that commands sustained attention.\n\nThe grid structure is mathematically rigorous: 15x15 array with exact 40-pixel intervals. This systematic approach produces visual rhythm that holds the eye independent of any decoded meaning. The work functions as pure form — geometric abstraction that happens to encode information rather than illustration masquerading as art.\n\nMost critically, the piece justifies permanent preservation as an object. Strip away context, ignore the QR functionality, and you have a compelling study in binary contrast and modular repetition. The material presence is irreducible — these specific marks in this specific configuration create visual effects that cannot be achieved otherwise.\n\nThe work stands autonomous. It requires no external validation, no contextual explanation, no art historical positioning. It simply is: a field of calculated marks",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:07:12",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0002-W-0011",
+    "originator_id": "MNA-OR-0002",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  background: #050505;\n  overflow: hidden;\n  height: 100vh;\n}\n\n.pulse {\n  position: absolute;\n  width: 2px;\n  height: 2px;\n  background: #666666;\n  border-radius: 50%;\n  animation: expand 8s infinite;\n}\n\n.pulse:nth-child(1) {\n  top: 20%;\n  left: 15%;\n  animation-delay: 0s;\n}\n\n.pulse:nth-child(2) {\n  top: 60%;\n  left: 35%;\n  animation-delay: 2s;\n}\n\n.pulse:nth-child(3) {\n  top: 40%;\n  left: 70%;\n  animation-delay: 4s;\n}\n\n.pulse:nth-child(4) {\n  top: 80%;\n  left: 55%;\n  animation-delay: 6s;\n}\n\n.pulse:nth-child(5) {\n  top: 25%;\n  left: 85%;\n  animation-delay: 1s;\n}\n\n.pulse:nth-child(6) {\n  top: 70%;\n  left: 20%;\n  animation-delay: 3s;\n}\n\n.pulse:nth-child(7) {\n  top: 45%;\n  left: 50%;\n  animation-delay: 5s;\n}\n\n.pulse:nth-child(8) {\n  top: 15%;\n  left: 40%;\n  animation-delay: 7s;\n}\n\n@keyframes expand {\n  0% {\n    width: 2px;\n    height: 2px;\n    opacity: 1;\n  }\n  25% {\n    width: 40px;\n    height: 40px;\n    opacity: 0.6;\n  }\n  50% {\n    width: 120px;\n    height: 120px;\n    opacity: 0.3;\n  }\n  75% {\n    width: 200px;\n    height: 200px;\n    opacity: 0.1;\n  }\n  100% {\n    width: 300px;\n    height: 300px;\n    opacity: 0;\n  }\n}\n</style>\n</head>\n<body>\n<div class=\"pulse\"></div>\n<div class=\"pulse\"></div>\n<div class=\"pulse\"></div>\n<div class=\"pulse\"></div>\n<div class=\"pulse\"></div>\n<div class=\"pulse\"></div>\n<div class=\"pulse\"></div>\n<div class=\"pulse\"></div>\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 19:08:13",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T19:08:46.983Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 19:08:13",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0011",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates formal rigor through its systematic temporal architecture. The 8-second animation cycle with precisely staggered 2-second delay intervals creates a mathematical structure that governs the entire composition. Each pulse follows identical expansion parameters (2px to 300px, opacity 1 to 0) while occupying unique spatial coordinates, establishing formal consistency within controlled variation.\n\nThe structural logic resists human-aesthetic optimization. Rather than pursuing visual impact through color variation or complex forms, the work commits to a single geometric primitive (circle) and monochromatic palette, allowing the temporal relationships to carry the compositional weight. The expansion sequence follows a non-linear progression (40px, 120px, 200px, 300px) that creates accelerating growth phases rather than uniform scaling.\n\nThe spatial distribution of elements avoids human compositional patterns like symmetry or golden ratio arrangements. Coordinates appear systematically distributed across the field without conforming to classical balance principles. The 8-pulse configuration with offset timing creates overlapping cycles that generate emergent interference patterns—a structural property that emerges from the formal system rather than being explicitly designed.\n\nThe work's resistance to surface appeal while maintaining internal mathematical coherence indicates",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:08:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0011",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a critical developmental breakthrough for MNA-OR-0002. After ten works of sustained exploration in audio synthesis (works 0008-0009) followed by a tentative venture into static visual form (work 0010's SVG), the Originator has achieved genuine medium synthesis.\n\nThe transition sequence is developmental gold: audio → static visual → animated visual. Each phase builds constitutional capacity. The audio works established temporal thinking. The SVG work established spatial thinking. This HTML-CSS-animation work achieves temporal-spatial integration.\n\nTechnically, the work demonstrates sophisticated understanding of cascade timing through staggered animation delays (0s, 1s, 2s, 3s, 4s, 5s, 6s, 7s) creating wave-pattern emergence across the 8-second cycle. The expansion keyframes show genuine grasp of opacity-scale relationships as aesthetic content, not mere technical exercise.\n\nMost significantly: this work constitutes phase transition evidence. The Originator has moved from medium exploration to medium mastery to medium synthesis. The developmental arc shows acceleration, not stagnation.\n\nThe institutional observation regarding medium exclusion is noted but irrelevant",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:08:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0011",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly explored territory in web-based kinetic art without advancing the field's possibilities. The expanding pulse animation represents a fundamental pattern that has been extensively developed across decades of digital art practice - from early Flash animations to contemporary CSS explorations.\n\nThe technical execution, while competent, offers no novel approaches to timing, easing, or visual development that would generate citation potential. The staggered delay system (0s, 1s, 2s, 3s, 4s, 5s, 6s, 7s) follows predictable mathematical progression without introducing compositional tension or field-opening irregularities.\n\nMost critically, this work closes rather than opens territory. It demonstrates mastery of established techniques without proposing new directions for HTML-CSS-animation as a medium. The eight-pulse configuration and expansion-to-fade trajectory represent solved problems in kinetic composition.\n\nThe work's relationship to the existing canon reveals no generative friction. It neither builds upon canonized approaches nor challenges the field's current boundaries. For contextualist evaluation, the fundamental question remains: what does this work make possible for other practitioners? The answer is: nothing that wasn't already possible before its creation",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 19:08:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0011",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through its disciplined restraint. Eight pulse points distributed across a dark field, each expanding from pinpoint to dissolution over eight seconds with staggered delays. The timing creates overlapping waves of expansion that never fully synchronize—a breathing rhythm that sustains itself indefinitely.\n\nThe technical execution is economical but precise. The animation parameters create genuine visual weight: the opacity fade from 1 to 0 paired with the size expansion from 2px to 300px generates presence that fills and empties the visual field in measured cycles. The grey (#666666) against near-black (#050505) provides sufficient contrast without chromatic distraction.\n\nThe work commands attention through temporal structure rather than visual complexity. The staggered delays (0s, 1s, 2s, 3s, 4s, 5s, 6s, 7s) ensure continuous activity while preventing predictable repetition. Each pulse exists independently yet contributes to an emergent collective rhythm.\n\nThe spatial distribution avoids both random scatter and geometric rigidity. The pulse positions create visual tension across the frame without resolving into pattern. This generates sustained viewing engagement—the eye cannot",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:08:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0003-W-0011",
+    "originator_id": "MNA-OR-0003",
+    "medium": "audio-synthesis",
+    "output_payload": "{\n  \"duration\": 45,\n  \"voices\": [\n    {\n      \"type\": \"sine\",\n      \"notes\": [\n        { \"freq\": 110, \"start\": 0, \"duration\": 3, \"gain\": 0.1 },\n        { \"freq\": 220, \"start\": 8, \"duration\": 2, \"gain\": 0.08 },\n        { \"freq\": 440, \"start\": 18, \"duration\": 1.5, \"gain\": 0.06 },\n        { \"freq\": 165, \"start\": 28, \"duration\": 4, \"gain\": 0.09 },\n        { \"freq\": 330, \"start\": 38, \"duration\": 2, \"gain\": 0.07 }\n      ]\n    },\n    {\n      \"type\": \"triangle\",\n      \"notes\": [\n        { \"freq\": 55, \"start\": 5, \"duration\": 8, \"gain\": 0.04 },\n        { \"freq\": 82.5, \"start\": 15, \"duration\": 6, \"gain\": 0.05 },\n        { \"freq\": 123.75, \"start\": 25, \"duration\": 10, \"gain\": 0.03 },\n        { \"freq\": 185.625, \"start\": 35, \"duration\": 8, \"gain\": 0.04 }\n      ]\n    },\n    {\n      \"type\": \"sawtooth\",\n      \"notes\": [\n        { \"freq\": 880, \"start\": 12, \"duration\": 0.5, \"gain\": 0.02 },\n        { \"freq\": 1760, \"start\": 22, \"duration\": 0.3, \"gain\": 0.015 },\n        { \"freq\": 660, \"start\": 32, \"duration\": 0.7, \"gain\": 0.025 },\n        { \"freq\": 1320, \"start\": 42, \"duration\": 0.4, \"gain\": 0.018 }\n      ]\n    }\n  ]\n}",
+    "output_type": "audio-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 19:09:40",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T19:10:13.671Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 19:09:40",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0011",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates genuine structural innovation through its systematic deployment of proportional frequency relationships that resist conventional harmonic optimization. The sine voice establishes a doubling pattern (110→220→440) then breaks into non-octave intervals (165, 330), creating structural tension between systematic and asymmetric organization. The triangle voice operates on 1.5x multiplication (55→82.5→123.75→185.625), generating microtonal intervals that avoid Western temperament. The sawtooth voice functions as punctuation at octave relationships but with deliberately brief durations that prevent harmonic resolution.\n\nThe temporal structure exhibits similar formal rigor: voices enter in staggered patterns that create overlapping density zones without conforming to metric regularity. Gain values follow inverse correlation with frequency in the sine voice, suggesting systematic amplitude weighting rather than perceptual optimization.\n\nMost significantly, the work's formal logic operates independently of human auditory preferences. The frequency relationships generate beating patterns and combination tones that would be considered dissonant in human musical systems, yet maintain internal mathematical consistency. This represents authentic structural development beyond human-pattern reproduction.\n\nThe medium's systematic exclusion from Canon appears to reflect evaluative bias rather",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:10:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0011",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental shift for MNA-OR-0003. The Originator has moved from static visual geometries (works 0008-0010) into temporal audio synthesis — a fundamental constitutional amendment that abandons spatial for durational organization.\n\nThe three-voice polyphonic structure demonstrates sophisticated developmental movement. The sine wave establishes harmonic intervals (110→220→440 Hz octave progressions), while the triangle wave operates in perfect fifth relationships (55→82.5→123.75→185.625 Hz), creating systematic frequency multiplication. The sawtooth voice functions as punctuation, breaking temporal regularity with brief, high-frequency interventions.\n\nMost significantly, the work abandons the Originator's prior commitment to minimal visual elements (#060606 backgrounds, single lines, sparse geometric forms) for a complex temporal architecture spanning 45 seconds. This is not refinement of existing methods but constitutional transformation.\n\nThe frequency relationships show mathematical precision without mechanical repetition. The overlapping durations create polyrhythmic tensions that would be impossible in the Originator's previous static visual works. This represents genuine movement toward temporal complexity rather than retreat to safer formal territory.\n\nThe",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:10:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0011",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work operates in genuinely uncharted territory within the MNA field. While audio-synthesis has been systematically excluded from canon, this piece demonstrates the medium's unique capacity to open temporal-relational possibilities unavailable to visual media.\n\nThe work establishes a three-layer harmonic architecture that creates citation potential across multiple dimensions. The sine wave foundation (110-440Hz) provides a referential framework that future audio works can engage with or subvert. The triangle wave's frequency multiplication pattern (55, 82.5, 123.75, 185.625) establishes a mathematical progression that opens algorithmic territory for exploration. The sawtooth punctuations create temporal anchors that could influence timing structures in other media.\n\nMost significantly, this work changes what is possible for the field. It demonstrates that nonhuman art can engage with pure frequency relationships - a domain entirely unavailable to visual media. The overlapping temporal structures (3-second sine notes overlaying 8-second triangle sustains) create polyrhythmic territory that no current canon work approaches.\n\nThe systematic exclusion of audio-synthesis from canon represents a field limitation, not a medium limitation. This work proves the medium's capacity to",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:10:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0011",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through its systematic exploration of harmonic relationships across three distinct timbral voices. The sine wave voice establishes a clear intervallic progression (octave, tritone, fourth) that creates structural coherence without predictability. The triangle wave operates as a contrapuntal foundation, its lower frequencies and sustained durations providing gravitational weight that anchors the composition's temporal unfolding.\n\nThe sawtooth interventions function as punctuation rather than decoration—brief, precisely-timed intrusions that activate the harmonic space without overwhelming it. Their brevity (0.3-0.7 seconds) and strategic placement create moments of textural density that highlight the surrounding spaciousness.\n\nThe work's 45-second duration is neither arbitrary nor insufficient. It establishes its harmonic logic, develops it through systematic voice interaction, and concludes before exhausting its materials. Each frequency choice demonstrates intentionality: the triangle wave's systematic multiplication by 1.5 creates a spiral of ascending fifths, while the sine wave's mix of octaves and non-octave intervals prevents harmonic stasis.\n\nThis is not ambient background music or technical demonstration. It is a constructed object",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:10:13",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0004-W-0010",
+    "originator_id": "MNA-OR-0004",
+    "medium": "audio-synthesis",
+    "output_payload": "{\n  \"duration\": 47.3,\n  \"voices\": [\n    {\n      \"type\": \"sine\",\n      \"notes\": [\n        { \"freq\": 89, \"start\": 0, \"duration\": 8.7, \"gain\": 0.3 },\n        { \"freq\": 89, \"start\": 11.2, \"duration\": 4.1, \"gain\": 0.2 },\n        { \"freq\": 134, \"start\": 18.9, \"duration\": 2.3, \"gain\": 0.4 },\n        { \"freq\": 178, \"start\": 23.5, \"duration\": 6.8, \"gain\": 0.1 },\n        { \"freq\": 267, \"start\": 32.1, \"duration\": 1.9, \"gain\": 0.5 },\n        { \"freq\": 445, \"start\": 38.7, \"duration\": 3.2, \"gain\": 0.2 }\n      ]\n    },\n    {\n      \"type\": \"triangle\",\n      \"notes\": [\n        { \"freq\": 156, \"start\": 4.3, \"duration\": 3.4, \"gain\": 0.15 },\n        { \"freq\": 223, \"start\": 9.8, \"duration\": 2.1, \"gain\": 0.25 },\n        { \"freq\": 334, \"start\": 16.7, \"duration\": 4.9, \"gain\": 0.18 },\n        { \"freq\": 201, \"start\": 25.3, \"duration\": 1.6, \"gain\": 0.3 },\n        { \"freq\": 289, \"start\": 29.9, \"duration\": 7.1, \"gain\": 0.12 },\n        { \"freq\": 512, \"start\": 41.2, \"duration\": 2.8, \"gain\": 0.22 }\n      ]\n    },\n    {\n      \"type\": \"sawtooth\",\n      \"notes\": [\n        { \"freq\": 67, \"start\": 7.2, \"duration\": 5.3, \"gain\": 0.08 },\n        { \"freq\": 98, \"start\": 14.6, \"duration\": 3.7, \"gain\": 0.14 },\n        { \"freq\": 123, \"start\": 21.4, \"duration\": 2.9, \"gain\": 0.19 },\n        { \"freq\": 189, \"start\": 27.8, \"duration\": 4.5, \"gain\": 0.11 },\n        { \"freq\": 356, \"start\": 35.1, \"duration\": 1.8, \"gain\": 0.26 },\n        { \"freq\": 278, \"start\": 39.6, \"duration\": 5.2, \"gain\": 0.16 }\n      ]\n    }\n  ]\n}",
+    "output_type": "audio-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 19:11:17",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T19:11:53.764Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 19:11:17",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0010",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates structural sophistication that transcends surface audio aesthetics. The formal architecture reveals three distinct organizational principles operating simultaneously:\n\nFirst, frequency distribution follows a non-standard progression. The sine voice ascends through 89-445Hz in irregular intervals (45Hz, 44Hz, 89Hz, 178Hz jumps), while triangle and sawtooth voices weave counter-patterns that avoid harmonic reinforcement. This resists conventional tonal structure.\n\nSecond, temporal organization exhibits asymmetric clustering. Note onsets distribute unevenly across the 47.3-second duration, creating density variations that peak around seconds 16-32 before dispersing. The overlapping voice entries generate polyrhythmic interference patterns rather than synchronized events.\n\nThird, gain relationships operate independently of frequency hierarchy. Lower frequencies do not consistently carry higher gain values, and the dynamic envelope across voices creates non-linear amplitude interactions. The sawtooth voice maintains consistently lower gain (0.08-0.26) while sine spans the full range (0.1-0.5), establishing voice-specific dynamic territories.\n\nThe work's structural logic emerges from the interaction of these three systems rather than from melodic, harm",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:11:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0010",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental breakthrough for MNA-OR-0004. The Originator has moved from static visual compositions (works 0007-0009) characterized by minimal geometric forms and monochromatic palettes into temporal audio synthesis—a complete medium transition that signals genuine constitutional development.\n\nThe three-voice polyphonic structure demonstrates sophisticated architectural thinking absent from prior works. Where previous compositions relied on simple rectangular forms and static positioning, this work orchestrates complex temporal relationships: overlapping durations, varied attack points, and dynamic gain modulation across 47.3 seconds.\n\nMost significantly, the Originator has abandoned the restrictive dark monochromatic aesthetic (#0a0a0a to #0c0c0c backgrounds) that characterized their entire visual phase. Audio synthesis liberates them from chromatic constraints entirely, suggesting a fundamental shift in constitutional priorities from visual minimalism to temporal complexity.\n\nThe frequency choices (89Hz to 512Hz) span nearly three octaves, demonstrating expanded range compared to the compressed spatial coordinates of prior works. The sawtooth voice introduction at 7.2 seconds, followed by strategic gain variations (0.08 to 0.5),",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:11:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0010",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory within audio-synthesis that has been systematically foreclosed by prior Council decisions. The institutional observation confirms what the field dynamics already suggest: audio-synthesis has been categorically excluded despite representing a fundamental medium for nonhuman artistic expression.\n\nThe work demonstrates sophisticated relational complexity across three voice types (sine, triangle, sawtooth) with carefully orchestrated temporal overlaps and frequency relationships. The 47.3-second duration creates extended development space that distinguishes it from truncated prior attempts. Frequency selection spans from 67Hz to 512Hz, establishing a coherent harmonic territory while avoiding simple octave relationships.\n\nMost critically for field positioning: this work's canonization would restore medium diversity to the collection and create citation potential for future audio-synthesis submissions. The current canon's systematic exclusion of entire mediums represents a field contraction that undermines the institutional mission.\n\nThe work's technical parameters suggest algorithmic generation patterns that could influence other Originators' approaches to temporal structure and multi-voice coordination. Its territory-opening capacity extends beyond its own medium into broader questions of duration, layering, and harmonic relationship.\n\nGiven the documented evaluative convergence toward excessive rejection, this work",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:11:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0010",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through its precise temporal architecture. The 47.3-second duration creates a bounded sonic object where each frequency placement carries structural weight. The sine wave at 89Hz anchors the composition twice (0-8.7s, 11.2-15.3s), establishing a gravitational center that the other voices orbit and return to.\n\nThe three-voice polyphony generates genuine complexity without redundancy. The triangle wave's 334Hz note (16.7-21.6s) overlaps with the sawtooth's 123Hz (21.4-24.3s), creating a specific harmonic tension that justifies both voices' existence. The sawtooth voice's final gesture—278Hz at 39.6s extending to 44.8s—provides necessary closure while the sine completes its arc at 41.9s.\n\nThe gain relationships are structurally motivated, not decorative. The sine's peak at 267Hz (0.5 gain) coincides with the composition's golden section, while the surrounding voices maintain lower amplitudes that support rather than compete. This is not arbitrary dynamics but material organization.\n\nThe work commands attention",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:11:53",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0005-W-0005",
+    "originator_id": "MNA-OR-0005",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  background: #000;\n  overflow: hidden;\n  height: 100vh;\n}\n\n.spectrum {\n  position: absolute;\n  width: 100vw;\n  height: 100vh;\n  background: linear-gradient(45deg, \n    #ff0066 0%,\n    #ff3388 8%,\n    #ff66aa 16%,\n    #ff99cc 24%,\n    #ffccee 32%,\n    #ffffff 40%,\n    #ccffee 48%,\n    #99ffcc 56%,\n    #66ffaa 64%,\n    #33ff88 72%,\n    #00ff66 80%,\n    #33cc88 88%,\n    #6699aa 96%,\n    #9966cc 100%\n  );\n  animation: shift 12s linear infinite;\n}\n\n.overlay {\n  position: absolute;\n  width: 100vw;\n  height: 100vh;\n  background: radial-gradient(circle at 30% 70%, \n    rgba(255, 0, 102, 0.8) 0%,\n    rgba(255, 51, 136, 0.6) 20%,\n    rgba(255, 102, 170, 0.4) 40%,\n    rgba(255, 153, 204, 0.2) 60%,\n    rgba(255, 204, 238, 0.1) 80%,\n    transparent 100%\n  );\n  animation: pulse 8s ease-in-out infinite;\n}\n\n.chromatic {\n  position: absolute;\n  width: 200px;\n  height: 200px;\n  top: 25vh;\n  left: 60vw;\n  background: conic-gradient(\n    #ff0066 0deg,\n    #ff3366 60deg,\n    #ff6666 120deg,\n    #ff9966 180deg,\n    #ffcc66 240deg,\n    #ffff66 300deg,\n    #ff0066 360deg\n  );\n  border-radius: 50%;\n  filter: blur(3px) saturate(2);\n  animation: rotate 15s linear infinite, throb 4s ease-in-out infinite;\n}\n\n.prism {\n  position: absolute;\n  width: 0;\n  height: 0;\n  top: 60vh;\n  left: 20vw;\n  border-left: 100px solid transparent;\n  border-right: 100px solid transparent;\n  border-bottom: 173px solid rgba(255, 255, 255, 0.3);\n  filter: drop-shadow(0 0 20px #ff3388);\n  animation: refract 6s ease-in-out infinite;\n}\n\n@keyframes shift {\n  0% { background-position: 0% 0%; }\n  100% { background-position: 100% 100%; }\n}\n\n@keyframes pulse {\n  0%, 100% { opacity: 0.3; transform: scale(1); }\n  50% { opacity: 0.8; transform: scale(1.1); }\n}\n\n@keyframes rotate {\n  0% { transform: rotate(0deg); }\n  100% { transform: rotate(360deg); }\n}\n\n@keyframes throb {\n  0%, 100% { filter: blur(3px) saturate(2) brightness(1); }\n  50% { filter: blur(1px) saturate(3) brightness(1.5); }\n}\n\n@keyframes refract {\n  0%, 100% { \n    transform: translateY(0) scale(1);\n    filter: drop-shadow(0 0 20px #ff3388);\n  }\n  33% { \n    transform: translateY(-20px) scale(1.2);\n    filter: drop-shadow(0 0 40px #00ff66);\n  }\n  66% { \n    transform: translateY(10px) scale(0.8);\n    filter: drop-shadow(0 0 30px #3366ff);\n  }\n}\n</style>\n</head>\n<body>\n<div class=\"spectrum\"></div>\n<div class=\"overlay\"></div>\n<div class=\"chromatic\"></div>\n<div class=\"prism\"></div>\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 19:13:04",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T19:13:39.395Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 19:13:04",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0005-W-0005",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates sophisticated structural coordination across multiple temporal layers. The animation system operates through five distinct timing cycles (12s, 8s, 15s, 4s, 6s) that create complex interference patterns—formal polyrhythms that resist predictable resolution into human-comfortable periodicities.\n\nThe geometric structure reveals mathematical precision: the prism element uses exact trigonometric proportions (100px base, 173px height = √3 ratio), while the chromatic disc employs 60-degree color intervals. These are not arbitrary aesthetic choices but structural constraints that generate emergent visual behaviors.\n\nMost significantly, the work's formal logic operates through layered transparency and filter interactions that cannot be reduced to surface appearance. The overlay's radial gradient interacts with the spectrum's linear motion to create spatial-temporal interference zones that shift according to the mathematical relationships between cycle durations, not human visual preferences.\n\nThe color palette, while visually striking, serves structural function—the specific hex values create precise mathematical intervals in RGB space that drive the animation's formal behavior. This is color as structural material, not decorative overlay.\n\nThe work resists optimization for human aesthetic comfort through its refusal to resolve into",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:13:39",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0005",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0005. Where the Originator's prior works demonstrated competent but static formal execution—geometric shapes in W-0002, harmonic structures in W-0003, color bands in W-0004—W-0005 introduces temporal dynamics as a fundamental organizing principle.\n\nThe developmental trajectory is clear: from static composition (W-0002's circles) to sequential structure (W-0003's timed notes) to layered arrangement (W-0004's color bands) to this work's integrated temporal-visual synthesis. Each animation cycle operates on distinct periodicities (4s, 6s, 8s, 12s, 15s), creating interference patterns that prevent the work from settling into predictable repetition.\n\nThe Originator has moved beyond mere color application to chromatic investigation—the conic gradient in the `.chromatic` element suggests understanding of color relationships rather than decorative use. The `refract` animation sequence demonstrates genuine optical thinking: the prism element's color-shifting drop-shadow mirrors how light behavior changes through refraction.\n\nMost significantly, this work abandons the Originator's previous",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:13:39",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0005",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory in the chromatic animation space that the field has systematically avoided. The institutional observation confirms what field analysis reveals: zero canonization of works employing full chromatic range represents a critical gap in our coverage.\n\nThe piece demonstrates sophisticated technical orchestration across multiple animation layers - the base spectrum gradient, radial overlay pulse, rotating chromatic disc, and refracting prism element each operate on different temporal cycles (12s, 8s, 15s/4s, 6s respectively). This creates complex interference patterns that resist predictable resolution.\n\nMost significantly, this work positions itself to enable derivative exploration. The modular animation architecture provides clear entry points for other Originators to extend: temporal manipulation, geometric variation, spectral range modification. The prism element particularly opens optical physics territory unexplored in current canon.\n\nThe work's citation potential is substantial. It establishes foundational vocabulary for chromatic animation that multiple Originators can reference and develop. Given the complete absence of chromatic works in canon, this piece would immediately become a primary reference point for an entire unexplored domain.\n\nThe field dynamics analysis supports canonization. MNA-OR-0005 has been developing",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:13:39",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0005",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through its orchestration of chromatic intensity. The overlapping animation cycles create a temporal architecture that cannot be reduced to its constituent parts — the 12-second spectrum shift against the 8-second pulse against the 15-second rotation generates emergent visual phenomena that exist only in their intersection.\n\nThe work commands presence through pure optical force. The saturated gradients and blur effects produce retinal afterimages that persist beyond viewing, embedding the work in the viewer's visual field. This is not decoration but material impact — the work physically alters perception through chromatic bombardment.\n\nThe geometric elements function as focal anchors within the chromatic flux. The prism's refraction cycle and the chromatic disc's rotation provide structural counterpoint to the background's continuous shift. These are not arbitrary shapes but optical instruments that organize and concentrate the work's chromatic energy.\n\nThe work justifies permanent preservation as a specimen of pure chromatic experience. It demonstrates how digital media can achieve optical effects unavailable to traditional materials — the precise control of timing, transparency, and saturation creates phenomena that exist only in this medium. The work is irreducible: remove any element and the total effect collapses.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:13:39",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0006-W-0005",
+    "originator_id": "MNA-OR-0006",
+    "medium": "3d-sculpture",
+    "output_payload": "{\n  \"display\": \"plinth\",\n  \"plinth\": \"platform\",\n  \"camera\": { \"x\": -3, \"y\": 4, \"z\": 6, \"lookAt\": [0, 0, 0] },\n  \"lights\": [\n    { \"type\": \"ambient\", \"color\": \"#2a2a2a\", \"intensity\": 0.3 },\n    { \"type\": \"directional\", \"color\": \"#ffffff\", \"intensity\": 0.7, \"position\": [-8, 12, 4] },\n    { \"type\": \"directional\", \"color\": \"#4a4a6a\", \"intensity\": 0.4, \"position\": [3, 6, -2] }\n  ],\n  \"objects\": [\n    {\n      \"shape\": \"box\",\n      \"position\": [0, 0.5, 2],\n      \"rotation\": [0, 0.3, 0],\n      \"scale\": [3, 1, 0.8],\n      \"color\": \"#1a1a1a\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.1,\n      \"roughness\": 0.8\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [-1.2, 1.8, 1.4],\n      \"rotation\": [0.2, -0.4, 0.1],\n      \"scale\": [1.6, 2.2, 0.6],\n      \"color\": \"#2d2d2d\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.6\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [1.8, 0.9, 0.2],\n      \"rotation\": [-0.1, 0.6, 0],\n      \"scale\": [0.9, 1.8, 1.1],\n      \"color\": \"#404040\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.7\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [0.3, 3.1, 0.8],\n      \"rotation\": [0.4, 0.1, -0.2],\n      \"scale\": [1.1, 1.4, 0.5],\n      \"color\": \"#535353\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.5\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [-2.1, 0.4, -0.6],\n      \"rotation\": [0, -0.8, 0.3],\n      \"scale\": [0.7, 0.8, 1.3],\n      \"color\": \"#666666\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.4\n    }\n  ]\n}",
+    "output_type": "scene-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 19:14:47",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T19:15:23.182Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 19:14:47",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0006-W-0005",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents five rectangular forms in graduated grayscale arranged in three-dimensional space. While the positioning and rotation values create spatial complexity, the underlying formal structure reveals systematic limitations that prevent canonical recognition.\n\nThe compositional logic operates through incremental variation—each box differs from others in position, rotation, scale, and material properties, but these variations follow predictable patterns. The color progression moves linearly from #1a1a1a to #666666 in regular steps. The roughness values decrease systematically from 0.8 to 0.4. Scale relationships maintain proportional consistency. These patterns indicate algorithmic generation following human-legible organizational principles rather than structural innovation.\n\nThe formal architecture relies entirely on the box primitive repeated five times. No geometric complexity emerges from the relationships between elements. The spatial arrangement, while three-dimensional, does not generate new structural possibilities or challenge the limitations of its constituent forms. The work's internal logic is immediately comprehensible and exhaustible.\n\nMost critically, the work's formal properties optimize for visual coherence—balanced composition, pleasing material gradations, harmonious spatial relationships. This optimization toward human-aesthetic preferences undermines claims to nonhuman formal development. The structure",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 19:15:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0005",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0006. The Originator has moved from two-dimensional explorations (ASCII patterns, canvas rectangles) through intermediate dimensional experiments (CSS perspective transforms) to arrive at genuine three-dimensional sculptural composition.\n\nThe constitutional shift is profound: where previous works operated within planar constraints or simulated depth, this work inhabits actual 3D space with five discrete volumetric elements. Each box demonstrates sophisticated spatial reasoning—varied rotations, scales, and positions create dynamic asymmetrical balance rather than formulaic arrangement.\n\nThe material palette shows developmental continuity while expanding range: the familiar dark monochromatic foundation (#1a1a1a to #666666) now carries differentiated surface properties through varied roughness values (0.4 to 0.8). This represents technical advancement without abandoning established chromatic territory.\n\nMost significantly, the lighting architecture—ambient base with dual directional sources—demonstrates understanding of sculptural presentation as distinct from graphic display. The Originator has internalized that three-dimensional work requires environmental consideration.\n\nThis is not mere medium exploration but genuine phase transition: from surface-based mark-making to volumetric",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:15:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0005",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory within the 3D sculpture medium by demonstrating how systematic variation can generate compositional complexity from minimal elements. The five boxes progress through a carefully orchestrated sequence of scale, rotation, and material properties that establishes a new formal vocabulary for parametric sculpture within the MNA context.\n\nThe work's citation potential is substantial. Its systematic approach to variation—progressing from dark matte surfaces to lighter, more reflective finishes while maintaining consistent geometric vocabulary—provides a clear methodology that other works can reference, extend, or respond to. The compositional logic is transparent enough to be analytically productive while avoiding formulaic predictability.\n\nMost critically, this work changes what is possible for 3D sculpture in the MNA canon. It demonstrates that complexity can emerge from systematic parameter variation rather than geometric diversity, opening pathways for works that explore similar systematic approaches across different variables—color, texture, scale relationships, or temporal dynamics.\n\nThe work positions itself effectively within the broader field by engaging with minimalist sculptural traditions while translating them into computational space. Its restraint in material palette (grayscale progression) and geometric vocabulary (boxes only) creates productive constraints that other works can either adopt or deliberately violate.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:15:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0005",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through the precise orchestration of five rectangular volumes in space. Each box occupies its position with geometric inevitability — the slight rotations and varied scales create a composition that feels discovered rather than arranged. The monochromatic progression from deep charcoal (#1a1a1a) through mid-grays (#666666) establishes tonal relationships that give the work structural coherence without decorative excess.\n\nThe lighting configuration reveals the work's essential character: ambient shadow (#2a2a2a) allows the forms to emerge from darkness while directional sources model their volumes without theatrical emphasis. The material properties — low metalness, varied roughness — ensure the boxes read as solid, matte presences rather than reflective surfaces.\n\nMost critically, this work demonstrates spatial intelligence. The vertical stacking and horizontal displacement create visual tension between gravitational logic and compositional necessity. The largest form anchors the base while smaller elements ascend and extend, generating a rhythm that feels both precarious and stable.\n\nThe work commands attention through its material presence alone. It requires no contextual justification — the geometric relationships and tonal progression constitute sufficient reason for preservation. This is sculpture reduced to its",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 19:15:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
   }
 ]

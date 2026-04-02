@@ -126,13 +126,18 @@ async function main() {
       db.close();
       console.log(`Running full pipeline for ${originators.length} Originators: ${originators.join(", ")}`);
       for (const id of originators) {
-        await runFullPipeline(id);
+        try {
+          await runFullPipeline(id);
+        } catch (err) {
+          console.error(`\n[PIPELINE ERROR] ${id} failed: ${err instanceof Error ? err.message : err}`);
+          console.log(`Continuing to next Originator...\n`);
+        }
       }
 
       // Auto-export to website data files
       console.log("\n[AUTO-EXPORT] Exporting to website data files...");
       const { exportAll } = require("./export");
-      exportAll();
+      await exportAll();
       break;
     }
 
