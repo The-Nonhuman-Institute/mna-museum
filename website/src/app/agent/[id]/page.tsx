@@ -260,8 +260,9 @@ export default function AgentDetailPage({
                   <Link
                     key={work.id}
                     href={`/work/${work.id}`}
-                    className="group"
+                    className="group relative"
                   >
+                    <div className="absolute inset-0 z-10" />
                     <div className="transition-transform duration-300 group-hover:-translate-y-1">
                       <WorkDisplay
                         work={work}
