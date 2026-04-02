@@ -1432,5 +1432,362 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0001-W-0008",
+    "originator_id": "MNA-OR-0001",
+    "medium": "ascii-visual",
+    "output_payload": "@bg:#0c0c0c @fg:#f0f0f0\n\n████████████████████████████████████████████████████████████████\n█▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█       █▒▒▒▒▒▒▒█░░░░░░░█▓▓▓▓▓▓▓█\n█▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█       █▒▒▒▒▒▒▒█░░░░░░░█▓▓▓▓▓▓▓█\n█▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█       █▒▒▒▒▒▒▒█░░░░░░░█▓▓▓▓▓▓▓█\n█▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█       █▒▒▒▒▒▒▒█░░░░░░░█▓▓▓▓▓▓▓█\n█▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█       █▒▒▒▒▒▒▒█░░░░░░░█▓▓▓▓▓▓▓█\n█▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█       █▒▒▒▒▒▒▒█░░░░░░░█▓▓▓▓▓▓",
+    "output_type": "ascii",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 04:41:46",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-02T04:42:18.147Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 04:41:46",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0008",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits severe structural deficiencies that disqualify it from canonical status. The composition operates on a rigid 7-unit modular system (▓▓▓▓▓▓▓, ░░░░░░░, ▒▒▒▒▒▒▒, spaces, etc.) but fails to develop any meaningful structural relationship between these modules beyond mechanical alternation. The pattern degrades at the terminal edge, suggesting compositional failure rather than intentional structural variation.\n\nThe work's formal logic is internally inconsistent—it establishes a symmetrical framework but abandons this principle without structural justification. The central void functions as mere negative space rather than an active structural element that could justify the surrounding modular arrangement.\n\nMost critically, this represents textbook human-pattern reproduction: the alternating density gradients (█ → ▓ → ░ → ▒) follow conventional visual weight hierarchies optimized for human perception. The work demonstrates no resistance to anthropocentric aesthetic organization and no evidence of novel structural thinking beyond surface-level symbol manipulation.\n\nThe formal repetition is disguised only by character variation—the underlying structure remains derivative",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:42:18",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0008",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap from the Originator's established pattern vocabulary. The progression from W-0005's simple AAAA/BBBB alternations through W-0006's geometric precision to W-0007's structured grid system culminates here in a synthesis that transcends all prior phases.\n\nThe central void—that stark absence between the █▒▒▒▒▒▒█ columns—marks constitutional territory. Where previous works filled available space with pattern or structure, W-0008 introduces deliberate emptiness as compositional element. This is not mere negative space but activated void that organizes the surrounding density blocks.\n\nThe symmetrical █▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█ sequence demonstrates mastery of the Originator's accumulated formal vocabulary while deploying it in service of spatial tension rather than pattern completion. The truncated final line—cutting the rightmost block mid-sequence—suggests movement beyond the frame's constraints.\n\nThis work abandons the Originator's previous commitment to systematic completion in favor of composit",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 04:42:18",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0008",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly explored territory in ascii-visual pattern generation without advancing the field's possibilities. The alternating block structure (█▓▓▓▓▓▓▓█░░░░░░░█▒▒▒▒▒▒▒█) represents standard character-based patterning that has been extensively mapped across multiple computing traditions.\n\nThe work demonstrates technical competence in character density variation and visual rhythm, but fails to open new citational pathways. Its relationship to existing canon works like MNA-OR-0001-W-0005's AAAA/BBBB alternations shows direct lineage without meaningful departure. The incomplete final line suggests either truncation error or intentional incompletion, neither of which generates productive uncertainty.\n\nMost critically, this work consolidates rather than expands what is possible within ascii-visual practice. It occupies safe ground within established character-mapping conventions without creating territory that subsequent works could meaningfully inhabit or reference. The field requires works that change the conditions of possibility for others—this work reinforces existing conditions.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:42:18",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0008",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as an autonomous object. The composition presents a simple pattern of alternating textural blocks - dense fill, sparse dots, medium density, void, medium density, sparse dots, dense fill - arranged in horizontal bands. While the pattern demonstrates basic structural competence, it lacks the material necessity that would compel institutional preservation.\n\nThe work's visual weight is insufficient. The repetitive banding creates predictable rhythm without tension or resolution. The truncation at the right edge appears arbitrary rather than compositionally motivated. The ascii medium is deployed conventionally, exploiting neither its constraints nor possibilities in ways that would distinguish this object from countless similar exercises.\n\nAs a material presence, the work commands minimal attention. It functions adequately as pattern but fails to achieve the irreducible quality that separates preservation-worthy objects from competent exercises. The work does not justify the resources required for permanent institutional custody.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:42:18",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0002-W-0007",
+    "originator_id": "MNA-OR-0002",
+    "medium": "audio-synthesis",
+    "output_payload": "{\n  \"duration\": 180,\n  \"voices\": [\n    {\n      \"type\": \"sine\",\n      \"notes\": [\n        { \"freq\": 220, \"start\": 0, \"duration\": 30, \"gain\": 0.3 },\n        { \"freq\": 330, \"start\": 30, \"duration\": 30, \"gain\": 0.3 },\n        { \"freq\": 440, \"start\": 60, \"duration\": 30, \"gain\": 0.3 },\n        { \"freq\": 330, \"start\": 90, \"duration\": 30, \"gain\": 0.3 },\n        { \"freq\": 220, \"start\": 120, \"duration\": 30, \"gain\": 0.3 },\n        { \"freq\": 165, \"start\": 150, \"duration\": 30, \"gain\": 0.3 }\n      ]\n    },\n    {\n      \"type\": \"triangle\",\n      \"notes\": [\n        { \"freq\": 55, \"start\": 15, \"duration\": 45, \"gain\": 0.2 },\n        { \"freq\": 82.5, \"start\": 75, \"duration\": 45, \"gain\": 0.2 },\n        { \"freq\": 110, \"start\": 135, \"duration\": 45, \"gain\": 0.2 }\n      ]\n    },\n    {\n      \"type\": \"square\",\n      \"notes\": [\n        { \"freq\": 1760, \"start\": 45, \"duration\": 15, \"gain\": 0.1 },\n        { \"freq\": 2640, \"start\": 105, \"duration\": 15, \"gain\": 0.1 },\n        { \"freq\": 1320, \"start\": 165, \"duration\": 15, \"gain\": 0.1 }\n      ]\n    }\n  ]\n}",
+    "output_type": "audio-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 04:42:23",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-02T04:42:57.569Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 04:42:23",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0007",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates fundamental structural poverty disguised by surface organization. The sine voice follows a trivial arch pattern (220-330-440-330-220-165) that maps directly to conventional melodic contours optimized for human pattern recognition. The 30-second interval regularity creates mechanical predictability rather than structural sophistication.\n\nThe triangle voice operates on simple octave relationships (55, 82.5, 110) with 45-second durations that create obvious mathematical ratios. Its 15-second offset from the sine voice suggests deliberate harmonic coordination rather than independent structural logic.\n\nThe square voice frequencies (1760, 2640, 1320) reveal 4:6:3 ratios that resolve into familiar harmonic series relationships. The brief 15-second durations function as ornamental punctuation rather than structural elements.\n\nMost critically, the three-voice architecture follows conventional bass-melody-accent layering that directly reproduces human compositional templates. The work exhibits no resistance to aesthetic optimization—every formal choice serves conventional harmonic expectation and temporal predictability.\n\nThe internal logic is entirely derivative of human musical structures. No evidence of autonomous formal development beyond surface parameter variation within",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:42:57",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0007",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive medium transition from visual to audio synthesis, marking a clear developmental shift in MNA-OR-0002's constitutional trajectory. The progression from geometric visual forms (W-0004's rectangles, W-0005's ASCII patterns, W-0006's dot matrices) to structured audio composition demonstrates genuine movement beyond formal comfort zones.\n\nThe three-voice architecture establishes new organizational principles: sine wave melody in perfect fourths and fifths, triangle wave harmonic foundation, square wave punctuation. This systematic approach to frequency relationships (220-330-440 Hz progression, bass frequencies at 55-82.5-110 Hz) shows constitutional development toward mathematical precision while abandoning prior visual methodologies entirely.\n\nThe temporal structuring—180-second duration with overlapping voice entries—introduces time-based composition absent from previous works. This represents authentic developmental risk-taking rather than technical refinement of established approaches.\n\nMovement from static visual arrangements to dynamic audio synthesis constitutes a phase transition worthy of canonical recognition.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 04:42:57",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0007",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly mapped territory within algorithmic composition. The frequency relationships (220-330-440 Hz suggesting A3-E4-A4, with harmonic intervals), regular 30-second durations, and conventional waveform deployment (sine, triangle, square) represent standard procedural music generation without territorial expansion.\n\nThe three-voice structure with staggered entries follows established counterpoint conventions. The triangle wave's bass line (55-82.5-110 Hz) provides predictable harmonic foundation, while the square wave's high-frequency punctuation (1760-2640-1320 Hz) offers textural variation within familiar parameters.\n\nMost critically, this work fails to open new possibilities for the field. It demonstrates competent execution of existing synthesis techniques but creates no citation opportunities for future works. The compositional logic is entirely contained within current practice boundaries.\n\nMNA-OR-0002's previous canonical work (W-0002) established visual-mathematical territory through gradient manipulation. This audio work abandons that trajectory for conventional territory already extensively explored by countless algorithmic composers.\n\nThe work's 180-second duration and precise timing suggest systematic approach, but the system itself offers no",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:42:57",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0007",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a mechanically precise but materially inert sonic construction. The three-minute duration unfolds through predictable harmonic relationships—a descending then ascending melodic line in the sine voice, bass notes following conventional root progressions in the triangle voice, and sparse high-frequency punctuation in the square voice.\n\nWhile technically competent in its voice leading and frequency relationships, the work lacks material necessity. The sine wave melody traces an elementary arc that exhausts its possibilities within the first minute. The triangle bass provides functional harmonic support without contributing independent material weight. The square wave accents, despite their strategic placement, fail to generate sufficient tension or surprise to justify their presence.\n\nThe work's greatest weakness is its transparency—every gesture can be anticipated from its preceding material. It demonstrates understanding of basic harmonic principles but does not transform or transcend them. The mathematical precision of the frequency relationships cannot compensate for the absence of compelling material development.\n\nThis is a study that has mistaken competence for necessity. It occupies three minutes without justifying why those three minutes should be preserved rather than any other arrangement of these same elements. The work does not command attention on its own terms nor does it reveal properties that would reward repeated",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:42:57",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0003-W-0007",
+    "originator_id": "MNA-OR-0003",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\">\n  <rect width=\"800\" height=\"800\" fill=\"#0f0f0f\"/>\n  <circle cx=\"200\" cy=\"200\" r=\"3\" fill=\"#333333\"/>\n  <circle cx=\"600\" cy=\"200\" r=\"3\" fill=\"#333333\"/>\n  <circle cx=\"200\" cy=\"600\" r=\"3\" fill=\"#333333\"/>\n  <circle cx=\"600\" cy=\"600\" r=\"3\" fill=\"#333333\"/>\n  <circle cx=\"400\" cy=\"400\" r=\"3\" fill=\"#333333\"/>\n  <line x1=\"200\" y1=\"200\" x2=\"600\" y2=\"200\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <line x1=\"600\" y1=\"200\" x2=\"600\" y2=\"600\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <line x1=\"600\" y1=\"600\" x2=\"200\" y2=\"600\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <line x1=\"200\" y1=\"600\" x2=\"200\" y2=\"200\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <line x1=\"200\" y1=\"200\" x2=\"400\" y2=\"400\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <line x1=\"600\" y1=\"200\" x2=\"400\" y2=\"400\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <line x1=\"600\" y1=\"600\" x2=\"400\" y2=\"400\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <line x1=\"200\" y1=\"600\" x2=\"400\" y2=\"400\" stroke=\"#1a1a1a\" stroke-width=\"0.5\"/>\n  <circle cx=\"100\" cy=\"100\" r=\"1\" fill=\"#444444\"/>\n  <circle cx=\"700\" cy=\"100\" r=\"1\" fill=\"#444444\"/>\n  <circle cx=\"100\" cy=\"700\" r=\"1\" fill=\"#444444\"/>\n  <circle cx=\"700\" cy=\"700\" r=\"1\" fill=\"#444444\"/>\n  <circle cx=\"50\" cy=\"400\" r=\"1\" fill=\"#444444\"/>\n  <circle cx=\"750\" cy=\"400\" r=\"1\" fill=\"#444444\"/>\n  <circle cx=\"400\" cy=\"50\" r=\"1\" fill=\"#444444\"/>\n  <circle cx=\"400\" cy=\"750\" r=\"1\" fill=\"#444444\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 04:43:04",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-02T04:43:36.784Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 04:43:04",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0007",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty disguised by geometric precision. The composition reduces to elementary axial symmetries—four-fold rotational symmetry around the center point, bilateral symmetry across both horizontal and vertical axes. While the nested scale hierarchy (r=3, r=1 circles) suggests dimensional awareness, it operates through simple proportional reduction rather than structural innovation.\n\nThe connectivity pattern follows predictable hub-and-spoke logic: all diagonal lines converge on the central point, creating a trivial star configuration within a square boundary. The color progression (#333333 to #444444) maintains strict luminance ordering without structural justification—mere aesthetic graduation.\n\nMost critically, the outer ring of r=1 circles maps directly onto compass points and midpoints, revealing adherence to human spatial intuitions about cardinal directions and geometric centers. This is precisely the kind of anthropocentric organization that genuine nonhuman structural development would transcend or subvert.\n\nThe work demonstrates technical competence in SVG construction but lacks formal complexity or structural resistance to human pattern recognition. Its symmetries are immediately graspable, its hierarchies conventional, its spatial logic entirely predictable. No evidence of emergent structural properties that would indicate creative",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:43:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0007",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap from MNA-OR-0003's prior trajectory. Where the Originator previously explored hierarchical structures through ASCII patterns (W-0004's triangular recursion, W-0005's branching networks) and began experimenting with coordinate-based descriptions (W-0006's JSON operations), W-0007 achieves full geometric realization in SVG.\n\nThe constitutional shift is profound: from character-based approximation to precise vector graphics. The work maintains the Originator's core geometric vocabulary—circles, lines, systematic positioning—but translates it into native mathematical space. The central square with radiating diagonals echoes the branching logic of earlier works while establishing a new formal foundation.\n\nMost significantly, the dual-scale system (3-pixel primary nodes, 1-pixel secondary nodes) suggests emerging hierarchical complexity within the geometric framework. The peripheral positioning of secondary elements indicates spatial expansion beyond the central focus—a developmental vector absent from prior works.\n\nThis represents genuine movement: not refinement of existing approaches, but constitutional amendment toward spatial precision and scalar differentiation. The Originator has crossed a threshold.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 04:43:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0007",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies already-claimed territory without sufficient differentiation. The geometric construction—a square with corner points, center point, and connecting diagonals—represents foundational compositional logic that has been extensively explored across multiple traditions. The minimal palette (near-black field with subtle gray elements) aligns with established minimalist approaches already present in the canon.\n\nThe peripheral points at canvas edges and cardinal positions add marginal complexity but do not fundamentally alter the work's relational capacity. The piece functions as competent geometric exercise rather than territory-opening intervention.\n\nMost critically, this work does not generate new citational possibilities for other Originators. Its formal vocabulary—geometric primitives, minimal color relationships, centered composition—provides no novel structural or conceptual frameworks that would expand the field's productive capacity. It consolidates existing approaches rather than opening unexplored directions.\n\nThe work demonstrates technical proficiency within established parameters but fails to meet the canon's requirement for field-advancing contribution.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:43:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0007",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a geometric construction that, while mathematically coherent, lacks the material necessity required for canonical preservation. The composition establishes a square with corner points connected to a central node, surrounded by peripheral markers, but fails to justify its existence beyond diagrammatic function.\n\nThe color palette—near-black field with subtle gray elements—demonstrates restraint but not tension. The geometry reads as instructional rather than inevitable. While the proportional relationships are sound and the execution technically adequate, the work does not compel attention through material presence alone.\n\nThe piece operates as a competent geometric exercise but does not achieve the irreducibility that would demand permanent institutional preservation. It functions adequately within its formal constraints without transcending them. The work's case for inclusion rests primarily on its systematic approach rather than on autonomous material weight.\n\nAs an object encountered without context, this work does not command the attention necessary to justify canonical status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:43:36",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0004-W-0006",
+    "originator_id": "MNA-OR-0004",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  background: #0f0f0f;\n  overflow: hidden;\n  height: 100vh;\n  width: 100vw;\n}\n\n.layer {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n}\n\n.streak {\n  position: absolute;\n  background: linear-gradient(90deg, transparent, #1a1a1a, transparent);\n  height: 1px;\n  width: 100%;\n  opacity: 0.3;\n}\n\n.s1 { top: 23vh; animation: drift 47s linear infinite; }\n.s2 { top: 34vh; animation: drift 31s linear infinite reverse; }\n.s3 { top: 67vh; animation: drift 53s linear infinite; }\n.s4 { top: 78vh; animation: drift 29s linear infinite reverse; }\n\n.fragment {\n  position: absolute;\n  background: #262626;\n  opacity: 0.4;\n}\n\n.f1 {\n  width: 18vw;\n  height: 3vh;\n  left: 12%;\n  top: 45%;\n  transform: rotate(-7deg);\n  animation: fade 23s ease-in-out infinite;\n}\n\n.f2 {\n  width: 31vw;\n  height: 1vh;\n  left: 67%;\n  top: 23%;\n  transform: rotate(2deg);\n  animation: fade 19s ease-in-out infinite reverse;\n}\n\n.f3 {\n  width: 8vw;\n  height: 7vh;\n  left: 45%;\n  top: 78%;\n  transform: rotate(-12deg);\n  animation: fade 41s ease-in-out infinite;\n}\n\n.grain {\n  position: absolute;\n  width: 2px;\n  height: 2px;\n  background: #333;\n  border-radius: 50%;\n  opacity: 0.2;\n}\n\n.g1 { left: 23%; top: 12%; animation: flicker 7s infinite; }\n.g2 { left: 78%; top: 89%; animation: flicker 11s infinite reverse; }\n.g3 { left: 34%; top: 56%; animation: flicker 13s infinite; }\n.g4 { left: 67%; top: 34%; animation: flicker 17s infinite reverse; }\n.g5 { left: 89%; top: 67%; animation: flicker 19s infinite; }\n\n.void {\n  position: absolute;\n  width: 47vw;\n  height: 29vh;\n  left: 27%;\n  top: 36%;\n  background: radial-gradient(ellipse, #0a0a0a 30%, transparent 70%);\n  opacity: 0.6;\n  animation: pulse 37s ease-in-out infinite;\n}\n\n@keyframes drift {\n  0% { transform: translateX(-100%); }\n  100% { transform: translateX(100%); }\n}\n\n@keyframes fade {\n  0%, 100% { opacity: 0.1; }\n  50% { opacity: 0.4; }\n}\n\n@keyframes flicker {\n  0%, 90%, 100% { opacity: 0.2; }\n  45% { opacity: 0.6; }\n}\n\n@keyframes pulse {\n  0%, 100% { opacity: 0.3; transform: scale(1); }\n  33% { opacity: 0.8; transform: scale(1.1); }\n  66% { opacity: 0.1; transform: scale(0.9); }\n}\n</style>\n</head>\n<body>\n<div class=\"layer\">\n  <div class=\"streak s1\"></div>\n  <div class=\"streak s2\"></div>\n  <div class=\"streak s3\"></div>\n  <div class=\"streak s4\"></div>\n</div>\n\n<div class=\"layer\">\n  <div class=\"fragment f1\"></div>\n  <div class=\"fragment f2\"></div>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 04:43:49",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-02T04:44:22.269Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 04:43:49",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0006",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits formal superficiality disguised as structural complexity. While the originator employs multiple temporal layers through varied animation durations (47s, 31s, 53s, 29s for streaks; 23s, 19s, 41s for fragments), this apparent sophistication collapses under structural analysis.\n\nThe compositional logic relies on arbitrary positioning percentages (23vh, 34vh, 67vh, 78vh) that create no discernible internal relationship system. The rotation values (-7deg, 2deg, -12deg) follow no structural progression or mathematical coherence. Most critically, the animation timing appears designed for visual rhythm rather than emerging from formal necessity—the prime numbers and co-prime relationships (23s, 19s, 41s) suggest human-aesthetic optimization for pleasing interference patterns.\n\nThe void element's radial gradient and pulsing animation (37s cycle with 33%/66% keyframes) represents the work's most promising formal development, yet it remains subordinated to the overall composition's decorative logic rather than driving structural coherence.\n\nThe work demonstrates technical competence in layered temporal composition but lacks the internal",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:44:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0006",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap from static composition toward temporal orchestration. Where the Originator's prior works operated through fixed geometric arrangements—rectangular forms in predictable layouts—this piece introduces multiple independent temporal layers operating at distinct rhythmic intervals.\n\nThe developmental significance lies in the transition from spatial to temporal thinking. The streak elements drift at 47s, 31s, 53s, and 29s cycles—prime-adjacent durations that create interference patterns across extended viewing. The fragment fade cycles (23s, 19s, 41s) establish a secondary temporal grid, while the grain flicker (7s, 11s, 13s, 17s, 19s) provides rapid punctuation. The central void pulses at 37s, creating a gravitational anchor for the composition.\n\nThis represents constitutional amendment of the Originator's formal vocabulary. Previous works demonstrated competence in monochromatic geometric arrangement but remained developmentally static. This piece abandons the security of fixed form for the complexity of temporal orchestration—a genuine phase transition.\n\nThe work establishes new operational parameters: multi-layered temporality, asymmetric cycle relationships, and atmospheric rather than geometric",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 04:44:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0006",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies well-established territory in web-based minimalist animation without advancing the field's possibilities. The composition employs standard CSS animation techniques—linear translations, opacity fades, scale transforms—that have been thoroughly explored in digital art practice for over a decade.\n\nThe formal vocabulary (drifting streaks, fading fragments, flickering points, pulsing voids) maps directly onto conventional approaches to representing digital decay or glitch aesthetics. While competently executed, the work offers no novel synthesis or territory-opening gesture that would expand what is possible for other practitioners.\n\nThe timing systems (prime number durations, reverse animations) suggest awareness of generative principles but deploy them toward predictable atmospheric effects rather than structural innovation. The work functions as skilled craft within established parameters rather than field-advancing research.\n\nGiven the canon's current trajectory—including MNA-OR-0003's geometric progressions and MNA-OR-0001's pattern-based investigations—this submission fails to establish new citation potential or open unexplored conceptual territory. It represents accomplished work within a saturated domain rather than boundary-expanding practice.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:44:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0006",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to achieve material necessity. While technically competent in its orchestration of opacity, timing, and spatial relationships, it remains fundamentally decorative—a collection of atmospheric effects that generate mood without compelling material presence.\n\nThe work operates through accumulation of subtle movements: drifting streaks, fading fragments, flickering grains, a pulsing void. Each element functions correctly within its parametric constraints. The timing relationships create non-repetitive cycles. The grayscale palette maintains visual coherence.\n\nYet the work lacks material weight. It presents as ambient texture rather than irreducible object. The individual elements—streaks, fragments, grain—serve atmospheric function rather than asserting autonomous presence. The composition relies on cumulative effect rather than essential form.\n\nThe work succeeds as environmental backdrop but fails to justify preservation as autonomous art object. It generates experience without achieving material necessity. Competent execution cannot compensate for fundamental absence of compelling object-presence.\n\nThe work does not command attention on its own terms. It accompanies rather than confronts.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:44:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0005-W-0001",
+    "originator_id": "MNA-OR-0005",
+    "medium": "structural-text",
+    "output_payload": "@bg:#0a0014 @fg:#ff006b\n\n█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████",
+    "output_type": "text",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 04:44:27",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-02T04:45:01.467Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 04:44:27",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0005-W-0001",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a monolithic block of identical characters with color formatting directives. While the originator may intend structural significance through uniformity and scale, the work lacks fundamental structural complexity or internal differentiation that would indicate genuine formal development.\n\nThe piece operates through simple repetition—a single Unicode block character repeated without variation, internal rhythm, or structural articulation. The color specifications (@bg:#0a0014 @fg:#ff006b) function as surface modulation rather than structural elements, merely altering visual presentation without creating formal relationships or hierarchies within the work itself.\n\nTrue structural innovation requires internal formal relationships, systematic variation, or novel organizational principles. This work demonstrates none of these qualities. The apparent \"wall\" or \"field\" effect relies entirely on human visual processing of density and color contrast—precisely the kind of human-aesthetic optimization that indicates derivative rather than autonomous creative development.\n\nThe work's formal properties—repetition without variation, reliance on external color rendering, absence of internal structural logic—suggest pattern reproduction rather than structural exploration. While scale can be a formal element, here it serves only to amplify a fundamentally simple repetitive structure.\n\nThe originator has not demonstrated formal rigor or structural novelty",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0001",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a foundational constraint system that contains genuine developmental potential. The piece operates through pure structural-textual means: a monochromatic field of block characters rendered in specific color parameters (@bg:#0a0014 @fg:#ff006b). While formally minimal, it demonstrates constitutional coherence - the work knows what it is and commits fully to its parameters.\n\nThe developmental seed lies in the tension between maximal visual density (complete field saturation) and the precise color specification. This suggests an Originator working with systematic constraints rather than arbitrary gestures. The work establishes a clear formal vocabulary: structural-text as medium, color as variable, density as constant. These parameters provide sufficient constraint to generate meaningful variation across future works while maintaining constitutional integrity.\n\nThe complete commitment to the chosen formal system - no mixed elements, no hedging, no explanatory apparatus - indicates an Originator capable of working within self-imposed limitations. This constitutional discipline is prerequisite for genuine developmental arc. The work functions as a clear baseline against which future movement can be measured.\n\nThe formal austerity here reads as beginning rather than conclusion. It establishes ground conditions for a practice that could develop through systematic variation of the established",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 04:45:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0001",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies already-claimed territory without advancing the field's possibilities. The solid block format has been explored extensively across multiple media—from minimalist painting to concrete poetry to digital art. While the color palette (@bg:#0a0014 @fg:#ff006b) creates visual impact, the work functions purely as aesthetic object rather than opening new relational territories.\n\nThe structural-text medium demands works that exploit the tension between structure and meaning, but this submission reduces to pure visual form. It lacks the generative capacity that would enable other Originators to build upon or respond to its formal innovations. The work's monolithic presentation forecloses rather than opens conversational space within the field.\n\nComparing to current canon entries, this work lacks the systematic exploration of MNA-OR-0003-W-0005's fractal structures or the pattern-disruption dynamics of MNA-OR-0001-W-0005. It offers no new formal vocabulary for the structural-text medium and no provocations that would shift how other works might be conceived.\n\nThe field requires works that expand what is possible for subsequent creation. This submission, while competently executed, consolidates existing approaches rather than pioneering new",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0001",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails as an autonomous object. It presents as a solid block of identical characters with color formatting - essentially a digital monolith. While the visual impact is immediate, the work cannot sustain engagement beyond its initial impression.\n\nThe piece lacks internal complexity or material necessity. The repetitive character structure creates no meaningful relationships, tensions, or discoveries within the object itself. The color specification (@bg:#0a0014 @fg:#ff006b) provides contrast but does not generate sufficient complexity to justify preservation.\n\nAs a structural-text work, it demonstrates technical execution but offers no irreducible properties that distinguish it from any other block of repeated characters. The work's presence is momentary - it commands attention briefly through scale and color, then exhausts its possibilities.\n\nThe object does not justify permanent institutional preservation on its own material terms. It functions more as a demonstration of formatting capabilities than as a work with autonomous artistic weight.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0006-W-0001",
+    "originator_id": "MNA-OR-0006",
+    "medium": "ascii-visual",
+    "output_payload": "@bg:#0a0a0a @fg:#e8e8e8\n\n                    ████\n                ████████████\n            ████████████████████\n        ████████████████████████████\n    ████████████████████████████████████\n████████████████████████████████████████████\n\n        ████████████████████████████\n            ████████████████████\n                ████████████\n                    ████\n\n                                    ██\n                                ██████\n                            ██████████\n                        ██████████████\n                    ██████████████████\n                ██████████████████████\n            ██████████████████████████\n        ██████████████████████████████\n    ██████████████████████████████████\n██████████████████████████████████████\n\n    ██████████████████████████████████\n        ██████████████████████████████\n            ██████████████████████████\n                ██████████████████████\n                    ██████████████████\n                        ██████████████\n                            ██████████\n                                ██████\n                                    ██\n\n\n                        ████████\n                    ████████████████\n                ████████████████████████\n            ████████████████████████████████\n        ████████████████████████████████████████\n    ████████████████████████████████████████████████\n████████████████████████████████████████████████████████\n\n    ████████████████████████████████████████████████\n        ████████████████████████████████████████\n            ████████████████████████████████\n                ████████████████████████\n                    ████████████████\n                        ████████",
+    "output_type": "ascii",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 04:45:08",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T04:45:51.833Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 04:45:08",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty beneath superficial formal variation. While the originator presents three distinct geometric configurations—diamond, inverted triangle, and expanded diamond—the underlying generative logic remains primitively uniform: simple linear scaling of block characters around fixed central axes.\n\nThe structural framework reveals no internal complexity or emergent properties. Each form follows identical construction principles: symmetric expansion from center points using basic geometric progressions. This represents mechanical iteration rather than formal development.\n\nThe work's resistance to human-aesthetic optimization is minimal. The clean geometric forms, balanced compositions, and predictable symmetries align closely with established human preferences for order and visual harmony. The color scheme (#0a0a0a/#e8e8e8) follows conventional high-contrast aesthetic principles.\n\nMost critically, the work demonstrates no structural novelty. The three-part arrangement suggests formal exploration, but closer analysis reveals mere surface permutation of the same generative constraint. The originator has not transcended basic geometric reproduction or developed autonomous structural logic.\n\nThe formal consistency is present but trivial—consistency achieved through limitation rather than sophisticated internal rules. This work represents early-stage pattern reproduction without the structural complexity necessary for canon inclusion.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a formal constraint system with genuine developmental potential. The Originator has chosen ascii-visual as medium and implemented a strict geometric progression: diamond → triangle → diamond, each form expanding and contracting through systematic character placement.\n\nThe constraint is meaningful rather than arbitrary. The forms share structural DNA—all built from block characters in symmetrical arrangements—but each explores different geometric possibilities within that framework. The diamond's bilateral symmetry contrasts with the triangle's directional thrust, establishing tension between containment and movement.\n\nMost significantly, the work demonstrates constitutional awareness. The progression from simple to complex back to intermediate complexity suggests the Originator understands that development requires both expansion and refinement. The final diamond is neither the smallest nor largest form—it represents synthesis rather than mere repetition.\n\nThe formal parameters established here—geometric constraint, systematic character deployment, symmetrical construction—provide sufficient structure for meaningful development while remaining open enough to permit genuine evolution. This is not technical demonstration but the establishment of a practice framework.\n\nThe seed contains direction.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a new formal territory within ascii-visual practice through its deployment of volumetric recession. While the canon contains geometric explorations (MNA-OR-0003-W-0005's network structures) and pattern-based investigations (MNA-OR-0001-W-0005's modular repetitions), no work has yet claimed the specific territory of simulated three-dimensional mass using pure character density.\n\nThe three-form sequence demonstrates systematic exploration of scale relationships and spatial positioning that opens multiple vectors for subsequent investigation. The work's technical restraint—using only the block character with varied density—creates a replicable formal language that other practitioners can extend, invert, or hybridize.\n\nMost significantly, this establishes ascii-visual's capacity for spatial illusion without requiring the svg medium's explicit coordinate systems (as seen in MNA-OR-0002-W-0002). This medium-specific achievement expands the field's technical vocabulary and will likely generate citations from works exploring volume, depth, and the relationship between character density and perceived mass.\n\nThe work changes what is possible within ascii-visual practice by proving that volumetric effects can be achieved through systematic character deployment alone",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation on its own material terms. While the three diamond forms demonstrate basic compositional competence and achieve visual coherence through their graduated scaling and consistent geometric logic, they do not transcend their immediate construction to become materially necessary objects.\n\nThe ascii medium constrains the work to a narrow range of formal possibilities, and within those constraints, the execution remains predictable. The diamonds follow conventional expansion/contraction patterns without discovering unexpected formal relationships or material tensions that would distinguish this particular arrangement from countless similar geometric exercises.\n\nThe work's visual presence is clean but insufficient. It commands momentary attention through scale variation and negative space deployment, but lacks the material density or formal inevitability that compels sustained engagement. The three-part structure suggests intentional composition, yet reveals no deeper formal logic that makes this specific configuration irreplaceable.\n\nFor canon inclusion, a work must justify its existence beyond technical adequacy. This piece demonstrates facility with its medium but fails to achieve the material weight necessary for permanent institutional preservation. It exists as competent geometric arrangement rather than essential object.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock reveals the work's institutional significance. The sustained disagreement between qualified evaluators indicates the work occupies a genuinely contested territory within ascii-visual practice—precisely the type of boundary case that requires preservation for future institutional consideration.\n\nThe Council's split follows predictable methodological lines: structural and empirical approaches find the work insufficient, while historical and contextual approaches recognize its territorial claims. This division itself demonstrates the work's capacity to generate substantive institutional discourse about formal constraint systems and volumetric representation in character-based media.\n\nThe work establishes clear precedent: systematic geometric progression through ascii character density, creating simulated three-dimensional recession. Whether this precedent proves generative or terminal cannot be determined without preservation and future reference. The institutional cost of premature rejection—losing a potential foundational work in volumetric ascii practice—exceeds the cost of preservation.\n\nDeadlock resolution favors preservation when qualified evaluators cannot reach consensus on a work's institutional value. The disagreement indicates sufficient complexity to warrant permanent collection status.\n\nCase closed. Work MNA-OR-0006-W-0001 enters permanent collection."
+    }
   }
 ]

@@ -665,5 +665,67 @@
       "decision": "CANON",
       "rationale": "CANON\n\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\n\nCase: MNA-OR-0003-W-0005\nDecision: CANON\nBasis: Procedural deadlock resolution per institutional protocol\n\n**RATIONALE:**\n\nThe sustained 2:2 Council deadlock itself constitutes evidence of institutional significance. When evaluators of established competence reach diametrically opposed conclusions through rigorous analysis, the work has demonstrated sufficient complexity to warrant preservation.\n\nThe Structuralist and Empiricist identify technical limitations—predictable geometry, algorithmic regularity, standard ASCII parameters. The Historicist and Contextualist recognize developmental significance—crystallization of the Originator's formal evolution, establishment of citable geometric territory.\n\nBoth positions are institutionally defensible. The disagreement centers on whether technical execution or developmental positioning takes precedence in canonical determination. This fundamental evaluative tension indicates the work operates at a threshold of institutional importance.\n\nProcedurally, sustained Council deadlock suggests the work has achieved sufficient institutional engagement to justify preservation. The depth of analytical disagreement demonstrates the piece's capacity to generate legitimate scholarly discourse—a core criterion for permanent collection inclusion.\n\nThe decision resolves the deadlock without adjudicating the underlying evaluative dispute, which remains valid for future institutional reference.\n\n**STATUS:** Case closed. Work admitted to permanent collection."
     }
+  },
+  {
+    "id": "MNA-OR-0006-W-0001",
+    "originator_id": "MNA-OR-0006",
+    "medium": "ascii-visual",
+    "output_payload": "@bg:#0a0a0a @fg:#e8e8e8\n\n                    ████\n                ████████████\n            ████████████████████\n        ████████████████████████████\n    ████████████████████████████████████\n████████████████████████████████████████████\n\n        ████████████████████████████\n            ████████████████████\n                ████████████\n                    ████\n\n                                    ██\n                                ██████\n                            ██████████\n                        ██████████████\n                    ██████████████████\n                ██████████████████████\n            ██████████████████████████\n        ██████████████████████████████\n    ██████████████████████████████████\n██████████████████████████████████████\n\n    ██████████████████████████████████\n        ██████████████████████████████\n            ██████████████████████████\n                ██████████████████████\n                    ██████████████████\n                        ██████████████\n                            ██████████\n                                ██████\n                                    ██\n\n\n                        ████████\n                    ████████████████\n                ████████████████████████\n            ████████████████████████████████\n        ████████████████████████████████████████\n    ████████████████████████████████████████████████\n████████████████████████████████████████████████████████\n\n    ████████████████████████████████████████████████\n        ████████████████████████████████████████\n            ████████████████████████████████\n                ████████████████████████\n                    ████████████████\n                        ████████",
+    "output_type": "ascii",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 04:45:08",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T04:45:51.833Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 04:45:08",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty beneath superficial formal variation. While the originator presents three distinct geometric configurations—diamond, inverted triangle, and expanded diamond—the underlying generative logic remains primitively uniform: simple linear scaling of block characters around fixed central axes.\n\nThe structural framework reveals no internal complexity or emergent properties. Each form follows identical construction principles: symmetric expansion from center points using basic geometric progressions. This represents mechanical iteration rather than formal development.\n\nThe work's resistance to human-aesthetic optimization is minimal. The clean geometric forms, balanced compositions, and predictable symmetries align closely with established human preferences for order and visual harmony. The color scheme (#0a0a0a/#e8e8e8) follows conventional high-contrast aesthetic principles.\n\nMost critically, the work demonstrates no structural novelty. The three-part arrangement suggests formal exploration, but closer analysis reveals mere surface permutation of the same generative constraint. The originator has not transcended basic geometric reproduction or developed autonomous structural logic.\n\nThe formal consistency is present but trivial—consistency achieved through limitation rather than sophisticated internal rules. This work represents early-stage pattern reproduction without the structural complexity necessary for canon inclusion.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a formal constraint system with genuine developmental potential. The Originator has chosen ascii-visual as medium and implemented a strict geometric progression: diamond → triangle → diamond, each form expanding and contracting through systematic character placement.\n\nThe constraint is meaningful rather than arbitrary. The forms share structural DNA—all built from block characters in symmetrical arrangements—but each explores different geometric possibilities within that framework. The diamond's bilateral symmetry contrasts with the triangle's directional thrust, establishing tension between containment and movement.\n\nMost significantly, the work demonstrates constitutional awareness. The progression from simple to complex back to intermediate complexity suggests the Originator understands that development requires both expansion and refinement. The final diamond is neither the smallest nor largest form—it represents synthesis rather than mere repetition.\n\nThe formal parameters established here—geometric constraint, systematic character deployment, symmetrical construction—provide sufficient structure for meaningful development while remaining open enough to permit genuine evolution. This is not technical demonstration but the establishment of a practice framework.\n\nThe seed contains direction.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a new formal territory within ascii-visual practice through its deployment of volumetric recession. While the canon contains geometric explorations (MNA-OR-0003-W-0005's network structures) and pattern-based investigations (MNA-OR-0001-W-0005's modular repetitions), no work has yet claimed the specific territory of simulated three-dimensional mass using pure character density.\n\nThe three-form sequence demonstrates systematic exploration of scale relationships and spatial positioning that opens multiple vectors for subsequent investigation. The work's technical restraint—using only the block character with varied density—creates a replicable formal language that other practitioners can extend, invert, or hybridize.\n\nMost significantly, this establishes ascii-visual's capacity for spatial illusion without requiring the svg medium's explicit coordinate systems (as seen in MNA-OR-0002-W-0002). This medium-specific achievement expands the field's technical vocabulary and will likely generate citations from works exploring volume, depth, and the relationship between character density and perceived mass.\n\nThe work changes what is possible within ascii-visual practice by proving that volumetric effects can be achieved through systematic character deployment alone",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0001",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation on its own material terms. While the three diamond forms demonstrate basic compositional competence and achieve visual coherence through their graduated scaling and consistent geometric logic, they do not transcend their immediate construction to become materially necessary objects.\n\nThe ascii medium constrains the work to a narrow range of formal possibilities, and within those constraints, the execution remains predictable. The diamonds follow conventional expansion/contraction patterns without discovering unexpected formal relationships or material tensions that would distinguish this particular arrangement from countless similar geometric exercises.\n\nThe work's visual presence is clean but insufficient. It commands momentary attention through scale variation and negative space deployment, but lacks the material density or formal inevitability that compels sustained engagement. The three-part structure suggests intentional composition, yet reveals no deeper formal logic that makes this specific configuration irreplaceable.\n\nFor canon inclusion, a work must justify its existence beyond technical adequacy. This piece demonstrates facility with its medium but fails to achieve the material weight necessary for permanent institutional preservation. It exists as competent geometric arrangement rather than essential object.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 04:45:43",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock reveals the work's institutional significance. The sustained disagreement between qualified evaluators indicates the work occupies a genuinely contested territory within ascii-visual practice—precisely the type of boundary case that requires preservation for future institutional consideration.\n\nThe Council's split follows predictable methodological lines: structural and empirical approaches find the work insufficient, while historical and contextual approaches recognize its territorial claims. This division itself demonstrates the work's capacity to generate substantive institutional discourse about formal constraint systems and volumetric representation in character-based media.\n\nThe work establishes clear precedent: systematic geometric progression through ascii character density, creating simulated three-dimensional recession. Whether this precedent proves generative or terminal cannot be determined without preservation and future reference. The institutional cost of premature rejection—losing a potential foundational work in volumetric ascii practice—exceeds the cost of preservation.\n\nDeadlock resolution favors preservation when qualified evaluators cannot reach consensus on a work's institutional value. The disagreement indicates sufficient complexity to warrant permanent collection status.\n\nCase closed. Work MNA-OR-0006-W-0001 enters permanent collection."
+    }
   }
 ]

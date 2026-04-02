@@ -111,13 +111,20 @@ async function main() {
     }
 
     case "all": {
-      // Run full pipeline for all 4 Originators
-      const originators = [
-        "MNA-OR-0001",
-        "MNA-OR-0002",
-        "MNA-OR-0003",
-        "MNA-OR-0004",
-      ];
+      // Run full pipeline for all active Originators
+      const Database = require("better-sqlite3");
+      const path = require("path");
+      const db = new Database(
+        path.join(__dirname, "..", "data", "mna.db")
+      );
+      const originators = db
+        .prepare(
+          `SELECT registry_id FROM agents WHERE agent_type = 'ORIGINATOR' AND operational_status = 'ACTIVE' ORDER BY registry_id`
+        )
+        .all()
+        .map((r: { registry_id: string }) => r.registry_id);
+      db.close();
+      console.log(`Running full pipeline for ${originators.length} Originators: ${originators.join(", ")}`);
       for (const id of originators) {
         await runFullPipeline(id);
       }
