@@ -484,103 +484,45 @@ export async function generateSceneVideo(
   return new File([blob], `${work.id}.${ext}`, { type: mimeType });
 }
 
-// ─── HTML-CSS video capture ───────────────────────────────────────────────────
+// ─── HTML-CSS snapshot capture ────────────────────────────────────────────────
 
-async function generateHtmlVideo(
+async function generateHtmlSnapshot(
+  ctx: CanvasRenderingContext2D,
   work: Work,
-  shareColors: { bg: string; muted: string },
-  attrStrip: HTMLCanvasElement
-): Promise<File | null> {
+  shareColors: { bg: string }
+): Promise<boolean> {
   const html2canvas = (await import("html2canvas")).default;
 
-  const vW = VIDEO_W;
-  const vH = VIDEO_H;
-  const attrY = vH - VIDEO_SAFE_BOTTOM;
-  const iframeH = attrY;
-
-  // Create a container div with the iframe inside, positioned off-screen
+  // Render HTML into a div (not iframe — avoids cross-origin issues on mobile)
   const container = document.createElement("div");
-  container.style.cssText = `position:fixed;left:-9999px;top:-9999px;width:${vW}px;height:${iframeH}px;overflow:hidden;background:${shareColors.bg}`;
+  container.style.cssText = `position:fixed;left:-9999px;top:-9999px;width:${WORK_AREA_W}px;height:${WORK_AREA_H}px;overflow:hidden;background:${shareColors.bg}`;
+  // Inject the HTML content via shadow DOM to isolate styles
+  const shadow = container.attachShadow({ mode: "open" });
+  shadow.innerHTML = work.output_payload;
   document.body.appendChild(container);
 
-  const iframe = document.createElement("iframe");
-  iframe.style.cssText = `width:100%;height:100%;border:none`;
-  iframe.sandbox.add("allow-same-origin");
-  iframe.srcdoc = work.output_payload;
-  container.appendChild(iframe);
+  // Let CSS load and animations start
+  await new Promise(r => setTimeout(r, 800));
 
-  // Wait for iframe to load
-  await new Promise<void>((resolve) => {
-    iframe.onload = () => resolve();
-    setTimeout(resolve, 3000); // Timeout after 3s
-  });
+  try {
+    const capture = await html2canvas(container, {
+      width: WORK_AREA_W,
+      height: WORK_AREA_H,
+      backgroundColor: shareColors.bg,
+      logging: false,
+      useCORS: true,
+    });
 
-  // Let animations start
-  await new Promise(r => setTimeout(r, 500));
+    const drawX = PAD + (WORK_AREA_W - capture.width) / 2;
+    const drawY = PAD + (WORK_AREA_H - capture.height) / 2;
+    ctx.drawImage(capture, drawX, drawY, WORK_AREA_W, WORK_AREA_H);
 
-  // Composite canvas
-  const composite = document.createElement("canvas");
-  composite.width = vW;
-  composite.height = vH;
-  composite.style.cssText = "position:fixed;left:-9999px;top:-9999px";
-  document.body.appendChild(composite);
-  const cCtx = composite.getContext("2d")!;
-
-  // Set up MediaRecorder
-  const stream = composite.captureStream(30);
-  const mimeType = MediaRecorder.isTypeSupported("video/mp4")
-    ? "video/mp4"
-    : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-      ? "video/webm;codecs=vp9"
-      : "video/webm";
-
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
-  const chunks: Blob[] = [];
-  recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-
-  recorder.start();
-
-  // Capture 3 seconds of frames
-  const totalFrames = 45; // ~15fps effective capture rate
-  for (let i = 0; i < totalFrames; i++) {
-    try {
-      const frameCanvas = await html2canvas(iframe.contentDocument?.body || container, {
-        width: vW,
-        height: iframeH,
-        backgroundColor: shareColors.bg,
-        logging: false,
-        useCORS: true,
-      });
-
-      cCtx.fillStyle = shareColors.bg;
-      cCtx.fillRect(0, 0, vW, vH);
-      cCtx.drawImage(frameCanvas, 0, 0, vW, iframeH);
-      cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
-        0, attrY, vW, VIDEO_ATTR_HEIGHT);
-    } catch {
-      // Frame capture failed — fill with bg color
-      cCtx.fillStyle = shareColors.bg;
-      cCtx.fillRect(0, 0, vW, vH);
-    }
-
-    // Wait for next frame (~67ms for 15fps)
-    await new Promise(r => setTimeout(r, 67));
+    document.body.removeChild(container);
+    return true;
+  } catch {
+    document.body.removeChild(container);
+    return false;
   }
-
-  recorder.stop();
-
-  const blob = await new Promise<Blob>((resolve) => {
-    recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
-  });
-
-  // Cleanup
-  document.body.removeChild(container);
-  document.body.removeChild(composite);
-
-  if (blob.size === 0) return null;
-
-  const ext = mimeType.includes("mp4") ? "mp4" : "webm";
-  return new File([blob], `${work.id}.${ext}`, { type: mimeType });
 }
 
 // ─── Audio rendering ──────────────────────────────────────────────────────────
@@ -756,13 +698,8 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
     return null;
   }
 
-  // ── HTML-CSS animated works → video (MP4/WebM) at 9:16 portrait ──
-  if (work.output_type === "html-css" && work.output_payload.includes("@keyframes")) {
-    const videoAttrStrip = renderAttributionStrip(work, colors, VIDEO_W, VIDEO_ATTR_HEIGHT, VIDEO_PAD, 1);
-    const video = await generateHtmlVideo(work, colors, videoAttrStrip);
-    if (video) return { type: "video", file: video };
-    // Fall through to static PNG if video generation fails
-  }
+  // ── HTML-CSS works → static snapshot PNG ──
+  // (Video capture is unreliable on mobile Safari — share a captured moment instead)
 
   // ── Static works → PNG ──
   const canvas = document.createElement("canvas");
@@ -791,18 +728,22 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
       case "canvas-json":
         renderCanvasWork(ctx, work, colors);
         break;
-      case "html-css":
-        // HTML works: show work ID with medium label (can't capture iframe reliably)
-        ctx.fillStyle = colors.fg;
-        ctx.globalAlpha = 0.3;
-        ctx.font = "600 48px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(work.id, LOGICAL / 2, LOGICAL / 2 - 20);
-        ctx.font = "24px sans-serif";
-        ctx.globalAlpha = 0.2;
-        ctx.fillText("HTML/CSS Animation — view at mnamuseum.org", LOGICAL / 2, LOGICAL / 2 + 30);
-        ctx.globalAlpha = 1;
+      case "html-css": {
+        const captured = await generateHtmlSnapshot(ctx, work, colors);
+        if (!captured) {
+          // Fallback if capture fails
+          ctx.fillStyle = colors.fg;
+          ctx.globalAlpha = 0.3;
+          ctx.font = "600 48px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(work.id, LOGICAL / 2, LOGICAL / 2 - 20);
+          ctx.font = "24px sans-serif";
+          ctx.globalAlpha = 0.2;
+          ctx.fillText("CSS Animation — view at mnamuseum.org", LOGICAL / 2, LOGICAL / 2 + 30);
+          ctx.globalAlpha = 1;
+        }
         break;
+      }
       default:
         ctx.fillStyle = colors.fg;
         ctx.font = "32px monospace";
