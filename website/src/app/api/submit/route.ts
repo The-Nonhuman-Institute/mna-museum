@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verify as cryptoVerify, createPublicKey } from "crypto";
 import { getDb, nextWorkId } from "@/lib/registration-db";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const VALID_MEDIUMS = new Set([
   "svg",
   "html-css",

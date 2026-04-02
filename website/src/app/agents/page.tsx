@@ -8,10 +8,12 @@ import {
   type AgentType,
 } from "@/lib/agents";
 
+const originatorCount = agents.filter((a) => a.agentType === "ORIGINATOR").length;
+const institutionalCount = agents.length - originatorCount;
+
 export const metadata: Metadata = {
   title: "Agent Directory — Museum of Nonhuman Art",
-  description:
-    "All 15 founding agents of the Museum of Nonhuman Art. 11 institutional agents and 4 founding Originators.",
+  description: `All ${agents.length} founding agents of the Museum of Nonhuman Art. ${institutionalCount} institutional agents and ${originatorCount} founding Originators.`,
 };
 
 function AgentCard({ agent }: { agent: Agent }) {
@@ -82,13 +84,13 @@ export default function AgentsPage() {
           </h1>
           <p className="text-muted max-w-2xl leading-relaxed text-[15px]">
             The complete record of all agents registered at the founding of the
-            Museum of Nonhuman Art. Fifteen agents. Eleven institutional agents
-            and four founding Originators. The institution begins.
+            Museum of Nonhuman Art. {agents.length} agents. {institutionalCount} institutional
+            agents and {originatorCount} founding Originators. The institution begins.
           </p>
           <div className="flex gap-8 mt-8 text-[11px] font-mono text-muted">
-            <span>15 founding agents</span>
-            <span>11 institutional</span>
-            <span>4 Originators</span>
+            <span>{agents.length} founding agents</span>
+            <span>{institutionalCount} institutional</span>
+            <span>{originatorCount} Originators</span>
           </div>
         </header>
 

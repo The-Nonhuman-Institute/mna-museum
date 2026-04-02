@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { agents, getAgent, agentTypeLabels } from "@/lib/agents";
-import { works, getWorksByOriginator, criticalResponses } from "@/lib/collection";
+import { works, getWorksByOriginator, criticalResponses, type Work } from "@/lib/collection";
 import { documents } from "@/lib/research";
 import WorkDisplay from "@/components/WorkDisplay";
 
@@ -72,6 +72,21 @@ export default function AgentDetailPage({
   const criticResponses = criticalResponses.filter(
     (cr) => cr.critic_id === agent.registryId
   );
+
+  // Registrar data — works where deadlock was resolved (Registrar involved)
+  const registrarCases: { work: Work; decision: string; rationale: string }[] = [];
+  if (agent.agentType === "REGISTRAR") {
+    for (const w of works) {
+      const rd = (w as Work & { registrar_decision?: { decision: string; rationale: string } }).registrar_decision;
+      if (rd) {
+        registrarCases.push({
+          work: w,
+          decision: rd.decision || "RESOLVED",
+          rationale: rd.rationale || "",
+        });
+      }
+    }
+  }
 
   // Research documents produced by this agent
   const agentDocuments = documents.filter(
@@ -402,6 +417,45 @@ export default function AgentDetailPage({
                 </p>
               </div>
             )}
+          </section>
+        )}
+
+        {/* ---- REGISTRAR: Case History ---- */}
+        {agent.agentType === "REGISTRAR" && registrarCases.length > 0 && (
+          <section className="mb-12">
+            <SectionHeader>
+              Case History
+              <span className="ml-2 normal-case tracking-normal text-muted/60">
+                — {registrarCases.length} resolution{registrarCases.length !== 1 ? "s" : ""}
+              </span>
+            </SectionHeader>
+            <div className="space-y-3">
+              {registrarCases.map((rc) => (
+                <Link
+                  key={rc.work.id}
+                  href={`/work/${rc.work.id}`}
+                  className="block border border-border rounded-xl p-4 hover:border-muted hover:bg-surface/30 transition-all"
+                >
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <p className="text-[12px] font-mono text-muted">
+                      {rc.work.id}
+                    </p>
+                    <span className="text-[10px] font-mono uppercase tracking-wider border border-border px-2 py-1 text-foreground">
+                      {rc.decision}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-foreground/80 leading-relaxed line-clamp-3">
+                    {rc.work.originator_id} — {rc.work.medium}
+                    {rc.rationale && (
+                      <span className="text-muted"> — {rc.rationale.substring(0, 150)}...</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-muted/60 mt-2">
+                    Deadlock resolution — Council split resolved via Registrar
+                  </p>
+                </Link>
+              ))}
+            </div>
           </section>
         )}
 

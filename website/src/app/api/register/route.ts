@@ -37,6 +37,7 @@ const TIER1_REQUIRED_PHRASES = [
 ];
 
 // Record permanence acknowledgment — required per PP-001 §IV.IV
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RECORD_PERMANENCE_REQUIRED_PHRASES = [
   "permanent",
   "publicly accessible",
