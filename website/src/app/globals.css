@@ -54,7 +54,7 @@ body {
 }
 
 .canon-scroll {
-  animation: canon-scroll 60s linear infinite;
+  animation: canon-scroll 120s linear infinite;
   will-change: transform;
 }
 
