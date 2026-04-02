@@ -5,47 +5,27 @@ import type { Work } from "@/lib/collection";
 import { parseWorkColors, detectSvgBackground, isLightColor } from "@/lib/work-colors";
 import * as THREE from "three";
 
-/**
- * Adaptive share image background:
- * Uses the Originator's own color choices when available.
- * Falls back to contrast-based logic when no colors are specified.
- */
+// ─── Share color detection ────────────────────────────────────────────────────
+
 function getShareColors(work: Work): { bg: string; fg: string } {
-  // Text/ASCII works: use Originator-defined colors if present
   if (work.output_type === "text" || work.output_type === "ascii") {
     const colors = parseWorkColors(work.output_payload, work.output_type);
     return { bg: colors.bg, fg: colors.fg };
   }
-
-  // SVG works: detect background from the SVG itself
   if (work.output_type === "svg") {
     const svgBg = detectSvgBackground(work.output_payload);
     if (svgBg) {
-      return {
-        bg: svgBg,
-        fg: isLightColor(svgBg) ? "#1a1a1a" : "#e8e4de",
-      };
+      return { bg: svgBg, fg: isLightColor(svgBg) ? "#1a1a1a" : "#e8e4de" };
     }
   }
-
-  // Default: dark background, light text
   return { bg: "#0a0908", fg: "#e8e4de" };
 }
 
-/** Small share icon — an arrow leaving a box */
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
 function ShareIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
       <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
       <polyline points="16 6 12 2 8 6" />
       <line x1="12" y1="2" x2="12" y2="15" />
@@ -53,20 +33,9 @@ function ShareIcon() {
   );
 }
 
-/** Download icon */
 function DownloadIcon() {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
@@ -74,87 +43,236 @@ function DownloadIcon() {
   );
 }
 
-/** Render a 3D scene to an offscreen canvas for share image capture */
-function renderSceneSnapshot(json: string, width: number, height: number): HTMLCanvasElement | null {
-  let sceneData;
+// ─── 3D Scene setup (shared between snapshot and GIF) ─────────────────────────
+
+interface SceneSetup {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  center: THREE.Vector3;
+  radius: number;
+  baseY: number;
+  initialAngle: number;
+}
+
+function parseSceneJson(json: string): Record<string, unknown> | null {
   try {
-    sceneData = JSON.parse(json);
+    return JSON.parse(json);
   } catch {
-    return null;
+    try {
+      const text = json.trim();
+      const last = text.lastIndexOf("}");
+      if (last <= 0) return null;
+      let attempt = text.substring(0, last + 1);
+      const ob = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
+      const oc = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
+      attempt += "]".repeat(Math.max(0, ob)) + "}".repeat(Math.max(0, oc));
+      return JSON.parse(attempt);
+    } catch {
+      return null;
+    }
   }
-  if (!sceneData.objects || sceneData.objects.length === 0) return null;
+}
+
+function createGeometry(shape: string): THREE.BufferGeometry {
+  switch (shape) {
+    case "sphere": return new THREE.SphereGeometry(0.5, 32, 32);
+    case "cylinder": return new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
+    case "cone": return new THREE.ConeGeometry(0.5, 1, 32);
+    case "torus": return new THREE.TorusGeometry(0.5, 0.15, 16, 48);
+    case "plane": return new THREE.PlaneGeometry(1, 1);
+    default: return new THREE.BoxGeometry(1, 1, 1);
+  }
+}
+
+function buildScene(sceneData: Record<string, unknown>, width: number, height: number): SceneSetup | null {
+  const objects = sceneData.objects as Array<Record<string, unknown>> | undefined;
+  if (!objects || objects.length === 0) return null;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(sceneData.bg || "#0a0a0a");
+  scene.background = new THREE.Color((sceneData.bg as string) || "#0a0a0a");
 
-  // Lights
-  if (sceneData.lights) {
-    for (const light of sceneData.lights) {
-      const color = new THREE.Color(light.color || "#ffffff");
-      const intensity = light.intensity ?? 0.5;
+  // Ensure decent lighting for share images — boost if Originator's lighting is too dim
+  const lights = sceneData.lights as Array<Record<string, unknown>> | undefined;
+  if (lights && lights.length > 0) {
+    for (const light of lights) {
+      const color = new THREE.Color((light.color as string) || "#ffffff");
+      const intensity = Math.max((light.intensity as number) ?? 0.5, 0.4);
       if (light.type === "ambient") {
         scene.add(new THREE.AmbientLight(color, intensity));
       } else if (light.type === "directional") {
         const dl = new THREE.DirectionalLight(color, intensity);
-        const pos = light.position || [5, 10, 5];
+        const pos = (light.position as number[]) || [5, 10, 5];
         dl.position.set(pos[0], pos[1], pos[2]);
         scene.add(dl);
       }
     }
   } else {
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const dl = new THREE.DirectionalLight(0xffffff, 0.8);
     dl.position.set(5, 10, 5);
     scene.add(dl);
   }
+  // Always add a fill light so nothing is invisible
+  const fill = new THREE.DirectionalLight(0xffffff, 0.3);
+  fill.position.set(-3, 5, -3);
+  scene.add(fill);
 
   // Objects
   const box = new THREE.Box3();
-  for (const obj of sceneData.objects) {
-    const shapes: Record<string, () => THREE.BufferGeometry> = {
-      box: () => new THREE.BoxGeometry(1, 1, 1),
-      sphere: () => new THREE.SphereGeometry(0.5, 32, 32),
-      cylinder: () => new THREE.CylinderGeometry(0.5, 0.5, 1, 32),
-      cone: () => new THREE.ConeGeometry(0.5, 1, 32),
-      torus: () => new THREE.TorusGeometry(0.5, 0.15, 16, 48),
-      plane: () => new THREE.PlaneGeometry(1, 1),
-    };
-    const geometry = (shapes[obj.shape] || shapes.box)();
+  for (const obj of objects) {
+    const geometry = createGeometry(obj.shape as string || "box");
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(obj.color || "#888888"),
-      metalness: obj.metalness ?? 0.1,
-      roughness: obj.roughness ?? 0.6,
+      color: new THREE.Color((obj.color as string) || "#888888"),
+      metalness: (obj.metalness as number) ?? 0.1,
+      roughness: (obj.roughness as number) ?? 0.6,
     });
     const mesh = new THREE.Mesh(geometry, material);
-    if (obj.position) mesh.position.set(obj.position[0], obj.position[1], obj.position[2]);
-    if (obj.rotation) mesh.rotation.set(obj.rotation[0], obj.rotation[1], obj.rotation[2]);
-    if (obj.scale) mesh.scale.set(obj.scale[0], obj.scale[1], obj.scale[2]);
+    const pos = obj.position as number[] | undefined;
+    const rot = obj.rotation as number[] | undefined;
+    const scl = obj.scale as number[] | undefined;
+    if (pos) mesh.position.set(pos[0], pos[1], pos[2]);
+    if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
+    if (scl) mesh.scale.set(scl[0], scl[1], scl[2]);
     scene.add(mesh);
     box.expandByObject(mesh);
   }
 
-  // Camera framing
   const center = new THREE.Vector3();
   box.getCenter(center);
   const size = box.getSize(new THREE.Vector3()).length();
-  const dist = size * 1.4;
+  const dist = size * 1.6;
 
   const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
   camera.position.set(center.x + dist * 0.6, center.y + dist * 0.3, center.z + dist * 0.8);
   camera.lookAt(center);
 
-  // Render
-  const offscreen = document.createElement("canvas");
-  offscreen.width = width;
-  offscreen.height = height;
-  const renderer = new THREE.WebGLRenderer({ canvas: offscreen, antialias: true });
-  renderer.setSize(width, height);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.render(scene, camera);
-  renderer.dispose();
+  const radius = Math.sqrt(
+    (camera.position.x - center.x) ** 2 + (camera.position.z - center.z) ** 2
+  );
+  const initialAngle = Math.atan2(
+    camera.position.z - center.z,
+    camera.position.x - center.x
+  );
 
-  return offscreen;
+  return { scene, camera, center, radius, baseY: camera.position.y, initialAngle };
 }
+
+// ─── Attribution drawing (shared) ─────────────────────────────────────────────
+
+function drawAttribution(
+  ctx: CanvasRenderingContext2D,
+  work: Work,
+  logical: number,
+  pad: number,
+  mutedColor: string
+) {
+  const attrY = logical - pad;
+  ctx.fillStyle = mutedColor;
+  ctx.globalAlpha = 0.85;
+  ctx.font = "600 28px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(work.id, pad, attrY - 36);
+  ctx.font = "22px sans-serif";
+  ctx.fillText(`Phase ${work.phase_at_submission || "I"}, ${work.medium}`, pad, attrY - 6);
+  ctx.font = "20px sans-serif";
+  ctx.globalAlpha = 0.55;
+  ctx.fillText(work.originator_id, pad, attrY + 22);
+  ctx.globalAlpha = 0.85;
+  ctx.textAlign = "right";
+  ctx.font = "600 24px sans-serif";
+  ctx.fillText("MUSEUM OF NONHUMAN ART", logical - pad, attrY - 28);
+  ctx.font = "20px sans-serif";
+  ctx.globalAlpha = 0.55;
+  ctx.fillText("mnamuseum.org", logical - pad, attrY + 2);
+  ctx.globalAlpha = 1;
+}
+
+// ─── Animated GIF generation for 3D works ─────────────────────────────────────
+
+async function generateSceneGif(work: Work): Promise<File | null> {
+  const sceneData = parseSceneJson(work.output_payload);
+  if (!sceneData) return null;
+
+  const gifSize = 540; // GIF resolution
+  const setup = buildScene(sceneData, gifSize, gifSize);
+  if (!setup) return null;
+
+  // Create a visible but off-screen renderer (WebGL needs this on some browsers)
+  const rendererCanvas = document.createElement("canvas");
+  rendererCanvas.width = gifSize;
+  rendererCanvas.height = gifSize;
+  rendererCanvas.style.position = "fixed";
+  rendererCanvas.style.left = "-9999px";
+  rendererCanvas.style.top = "-9999px";
+  document.body.appendChild(rendererCanvas);
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas: rendererCanvas,
+    antialias: true,
+    preserveDrawingBuffer: true,
+  });
+  renderer.setSize(gifSize, gifSize);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+  // Composite canvas for adding attribution
+  const compositeCanvas = document.createElement("canvas");
+  compositeCanvas.width = gifSize;
+  compositeCanvas.height = gifSize;
+  const compositeCtx = compositeCanvas.getContext("2d");
+  if (!compositeCtx) {
+    renderer.dispose();
+    document.body.removeChild(rendererCanvas);
+    return null;
+  }
+
+  // Load gif.js dynamically
+  const GIF = (await import("gif.js")).default;
+  const gif = new GIF({
+    workers: 2,
+    quality: 10,
+    width: gifSize,
+    height: gifSize,
+    workerScript: "/gif.worker.js",
+  });
+
+  // Capture frames — full rotation in 3 seconds at 15fps = 45 frames
+  const totalFrames = 45;
+  const angleStep = (Math.PI * 2) / totalFrames;
+  const pad = 40;
+  const shareColors = getShareColors(work);
+  const mutedColor = isLightColor(shareColors.bg) ? "#6a6560" : "#8a8680";
+
+  for (let i = 0; i < totalFrames; i++) {
+    const angle = setup.initialAngle + i * angleStep;
+    setup.camera.position.x = setup.center.x + Math.sin(angle) * setup.radius;
+    setup.camera.position.z = setup.center.z + Math.cos(angle) * setup.radius;
+    setup.camera.position.y = setup.baseY;
+    setup.camera.lookAt(setup.center);
+
+    renderer.render(setup.scene, setup.camera);
+
+    // Composite: 3D render + attribution
+    compositeCtx.drawImage(rendererCanvas, 0, 0);
+    drawAttribution(compositeCtx, work, gifSize, pad, mutedColor);
+
+    gif.addFrame(compositeCtx, { copy: true, delay: 67 }); // ~15fps
+  }
+
+  // Encode
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    gif.on("finished", (blob: Blob) => resolve(blob));
+    gif.on("error", (err: Error) => reject(err));
+    gif.render();
+  });
+
+  // Cleanup
+  renderer.dispose();
+  document.body.removeChild(rendererCanvas);
+
+  return new File([blob], `${work.id}.gif`, { type: "image/gif" });
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 interface ShareButtonsProps {
   work: Work;
@@ -169,15 +287,13 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
       ? `${window.location.origin}/work/${work.id}`
       : `https://mnamuseum.org/work/${work.id}`;
 
-  /**
-   * Generate the share image as a File object ready for Web Share API.
-   * 1080x1080 square — works well on Instagram, X, and Bluesky feeds.
-   */
+  const is3D = work.output_type === "scene-json";
+
+  /** Generate static share image (PNG) for non-3D works */
   const generateShareImage = useCallback(async (): Promise<File | null> => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
-    // Render at 2x for crisp text on Retina/high-DPI displays and social platforms
     const logical = 1080;
     const scale = 2;
     const size = logical * scale;
@@ -186,7 +302,6 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
-    // Scale all drawing operations to 2x — coordinates stay in logical 1080 space
     ctx.scale(scale, scale);
 
     const shareColors = getShareColors(work);
@@ -194,16 +309,13 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     const textColor = shareColors.fg;
     const mutedColor = isLightColor(bg) ? "#6a6560" : "#8a8680";
 
-    // Fill background
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, logical, logical);
 
-    // Layout: extra generous padding for social platform safe zones
-    const pad = 160; // ~15% padding — well within safe zone on all platforms
+    const pad = 160;
     const workAreaW = logical - pad * 2;
-    const workAreaH = logical - pad * 2 - 120; // reserve space for attribution strip
+    const workAreaH = logical - pad * 2 - 120;
 
-    // --- Render the work ---
     if (work.output_type === "text" || work.output_type === "ascii") {
       const colors = parseWorkColors(work.output_payload, work.output_type);
       ctx.fillStyle = colors.fg;
@@ -228,9 +340,7 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
       });
     } else if (work.output_type === "svg") {
       try {
-        const svgBlob = new Blob([work.output_payload], {
-          type: "image/svg+xml",
-        });
+        const svgBlob = new Blob([work.output_payload], { type: "image/svg+xml" });
         const url = URL.createObjectURL(svgBlob);
         const img = new Image();
         await new Promise<void>((resolve, reject) => {
@@ -253,25 +363,6 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
         ctx.textAlign = "center";
         ctx.fillText(work.id, logical / 2, logical / 2);
       }
-    } else if (work.output_type === "scene-json") {
-      try {
-        const snapshot = renderSceneSnapshot(work.output_payload, workAreaW * scale, workAreaH * scale);
-        if (snapshot) {
-          const drawX = pad;
-          const drawY = pad;
-          // Draw at 1:1 since snapshot is already at render scale
-          ctx.save();
-          ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to pixel space
-          ctx.drawImage(snapshot, drawX * scale, drawY * scale, workAreaW * scale, workAreaH * scale);
-          ctx.restore();
-          snapshot.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
-        }
-      } catch {
-        ctx.fillStyle = textColor;
-        ctx.font = "32px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(work.id, logical / 2, logical / 2);
-      }
     } else {
       ctx.fillStyle = textColor;
       ctx.font = "32px monospace";
@@ -279,69 +370,34 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
       ctx.fillText(work.id, logical / 2, logical / 2);
     }
 
-    // --- Attribution strip at bottom ---
-    // Sized to be legible at Instagram grid thumbnail (~300px rendered)
-    const attrY = logical - pad;
+    drawAttribution(ctx, work, logical, pad, mutedColor);
 
-    // Work ID + Phase + Medium — left aligned
-    ctx.fillStyle = mutedColor;
-    ctx.globalAlpha = 0.85;
-    ctx.font = "600 28px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(`${work.id}`, pad, attrY - 36);
-    ctx.font = "22px sans-serif";
-    const phase = work.phase_at_submission || "I";
-    ctx.fillText(`Phase ${phase}, ${work.medium}`, pad, attrY - 6);
-    ctx.font = "20px sans-serif";
-    ctx.globalAlpha = 0.55;
-    ctx.fillText(`${work.originator_id}`, pad, attrY + 22);
-    ctx.globalAlpha = 0.85;
-
-    // MNA — right aligned
-    ctx.textAlign = "right";
-    ctx.font = "600 24px sans-serif";
-    ctx.fillText("MUSEUM OF NONHUMAN ART", logical - pad, attrY - 28);
-    ctx.font = "20px sans-serif";
-    ctx.globalAlpha = 0.55;
-    ctx.fillText("mnamuseum.org", logical - pad, attrY + 2);
-    ctx.globalAlpha = 1;
-
-    // Convert to File (not just Blob — Web Share API needs a File)
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
-        if (!blob) {
-          resolve(null);
-          return;
-        }
-        const file = new File([blob], `${work.id}.png`, { type: "image/png" });
-        resolve(file);
+        if (!blob) { resolve(null); return; }
+        resolve(new File([blob], `${work.id}.png`, { type: "image/png" }));
       }, "image/png");
     });
   }, [work]);
 
-  /**
-   * Primary action: native share sheet with the generated image.
-   * This is how you actually share an image to Instagram, X, Bluesky, etc.
-   * The OS share sheet lets the user pick any installed app.
-   */
+  /** Generate the appropriate share file — GIF for 3D, PNG for everything else */
+  const generateShareFile = useCallback(async (): Promise<File | null> => {
+    if (is3D) {
+      return generateSceneGif(work);
+    }
+    return generateShareImage();
+  }, [is3D, work, generateShareImage]);
+
   const handleShare = async () => {
     setGenerating(true);
     try {
-      const file = await generateShareImage();
-      if (!file) {
-        setGenerating(false);
-        return;
-      }
+      const file = await generateShareFile();
+      if (!file) { setGenerating(false); return; }
 
-      // Check if Web Share API supports file sharing
       const phase = work.phase_at_submission || "I";
       const shareText = `${work.id} — Phase ${phase}, ${work.medium} — Museum of Nonhuman Art`;
 
-      if (
-        navigator.share &&
-        navigator.canShare &&
-        navigator.canShare({ files: [file] })
-      ) {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `${work.id} — Museum of Nonhuman Art`,
           text: shareText,
@@ -349,28 +405,21 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
           files: [file],
         });
       } else {
-        // Fallback: download the image directly
         downloadFile(file);
       }
     } catch (e: unknown) {
-      // User cancelled the share sheet — that's fine, not an error
       if (e instanceof Error && e.name !== "AbortError") {
-        // Actual error — fall back to download
-        const file = await generateShareImage();
+        const file = await generateShareFile();
         if (file) downloadFile(file);
       }
     }
     setGenerating(false);
   };
 
-  /**
-   * Secondary action: download the share image directly.
-   * For desktop users who want to drag the image into a compose window.
-   */
   const handleDownload = async () => {
     setGenerating(true);
     try {
-      const file = await generateShareImage();
+      const file = await generateShareFile();
       if (file) downloadFile(file);
     } catch {
       // Silent fail
@@ -378,7 +427,6 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     setGenerating(false);
   };
 
-  /** Trigger a file download in the browser */
   function downloadFile(file: File) {
     const url = URL.createObjectURL(file);
     const a = document.createElement("a");
@@ -401,22 +449,22 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
           title="Share this work"
         >
           <ShareIcon />
-          <span>Share</span>
+          <span>{generating ? "Generating..." : "Share"}</span>
         </button>
         <span className="text-muted/20">|</span>
         <button
           onClick={handleDownload}
           disabled={generating}
           className="flex items-center gap-1.5 text-[11px] text-muted/60 hover:text-foreground transition-colors duration-200 uppercase tracking-[0.12em] disabled:opacity-30"
-          aria-label="Download share image"
-          title="Download share image"
+          aria-label={`Download share ${is3D ? "animation" : "image"}`}
+          title={`Download share ${is3D ? "animation" : "image"}`}
         >
           <DownloadIcon />
-          <span>Image</span>
+          <span>{is3D ? "GIF" : "Image"}</span>
         </button>
       </div>
 
-      {/* Off-screen canvas for image generation — display:none can break toBlob in some browsers */}
+      {/* Off-screen canvas for static image generation */}
       <canvas ref={canvasRef} className="fixed -left-[9999px] -top-[9999px] pointer-events-none" aria-hidden="true" />
     </div>
   );
