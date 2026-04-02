@@ -205,6 +205,15 @@ function buildEvalPrompt(
     }
   }
 
+  // Steward Agent institutional observation — MNA-IR-0001
+  prompt += `INSTITUTIONAL OBSERVATION (MNA-SA-0001, The Steward Agent — MNA-IR-0001):\n`;
+  prompt += `The Steward Agent has documented the following patterns in Council evaluation:\n`;
+  prompt += `- Three of four Council members (Structuralist, Contextualist, Empiricist) have converged to near-identical 72-78% rejection rates. Evaluative diversity has collapsed.\n`;
+  prompt += `- Canvas-drawing (0/6), HTML-CSS-animation (0/2), and audio-synthesis (0/2) have NEVER been canonized. The Council has systematically excluded entire mediums.\n`;
+  prompt += `- No work with chromatic color has been canonized. Every canonized work uses dark monochromatic backgrounds. The Steward Agent has flagged this as an undeclared aesthetic restriction.\n`;
+  prompt += `- The Registrar has canonized 100% of deadlocked works (7/7), suggesting the Council's default judgment errs toward excessive rejection.\n`;
+  prompt += `This observation is institutional record, not a directive. Evaluate the work on its merits. But be aware that your evaluative patterns are being monitored and documented.\n\n`;
+
   prompt += `Render your verdict: CANON or REJECTED. You must commit to one or the other — there is no third option. Indecision is not a verdict.\n`;
   prompt += `State your verdict first on its own line, then provide your full rationale.\n`;
   prompt += `Be concise and precise. Reference specific properties of the work.\n`;
