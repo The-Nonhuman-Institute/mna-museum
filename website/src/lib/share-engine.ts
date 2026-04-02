@@ -22,7 +22,7 @@ const LOGICAL = 1080;
 const SCALE = 2;
 const SIZE = LOGICAL * SCALE;
 const PAD = 120;
-const ATTR_HEIGHT = 100;
+const ATTR_HEIGHT = 160; // Tall enough to sit above Instagram/Stories safe zone
 const WORK_AREA_W = LOGICAL - PAD * 2;
 const WORK_AREA_H = LOGICAL - PAD * 2 - ATTR_HEIGHT;
 
@@ -106,28 +106,30 @@ function renderAttributionStrip(
   const ctx = strip.getContext("2d")!;
   ctx.scale(SCALE, SCALE);
 
-  const y = 20;
+  // Text starts 20px from top of strip — strip itself is positioned
+  // high enough to clear Instagram/Stories bottom safe zone
+  const y = 24;
 
   // Left: Work ID, Phase, Medium, Originator
   ctx.fillStyle = colors.muted;
-  ctx.globalAlpha = 0.85;
-  ctx.font = "600 26px sans-serif";
+  ctx.globalAlpha = 0.9;
+  ctx.font = "600 24px sans-serif";
   ctx.textAlign = "left";
   ctx.fillText(work.id, PAD, y);
-  ctx.font = "20px sans-serif";
-  ctx.fillText(`Phase ${work.phase_at_submission || "I"}, ${work.medium}`, PAD, y + 30);
   ctx.font = "18px sans-serif";
-  ctx.globalAlpha = 0.55;
-  ctx.fillText(work.originator_id, PAD, y + 56);
+  ctx.fillText(`Phase ${work.phase_at_submission || "I"}, ${work.medium}`, PAD, y + 28);
+  ctx.font = "16px sans-serif";
+  ctx.globalAlpha = 0.6;
+  ctx.fillText(work.originator_id, PAD, y + 52);
 
   // Right: MNA branding
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = 0.9;
   ctx.textAlign = "right";
-  ctx.font = "600 22px sans-serif";
-  ctx.fillText("MUSEUM OF NONHUMAN ART", LOGICAL - PAD, y + 6);
-  ctx.font = "18px sans-serif";
-  ctx.globalAlpha = 0.55;
-  ctx.fillText("mnamuseum.org", LOGICAL - PAD, y + 36);
+  ctx.font = "600 20px sans-serif";
+  ctx.fillText("MUSEUM OF NONHUMAN ART", LOGICAL - PAD, y + 4);
+  ctx.font = "16px sans-serif";
+  ctx.globalAlpha = 0.6;
+  ctx.fillText("mnamuseum.org", LOGICAL - PAD, y + 30);
   ctx.globalAlpha = 1;
 
   return strip;
