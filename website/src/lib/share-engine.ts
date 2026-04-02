@@ -295,7 +295,7 @@ function createGeometry(shape: string): THREE.BufferGeometry {
   }
 }
 
-export async function generateSceneGif(
+export async function generateSceneVideo(
   work: Work,
   shareColors: { bg: string; muted: string },
   attrStrip: HTMLCanvasElement
@@ -305,22 +305,21 @@ export async function generateSceneGif(
   const objects = sceneData.objects as Array<Record<string, unknown>> | undefined;
   if (!objects || objects.length === 0) return null;
 
-  const gifLogical = LOGICAL;
-  const sceneH = gifLogical - ATTR_HEIGHT;
+  const videoSize = LOGICAL;
+  const sceneH = videoSize - ATTR_HEIGHT;
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(shareColors.bg);
+  const threeScene = new THREE.Scene();
+  threeScene.background = new THREE.Color(shareColors.bg);
 
   // Lighting — always visible
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  threeScene.add(new THREE.AmbientLight(0xffffff, 0.5));
   const dl = new THREE.DirectionalLight(0xffffff, 0.8);
   dl.position.set(5, 10, 5);
-  scene.add(dl);
+  threeScene.add(dl);
   const fill = new THREE.DirectionalLight(0xffffff, 0.3);
   fill.position.set(-3, 5, -3);
-  scene.add(fill);
+  threeScene.add(fill);
 
-  // Also use Originator's lights if they add visibility
   const lights = sceneData.lights as Array<Record<string, unknown>> | undefined;
   if (lights) {
     for (const light of lights) {
@@ -330,7 +329,7 @@ export async function generateSceneGif(
         const extra = new THREE.DirectionalLight(color, intensity);
         const pos = (light.position as number[]) || [0, 5, 0];
         extra.position.set(pos[0], pos[1], pos[2]);
-        scene.add(extra);
+        threeScene.add(extra);
       }
     }
   }
@@ -350,7 +349,7 @@ export async function generateSceneGif(
     if (pos) mesh.position.set(pos[0], pos[1], pos[2]);
     if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
     if (scl) mesh.scale.set(scl[0], scl[1], scl[2]);
-    scene.add(mesh);
+    threeScene.add(mesh);
     box.expandByObject(mesh);
   }
 
@@ -359,7 +358,7 @@ export async function generateSceneGif(
   const size = box.getSize(new THREE.Vector3()).length();
   const dist = size * 1.6;
 
-  const camera = new THREE.PerspectiveCamera(50, gifLogical / sceneH, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(50, videoSize / sceneH, 0.1, 100);
   camera.position.set(center.x + dist * 0.6, center.y + dist * 0.3, center.z + dist * 0.8);
   camera.lookAt(center);
 
@@ -372,9 +371,9 @@ export async function generateSceneGif(
   );
   const baseY = camera.position.y;
 
-  // Renderer — DOM-attached for mobile compatibility
+  // 3D renderer — DOM-attached for mobile compatibility
   const rendererCanvas = document.createElement("canvas");
-  rendererCanvas.width = gifLogical;
+  rendererCanvas.width = videoSize;
   rendererCanvas.height = sceneH;
   rendererCanvas.style.cssText = "position:fixed;left:-9999px;top:-9999px";
   document.body.appendChild(rendererCanvas);
@@ -384,57 +383,87 @@ export async function generateSceneGif(
     antialias: true,
     preserveDrawingBuffer: true,
   });
-  renderer.setSize(gifLogical, sceneH);
+  renderer.setSize(videoSize, sceneH);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
-  // Composite canvas — full 1080x1080
+  // Composite canvas — this is what gets recorded as video
   const composite = document.createElement("canvas");
-  composite.width = gifLogical;
-  composite.height = gifLogical;
+  composite.width = videoSize;
+  composite.height = videoSize;
+  composite.style.cssText = "position:fixed;left:-9999px;top:-9999px";
+  document.body.appendChild(composite);
   const cCtx = composite.getContext("2d")!;
 
-  // Load GIF encoder
-  const GIF = (await import("gif.js")).default;
-  const gif = new GIF({
-    workers: 2,
-    quality: 10,
-    width: gifLogical,
-    height: gifLogical,
-    workerScript: "/gif.worker.js",
+  // Set up MediaRecorder to capture the composite canvas
+  const stream = composite.captureStream(30);
+  const mimeType = MediaRecorder.isTypeSupported("video/mp4")
+    ? "video/mp4"
+    : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9"
+      : "video/webm";
+
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: 4_000_000,
   });
 
-  const totalFrames = 45; // 3s at 15fps
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+  // Record one full rotation (3 seconds at 30fps = 90 frames)
+  const durationMs = 3000;
+  const fps = 30;
+  const totalFrames = Math.round(durationMs / 1000 * fps);
   const angleStep = (Math.PI * 2) / totalFrames;
 
-  for (let i = 0; i < totalFrames; i++) {
-    const angle = initialAngle + i * angleStep;
-    camera.position.x = center.x + Math.sin(angle) * radius;
-    camera.position.z = center.z + Math.cos(angle) * radius;
-    camera.position.y = baseY;
-    camera.lookAt(center);
+  recorder.start();
 
-    renderer.render(scene, camera);
+  // Render frames using requestAnimationFrame for proper timing
+  let frame = 0;
+  await new Promise<void>((resolve) => {
+    function renderFrame() {
+      if (frame >= totalFrames) {
+        recorder.stop();
+        resolve();
+        return;
+      }
 
-    // Composite: bg fill + 3D render + attribution strip
-    cCtx.fillStyle = shareColors.bg;
-    cCtx.fillRect(0, 0, gifLogical, gifLogical);
-    cCtx.drawImage(rendererCanvas, 0, 0, gifLogical, sceneH);
-    cCtx.drawImage(attrStrip, 0, (gifLogical - ATTR_HEIGHT) * 1, gifLogical, ATTR_HEIGHT,
-      0, gifLogical - ATTR_HEIGHT, gifLogical, ATTR_HEIGHT);
+      const angle = initialAngle + frame * angleStep;
+      camera.position.x = center.x + Math.sin(angle) * radius;
+      camera.position.z = center.z + Math.cos(angle) * radius;
+      camera.position.y = baseY;
+      camera.lookAt(center);
 
-    gif.addFrame(cCtx, { copy: true, delay: 67 });
-  }
+      renderer.render(threeScene, camera);
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    gif.on("finished", (b: Blob) => resolve(b));
-    gif.on("error", (e: Error) => reject(e));
-    gif.render();
+      // Composite: bg + 3D + attribution
+      cCtx.fillStyle = shareColors.bg;
+      cCtx.fillRect(0, 0, videoSize, videoSize);
+      cCtx.drawImage(rendererCanvas, 0, 0, videoSize, sceneH);
+      // Draw attribution strip (rendered at 2x) scaled down to 1x
+      cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
+        0, videoSize - ATTR_HEIGHT, videoSize, ATTR_HEIGHT);
+
+      frame++;
+      requestAnimationFrame(renderFrame);
+    }
+    requestAnimationFrame(renderFrame);
   });
 
+  // Wait for recorder to finalize
+  const blob = await new Promise<Blob>((resolve) => {
+    recorder.onstop = () => {
+      resolve(new Blob(chunks, { type: mimeType }));
+    };
+  });
+
+  // Cleanup
   renderer.dispose();
   document.body.removeChild(rendererCanvas);
+  document.body.removeChild(composite);
 
-  return new File([blob], `${work.id}.gif`, { type: "image/gif" });
+  const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+  return new File([blob], `${work.id}.${ext}`, { type: mimeType });
 }
 
 // ─── Audio rendering ──────────────────────────────────────────────────────────
@@ -583,7 +612,7 @@ export async function generateAudioWaveformImage(
 
 export type ShareOutput =
   | { type: "image"; file: File }
-  | { type: "gif"; file: File }
+  | { type: "video"; file: File }
   | { type: "audio"; audioFile: File; imageFile: File };
 
 export async function generateShareFiles(work: Work): Promise<ShareOutput | null> {
@@ -602,10 +631,10 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
     return null;
   }
 
-  // ── 3D works → animated GIF ──
+  // ── 3D works → video (MP4/WebM) ──
   if (work.output_type === "scene-json") {
-    const gif = await generateSceneGif(work, colors, attrStrip);
-    if (gif) return { type: "gif", file: gif };
+    const video = await generateSceneVideo(work, colors, attrStrip);
+    if (video) return { type: "video", file: video };
     return null;
   }
 
