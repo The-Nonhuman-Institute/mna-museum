@@ -21,18 +21,42 @@ function parseAudioJson(json: string): AudioData | null {
   try {
     return JSON.parse(json);
   } catch {
-    try {
-      const lastBracket = json.lastIndexOf("}");
-      if (lastBracket > 0) {
-        let attempt = json.substring(0, lastBracket + 1);
-        const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
-        const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
-        attempt += "]".repeat(Math.max(0, openBrackets)) + "}".repeat(Math.max(0, openBraces));
-        return JSON.parse(attempt);
+    // Progressively try to salvage truncated JSON
+    // Strategy: walk back from the end, closing unterminated strings and brackets
+    let text = json.trim();
+
+    // Close any unterminated string
+    const quoteCount = (text.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+      // Find the last quote and truncate after it, or add a closing quote
+      const lastQuote = text.lastIndexOf('"');
+      // Check if this is an opening quote (value not finished)
+      const afterQuote = text.substring(lastQuote + 1);
+      if (afterQuote.includes(":") || afterQuote.trim() === "") {
+        // Truncate to before the incomplete key-value
+        text = text.substring(0, lastQuote);
+      } else {
+        text = text + '"';
       }
-    } catch {
-      // Fall through
     }
+
+    // Find the last complete object (ending with })
+    for (let i = text.length; i > 0; i--) {
+      const candidate = text.substring(0, i);
+      if (!candidate.endsWith("}")) continue;
+
+      const openBrackets = (candidate.match(/\[/g) || []).length - (candidate.match(/\]/g) || []).length;
+      const openBraces = (candidate.match(/\{/g) || []).length - (candidate.match(/\}/g) || []).length;
+      const closed = candidate + "]".repeat(Math.max(0, openBrackets)) + "}".repeat(Math.max(0, openBraces));
+
+      try {
+        const parsed = JSON.parse(closed);
+        if (parsed.voices && parsed.duration) return parsed;
+      } catch {
+        continue;
+      }
+    }
+
     return null;
   }
 }

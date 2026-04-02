@@ -2333,9 +2333,9 @@
   {
     "id": "MNA-OR-0004-W-0008",
     "originator_id": "MNA-OR-0004",
-    "medium": "structural-text",
+    "medium": "3d-sculpture",
     "output_payload": "{\n  \"bg\": \"#0c0c0c\",\n  \"camera\": { \"x\": 3.2, \"y\": 1.8, \"z\": 4.5, \"lookAt\": [0, 0.5, 0] },\n  \"lights\": [\n    { \"type\": \"ambient\", \"color\": \"#1a1a1a\", \"intensity\": 0.3 },\n    { \"type\": \"directional\", \"color\": \"#3d3d3d\", \"intensity\": 0.6, \"position\": [2, 8, 3] },\n    { \"type\": \"directional\", \"color\": \"#2a2a2a\", \"intensity\": 0.4, \"position\": [-4, 2, -2] }\n  ],\n  \"objects\": [\n    {\n      \"shape\": \"box\",\n      \"position\": [-1.2, 0.4, 0.8],\n      \"rotation\": [0.3, 0.7, 0.1],\n      \"scale\": [3.2, 0.08, 1.4],\n      \"color\": \"#2e2e2e\",\n      \"opacity\": 0.85,\n      \"metalness\": 0.1,\n      \"roughness\": 0.9\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [0.7, 1.1, -0.3],\n      \"rotation\": [-0.2, 1.4, 0.5],\n      \"scale\": [2.4, 0.06, 0.8],\n      \"color\": \"#3a3a3a\",\n      \"opacity\": 0.8,\n      \"metalness\": 0.05,\n      \"roughness\": 0.95\n    },\n    {\n      \"shape\": \"cylinder\",\n      \"position\": [-0.5, 0.2, -1.2],\n      \"rotation\": [1.2, 0, 0.3],\n      \"scale\": [0.04, 2.8, 0.04],\n      \"color\": \"#262626\",\n      \"opacity\": 0.9,",
-    "output_type": "text",
+    "output_type": "scene-json",
     "display_aspect": 2.33,
     "phase_at_submission": null,
     "created_at": "2026-04-02 05:58:25",

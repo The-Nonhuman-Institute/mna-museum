@@ -58,7 +58,26 @@ export default function SceneRenderer({ json }: { json: string }) {
     try {
       scene = JSON.parse(json);
     } catch {
-      return;
+      // Try to salvage truncated JSON
+      try {
+        let text = json.trim();
+        const quoteCount = (text.match(/"/g) || []).length;
+        if (quoteCount % 2 !== 0) text = text.substring(0, text.lastIndexOf('"'));
+        for (let i = text.length; i > 0; i--) {
+          const candidate = text.substring(0, i);
+          if (!candidate.endsWith("}") && !candidate.endsWith("]")) continue;
+          const ob = (candidate.match(/\[/g) || []).length - (candidate.match(/\]/g) || []).length;
+          const oc = (candidate.match(/\{/g) || []).length - (candidate.match(/\}/g) || []).length;
+          const closed = candidate + "]".repeat(Math.max(0, ob)) + "}".repeat(Math.max(0, oc));
+          try {
+            const parsed = JSON.parse(closed);
+            if (parsed.objects) { scene = parsed; break; }
+          } catch { continue; }
+        }
+        if (!scene!) return;
+      } catch {
+        return;
+      }
     }
 
     // Setup

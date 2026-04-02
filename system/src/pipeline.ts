@@ -85,7 +85,7 @@ export async function produceWork(
   console.log(`[${originatorId}] Producing work #${workCount.n + 1} (format: ${requestedFormat})...`);
   const output = await runAgent(originatorId, prompt, {
     temperature: 0.9,
-    num_predict: requestedFormat === "svg" || requestedFormat === "html-css" ? 1024 : 512,
+    num_predict: ["svg", "html-css", "audio-json", "scene-json"].includes(requestedFormat) ? 2048 : 512,
     num_ctx: 2048,
   });
 
