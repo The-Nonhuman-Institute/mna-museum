@@ -104,8 +104,7 @@ export async function produceWork(
   // Attempt production up to 2 times. First attempt uses standard token limit.
   // If output is truncated/invalid, retry once with doubled tokens.
 
-  const baseTokens = ["svg", "html-css", "audio-json", "scene-json"].includes(requestedFormat) ? 4096 :
-    requestedFormat === "canvas-json" ? 1024 : 512;
+  const baseTokens = ["svg", "html-css", "audio-json", "scene-json", "canvas-json"].includes(requestedFormat) ? 8192 : 2048;
 
   let cleanOutput = "";
   let detected = { format: "text" as string, medium: "structural-text", aspect: 1.0 };
