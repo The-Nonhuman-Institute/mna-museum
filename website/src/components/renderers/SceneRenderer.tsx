@@ -46,7 +46,7 @@ function createGeometry(shape: string): THREE.BufferGeometry {
   }
 }
 
-export default function SceneRenderer({ json }: { json: string }) {
+export default function SceneRenderer({ json, transparent = false }: { json: string; transparent?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
@@ -85,10 +85,12 @@ export default function SceneRenderer({ json }: { json: string }) {
     const height = container.clientHeight;
 
     const threeScene = new THREE.Scene();
-    if (scene.bg) {
+    if (transparent) {
+      threeScene.background = null;
+    } else if (scene.bg) {
       threeScene.background = new THREE.Color(scene.bg);
     } else {
-      threeScene.background = null; // transparent
+      threeScene.background = null;
     }
 
     // Camera
@@ -101,7 +103,7 @@ export default function SceneRenderer({ json }: { json: string }) {
     // Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: !scene.bg,
+      alpha: transparent || !scene.bg,
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

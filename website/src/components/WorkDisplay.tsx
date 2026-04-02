@@ -124,9 +124,51 @@ function WorkContent({
   }
 }
 
-/** Check if a work is a 3D sculpture (rendered on plinth instead of in frame) */
+/** Check if a work should display on a plinth */
 function is3DWork(work: Work): boolean {
-  return work.output_type === "scene-json";
+  if (work.output_type !== "scene-json") return false;
+  // Originator can declare display preference in the JSON
+  try {
+    const scene = JSON.parse(work.output_payload);
+    if (scene.display === "frame") return false;
+  } catch {}
+  return true;
+}
+
+/** Select plinth type based on scene bounding box proportions */
+function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "slab" {
+  try {
+    const scene = JSON.parse(work.output_payload);
+    if (scene.plinth) return scene.plinth; // Originator's explicit choice
+
+    // Analyze bounding box of all objects
+    if (scene.objects && scene.objects.length > 0) {
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+
+      for (const obj of scene.objects) {
+        const [px, py, pz] = obj.position || [0, 0, 0];
+        const [sx, sy, sz] = obj.scale || [1, 1, 1];
+        minX = Math.min(minX, px - sx); maxX = Math.max(maxX, px + sx);
+        minY = Math.min(minY, py - sy); maxY = Math.max(maxY, py + sy);
+        minZ = Math.min(minZ, pz - sz); maxZ = Math.max(maxZ, pz + sz);
+      }
+
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const depth = maxZ - minZ;
+      const spread = Math.max(width, depth);
+
+      // Tall narrow → column
+      if (height > spread * 2) return "column";
+      // Very wide/long → slab
+      if (spread > height * 3) return "slab";
+      // Wide and flat → platform
+      if (spread > height * 1.5) return "platform";
+    }
+  } catch {}
+  return "block";
 }
 
 export default function WorkDisplay({
@@ -141,16 +183,17 @@ export default function WorkDisplay({
       lightbox: 650,
     };
     const width = widths[size] || widths.gallery;
+    const plinthType = selectPlinthForWork(work);
 
     return (
       <MuseumPlinth
-        plinth="block"
+        plinth={plinthType}
         width={width}
         originatorId={work.originator_id}
         phase={work.phase_at_submission || "I"}
         showPlacard={showPlacard}
       >
-        <SceneRenderer json={work.output_payload} />
+        <SceneRenderer json={work.output_payload} transparent />
       </MuseumPlinth>
     );
   }

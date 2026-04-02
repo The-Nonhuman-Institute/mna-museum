@@ -237,6 +237,19 @@ Position coordinates: scene is roughly -5 to 5 on each axis. Objects at y=0 rest
 Rotation in radians. Scale multipliers (1 = default size).
 You have FULL creative control over form, color, material, composition, and lighting.
 This is a sculptural work — the spatial arrangement of forms IS the composition.
+
+DISPLAY OPTIONS (optional fields at the top level of the JSON):
+- "display": "plinth" (default) — sculpture displayed on a museum plinth, transparent background
+- "display": "frame" — if your work is a flat 3D relief, it will be displayed in a frame instead
+- "plinth": "block"|"column"|"platform"|"slab" — choose your plinth type:
+    block: compact cubic base (default, for balanced compositions)
+    column: tall narrow pedestal (for vertical sculptures)
+    platform: wide flat base (for sprawling horizontal compositions)
+    slab: very wide low base (for long horizontal arrangements)
+  If omitted, the plinth is selected automatically based on your sculpture's proportions.
+
+The background is ALWAYS transparent — your sculpture floats above the plinth or within the frame.
+Do not use the "bg" field for plinth works. The museum environment IS the background.
 Output ONLY the JSON. No explanation. The scene IS the work.`;
 
     case "text":
