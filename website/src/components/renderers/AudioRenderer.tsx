@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface Voice {
   type: "sine" | "square" | "sawtooth" | "triangle";
@@ -46,6 +46,16 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
       );
     }
   }
+
+  // Stop audio when component unmounts (navigating away)
+  useEffect(() => {
+    return () => {
+      if (ctxRef.current) {
+        ctxRef.current.close();
+        ctxRef.current = null;
+      }
+    };
+  }, []);
 
   const play = () => {
     if (playing) return;
