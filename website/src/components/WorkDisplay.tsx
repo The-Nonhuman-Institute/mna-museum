@@ -5,7 +5,17 @@ import SvgRenderer from "./renderers/SvgRenderer";
 import type { Work } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
 import { parseWorkColors } from "@/lib/work-colors";
+import { isWorkRenderable } from "@/lib/validate-work";
 import dynamic from "next/dynamic";
+
+/** Fallback for unrenderable works */
+function WorkFallback({ workId }: { workId: string }) {
+  return (
+    <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
+      <p className="text-[#3a3530] text-[10px] font-mono">{workId}</p>
+    </div>
+  );
+}
 
 // Client-side only renderers (they use browser APIs)
 const HtmlRenderer = dynamic(() => import("./renderers/HtmlRenderer"), {
@@ -177,6 +187,16 @@ export default function WorkDisplay({
   size = "gallery",
   showPlacard = true,
 }: WorkDisplayProps) {
+  // Pre-render validation
+  if (!isWorkRenderable(work)) {
+    return (
+      <MuseumFrame frame="1x1" width={300} showPlacard={showPlacard}
+        originatorId={work.originator_id} phase={work.phase_at_submission || "I"}>
+        <WorkFallback workId={work.id} />
+      </MuseumFrame>
+    );
+  }
+
   if (is3DWork(work)) {
     const widths: Record<string, number> = {
       gallery: 300,

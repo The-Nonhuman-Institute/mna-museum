@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import type { Work } from "@/lib/collection";
 import { generateShareFiles } from "@/lib/share-engine";
+import { canGenerateShare } from "@/lib/validate-work";
 
 function ShareIcon() {
   return (
@@ -36,6 +37,7 @@ function downloadLabel(outputType: string): string {
 
 export default function ShareButtons({ work }: ShareButtonsProps) {
   const [generating, setGenerating] = useState(false);
+  const shareable = canGenerateShare(work);
 
   const workUrl =
     typeof window !== "undefined"
@@ -105,6 +107,9 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
+
+  // Hide share buttons if share would produce broken output
+  if (!shareable) return null;
 
   return (
     <div className="relative">

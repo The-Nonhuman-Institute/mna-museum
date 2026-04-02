@@ -1,9 +1,10 @@
 /**
  * Export the database to static JSON files for the website.
- * Run after agents produce/evaluate, before deploying.
+ * Includes validation gate — broken works are blocked from export.
  */
 
 import { getDb } from "./db";
+import { validateWork } from "./validate";
 import fs from "fs";
 import path from "path";
 
@@ -30,7 +31,7 @@ export function exportAll(): void {
       LEFT JOIN submissions s ON w.id = s.work_id
       ORDER BY w.created_at ASC`
     )
-    .all();
+    .all() as any[];
 
   // --- Evaluations for each work ---
   const evaluations = db
@@ -45,14 +46,13 @@ export function exportAll(): void {
     )
     .all() as any[];
 
-  // Group evaluations by work
   const evalsByWork: Record<string, any[]> = {};
   for (const e of evaluations) {
     if (!evalsByWork[e.work_id]) evalsByWork[e.work_id] = [];
     evalsByWork[e.work_id].push(e);
   }
 
-  // --- Registrar decisions for deadlocked works ---
+  // --- Registrar decisions ---
   const registrarDecisions = db
     .prepare(
       `SELECT work_id, metadata FROM events WHERE event_type = 'REGISTRAR_DECISION'`
@@ -63,28 +63,67 @@ export function exportAll(): void {
   for (const rd of registrarDecisions) {
     try {
       registrarByWork[rd.work_id] = JSON.parse(rd.metadata);
-    } catch {}
+    } catch (e) {
+      console.error(`[EXPORT] Registrar metadata parse failed for ${rd.work_id}: ${e}`);
+    }
   }
 
-  // Build full work records with evaluations and registrar decisions
-  const fullWorks = (works as any[]).map((w) => ({
+  // Build full work records
+  const fullWorks = works.map((w: any) => ({
     ...w,
     evaluations: evalsByWork[w.id] || [],
     registrar_decision: registrarByWork[w.id] || null,
   }));
 
-  // --- Collection summary ---
-  const canonWorks = fullWorks.filter((w) => w.canon_status === "CANON");
-  const rejectedWorks = fullWorks.filter(
-    (w) => w.canon_status === "REJECTED"
+  // ─── EXPORT VALIDATION GATE ─────────────────────────────────────────────────
+  let blocked = 0;
+  let integrityFailures = 0;
+
+  const validatedWorks = fullWorks.filter((w: any) => {
+    const result = validateWork(w.output_payload, w.output_type);
+    if (!result.valid) {
+      console.error(`[EXPORT] BLOCKED ${w.id}: ${result.errors.join("; ")}`);
+      blocked++;
+      return false;
+    }
+    return true;
+  });
+
+  // Integrity checks on canon works
+  const validatedCanon = validatedWorks.filter((w: any) => {
+    if (w.canon_status !== "CANON") return false;
+
+    const evals = w.evaluations || [];
+    const canonVotes = evals.filter((e: any) => e.verdict === "CANON").length;
+    const hasRegistrar = !!w.registrar_decision;
+
+    // Canon works need either 3+ CANON votes or a Registrar CANON decision
+    if (canonVotes < 3 && !hasRegistrar) {
+      console.error(`[EXPORT] INTEGRITY FAIL ${w.id}: CANON status but only ${canonVotes} CANON votes and no Registrar decision`);
+      integrityFailures++;
+      return false;
+    }
+
+    if (evals.length < 3) {
+      console.error(`[EXPORT] INTEGRITY FAIL ${w.id}: CANON status but only ${evals.length} evaluations`);
+      integrityFailures++;
+      return false;
+    }
+
+    return true;
+  });
+
+  // ─── Collection summary ───────────────────────────────────────────────────
+  const rejectedWorks = validatedWorks.filter(
+    (w: any) => w.canon_status === "REJECTED"
   );
-  const inReview = fullWorks.filter(
-    (w) => w.canon_status === "IN_REVIEW" || w.canon_status === "SUBMITTED"
+  const inReview = validatedWorks.filter(
+    (w: any) => w.canon_status === "IN_REVIEW" || w.canon_status === "SUBMITTED"
   );
 
   const summary = {
-    totalWorks: fullWorks.length,
-    canonCount: canonWorks.length,
+    totalWorks: validatedWorks.length,
+    canonCount: validatedCanon.length,
     rejectedCount: rejectedWorks.length,
     inReviewCount: inReview.length,
     totalEvaluations: evaluations.length,
@@ -94,8 +133,8 @@ export function exportAll(): void {
       )
       .get() as { n: number },
     currentPhase: "I",
-    lastOutput: fullWorks.length > 0
-      ? fullWorks[fullWorks.length - 1].created_at
+    lastOutput: validatedWorks.length > 0
+      ? validatedWorks[validatedWorks.length - 1].created_at
       : null,
     exportedAt: new Date().toISOString(),
   };
@@ -122,12 +161,12 @@ export function exportAll(): void {
   // Write files
   fs.writeFileSync(
     path.join(OUT_DIR, "works.json"),
-    JSON.stringify(fullWorks, null, 2)
+    JSON.stringify(validatedWorks, null, 2)
   );
 
   fs.writeFileSync(
     path.join(OUT_DIR, "canon.json"),
-    JSON.stringify(canonWorks, null, 2)
+    JSON.stringify(validatedCanon, null, 2)
   );
 
   fs.writeFileSync(
@@ -145,12 +184,15 @@ export function exportAll(): void {
     JSON.stringify(events, null, 2)
   );
 
-  console.log(`Exported to ${OUT_DIR}:`);
-  console.log(`  works.json          ${fullWorks.length} works`);
-  console.log(`  canon.json          ${canonWorks.length} canon works`);
+  console.log(`\nExported to ${OUT_DIR}:`);
+  console.log(`  works.json          ${validatedWorks.length} works (${blocked} blocked by validation)`);
+  console.log(`  canon.json          ${validatedCanon.length} canon works (${integrityFailures} integrity failures)`);
   console.log(`  summary.json        collection summary`);
-  console.log(`  critical-responses.json  ${criticalResponses.length} responses`);
-  console.log(`  events.json         ${events.length} events`);
+  console.log(`  critical-responses.json  ${(criticalResponses as any[]).length} responses`);
+  console.log(`  events.json         ${(events as any[]).length} events`);
+  if (blocked > 0 || integrityFailures > 0) {
+    console.warn(`\n⚠ ${blocked + integrityFailures} issues found — see errors above`);
+  }
 }
 
 // Run directly

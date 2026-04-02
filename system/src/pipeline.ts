@@ -1,6 +1,24 @@
 import { getDb } from "./db";
 import { runAgent } from "./agent-runner";
 import { selectFormat, getFormatPrompt, detectFormat } from "./formats";
+import { validateWork, detectTruncation } from "./validate";
+
+/** Extract verdict from evaluator/registrar response — checks first 3 lines */
+function extractVerdict(response: string): "CANON" | "REJECTED" {
+  const lines = response.trim().split("\n");
+  for (const line of lines.slice(0, 3)) {
+    const upper = line.toUpperCase().trim();
+    if (upper === "CANON" || upper.startsWith("CANON:") || upper.startsWith("CANON.") ||
+        upper.startsWith("CANON —") || upper.startsWith("CANON -") || upper === "**CANON**") {
+      return "CANON";
+    }
+    if (upper === "REJECTED" || upper.startsWith("REJECTED:") || upper.startsWith("REJECTED.") ||
+        upper.startsWith("REJECTED —") || upper.startsWith("REJECTED -") || upper === "**REJECTED**") {
+      return "REJECTED";
+    }
+  }
+  return "REJECTED";
+}
 
 /** Timestamp helper for progress logging */
 function elapsed(start: number): string {
@@ -82,35 +100,68 @@ export async function produceWork(
 
   prompt += formatPrompt;
 
-  console.log(`[${originatorId}] Producing work #${workCount.n + 1} (format: ${requestedFormat})...`);
-  const output = await runAgent(originatorId, prompt, {
-    temperature: 0.9,
-    num_predict: ["svg", "html-css", "audio-json", "scene-json"].includes(requestedFormat) ? 2048 : 512,
-    num_ctx: 2048,
-  });
+  // ─── PRODUCTION WITH VALIDATION GATE ─────────────────────────────────────────
+  // Attempt production up to 2 times. First attempt uses standard token limit.
+  // If output is truncated/invalid, retry once with doubled tokens.
 
-  let cleanOutput = output
-    .replace(/^```(?:svg|html|json|css|javascript)?\s*\n?/gm, "")
-    .replace(/\n?```\s*$/gm, "")
-    .trim();
+  const baseTokens = ["svg", "html-css", "audio-json", "scene-json"].includes(requestedFormat) ? 4096 :
+    requestedFormat === "canvas-json" ? 1024 : 512;
 
-  let detected = detectFormat(cleanOutput);
+  let cleanOutput = "";
+  let detected = { format: "text" as string, medium: "structural-text", aspect: 1.0 };
+  let validationPassed = false;
 
-  // Trust the requested format when the output looks like it matches
-  // but the detector defaulted to text
-  if (detected.format === "text" && requestedFormat !== "text") {
-    const trimmed = cleanOutput.trim();
-    if (requestedFormat === "canvas-json" && (trimmed.startsWith("[") || trimmed.includes('"op"'))) {
-      detected = { format: "canvas-json", medium: "canvas-drawing", aspect: 1.0 };
-    } else if (requestedFormat === "html-css" && (trimmed.includes("<html") || trimmed.includes("<style") || trimmed.includes("<!DOCTYPE"))) {
-      detected = { format: "html-css", medium: "html-css-animation", aspect: 1.0 };
-    } else if (requestedFormat === "audio-json" && (trimmed.startsWith("{") || trimmed.includes('"voices"') || trimmed.includes('"duration"'))) {
-      detected = { format: "audio-json", medium: "audio-synthesis", aspect: 1.0 };
-    } else if (requestedFormat === "svg" && trimmed.includes("<svg")) {
-      const vbMatch = trimmed.match(/viewBox="(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"/);
-      const aspect = vbMatch ? parseInt(vbMatch[3]) / parseInt(vbMatch[4]) : 1.0;
-      detected = { format: "svg", medium: "svg", aspect };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const tokens = attempt === 0 ? baseTokens : baseTokens * 2;
+    console.log(`[${originatorId}] Producing work #${workCount.n + 1} (format: ${requestedFormat}${attempt > 0 ? ", RETRY with " + tokens + " tokens" : ""})...`);
+
+    const output = await runAgent(originatorId, prompt, {
+      temperature: 0.9,
+      num_predict: tokens,
+      num_ctx: 4096,
+    });
+
+    cleanOutput = output
+      .replace(/^```(?:svg|html|json|css|javascript)?\s*\n?/gm, "")
+      .replace(/\n?```\s*$/gm, "")
+      .trim();
+
+    detected = detectFormat(cleanOutput);
+
+    // Check for truncation
+    const truncated = detectTruncation(cleanOutput, detected.format);
+    if (truncated && attempt === 0) {
+      console.warn(`[${originatorId}] Output truncated (${detected.format}) — retrying with more tokens...`);
+      continue;
     }
+
+    // Validate
+    const validation = validateWork(cleanOutput, detected.format);
+    if (validation.valid) {
+      validationPassed = true;
+      if (validation.warnings.length > 0) {
+        console.warn(`[${originatorId}] Validation warnings: ${validation.warnings.join("; ")}`);
+      }
+      break;
+    } else {
+      console.warn(`[${originatorId}] Validation FAILED (attempt ${attempt + 1}): ${validation.errors.join("; ")}`);
+      if (attempt === 0) continue; // retry
+    }
+  }
+
+  if (!validationPassed) {
+    console.error(`[${originatorId}] VALIDATION GATE: Work rejected after 2 attempts — not storing`);
+    const dbLog = getDb();
+    dbLog.prepare(`
+      INSERT INTO events (event_type, agent_id, description, metadata)
+      VALUES ('VALIDATION_FAILURE', ?, ?, ?)
+    `).run(
+      originatorId,
+      `${originatorId} produced invalid output (${detected.format}) — rejected by validation gate`,
+      JSON.stringify({ format: detected.format, length: cleanOutput.length })
+    );
+    dbLog.close();
+    return { workId: null, output: cleanOutput };
   }
 
   console.log(`[${originatorId}] Detected format: ${detected.format} (requested: ${requestedFormat}) [${elapsed(start)}]`);
@@ -296,12 +347,7 @@ export async function evaluateWork(
           num_ctx: 2048,
         });
 
-        const firstLine = response.trim().split("\n")[0].toUpperCase();
-        // Binary verdict only — no IN_REVIEW from individual evaluators
-        let verdict: "CANON" | "REJECTED" = "REJECTED";
-        if (firstLine.includes("CANON") && !firstLine.includes("REJECTED")) {
-          verdict = "CANON";
-        }
+        const verdict = extractVerdict(response);
 
         console.log(`  [${evalId}] ${verdict} [${elapsed(evalStart)}]`);
         return { evalId, verdict, response };
@@ -630,11 +676,7 @@ export async function resolveDeadlock(
     num_ctx: 2048,
   });
 
-  const firstLine = response.trim().split("\n")[0].toUpperCase();
-  let finalStatus: "CANON" | "REJECTED" = "REJECTED";
-  if (firstLine.includes("CANON") && !firstLine.includes("REJECTED")) {
-    finalStatus = "CANON";
-  }
+  const finalStatus = extractVerdict(response);
 
   console.log(`  [MNA-RG-0001] Decision: ${finalStatus} [${elapsed(start)}]`);
 
@@ -672,14 +714,22 @@ export async function runFullPipeline(
   console.log(`PIPELINE: ${originatorId}`);
   console.log(`${"=".repeat(60)}\n`);
 
-  // Step 1: Produce
+  // Step 1: Produce (with validation gate)
   const { workId, output } = await produceWork(originatorId);
+
+  if (!workId) {
+    console.log(`\n${"=".repeat(60)}`);
+    console.log(`PIPELINE COMPLETE: ${originatorId} → VALIDATION FAILURE (no work produced) [total: ${elapsed(pipelineStart)}]`);
+    console.log(`${"=".repeat(60)}\n`);
+    return;
+  }
+
   console.log(`\n--- OUTPUT ---`);
   console.log(output.substring(0, 500));
   if (output.length > 500) console.log(`... (${output.length} chars total)`);
   console.log(`--- END OUTPUT ---\n`);
 
-  // Step 2: Evaluate (parallel)
+  // Step 2: Evaluate
   const result = await evaluateWork(workId);
 
   // Step 3: Resolve deadlock if needed (parallel)

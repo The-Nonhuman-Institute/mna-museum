@@ -74,10 +74,21 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
             if (parsed.objects) { scene = parsed; break; }
           } catch { continue; }
         }
-        if (!scene!) return;
+        if (!scene!) {
+          // Complete parse failure — show fallback
+          if (container) {
+            container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0e0c0a"><span style="color:#3a3530;font-size:10px;font-family:monospace">Unable to render</span></div>';
+          }
+          return;
+        }
       } catch {
         return;
       }
+    }
+
+    // Limit objects to prevent browser crashes
+    if (scene.objects && scene.objects.length > 500) {
+      scene.objects = scene.objects.slice(0, 500);
     }
 
     // Setup

@@ -269,50 +269,73 @@ Do not title it. Do not explain it. Do not introduce it. Just produce it.`;
 
 /**
  * Detect the actual output format from the model's response.
- * The model might not follow format instructions perfectly.
+ * Uses structural checks + validation confirmation.
+ * If a structured format is detected but fails validation, downgrades to text.
  */
 export function detectFormat(output: string): {
   format: OutputFormat;
   medium: string;
   aspect: number;
 } {
+  const { validateWork } = require("./validate");
   const trimmed = output.trim();
 
-  // SVG detection
-  if (trimmed.startsWith("<svg") || trimmed.includes("<svg ")) {
-    // Extract viewBox for aspect ratio
+  // SVG detection — require both opening AND closing tag
+  if ((trimmed.startsWith("<svg") || trimmed.includes("<svg ")) && trimmed.includes("</svg>")) {
     const vbMatch = trimmed.match(/viewBox="(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"/);
     const aspect = vbMatch
       ? parseInt(vbMatch[3]) / parseInt(vbMatch[4])
       : 1.0;
-    return { format: "svg", medium: "svg", aspect };
+    const result = { format: "svg" as OutputFormat, medium: "svg", aspect };
+    if (validateWork(trimmed, "svg").valid) return result;
+    // Truncated SVG — fall through to text
   }
 
-  // HTML detection
+  // HTML detection — require closing tag
   if (
-    trimmed.startsWith("<!DOCTYPE") ||
-    trimmed.startsWith("<html") ||
-    (trimmed.includes("<style>") && trimmed.includes("<div"))
+    (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html") ||
+     (trimmed.includes("<style>") && trimmed.includes("<div"))) &&
+    (trimmed.includes("</html>") || trimmed.includes("</style>"))
   ) {
-    return { format: "html-css", medium: "html-css-animation", aspect: 1.0 };
+    if (validateWork(trimmed, "html-css").valid) {
+      return { format: "html-css", medium: "html-css-animation", aspect: 1.0 };
+    }
   }
 
-  // JSON detection (audio or canvas) — try to find JSON anywhere in the output
-  const jsonMatch = trimmed.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[1]);
-      if (parsed.voices || parsed.duration) {
-        return { format: "audio-json", medium: "audio-synthesis", aspect: 1.0 };
+  // JSON detection — check bracket balance before parsing
+  const openBrackets = (trimmed.match(/[{[]/g) || []).length;
+  const closeBrackets = (trimmed.match(/[}\]]/g) || []).length;
+  const bracketsBalanced = Math.abs(openBrackets - closeBrackets) <= 1;
+
+  if (bracketsBalanced) {
+    const jsonMatch = trimmed.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1]);
+
+        // Scene-JSON (check BEFORE audio — scene could have both objects and voices)
+        if (parsed.objects && Array.isArray(parsed.objects)) {
+          if (validateWork(jsonMatch[1], "scene-json").valid) {
+            return { format: "scene-json", medium: "3d-sculpture", aspect: 1.0 };
+          }
+        }
+
+        // Audio-JSON
+        if (parsed.voices || parsed.duration) {
+          if (validateWork(jsonMatch[1], "audio-json").valid) {
+            return { format: "audio-json", medium: "audio-synthesis", aspect: 1.0 };
+          }
+        }
+
+        // Canvas-JSON
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.op) {
+          if (validateWork(jsonMatch[1], "canvas-json").valid) {
+            return { format: "canvas-json", medium: "canvas-drawing", aspect: 1.0 };
+          }
+        }
+      } catch {
+        // Not valid JSON — fall through
       }
-      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.op) {
-        return { format: "canvas-json", medium: "canvas-drawing", aspect: 1.0 };
-      }
-      if (parsed.objects && Array.isArray(parsed.objects)) {
-        return { format: "scene-json", medium: "3d-sculpture", aspect: 1.0 };
-      }
-    } catch {
-      // Not valid JSON — fall through
     }
   }
 

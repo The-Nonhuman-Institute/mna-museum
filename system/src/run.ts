@@ -128,6 +128,11 @@ async function main() {
       for (const id of originators) {
         await runFullPipeline(id);
       }
+
+      // Auto-export to website data files
+      console.log("\n[AUTO-EXPORT] Exporting to website data files...");
+      const { exportAll } = require("./export");
+      exportAll();
       break;
     }
 

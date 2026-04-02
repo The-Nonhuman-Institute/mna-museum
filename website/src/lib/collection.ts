@@ -7,6 +7,7 @@ import worksData from "@/data/works.json";
 import canonData from "@/data/canon.json";
 import summaryData from "@/data/summary.json";
 import criticalResponsesData from "@/data/critical-responses.json";
+import { validateWorkData } from "./validate-work";
 
 export interface Evaluation {
   work_id: string;
@@ -60,8 +61,8 @@ export interface Summary {
   exportedAt: string;
 }
 
-export const works = worksData as Work[];
-export const canon = canonData as Work[];
+export const works = validateWorkData(worksData);
+export const canon = validateWorkData(canonData);
 export const summary = summaryData as Summary;
 export const criticalResponses = criticalResponsesData as CriticalResponse[];
 

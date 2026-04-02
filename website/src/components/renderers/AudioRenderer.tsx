@@ -112,15 +112,21 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
 
     for (const voice of data.voices) {
       for (const note of voice.notes) {
+        // Clamp values to safe ranges
+        const freq = Math.max(20, Math.min(20000, note.freq || 440));
+        const noteGain = Math.max(0, Math.min(1, note.gain || 0.3));
+        const start = Math.max(0, note.start || 0);
+        const dur = Math.max(0.01, Math.min(600, note.duration || 1));
+
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = voice.type;
-        osc.frequency.value = note.freq;
-        gain.gain.value = note.gain;
+        osc.frequency.value = freq;
+        gain.gain.value = noteGain;
         osc.connect(gain);
         gain.connect(masterGain);
-        osc.start(ctx.currentTime + note.start);
-        osc.stop(ctx.currentTime + note.start + note.duration);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur);
       }
     }
 
