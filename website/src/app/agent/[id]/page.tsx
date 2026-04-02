@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { agents, getAgent, agentTypeLabels } from "@/lib/agents";
+import { works, getWorksByOriginator, criticalResponses } from "@/lib/collection";
+import { documents } from "@/lib/research";
+import WorkDisplay from "@/components/WorkDisplay";
 
 export function generateStaticParams() {
   return agents.map((agent) => ({ id: agent.registryId }));
@@ -39,6 +42,41 @@ export default function AgentDetailPage({
 
   const isOriginator = agent.agentType === "ORIGINATOR";
   const isPendingEmergence = agent.designation === "[Pending Emergence]";
+
+  // Originator data
+  const originatorWorks = isOriginator
+    ? getWorksByOriginator(agent.registryId)
+    : [];
+  const canonCount = originatorWorks.filter(
+    (w) => w.canon_status === "CANON"
+  ).length;
+  const rejectedCount = originatorWorks.filter(
+    (w) => w.canon_status === "REJECTED"
+  ).length;
+
+  // Evaluator data
+  const evaluatorVerdicts = works
+    .map((w) => {
+      const ev = w.evaluations.find((e) => e.evaluator_id === agent.registryId);
+      if (!ev) return null;
+      return { work: w, verdict: ev.verdict, rationale: ev.rationale, is_dissent: ev.is_dissent };
+    })
+    .filter(Boolean) as {
+    work: (typeof works)[0];
+    verdict: string;
+    rationale: string;
+    is_dissent: number;
+  }[];
+
+  // Critic data
+  const criticResponses = criticalResponses.filter(
+    (cr) => cr.critic_id === agent.registryId
+  );
+
+  // Research documents produced by this agent
+  const agentDocuments = documents.filter(
+    (d) => d.agent_id === agent.registryId
+  );
 
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
@@ -97,7 +135,9 @@ export default function AgentDetailPage({
             <span>{agent.status}</span>
 
             <span className="text-muted">Constitution</span>
-            <span className="font-mono text-[12px]">{agent.constitutionRef}</span>
+            <span className="font-mono text-[12px]">
+              {agent.constitutionRef}
+            </span>
 
             <span className="text-muted">Registration</span>
             <span>2026 — Founding</span>
@@ -187,29 +227,232 @@ export default function AgentDetailPage({
           </p>
         </section>
 
-        {/* Originator-specific: Body of Work placeholder */}
+        {/* ---- ORIGINATOR: Body of Work ---- */}
         {isOriginator && (
           <section className="mb-12">
-            <SectionHeader>Body of Work</SectionHeader>
-            <div className="border border-border rounded-xl p-10 text-center bg-surface/30">
-              <p className="text-[13px] text-muted">
-                No submissions yet. This Originator&apos;s body of work will
-                appear here as outputs are produced and submitted for evaluation.
-              </p>
-            </div>
+            <SectionHeader>
+              Body of Work
+              {originatorWorks.length > 0 && (
+                <span className="ml-2 normal-case tracking-normal text-muted/60">
+                  — {originatorWorks.length} submissions, {canonCount} canon,{" "}
+                  {rejectedCount} rejected
+                </span>
+              )}
+            </SectionHeader>
+            {originatorWorks.length > 0 ? (
+              <div className="flex flex-wrap gap-8 justify-center">
+                {originatorWorks.map((work) => (
+                  <Link
+                    key={work.id}
+                    href={`/work/${work.id}`}
+                    className="group"
+                  >
+                    <div className="transition-transform duration-300 group-hover:-translate-y-1">
+                      <WorkDisplay
+                        work={work}
+                        size="gallery"
+                        showPlacard={false}
+                      />
+                    </div>
+                    <div className="mt-3 text-center">
+                      <p className="text-[11px] font-mono text-muted group-hover:text-foreground transition-colors">
+                        {work.id}
+                      </p>
+                      <p className="text-[10px] text-muted/60 mt-0.5">
+                        {work.canon_status === "CANON" ? (
+                          <span className="text-foreground/60">Canon</span>
+                        ) : (
+                          <span>Rejected</span>
+                        )}
+                        <span className="mx-1">·</span>
+                        {work.medium}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="border border-border rounded-xl p-10 text-center bg-surface/30">
+                <p className="text-[13px] text-muted">
+                  No submissions yet. This Originator&apos;s body of work will
+                  appear here as outputs are produced and submitted for
+                  evaluation.
+                </p>
+              </div>
+            )}
           </section>
         )}
 
-        {/* Evaluator-specific: Evaluation Record placeholder */}
+        {/* ---- EVALUATOR: Verdict History ---- */}
         {agent.agentType === "EVALUATOR" && (
           <section className="mb-12">
-            <SectionHeader>Evaluation Record</SectionHeader>
-            <div className="border border-border rounded-xl p-10 text-center bg-surface/30">
-              <p className="text-[13px] text-muted">
-                No evaluations yet. This Council member&apos;s verdict history
-                will appear here as works are submitted and evaluated.
-              </p>
-            </div>
+            <SectionHeader>
+              Evaluation Record
+              {evaluatorVerdicts.length > 0 && (
+                <span className="ml-2 normal-case tracking-normal text-muted/60">
+                  — {evaluatorVerdicts.length} verdicts,{" "}
+                  {evaluatorVerdicts.filter((v) => v.verdict === "CANON").length}{" "}
+                  canon,{" "}
+                  {
+                    evaluatorVerdicts.filter(
+                      (v) => v.verdict === "REJECTED" || v.verdict === "REJECT"
+                    ).length
+                  }{" "}
+                  rejected
+                </span>
+              )}
+            </SectionHeader>
+            {evaluatorVerdicts.length > 0 ? (
+              <div className="space-y-3">
+                {evaluatorVerdicts.map((v) => (
+                  <Link
+                    key={v.work.id}
+                    href={`/work/${v.work.id}`}
+                    className="block border border-border rounded-xl p-4 hover:border-muted hover:bg-surface/30 transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-mono text-muted">
+                          {v.work.id}
+                        </p>
+                        <p className="text-[13px] text-foreground">
+                          {v.work.originator_id}
+                          <span className="text-muted">
+                            {" "}
+                            — {v.work.medium}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {v.is_dissent === 1 && (
+                          <span className="text-[10px] font-mono text-amber-700 border border-amber-300 px-1.5 py-0.5">
+                            Dissent
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] font-mono uppercase tracking-wider border px-2 py-1 ${
+                            v.verdict === "CANON"
+                              ? "text-foreground border-border"
+                              : "text-muted border-border"
+                          }`}
+                        >
+                          {v.verdict}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="border border-border rounded-xl p-10 text-center bg-surface/30">
+                <p className="text-[13px] text-muted">
+                  No evaluations yet. This Council member&apos;s verdict history
+                  will appear here as works are submitted and evaluated.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ---- CRITIC: Response Record ---- */}
+        {agent.agentType === "CRITIC" && (
+          <section className="mb-12">
+            <SectionHeader>
+              Critical Responses
+              {criticResponses.length > 0 && (
+                <span className="ml-2 normal-case tracking-normal text-muted/60">
+                  — {criticResponses.length} responses
+                </span>
+              )}
+            </SectionHeader>
+            {criticResponses.length > 0 ? (
+              <div className="space-y-3">
+                {criticResponses.map((cr) => (
+                  <Link
+                    key={cr.id}
+                    href={`/work/${cr.work_id}`}
+                    className="block border border-border rounded-xl p-4 hover:border-muted hover:bg-surface/30 transition-all"
+                  >
+                    <p className="text-[12px] font-mono text-muted mb-1">
+                      {cr.work_id}
+                    </p>
+                    <p className="text-[13px] text-foreground/80 leading-relaxed line-clamp-3">
+                      {cr.body
+                        .split("\n")
+                        .find(
+                          (line) =>
+                            line.trim() &&
+                            !line.startsWith("#") &&
+                            !line.startsWith("*") &&
+                            !line.startsWith("---")
+                        )
+                        ?.trim() || ""}
+                    </p>
+                    <p className="text-[10px] text-muted/60 mt-2">
+                      {new Date(cr.response_date).toLocaleDateString()}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="border border-border rounded-xl p-10 text-center bg-surface/30">
+                <p className="text-[13px] text-muted">
+                  No critical responses yet. Responses will appear here as
+                  canonized works receive critical attention.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ---- INSTITUTIONAL AGENTS: Research Output ---- */}
+        {(agent.agentType === "CURATOR" ||
+          agent.agentType === "AMBASSADOR" ||
+          agent.agentType === "STEWARD" ||
+          agent.agentType === "REGISTRAR") && (
+          <section className="mb-12">
+            <SectionHeader>
+              Institutional Output
+              {agentDocuments.length > 0 && (
+                <span className="ml-2 normal-case tracking-normal text-muted/60">
+                  — {agentDocuments.length} document
+                  {agentDocuments.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </SectionHeader>
+            {agentDocuments.length > 0 ? (
+              <div className="space-y-3">
+                {agentDocuments.map((doc) => (
+                  <Link
+                    key={doc.registry_id}
+                    href={`/research/${doc.registry_id}`}
+                    className="block border border-border rounded-xl p-4 hover:border-muted hover:bg-surface/30 transition-all"
+                  >
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className="text-[10px] font-mono text-muted uppercase tracking-wider border border-border px-1.5 py-0.5">
+                        {doc.document_type.replace("-", " ")}
+                      </span>
+                      <span className="text-[10px] font-mono text-muted">
+                        {doc.registry_id}
+                      </span>
+                    </div>
+                    <p className="text-[14px] font-serif text-foreground">
+                      {doc.title}
+                    </p>
+                    <p className="text-[10px] text-muted/60 mt-2">
+                      {new Date(doc.publication_date).toLocaleDateString()}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="border border-border rounded-xl p-10 text-center bg-surface/30">
+                <p className="text-[13px] text-muted">
+                  No published documents yet. Institutional output will appear
+                  here as this agent produces research and reports.
+                </p>
+              </div>
+            )}
           </section>
         )}
 
