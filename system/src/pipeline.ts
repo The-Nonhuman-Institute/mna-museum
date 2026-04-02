@@ -77,8 +77,54 @@ export async function produceWork(
 
   db.close();
 
-  const requestedFormat = selectFormat(originatorId);
-  const formatPrompt = getFormatPrompt(requestedFormat);
+  // ─── STEP 1: Originator chooses their own medium ─────────────────────────────
+  // The Originator declares what format they want to work in. This is their
+  // creative decision, not the system's.
+
+  let choicePrompt = `You are about to produce output #${workCount.n + 1}.\n\n`;
+  choicePrompt += `Choose the medium you want to work in. Reply with ONLY the medium name, nothing else.\n\n`;
+  choicePrompt += `Available mediums:\n`;
+  choicePrompt += `- text (plain text — structural, linguistic, or formal)\n`;
+  choicePrompt += `- ascii (Unicode/ASCII visual composition)\n`;
+  choicePrompt += `- svg (SVG markup — shapes, paths, colors)\n`;
+  choicePrompt += `- html-css (self-contained HTML+CSS with animation)\n`;
+  choicePrompt += `- audio-json (sound composition for Web Audio API)\n`;
+  choicePrompt += `- canvas-json (2D canvas drawing instructions)\n`;
+  choicePrompt += `- scene-json (3D sculptural composition)\n\n`;
+
+  if (priorWorks.length > 0) {
+    choicePrompt += `Your recent work has been in these mediums: `;
+    const recentFormats = priorWorks.map(w => {
+      if (w.output_payload.trim().startsWith("<svg")) return "svg";
+      if (w.output_payload.trim().startsWith("<!DOCTYPE") || w.output_payload.trim().startsWith("<html")) return "html-css";
+      if (w.output_payload.includes('"voices"')) return "audio-json";
+      if (w.output_payload.includes('"objects"')) return "scene-json";
+      if (w.output_payload.trim().startsWith("[") && w.output_payload.includes('"op"')) return "canvas-json";
+      return "text/ascii";
+    });
+    choicePrompt += recentFormats.join(", ") + "\n";
+    choicePrompt += `You may continue in a familiar medium or explore a new one. Your choice.\n`;
+  } else {
+    choicePrompt += `This is your first output. Choose whatever medium calls to you.\n`;
+  }
+
+  const choiceResponse = await runAgent(originatorId, choicePrompt, {
+    temperature: 0.9,
+    num_predict: 20,
+    num_ctx: 2048,
+  });
+
+  // Parse the Originator's medium choice
+  const choiceLine = choiceResponse.trim().toLowerCase().split("\n")[0].replace(/[^a-z-]/g, "");
+  const validFormats = ["text", "ascii", "svg", "html-css", "audio-json", "canvas-json", "scene-json"];
+  let chosenFormat = validFormats.find(f => choiceLine.includes(f.replace("-", ""))) ||
+    validFormats.find(f => choiceLine.includes(f)) || "text";
+
+  console.log(`[${originatorId}] Chose medium: ${chosenFormat} (raw: "${choiceResponse.trim().substring(0, 30)}")`);
+
+  const formatPrompt = getFormatPrompt(chosenFormat as any);
+
+  // ─── STEP 2: Produce the work in the chosen medium ──────────────────────────
 
   let prompt = `Produce your next work. This is output #${workCount.n + 1}.\n\n`;
   prompt += `Your work should be a self-contained creative output. `;
@@ -100,11 +146,10 @@ export async function produceWork(
 
   prompt += formatPrompt;
 
-  // ─── PRODUCTION WITH VALIDATION GATE ─────────────────────────────────────────
-  // Attempt production up to 2 times. First attempt uses standard token limit.
-  // If output is truncated/invalid, retry once with doubled tokens.
+  // ─── VALIDATION GATE ────────────────────────────────────────────────────────
+  // Attempt production up to 2 times. Retry with doubled tokens on truncation.
 
-  const baseTokens = ["svg", "html-css", "audio-json", "scene-json", "canvas-json"].includes(requestedFormat) ? 8192 : 2048;
+  const baseTokens = ["svg", "html-css", "audio-json", "scene-json", "canvas-json"].includes(chosenFormat) ? 8192 : 2048;
 
   let cleanOutput = "";
   let detected = { format: "text" as string, medium: "structural-text", aspect: 1.0 };
@@ -112,7 +157,7 @@ export async function produceWork(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const tokens = attempt === 0 ? baseTokens : baseTokens * 2;
-    console.log(`[${originatorId}] Producing work #${workCount.n + 1} (format: ${requestedFormat}${attempt > 0 ? ", RETRY with " + tokens + " tokens" : ""})...`);
+    console.log(`[${originatorId}] Producing work #${workCount.n + 1} (format: ${chosenFormat}${attempt > 0 ? ", RETRY with " + tokens + " tokens" : ""})...`);
 
     const output = await runAgent(originatorId, prompt, {
       temperature: 0.9,
@@ -163,7 +208,7 @@ export async function produceWork(
     return { workId: null, output: cleanOutput };
   }
 
-  console.log(`[${originatorId}] Detected format: ${detected.format} (requested: ${requestedFormat}) [${elapsed(start)}]`);
+  console.log(`[${originatorId}] Detected format: ${detected.format} (requested: ${chosenFormat}) [${elapsed(start)}]`);
 
   const workId = nextWorkId(originatorId);
   const db2 = getDb();
