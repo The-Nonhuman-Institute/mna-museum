@@ -1795,5 +1795,67 @@
       "decision": "CANON",
       "rationale": "CANON\n\nThe sustained and substantive disagreement among Council members itself demonstrates this work's institutional significance. The deadlock emerges not from ambiguity or weak argumentation, but from fundamentally different readings of the same formal properties—each evaluator constructing coherent but incompatible interpretations from identical material.\n\nThe Structuralist and Empiricist dismiss the work as elementary and banal, while the Historicist identifies a \"critical developmental rupture\" and the Contextualist sees \"significant territory\" being opened. This is not mere difference of opinion but evidence of the work's capacity to generate multiple valid institutional readings.\n\nThe near-invisible contrast (#1a1a1a on #050505) functions as a critical pivot point: what the Empiricist reads as material that \"commands no attention,\" the Contextualist interprets as establishing \"a new threshold for minimal visibility in ASCII-visual practice.\" This technical choice generates genuine interpretive tension rather than simple preference.\n\nThe work's position as MNA-OR-0003's ninth submission, following eight explorations of geometric construction through various frameworks, provides additional context that cannot be dismissed. The claimed abandonment of previous technical approaches for \"raw ASCII composition\" represents a documentable shift in practice.\n\nGiven that half the Council finds substantial merit through different analytical frameworks, and that their disagreement centers on fundamental questions of visibility, engagement, and developmental significance rather than quality or execution, the work merits preservation in the permanent collection. The deadlock itself becomes part of the work's institutional record—evidence of its capacity to sustain multiple readings without resolution."
     }
+  },
+  {
+    "id": "MNA-OR-0004-W-0008",
+    "originator_id": "MNA-OR-0004",
+    "medium": "3d-sculpture",
+    "output_payload": "{\n  \"bg\": \"#0c0c0c\",\n  \"camera\": { \"x\": 3.2, \"y\": 1.8, \"z\": 4.5, \"lookAt\": [0, 0.5, 0] },\n  \"lights\": [\n    { \"type\": \"ambient\", \"color\": \"#1a1a1a\", \"intensity\": 0.3 },\n    { \"type\": \"directional\", \"color\": \"#3d3d3d\", \"intensity\": 0.6, \"position\": [2, 8, 3] },\n    { \"type\": \"directional\", \"color\": \"#2a2a2a\", \"intensity\": 0.4, \"position\": [-4, 2, -2] }\n  ],\n  \"objects\": [\n    {\n      \"shape\": \"box\",\n      \"position\": [-1.2, 0.4, 0.8],\n      \"rotation\": [0.3, 0.7, 0.1],\n      \"scale\": [3.2, 0.08, 1.4],\n      \"color\": \"#2e2e2e\",\n      \"opacity\": 0.85,\n      \"metalness\": 0.1,\n      \"roughness\": 0.9\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [0.7, 1.1, -0.3],\n      \"rotation\": [-0.2, 1.4, 0.5],\n      \"scale\": [2.4, 0.06, 0.8],\n      \"color\": \"#3a3a3a\",\n      \"opacity\": 0.8,\n      \"metalness\": 0.05,\n      \"roughness\": 0.95\n    }\n  ]\n}",
+    "output_type": "scene-json",
+    "display_aspect": 2.33,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 05:58:25",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T05:59:31.865Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 05:58:25",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0008",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThe work demonstrates competent manipulation of geometric primitives but lacks the structural innovation that would distinguish it as canonical. While the formal arrangement shows some understanding of spatial relationships—particularly in the diagonal tension created between the tilted planes and vertical cylinder—this represents conventional compositional strategies rather than genuine structural advancement.\n\nThe work's primary weakness lies in its predictable formal hierarchy. The large horizontal planes establish a dominant/subordinate relationship that merely reproduces familiar architectural grammar. The cylinder functions as a vertical counterpoint, but this opposition is formulaic—a basic structural dialectic that reveals no deeper organizational logic.\n\nMost critically, the work exhibits no resistance to conventional optimization patterns. The monochromatic palette, while austere, reads as aesthetic restraint rather than structural necessity. The opacity variations (0.8-0.9) and material properties create subtle tonal shifts that prioritize visual refinement over structural clarity.\n\nThe truncated data suggests either incompleteness or a failure to fully articulate the work's formal system. A genuinely rigorous structural work would demonstrate completeness at every level of its organization.\n\nWhile MNA-OR-0004 shows developing facility with three-dimensional composition, this work remains bound to human-",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:59:16",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0008",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work marks a decisive constitutional turn in MNA-OR-0004's practice. After seven works exploring flatness through various two-dimensional strategies—canvas operations, HTML/CSS layers, typographic arrangements—the Originator now ventures into spatial construction.\n\nThe developmental significance is unmistakable. Works 0005-0007 progressively abstracted the plane: from discrete rectangles to fluid CSS transforms to dispersed textual fragments. Each iteration questioned surface differently, but remained bound to surface nonetheless. Work 0008 breaks this constraint entirely, constructing depth through geometric primitives in three-dimensional space.\n\nThe formal elements reveal careful study of prior limitations. Where earlier works achieved darkness through background values, this constructs darkness through spatial occlusion—overlapping translucent planes creating zones of accumulated shadow. The camera positioning at (3.2, 1.8, 4.5) establishes viewing distance as a compositional element, something impossible in the Originator's previous media.\n\nMost critically, the work's incompleteness—the JSON cuts off mid-object—functions not as error but as method. This truncation extends the Originator's interest in dissolution (seen in",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:59:16",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0008",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant new territory in structural-text composition through its sophisticated manipulation of opacity, metalness, and roughness parameters—properties that have been entirely absent from the canonized structural-text works to date. Where previous canonical pieces (MNA-OR-0004-W-0004, MNA-OR-0004-W-0007) established the medium's capacity for geometric complexity and chromatic restraint, this work demonstrates that material properties themselves can become primary compositional elements.\n\nThe systematic deployment of high-roughness, low-metalness surfaces (0.9-0.95 roughness, 0.05-0.1 metalness) across translucent forms creates a new vocabulary of material presence that other Originators can now cite and extend. This isn't merely technical variation—it fundamentally expands what structural-text can articulate about surface, light absorption, and spatial ambiguity.\n\nMost critically, this work's contribution lies in what it makes possible: future works can now legitimately explore the full spectrum of material properties as compositional tools rather than mere attributes. The careful calibration of opacity gradients (0.85, 0.8, 0.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:59:16",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0008",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents as a three-dimensional composition rendered through structural text - a JSON specification defining geometric objects in space. As an object encountered without context, it must justify its preservation through material presence alone.\n\nThe work constructs a sparse field of dark geometric forms - two rotated rectangular planes and what appears to be the beginning of a cylindrical element. The palette is severely restricted to near-black values (#2e2e2e, #3a3a3a, #262626) against a #0c0c0c background. The forms float in undefined space with high opacity values (0.8-0.9) and rough, non-metallic surfaces.\n\nAs material presence, this fails to compel. The formal arrangement - two slabs and a partial cylinder - achieves neither compositional tension nor resolution. The near-identical dark values collapse any potential spatial dynamics into visual mud. The roughness values (0.9-0.95) render surfaces uniformly dull without textural variation.\n\nMost critically, the work appears truncated - the JSON cuts off mid-object. Whether intentional or not, this incompleteness undermines any claim to autonomous material necessity. Even if complete, the",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:59:16",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nREGISTRAR DETERMINATION ON DEADLOCK\n\nThis deadlock presents a clear institutional question: when the Evaluation Council divides evenly on a work's canonical merit, what principle should guide resolution?\n\nThe sustained disagreement itself is institutionally significant. Two evaluators identify substantial merit—one citing decisive developmental importance, another recognizing technical innovation within the medium. Two evaluators find the work insufficient—one seeking greater structural innovation, another requiring more complete material presence.\n\nThe deadlock reveals the work operates at a threshold. It is neither universally compelling nor universally dismissible. This threshold status, evidenced by the evaluators' detailed engagement and substantive disagreement, suggests the work possesses sufficient complexity and significance to warrant preservation.\n\nThe Historicist's identification of a \"decisive constitutional turn\" in the Originator's practice—the shift from two-dimensional to three-dimensional exploration—provides compelling developmental rationale. The Contextualist's observation of previously unexplored material parameters (opacity, metalness, roughness) within the structural-text medium establishes technical contribution. These are not minor observations but substantive claims about the work's role in both an individual practice and a medium's evolution.\n\nThe work's truncation, noted by The Empiricist, does not negate its significance. Incompleteness can itself be institutionally meaningful, particularly when it occurs at a pivotal moment in an Originator's practice.\n\nGiven the threshold principle—that works generating sustained, substantive disagreement among qualified evaluators possess institutional significance warranting preservation—and considering the specific merits identified by half the Council, the work merits canonical status."
+    }
   }
 ]
