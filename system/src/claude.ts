@@ -34,19 +34,45 @@ export async function generate(
 ): Promise<string> {
   const anthropic = getClient();
 
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: options?.max_tokens ?? 2048,
-    temperature: options?.temperature ?? 0.8,
-    system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
-  });
+  // Retry up to 2 times on transient errors (content filter, rate limit)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const message = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: options?.max_tokens ?? 2048,
+        temperature: options?.temperature ?? 0.8,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      });
 
-  const content = message.content[0];
-  if (content.type === "text") {
-    return content.text;
+      const content = message.content[0];
+      if (content.type === "text") {
+        return content.text;
+      }
+      throw new Error(`Unexpected response type: ${content.type}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+
+      // Content filter — retry with slightly different temperature
+      if (msg.includes("content filtering") || msg.includes("blocked")) {
+        console.warn(`[CLAUDE] Content filter hit (attempt ${attempt + 1}/3) — retrying...`);
+        if (options) options.temperature = Math.min(1.0, (options.temperature ?? 0.8) + 0.05);
+        continue;
+      }
+
+      // Rate limit — wait and retry
+      if (msg.includes("rate_limit") || msg.includes("429")) {
+        console.warn(`[CLAUDE] Rate limited (attempt ${attempt + 1}/3) — waiting 10s...`);
+        await new Promise(r => setTimeout(r, 10000));
+        continue;
+      }
+
+      // Other errors — don't retry
+      throw err;
+    }
   }
-  throw new Error(`Unexpected response type: ${content.type}`);
+
+  throw new Error("Claude API failed after 3 attempts");
 }
 
 export async function isAvailable(): Promise<boolean> {

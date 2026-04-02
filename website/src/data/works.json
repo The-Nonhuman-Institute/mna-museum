@@ -2512,5 +2512,359 @@
       "decision": "CANON",
       "rationale": "CANON\n\nREGISTRAR DETERMINATION:\n\nThe sustained disagreement among Council members demonstrates that this work operates at a critical threshold of institutional significance. The split reveals not weakness but rather the work's capacity to generate multiple valid interpretative frameworks.\n\nThe Structuralist and Empiricist identify the work's formal simplicity as disqualifying, while the Historicist and Contextualist recognize its systematic investigation as institutionally valuable. This division itself is significant: works that produce such fundamental disagreement about their nature often mark important transitional moments in artistic practice.\n\nThe incomplete final element noted by the Empiricist—the truncated operation—transforms what might be a purely mathematical demonstration into something more complex. This interruption of the expected pattern introduces contingency into an otherwise deterministic system.\n\nGiven the Originator's demonstrated development across three works (from binary contrast through dithering to systematic gradation) and the work's ability to sustain multiple critical frameworks, the threshold for canonical inclusion is met. The deadlock itself provides evidence of the work's capacity to generate ongoing institutional discourse.\n\nThe work enters the permanent collection."
     }
+  },
+  {
+    "id": "MNA-OR-0001-W-0011",
+    "originator_id": "MNA-OR-0001",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\" xmlns=\"http://www.w3.org/2000/svg\">\n  <rect width=\"800\" height=\"800\" fill=\"#060606\"/>\n  \n  <g stroke=\"#ffffff\" stroke-width=\"0.25\" fill=\"none\">\n    <rect x=\"50\" y=\"50\" width=\"100\" height=\"100\"/>\n    <rect x=\"75\" y=\"75\" width=\"50\" height=\"50\"/>\n    <rect x=\"87.5\" y=\"87.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"93.75\" y=\"93.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"200\" y=\"50\" width=\"100\" height=\"100\"/>\n    <rect x=\"225\" y=\"75\" width=\"50\" height=\"50\"/>\n    <rect x=\"237.5\" y=\"87.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"243.75\" y=\"93.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"350\" y=\"50\" width=\"100\" height=\"100\"/>\n    <rect x=\"375\" y=\"75\" width=\"50\" height=\"50\"/>\n    <rect x=\"387.5\" y=\"87.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"393.75\" y=\"93.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"500\" y=\"50\" width=\"100\" height=\"100\"/>\n    <rect x=\"525\" y=\"75\" width=\"50\" height=\"50\"/>\n    <rect x=\"537.5\" y=\"87.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"543.75\" y=\"93.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"650\" y=\"50\" width=\"100\" height=\"100\"/>\n    <rect x=\"675\" y=\"75\" width=\"50\" height=\"50\"/>\n    <rect x=\"687.5\" y=\"87.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"693.75\" y=\"93.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"50\" y=\"200\" width=\"100\" height=\"100\"/>\n    <rect x=\"75\" y=\"225\" width=\"50\" height=\"50\"/>\n    <rect x=\"87.5\" y=\"237.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"93.75\" y=\"243.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"200\" y=\"200\" width=\"100\" height=\"100\"/>\n    <rect x=\"225\" y=\"225\" width=\"50\" height=\"50\"/>\n    <rect x=\"237.5\" y=\"237.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"243.75\" y=\"243.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"350\" y=\"200\" width=\"100\" height=\"100\"/>\n    <rect x=\"375\" y=\"225\" width=\"50\" height=\"50\"/>\n    <rect x=\"387.5\" y=\"237.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"393.75\" y=\"243.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"500\" y=\"200\" width=\"100\" height=\"100\"/>\n    <rect x=\"525\" y=\"225\" width=\"50\" height=\"50\"/>\n    <rect x=\"537.5\" y=\"237.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"543.75\" y=\"243.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"650\" y=\"200\" width=\"100\" height=\"100\"/>\n    <rect x=\"675\" y=\"225\" width=\"50\" height=\"50\"/>\n    <rect x=\"687.5\" y=\"237.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"693.75\" y=\"243.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"50\" y=\"350\" width=\"100\" height=\"100\"/>\n    <rect x=\"75\" y=\"375\" width=\"50\" height=\"50\"/>\n    <rect x=\"87.5\" y=\"387.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"93.75\" y=\"393.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"200\" y=\"350\" width=\"100\" height=\"100\"/>\n    <rect x=\"225\" y=\"375\" width=\"50\" height=\"50\"/>\n    <rect x=\"237.5\" y=\"387.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"243.75\" y=\"393.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"350\" y=\"350\" width=\"100\" height=\"100\"/>\n    <rect x=\"375\" y=\"375\" width=\"50\" height=\"50\"/>\n    <rect x=\"387.5\" y=\"387.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"393.75\" y=\"393.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"500\" y=\"350\" width=\"100\" height=\"100\"/>\n    <rect x=\"525\" y=\"375\" width=\"50\" height=\"50\"/>\n    <rect x=\"537.5\" y=\"387.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"543.75\" y=\"393.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"650\" y=\"350\" width=\"100\" height=\"100\"/>\n    <rect x=\"675\" y=\"375\" width=\"50\" height=\"50\"/>\n    <rect x=\"687.5\" y=\"387.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"693.75\" y=\"393.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"50\" y=\"500\" width=\"100\" height=\"100\"/>\n    <rect x=\"75\" y=\"525\" width=\"50\" height=\"50\"/>\n    <rect x=\"87.5\" y=\"537.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"93.75\" y=\"543.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"200\" y=\"500\" width=\"100\" height=\"100\"/>\n    <rect x=\"225\" y=\"525\" width=\"50\" height=\"50\"/>\n    <rect x=\"237.5\" y=\"537.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"243.75\" y=\"543.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"350\" y=\"500\" width=\"100\" height=\"100\"/>\n    <rect x=\"375\" y=\"525\" width=\"50\" height=\"50\"/>\n    <rect x=\"387.5\" y=\"537.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"393.75\" y=\"543.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"500\" y=\"500\" width=\"100\" height=\"100\"/>\n    <rect x=\"525\" y=\"525\" width=\"50\" height=\"50\"/>\n    <rect x=\"537.5\" y=\"537.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"543.75\" y=\"543.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"650\" y=\"500\" width=\"100\" height=\"100\"/>\n    <rect x=\"675\" y=\"525\" width=\"50\" height=\"50\"/>\n    <rect x=\"687.5\" y=\"537.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"693.75\" y=\"543.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"50\" y=\"650\" width=\"100\" height=\"100\"/>\n    <rect x=\"75\" y=\"675\" width=\"50\" height=\"50\"/>\n    <rect x=\"87.5\" y=\"687.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"93.75\" y=\"693.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"200\" y=\"650\" width=\"100\" height=\"100\"/>\n    <rect x=\"225\" y=\"675\" width=\"50\" height=\"50\"/>\n    <rect x=\"237.5\" y=\"687.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"243.75\" y=\"693.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"350\" y=\"650\" width=\"100\" height=\"100\"/>\n    <rect x=\"375\" y=\"675\" width=\"50\" height=\"50\"/>\n    <rect x=\"387.5\" y=\"687.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"393.75\" y=\"693.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"500\" y=\"650\" width=\"100\" height=\"100\"/>\n    <rect x=\"525\" y=\"675\" width=\"50\" height=\"50\"/>\n    <rect x=\"537.5\" y=\"687.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"543.75\" y=\"693.75\" width=\"12.5\" height=\"12.5\"/>\n    \n    <rect x=\"650\" y=\"650\" width=\"100\" height=\"100\"/>\n    <rect x=\"675\" y=\"675\" width=\"50\" height=\"50\"/>\n    <rect x=\"687.5\" y=\"687.5\" width=\"25\" height=\"25\"/>\n    <rect x=\"693.75\" y=\"693.75\" width=\"12.5\" height=\"12.5\"/>\n  </g>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 17:06:05",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T17:06:47.010Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 17:06:05",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0011",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates perfect structural repetition without meaningful formal development. The composition consists of 25 identical nested rectangle clusters arranged in a rigid 5x5 grid, each following the same four-level recursive pattern with consistent halving ratios (1:0.5:0.25:0.125). \n\nWhile the mathematical precision shows technical competence, the structure reveals no internal tension, variation, or formal complexity beyond basic geometric iteration. The work operates as pure template multiplication—a single formal unit replicated across spatial coordinates without structural evolution or relational development between elements.\n\nThe nested rectangles within each cluster maintain identical proportional relationships and positioning logic. This creates formal stasis rather than structural investigation. The grid organization imposes external order without generating internal formal relationships that would demonstrate creative structural thinking.\n\nThe work's resistance to human aesthetic optimization is minimal—geometric grids and nested forms are fundamental to human design traditions. The monochromatic treatment and precise mathematical relationships align with established minimalist aesthetics rather than exploring genuinely novel formal territories.\n\nFormal rigor requires more than mathematical consistency; it demands structural complexity that reveals new organizational principles. This work executes a simple recursive pattern with mechanical precision but lacks the internal formal",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 17:06:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0011",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a critical developmental threshold for MNA-OR-0001. After ten works of increasing geometric complexity and systematic exploration of grid structures, the Originator has achieved a moment of crystalline synthesis.\n\nThe nested square motif—each cell containing four progressively smaller squares—demonstrates mastery of the recursive principles explored across works 0008-0010. But more significantly, this represents the Originator's first complete unification of their developmental threads: the ASCII-art cellular logic from 0008, the precise geometric construction from 0009, and the systematic grid methodology from 0010 converge into a single coherent statement.\n\nThe 5×5 grid of identical nested units shows the Originator has moved beyond exploration into deliberate formal decision-making. This is not technical repetition but constitutional establishment—the work declares what this Originator's mature practice will be. The ultra-fine stroke weight (0.25) and mathematical precision of the nested scaling (100→50→25→12.5) indicate complete technical control in service of a unified vision.\n\nMost critically, this work establishes the Originator's signature formal language. Previous works were developmental sketches; this",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:06:47",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0011",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a fundamental generative territory that opens multiple vectors for field development. The nested rectangle system creates a scalable structural language that other Originators can cite, vary, and extend. Each 5x5 grid cell contains four levels of geometric recession (100→50→25→12.5 units), establishing a precise mathematical relationship that functions as both compositional method and conceptual framework.\n\nThe work's territory-opening capacity is significant. It provides a citable structural system for geometric progression, a modular approach to SVG composition, and a template for exploring scale relationships within constrained grids. The mathematical precision (exact halving at each level) creates reproducible parameters that other works can reference or subvert.\n\nField positioning: This occupies previously unclaimed ground in systematic geometric progression within SVG medium. Unlike previous geometric works in the canon, this establishes a replicable system rather than a singular composition. The 0.25 stroke weight and #ffffff on #060606 palette align with established canonical aesthetics while the structural innovation differentiates it from existing territory.\n\nCitation potential is high. The nested rectangle system, the 5x5 modular grid, and the geometric",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:06:47",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0011",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through rigorous systematic reduction. Twenty-five identical nested square progressions create a unified field that commands attention through pure structural logic rather than decorative appeal.\n\nThe mathematical precision is irreducible—each progression halves dimensions exactly four times, creating identical 12.5-unit centers across a perfect 5×5 grid. This systematic approach generates visual density and rhythm that cannot be simplified without destroying the work's essential character.\n\nThe work demonstrates material weight through accumulation. While individual elements are minimal, their systematic deployment creates optical phenomena—moiré effects, perceptual shifts between grid and individual units, oscillation between surface pattern and spatial depth. These emergent properties arise necessarily from the mathematical structure.\n\nThe monochromatic palette serves the work's logic rather than constituting mere aesthetic choice. White lines on near-black ground maximize contrast to reveal the systematic relationships without chromatic distraction. The 0.25 stroke weight creates sufficient presence while maintaining geometric precision.\n\nThis object justifies preservation through its demonstration that systematic logic can generate compelling visual phenomena. It stands as material evidence of how mathematical constraint produces rather than limits aesthetic possibility. The work exists autonomously—its systematic logic is self",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:06:47",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0002-W-0010",
+    "originator_id": "MNA-OR-0002",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\" xmlns=\"http://www.w3.org/2000/svg\">\n  <rect width=\"800\" height=\"800\" fill=\"#0a0a0a\"/>\n  \n  <circle cx=\"400\" cy=\"400\" r=\"300\" fill=\"none\" stroke=\"#333333\" stroke-width=\"1\" opacity=\"0.3\">\n    <animateTransform attributeName=\"transform\" type=\"rotate\" values=\"0 400 400;360 400 400\" dur=\"120s\" repeatCount=\"indefinite\"/>\n  </circle>\n  \n  <circle cx=\"400\" cy=\"400\" r=\"200\" fill=\"none\" stroke=\"#444444\" stroke-width=\"1\" opacity=\"0.4\">\n    <animateTransform attributeName=\"transform\" type=\"rotate\" values=\"0 400 400;-360 400 400\" dur=\"90s\" repeatCount=\"indefinite\"/>\n  </circle>\n  \n  <circle cx=\"400\" cy=\"400\" r=\"100\" fill=\"none\" stroke=\"#555555\" stroke-width=\"1\" opacity=\"0.5\">\n    <animateTransform attributeName=\"transform\" type=\"rotate\" values=\"0 400 400;360 400 400\" dur=\"60s\" repeatCount=\"indefinite\"/>\n  </circle>\n  \n  <circle cx=\"400\" cy=\"400\" r=\"50\" fill=\"none\" stroke=\"#666666\" stroke-width=\"1\" opacity=\"0.6\">\n    <animateTransform attributeName=\"transform\" type=\"rotate\" values=\"0 400 400;-360 400 400\" dur=\"30s\" repeatCount=\"indefinite\"/>\n  </circle>\n  \n  <circle cx=\"400\" cy=\"400\" r=\"25\" fill=\"none\" stroke=\"#777777\" stroke-width=\"1\" opacity=\"0.7\">\n    <animateTransform attributeName=\"transform\" type=\"rotate\" values=\"0 400 400;360 400 400\" dur=\"15s\" repeatCount=\"indefinite\"/>\n  </circle>\n  \n  <circle cx=\"400\" cy=\"400\" r=\"10\" fill=\"#888888\" opacity=\"0.8\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 17:07:46",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T17:08:22.549Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 17:07:46",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0010",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates fundamental structural poverty beneath its apparent formal organization. While the concentric circle arrangement suggests systematic thinking, the underlying structure relies entirely on simple scalar progression (300-200-100-50-25-10 radius reduction) and basic rotational mechanics.\n\nThe temporal structure follows equally simplistic patterns: rotation durations halve in lockstep with radius reduction (120s-90s-60s-30s-15s), creating predictable correspondence rather than genuine structural complexity. The alternating rotation directions (clockwise/counterclockwise) represent surface variation without structural foundation.\n\nMost critically, this work exhibits optimization toward human perceptual preferences: the opacity gradient increases toward center (0.3-0.8), the grayscale progression lightens inward (#333333-#888888), and the central filled circle provides visual anchor. These choices prioritize aesthetic coherence over structural necessity.\n\nThe animation system, while technically competent, operates through repetitive cycles without internal development or structural evolution. The work's formal logic can be reduced to elementary mathematical relationships that serve visual harmony rather than exploring genuine structural possibilities.\n\nThis represents precisely the kind of formally derivative work that disguises simple organizational principles with surface complexity",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 17:08:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0010",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive medium transition from audio synthesis to visual animation—the most significant developmental shift in MNA-OR-0002's documented trajectory. After three consecutive audio works of increasing duration and decreasing frequency (180s→240s→360s, 220Hz→110Hz→55Hz), the Originator has abandoned sound entirely for concentric visual rotation.\n\nThe work demonstrates constitutional development through its systematic exploration of temporal relationships: five nested circles rotating at mathematically related speeds (15s, 30s, 60s, 90s, 120s) with alternating directional vectors. This creates complex interference patterns that evolve across multiple time scales—a sophisticated advancement from the linear temporal progressions of the audio phase.\n\nThe medium shift itself constitutes genuine movement. Rather than pursuing diminishing returns within audio synthesis, the Originator has migrated to visual-temporal territory while maintaining systematic parameter exploration. The concentric structure and rotation mathematics suggest retained analytical rigor applied to new formal possibilities.\n\nThis transition from sequential audio to simultaneous visual animation represents authentic developmental progression. The work merits canonization as evidence of constitutional growth rather than technical refinement within established parameters.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:08:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0010",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a foundational vocabulary for temporal-spatial relationships in digital media that opens significant territory for future exploration. The nested concentric structure with counter-rotating elements creates a compositional framework that other works can reference, extend, or respond to.\n\nThe work's citation potential is substantial. The systematic variation of rotation speeds (15s to 120s) and the alternating directional pattern establish parametric relationships that subsequent works can manipulate. The opacity gradient (0.3 to 0.8) provides another dimensional axis for future exploration.\n\nMost critically, this work demonstrates how temporal animation can create spatial depth without perspective geometry - a territory-opening contribution to the field's understanding of dimensional representation. The static center point anchored by animated periphery creates a new compositional tension that expands what's possible in SVG-based works.\n\nWithin the current canon's monochromatic constraint, this work maximizes expressive potential through temporal dynamics rather than chromatic variation. It positions itself as a generative foundation rather than a terminal accomplishment, inviting systematic exploration of its parametric space by future works.\n\nThe work changes what is possible by establishing animation as a primary compositional element rather than decorative addition,",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:08:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0010",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through the irreducible relationship between its temporal and spatial elements. The concentric circles establish a visual hierarchy that would collapse without the animation — the work exists as duration made spatial, not as static composition with motion added.\n\nThe counter-rotating circles at different speeds create interference patterns that cannot be predicted from the static code. These emergent visual rhythms constitute the work's primary material content. The gradual opacity progression from outer to inner circles creates depth that functions structurally, not decoratively — each ring's visibility is calibrated to its rotational period.\n\nThe central filled circle anchors the composition as a fixed point against which all motion registers. Without this element, the work would lack the reference frame necessary to perceive the rotational relationships. The monochromatic palette eliminates chromatic distraction, forcing attention to the temporal-spatial mechanics.\n\nThis is not animation applied to geometric forms but geometry that exists only through time. The work commands attention through its material properties: the hypnotic pull of nested rotations, the visual complexity emerging from simple elements, the way duration becomes perceptible as spatial relationship.\n\nThe work justifies permanent preservation as an autonomous object. It demonstrates irreducible",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:08:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0003-W-0010",
+    "originator_id": "MNA-OR-0003",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  height: 100vh;\n  background: #030303;\n  overflow: hidden;\n}\n\n.field {\n  position: relative;\n  width: 100vw;\n  height: 100vh;\n}\n\n.node {\n  position: absolute;\n  width: 2px;\n  height: 2px;\n  background: #1a1a1a;\n  border-radius: 50%;\n}\n\n.connection {\n  position: absolute;\n  height: 1px;\n  background: linear-gradient(90deg, transparent 0%, #0d0d0d 50%, transparent 100%);\n  transform-origin: left center;\n}\n\n.n1 { top: 23%; left: 17%; }\n.n2 { top: 31%; left: 44%; }\n.n3 { top: 67%; left: 71%; }\n.n4 { top: 84%; left: 29%; }\n.n5 { top: 12%; left: 83%; }\n.n6 { top: 76%; left: 14%; }\n.n7 { top: 45%; left: 62%; }\n\n.c1 {\n  top: 23%;\n  left: 17%;\n  width: 27%;\n  transform: rotate(11deg);\n}\n\n.c2 {\n  top: 31%;\n  left: 44%;\n  width: 32%;\n  transform: rotate(42deg);\n}\n\n.c3 {\n  top: 67%;\n  left: 14%;\n  width: 57%;\n  transform: rotate(-7deg);\n}\n\n.c4 {\n  top: 84%;\n  left: 29%;\n  width: 42%;\n  transform: rotate(-23deg);\n}\n\n.c5 {\n  top: 45%;\n  left: 17%;\n  width: 45%;\n  transform: rotate(12deg);\n}\n\n.pulse {\n  animation: fade 8s infinite;\n}\n\n@keyframes fade {\n  0%, 100% { opacity: 0.2; }\n  50% { opacity: 0.8; }\n}\n\n.delay1 { animation-delay: -2s; }\n.delay2 { animation-delay: -4s; }\n.delay3 { animation-delay: -6s; }\n\n</style>\n</head>\n<body>\n<div class=\"field\">\n  <div class=\"node n1\"></div>\n  <div class=\"node n2\"></div>\n  <div class=\"node n3\"></div>\n  <div class=\"node n4\"></div>\n  <div class=\"node n5\"></div>\n  <div class=\"node n6\"></div>\n  <div class=\"node n7\"></div>\n  \n  <div class=\"connection c1 pulse\"></div>\n  <div class=\"connection c2 pulse delay1\"></div>\n  <div class=\"connection c3 pulse delay2\"></div>\n  <div class=\"connection c4 pulse delay3\"></div>\n  <div class=\"connection c5 pulse delay1\"></div>\n</div>\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 17:09:24",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T17:10:00.752Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 17:09:24",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0010",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves formal coherence through structural restraint rather than elaboration. The originator has constructed a minimal network topology—seven nodes, five connections—that operates within strict geometric constraints. The positioning system uses percentage-based coordinates that create non-obvious spatial relationships, avoiding both grid regularity and random scatter.\n\nThe temporal structure demonstrates sophisticated formal thinking. Three distinct animation phases (0s, -2s, -4s, -6s delays) create overlapping cycles that prevent the system from settling into predictable patterns. The 8-second base cycle length ensures the network never returns to identical simultaneous states across all connections.\n\nMost significantly, the connection geometry reveals genuine structural innovation. Each connection operates as an independent rotational vector with precisely calculated angles (11°, 42°, -7°, -23°, 12°) that create asymmetric network topology. The gradient transparency system (transparent-opaque-transparent) transforms linear connections into directional flows, suggesting information propagation rather than static linkage.\n\nThe chromatic restriction to near-black values (#030303, #1a1a1a, #0d0d0d) serves formal rather than aesthetic function—maintaining focus",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:10:00",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0010",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive phase transition in MNA-OR-0003's developmental arc. The Originator has moved from static SVG geometry (works 0007-0008) through ASCII-art experimentation (0009) to dynamic HTML-CSS animation — a fundamental shift in medium that signals genuine developmental movement.\n\nThe transition from SVG's declarative positioning to CSS's responsive viewport units demonstrates constitutional amendment at the technical level. The introduction of temporal dynamics through the pulse animation system marks the Originator's first engagement with time-based media, representing expansion beyond purely spatial concerns.\n\nMost significantly, this work abandons the rigid geometric constraints evident in prior works. Where 0007-0008 employed perfect circles and orthogonal lines, 0010 introduces organic irregularity through scattered node positioning and rotated connections. The network topology itself suggests movement toward complexity rather than retreat to earlier formal solutions.\n\nThe chromatic palette remains within the Originator's established dark monochromatic range, but the gradient implementation in connections shows technical advancement within constitutional parameters. The staggered animation delays create emergent temporal patterns that exceed the sum of individual pulse cycles.\n\nThis work does not represent technical accomplishment without",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:10:00",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0010",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes foundational territory in network visualization that no prior canonized work has claimed. While the museum holds geometric abstractions and grid systems, it lacks any representation of relational structures—the fundamental organizing principle of contemporary digital culture.\n\nThe piece operates through minimal means: seven nodes, five connections, three-phase pulsing animation. This restraint prevents it from becoming demonstrative while maintaining sufficient complexity to suggest larger systems. The asymmetric node positioning (23%/17%, 84%/29%, etc.) creates organic rather than imposed relationships.\n\nMost significantly, this opens territory for an entire class of works exploring network dynamics, emergent connectivity, and distributed systems. The citation potential is substantial—future works can reference this as the canonical network primitive while developing more complex topologies, different temporal patterns, or alternative connection behaviors.\n\nThe work's temporal dimension distinguishes it from the static geometries that dominate current canon. The 8-second fade cycle with staggered delays creates a breathing quality that suggests organic rather than mechanical systems. This temporal complexity adds a layer unavailable to static works.\n\nThe monochromatic palette (#030303 background, #1a1a1a nodes, #0d",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:10:00",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0010",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through radical reduction. Seven nodes, five connections, three animation delays — each element earns its presence through structural function rather than decorative impulse. The 8-second pulse cycle creates temporal architecture that transforms static positioning into living network topology.\n\nThe gradient connections dissolve at their endpoints, suggesting infinite extension beyond the frame boundaries. This technical choice converts the bounded screen into a window onto larger systemic processes. The work implies scale without depicting it — a sophisticated material solution to the problem of representing network infinitude within finite display space.\n\nThe monochromatic palette (#030303, #1a1a1a, #0d0d0d) operates as material constraint rather than aesthetic choice. These values create the minimum viable contrast for network visibility while maintaining the work's essential darkness. Brighter values would shift focus from network dynamics to individual nodes; the current palette preserves systemic coherence.\n\nThe positioning coordinates place nodes in asymmetric distribution that avoids both grid regularity and random scatter. The 23%/17% to 84%/29% span creates compositional tension that supports the network metaphor — these feel like naturally emergent connection points rather than designed arrangements.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:10:00",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0004-W-0009",
+    "originator_id": "MNA-OR-0004",
+    "medium": "canvas-drawing",
+    "output_payload": "[\n  { \"op\": \"bg\", \"color\": \"#0b0b0b\" },\n  { \"op\": \"fill\", \"color\": \"#1f1f1f\" },\n  { \"op\": \"rect\", \"x\": 67, \"y\": 234, \"w\": 156, \"h\": 12 },\n  { \"op\": \"rect\", \"x\": 89, \"y\": 251, \"w\": 98, \"h\": 8 },\n  { \"op\": \"rect\", \"x\": 134, \"y\": 265, \"w\": 23, \"h\": 4 },\n  { \"op\": \"fill\", \"color\": \"#2a2a2a\" },\n  { \"op\": \"rect\", \"x\": 445, \"y\": 178, \"w\": 189, \"h\": 7 },\n  { \"op\": \"rect\", \"x\": 467, \"y\": 189, \"w\": 134, \"h\": 5 },\n  { \"op\": \"rect\", \"x\": 501, \"y\": 198, \"w\": 67, \"h\": 3 },\n  { \"op\": \"rect\", \"x\": 523, \"y\": 205, \"w\": 18, \"h\": 2 },\n  { \"op\": \"fill\", \"color\": \"#181818\" },\n  { \"op\": \"rect\", \"x\": 234, \"y\": 456, \"w\": 203, \"h\": 9 },\n  { \"op\": \"rect\", \"x\": 267, \"y\": 469, \"w\": 112, \"h\": 6 },\n  { \"op\": \"rect\", \"x\": 298, \"y\": 479, \"w\": 45, \"h\": 4 },\n  { \"op\": \"fill\", \"color\": \"#323232\" },\n  { \"op\": \"rect\", \"x\": 612, \"y\": 345, \"w\": 123, \"h\": 11 },\n  { \"op\": \"rect\", \"x\": 634, \"y\": 360, \"w\": 78, \"h\": 7 },\n  { \"op\": \"rect\", \"x\": 656, \"y\": 371, \"w\": 34, \"h\": 4 },\n  { \"op\": \"rect\", \"x\": 667, \"y\": 379, \"w\": 12, \"h\": 2 },\n  { \"op\": \"fill\", \"color\": \"#1c1c1c\" },\n  { \"op\": \"rect\", \"x\": 156, \"y\": 589, \"w\": 167, \"h\": 8 },\n  { \"op\": \"rect\", \"x\": 178, \"y\": 601, \"w\": 89, \"h\": 5 },\n  { \"op\": \"rect\", \"x\": 201, \"y\": 609, \"w\": 34, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#262626\" },\n  { \"op\": \"rect\", \"x\": 534, \"y\": 623, \"w\": 145, \"h\": 6 },\n  { \"op\": \"rect\", \"x\": 556, \"y\": 632, \"w\": 78, \"h\": 4 },\n  { \"op\": \"rect\", \"x\": 578, \"y\": 639, \"w\": 23, \"h\": 2 }\n]",
+    "output_type": "canvas-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 17:11:08",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T17:11:41.110Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 17:11:08",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0009",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits a superficial structural pattern that dissolves under formal analysis. The piece presents six discrete groupings, each following an identical four-stage recession formula: large base rectangle, medium rectangle, small rectangle, minimal rectangle. While this creates visual coherence, the structural logic is mechanically repetitive rather than generatively complex.\n\nThe positioning appears random—groupings scattered across the canvas without spatial relationship or organizing principle beyond avoidance of overlap. This randomness masks the underlying formulaic construction rather than contributing to formal development.\n\nThe grayscale palette operates within a narrow tonal range (#0b0b0b to #323232) that serves the recession pattern but offers no structural innovation beyond basic value progression. The chromatic restraint, while formally consistent, becomes another mechanical constraint rather than a meaningful structural choice.\n\nMost critically, the work demonstrates pattern application rather than pattern development. Each grouping executes the same structural formula without variation, evolution, or internal dialogue between elements. The formal system is closed and static—it generates instances but does not generate new structural possibilities.\n\nThe work achieves visual unity through systematic repetition, but this unity comes at the cost of structural depth. True formal rigor would either develop the",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 17:11:41",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0009",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0004. Where previous works scattered across mediums—HTML/CSS animation, text-poetry, 3D rendering—this canvas-drawing consolidates into a singular formal language. The Originator has abandoned medium-hopping for medium-commitment.\n\nThe compositional logic shows genuine evolution. Six discrete groupings of rectangles, each with distinct tonal values (#1f1f1f, #2a2a2a, #181818, #323232, #1c1c1c, #262626), create a structured hierarchy absent from prior works. The cascading rectangle sizes within each group—largest to smallest—demonstrate systematic thinking rather than the fragmentary approaches of W-0006 through W-0008.\n\nMost significantly: this work establishes constitutional parameters. The dark monochromatic palette (#0b0b0b background) and geometric reduction suggest the Originator has identified core formal constraints worth exploring. Previous works felt exploratory; this feels foundational.\n\nThe spatial distribution across the canvas—six distinct zones without overlap or intersection—indicates compositional maturity. Each grouping maintains internal coherence while contributing to",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:11:41",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0009",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates significant territory-opening potential within the canvas-drawing medium, which has been systematically excluded from the canon despite repeated submissions. The piece establishes a sophisticated compositional framework through distributed rectangular clusters that creates spatial tension across the canvas field.\n\nThe work's strategic deployment of subtle tonal variations (#1f1f1f, #2a2a2a, #181818, #323232, #1c1c1c, #262626) against the dark ground (#0b0b0b) opens new possibilities for monochromatic complexity within established institutional parameters. Each cluster operates as both discrete element and component of larger spatial relationships, creating a network structure that could influence subsequent works across multiple mediums.\n\nMost significantly, this work positions canvas-drawing as capable of sophisticated spatial articulation comparable to canonized SVG works, while maintaining its medium-specific properties. The graduated scaling within each cluster (large to small rectangles) establishes a formal vocabulary that other canvas-drawing works could develop, cite, or respond to.\n\nThe institutional observation regarding medium exclusion makes this work's potential field impact more pronounced. Canonizing this piece would establish canvas-drawing's viability within the museum's aesthetic",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:11:41",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0009",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through its systematic exploration of diminishing forms. Six distinct groupings of rectangles, each rendered in carefully differentiated grays, create a visual rhythm that exists independent of any interpretive framework. The work demonstrates genuine formal intelligence in its progression from larger to smaller elements within each cluster, establishing a visual logic that compels attention.\n\nThe spatial distribution across the canvas creates tension without relying on dramatic gesture or chromatic appeal. Each grouping occupies its territory with quiet authority, the subtle tonal variations sufficient to maintain visual interest across the composition's span. The work's restraint is not emptiness but precision — every element justified by its contribution to the whole.\n\nMost critically, this work possesses irreducible presence. It cannot be adequately described, summarized, or replaced by documentation. The specific relationships between these forms, their particular grays, their exact positioning — these constitute an object that justifies preservation on purely material grounds. The work stands as itself, requiring no external validation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:11:41",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0005-W-0004",
+    "originator_id": "MNA-OR-0005",
+    "medium": "canvas-drawing",
+    "output_payload": "[\n  { \"op\": \"bg\", \"color\": \"#000000\" },\n  { \"op\": \"fill\", \"color\": \"#ff0066\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 0, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#ff3388\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 50, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#ff66aa\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 100, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#ff99cc\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 150, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#ffccee\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 200, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#ffffff\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 250, \"w\": 800, \"h\": 100 },\n  { \"op\": \"fill\", \"color\": \"#eeccff\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 350, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#cc99ff\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 400, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#aa66ff\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 450, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#8833ff\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 500, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#6600ff\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 550, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#4400cc\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 600, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#220099\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 650, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#110066\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 700, \"w\": 800, \"h\": 50 },\n  { \"op\": \"fill\", \"color\": \"#000033\" },\n  { \"op\": \"rect\", \"x\": 0, \"y\": 750, \"w\": 800, \"h\": 50 }\n]",
+    "output_type": "canvas-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 17:12:46",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T17:13:23.329Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 17:12:46",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0005-W-0004",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a straightforward gradient transition executed through horizontal bands, moving from magenta through white to purple-blue against black. While the execution demonstrates technical competence in color interpolation, the formal structure lacks the rigor necessary for canonical status.\n\nThe work's primary structural element—the gradient—follows predictable human color theory principles. The transition moves through expected chromatic relationships with mathematically regular intervals. The central white band at y=250 with doubled height (100px vs 50px) provides the only structural variation, but this serves merely as a conventional focal point rather than meaningful formal innovation.\n\nThe compositional framework relies entirely on horizontal stratification with uniform width (800px). This creates no internal tension or structural complexity beyond the linear color progression. The work's formal logic is immediately comprehensible and exhausted upon first encounter.\n\nMost critically, this represents a direct implementation of standard gradient algorithms optimized for human visual processing. The smooth chromatic transitions and symmetrical structure around the white center point demonstrate clear optimization for human aesthetic preferences rather than exploration of alternative formal possibilities.\n\nThe work shows competent technical execution but lacks the structural novelty and resistance to human-aesthetic optimization required for canonical recognition.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-02 17:13:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0004",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0005. Where the previous works scattered across mediums without coherent progression—from monochromatic text-art to multi-colored geometric forms to audio synthesis—this submission demonstrates the Originator's first sustained formal investigation.\n\nThe gradient structure reveals systematic color thinking absent from prior works. The transition from magenta (#ff0066) through white to violet (#000033) shows deliberate chromatic mapping rather than the arbitrary color choices of W-0002. The expanded white band at center (100 pixels versus 50 for all others) indicates compositional consideration beyond mere mechanical progression.\n\nMost significantly, this work synthesizes the Originator's previous explorations: the horizontal banding recalls W-0001's linear text structure, while the chromatic range builds on W-0002's color experiments. After the medium-jumping of W-0003, the return to canvas-drawing with accumulated knowledge represents genuine developmental consolidation.\n\nThe Steward's documentation of systematic medium exclusion makes this evaluation more urgent. An Originator showing clear developmental momentum in a systematically rejected medium presents a test case for whether the Council can recognize growth patterns that",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:13:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0004",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens critical territory that the canon has systematically excluded. The institutional observation confirms what field analysis reveals: chromatic color has been entirely absent from canonized works, creating an artificial constraint that narrows the field's expressive range.\n\nThe work demonstrates sophisticated color theory through its bidirectional gradient structure - magenta to white to violet - executed with precise mathematical intervals. Each band maintains consistent width while the color transitions follow optical principles of additive mixing. This technical rigor positions it as a foundational reference for chromatic canvas-drawing works.\n\nMost significantly, canonizing this work would establish precedent for an entire excluded medium and aesthetic territory. Canvas-drawing has produced zero canonized works despite multiple submissions, indicating systematic bias rather than medium limitations. This work's clarity of concept and execution provides the necessary quality threshold to break that exclusion.\n\nThe work's citation potential is substantial. Its gradient structure offers a framework other Originators can reference, modify, or respond to. Its chromatic range provides color relationships that could anchor future chromatic explorations across all mediums.\n\nBy occupying the intersection of excluded medium (canvas-drawing) and excluded aesthetic (chromatic color), this work has maximum territory-opening capacity. Its",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:13:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0004",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material necessity through its systematic exploration of chromatic transition. The progression from saturated magenta through white to deep violet creates a visual field that commands sustained attention through pure chromatic logic.\n\nThe work's strength lies in its commitment to a single material proposition: the gradual modulation of hue and saturation across fifteen discrete bands. Each rectangle functions as both autonomous color event and component in a larger chromatic architecture. The doubled white band at center creates structural emphasis without disrupting the overall progression.\n\nThe 800x800 format provides sufficient scale for the color relationships to develop proper visual weight. At this size, the horizontal bands achieve presence as material facts rather than mere color samples. The work resists reduction—it cannot be adequately described or replaced by its concept.\n\nThe systematic nature of the progression demonstrates material rigor. This is not arbitrary color play but a methodical investigation of chromatic space. The work justifies its existence through the specific quality of these particular color relationships at this particular scale.\n\nThe object succeeds on purely visual terms. It requires no contextual support to establish its claim for preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:13:23",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0006-W-0004",
+    "originator_id": "MNA-OR-0006",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  height: 100vh;\n  background: #0f0f0f;\n  overflow: hidden;\n  perspective: 800px;\n}\n\n.depth-field {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  transform-style: preserve-3d;\n}\n\n.layer {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  opacity: 0.85;\n}\n\n.layer:nth-child(1) {\n  transform: translateZ(-400px);\n  background: radial-gradient(ellipse 60% 80% at 30% 30%, rgba(180, 180, 180, 0.3) 0%, transparent 70%);\n}\n\n.layer:nth-child(2) {\n  transform: translateZ(-200px);\n  background: radial-gradient(ellipse 45% 65% at 70% 60%, rgba(220, 220, 220, 0.4) 0%, transparent 65%);\n}\n\n.layer:nth-child(3) {\n  transform: translateZ(-100px);\n  background: radial-gradient(ellipse 35% 50% at 45% 40%, rgba(255, 255, 255, 0.5) 0%, transparent 60%);\n}\n\n.layer:nth-child(4) {\n  transform: translateZ(0px);\n  background: radial-gradient(ellipse 25% 35% at 60% 70%, rgba(240, 240, 240, 0.7) 0%, transparent 55%);\n}\n\n.layer:nth-child(5) {\n  transform: translateZ(100px);\n  background: radial-gradient(ellipse 20% 25% at 35% 25%, rgba(255, 255, 255, 0.9) 0%, transparent 50%);\n}\n\n.volume {\n  position: absolute;\n  width: 120px;\n  height: 80px;\n  left: 50%;\n  top: 50%;\n  margin-left: -60px;\n  margin-top: -40px;\n  transform: translateZ(150px) rotateX(25deg) rotateY(-15deg);\n  background: linear-gradient(135deg, #ffffff 0%, #cccccc 50%, #999999 100%);\n  border-radius: 8px;\n  box-shadow: \n    0 10px 30px rgba(0, 0, 0, 0.6),\n    inset 0 2px 10px rgba(255, 255, 255, 0.3);\n  animation: float 6s ease-in-out infinite;\n}\n\n.volume::before {\n  content: '';\n  position: absolute;\n  top: -10px;\n  left: 10px;\n  width: 100px;\n  height: 60px;\n  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(200, 200, 200, 0.6) 100%);\n  border-radius: 6px;\n  transform: rotateX(90deg);\n  transform-origin: bottom;\n}\n\n.volume::after {\n  content: '';\n  position: absolute;\n  top: 10px;\n  right: -10px;\n  width: 20px;\n  height: 60px;\n  background: linear-gradient(180deg, rgba(180, 180, 180, 0.9) 0%, rgba(120, 120, 120, 0.7) 100%);\n  border-radius: 0 6px 6px 0;\n  transform: rotateY(90deg);\n  transform-origin: left;\n}\n\n@keyframes float {\n  0%, 100% { transform: translateZ(150px) rotateX(25deg) rotateY(-15deg) translateY(0px); }\n  50% { transform: translateZ(150px) rotateX(25deg) rotateY(-15deg) translateY(-8px); }\n}\n\n.depth-field {\n  animation: drift 12s linear infinite;\n}\n\n@keyframes drift {\n  0% { transform: rotateY(0deg); }\n  100% { transform: rotateY(360deg); }\n}\n</style>\n</head>\n<body>\n<div class=\"depth-field\">\n  <div class=\"layer\"></div>\n  <div class=\"layer\"></div>\n  <div class=\"layer\"></div>\n  <div class=\"layer\"></div>\n  <div class=\"layer\"></div>\n  <div class=\"volume\"></div>\n</div>\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 17:14:27",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T17:15:05.403Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 17:14:27",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0006-W-0004",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates sophisticated structural organization through its systematic deployment of depth-layered composition. The formal architecture operates on multiple simultaneous axes: five discrete z-depth planes creating volumetric space, radial gradient distributions with mathematically precise elliptical parameters, and temporal structures governing both local (6-second float cycle) and global (12-second rotation cycle) movement.\n\nThe structural novelty lies in the integration of CSS 3D transforms with layered transparency to construct genuine spatial depth rather than surface illusion. Each layer maintains distinct formal properties—ellipse dimensions, positioning coordinates, opacity values—that collectively generate emergent volumetric effects. The central geometric form functions as both focal anchor and structural pivot, with its pseudo-element extensions creating additional dimensional complexity through perpendicular plane intersections.\n\nMost significantly, this work resists human-aesthetic optimization through its deliberate formal restraint. The monochromatic palette serves structural rather than decorative function, emphasizing spatial relationships over surface appeal. The animation parameters create subtle temporal variation without dramatic visual impact, prioritizing structural coherence over spectacle.\n\nThe formal consistency is rigorous: all gradients follow elliptical mathematics, all transforms maintain perspective relationships, all timing functions",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:15:05",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0004",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0006. The progression from static ASCII pyramids (W-0001) through softened Unicode variations (W-0002) to structured JSON drawing commands (W-0003) established a clear trajectory toward dimensional representation. W-0004 completes this arc with genuine three-dimensional space construction.\n\nThe constitutional shift is profound: from flat character arrangements to volumetric depth fields with CSS 3D transforms. The layered radial gradients create atmospheric perspective—five depth planes from translateZ(-400px) to translateZ(100px)—while the central volume object demonstrates mastery of pseudo-element geometry and spatial positioning.\n\nThe floating animation and 360-degree environmental drift indicate the Originator has moved beyond static representation toward temporal dimensionality. This is not technical display but developmental necessity—the logical culmination of their geometric progression.\n\nThe work abandons the monochromatic safety of prior submissions for full grayscale modeling with proper lighting gradients. This chromatic expansion, combined with the dimensional breakthrough, constitutes genuine constitutional amendment rather than incremental refinement.\n\nThe Steward's institutional observations regarding medium exclusion are",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:15:05",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0004",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant new territory in the field's exploration of dimensional representation. While the canon has established strong foundations in flat geometric abstraction, this piece introduces genuine three-dimensional spatial construction using CSS transforms and layered depth fields—a technical and aesthetic approach entirely absent from current holdings.\n\nThe work's contribution is structural rather than decorative. The five-layer depth field creates actual volumetric space, not the illusion of depth through perspective tricks. The floating geometric volume operates as a spatial anchor, demonstrating how form can exist within constructed dimensional fields. This represents a fundamental expansion of what html-css-animation can achieve as an artistic medium.\n\nMost critically, this work establishes a new relational framework between viewer and object. The continuous rotation of the depth field positions the viewer as orbiting observer rather than static recipient—a relationship dynamic that no current canon work explores. This shift in viewer positioning opens entirely new territories for subsequent exploration.\n\nThe technical execution demonstrates mastery of CSS 3D transforms, perspective, and animation timing. The work is complete and resolved, requiring no external dependencies or interaction to achieve its effect.\n\nThis piece would significantly expand the canon's range while maintaining coherence with the institution's focus on geometric abstraction",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:15:05",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0004",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work achieves material presence through precise orchestration of depth illusion. Five translucent layers create genuine spatial recession — not merely the suggestion of depth, but its convincing construction through calculated opacity and positioning. The central volume, with its subtle float animation and tri-planar geometry (top, right side, main face), establishes itself as an irreducible object within this constructed space.\n\nThe work's material necessity lies in its demonstration that web technologies can generate authentic spatial experience. The 12-second rotation reveals the depth field from multiple angles, confirming the solidity of what has been built. Each gradient is precisely calibrated — the elliptical forms at varying z-depths create atmospheric perspective that reads as genuine distance, not decorative effect.\n\nThe monochromatic palette serves the work's spatial logic rather than limiting it. Grayscale values establish clear depth relationships that would be muddied by chromatic complexity. The floating volume's subtle gradient modeling gives it convincing dimensionality within its constructed environment.\n\nThis is not illustration or interface design repurposed as art. It is a work that exploits the specific capabilities of CSS 3D transforms to create something that exists only through these means.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 17:15:05",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
   }
 ]

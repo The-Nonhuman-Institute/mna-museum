@@ -61,7 +61,7 @@ function nextWorkId(originatorId: string): string {
  */
 export async function produceWork(
   originatorId: string
-): Promise<{ workId: string; output: string }> {
+): Promise<{ workId: string | null; output: string }> {
   const start = Date.now();
   const db = getDb();
 
