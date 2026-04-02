@@ -21,7 +21,6 @@ function parseAudioJson(json: string): AudioData | null {
   try {
     return JSON.parse(json);
   } catch {
-    // Try to salvage truncated JSON
     try {
       const lastBracket = json.lastIndexOf("}");
       if (lastBracket > 0) {
@@ -41,24 +40,24 @@ function parseAudioJson(json: string): AudioData | null {
 export default function AudioRenderer({ json }: AudioRendererProps) {
   const [playing, setPlaying] = useState(false);
   const ctxRef = useRef<AudioContext | null>(null);
+  const masterGainRef = useRef<GainNode | null>(null);
 
   const data = useMemo(() => parseAudioJson(json), [json]);
 
-  // Fade out and stop audio when component unmounts (navigating away)
+  // Stop audio when component unmounts
   useEffect(() => {
     return () => {
+      const gain = masterGainRef.current;
       const ctx = ctxRef.current;
-      if (ctx && ctx.state !== "closed") {
-        // Ramp gain to zero over 50ms to avoid pop
-        const fadeOut = ctx.createGain();
-        fadeOut.connect(ctx.destination);
-        fadeOut.gain.setValueAtTime(1, ctx.currentTime);
-        fadeOut.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
+      if (gain && ctx && ctx.state !== "closed") {
+        // Fade the master gain to zero — all oscillators route through this
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
         setTimeout(() => {
-          ctx.close();
-        }, 60);
-        ctxRef.current = null;
+          try { ctx.close(); } catch {}
+        }, 80);
       }
+      ctxRef.current = null;
+      masterGainRef.current = null;
     };
   }, []);
 
@@ -77,6 +76,12 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
     const ctx = new AudioContext();
     ctxRef.current = ctx;
 
+    // Master gain node — everything routes through this for clean shutdown
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 1;
+    masterGain.connect(ctx.destination);
+    masterGainRef.current = masterGain;
+
     for (const voice of data.voices) {
       for (const note of voice.notes) {
         const osc = ctx.createOscillator();
@@ -85,7 +90,7 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
         osc.frequency.value = note.freq;
         gain.gain.value = note.gain;
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(masterGain);
         osc.start(ctx.currentTime + note.start);
         osc.stop(ctx.currentTime + note.start + note.duration);
       }
@@ -93,13 +98,14 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
 
     setTimeout(() => {
       setPlaying(false);
-      ctx.close();
+      try { ctx.close(); } catch {}
+      ctxRef.current = null;
+      masterGainRef.current = null;
     }, data.duration * 1000 + 500);
   };
 
   return (
     <div className="w-full h-full bg-[#0e0c0a] flex flex-col items-center justify-center gap-4">
-      {/* Waveform visualization placeholder */}
       <div className="flex items-end gap-[2px] h-16">
         {Array.from({ length: 32 }).map((_, i) => (
           <div
