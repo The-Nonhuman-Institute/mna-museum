@@ -1,6 +1,6 @@
 /**
  * Export the database to static JSON files for the website.
- * Includes validation gate — broken works are blocked from export.
+ * Includes validation warnings and preview generation for HTML-CSS works.
  */
 
 import { getDb } from "./db";
@@ -8,13 +8,63 @@ import { validateWork } from "./validate";
 import fs from "fs";
 import path from "path";
 
+const PREVIEW_DIR = path.join(__dirname, "..", "..", "website", "public", "previews");
+
 const OUT_DIR = path.join(__dirname, "..", "..", "website", "src", "data");
 
 function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-export function exportAll(): void {
+/** Generate preview screenshots for HTML-CSS works using Puppeteer */
+async function generateHtmlPreviews(works: { id: string; output_type: string; output_payload: string }[]): Promise<void> {
+  const htmlWorks = works.filter(w => w.output_type === "html-css");
+  if (htmlWorks.length === 0) return;
+
+  // Check which previews already exist
+  ensureDir(PREVIEW_DIR);
+  const existing = new Set(fs.readdirSync(PREVIEW_DIR));
+  const needPreview = htmlWorks.filter(w => !existing.has(`${w.id}.png`));
+
+  if (needPreview.length === 0) {
+    console.log(`[PREVIEWS] All ${htmlWorks.length} HTML-CSS previews up to date`);
+    return;
+  }
+
+  console.log(`[PREVIEWS] Generating ${needPreview.length} HTML-CSS preview(s)...`);
+
+  let puppeteer;
+  try {
+    puppeteer = require("puppeteer");
+  } catch {
+    console.warn("[PREVIEWS] Puppeteer not installed — skipping preview generation");
+    return;
+  }
+
+  const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+
+  for (const work of needPreview) {
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1080, height: 1080 });
+      await page.setContent(work.output_payload, { waitUntil: "networkidle0", timeout: 10000 });
+      // Wait for animations to start rendering
+      await new Promise(r => setTimeout(r, 1000));
+      await page.screenshot({
+        path: path.join(PREVIEW_DIR, `${work.id}.png`),
+        type: "png",
+      });
+      await page.close();
+      console.log(`  [PREVIEW] ${work.id} ✓`);
+    } catch (e) {
+      console.error(`  [PREVIEW] ${work.id} FAILED: ${e}`);
+    }
+  }
+
+  await browser.close();
+}
+
+export async function exportAll(): Promise<void> {
   ensureDir(OUT_DIR);
   const db = getDb();
 
@@ -159,6 +209,9 @@ export function exportAll(): void {
 
   db.close();
 
+  // Generate HTML-CSS preview screenshots
+  await generateHtmlPreviews(validatedWorks as { id: string; output_type: string; output_payload: string }[]);
+
   // Write files
   fs.writeFileSync(
     path.join(OUT_DIR, "works.json"),
@@ -197,4 +250,4 @@ export function exportAll(): void {
 }
 
 // Run directly
-exportAll();
+exportAll().catch(console.error);
