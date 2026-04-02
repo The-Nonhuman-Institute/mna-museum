@@ -35,32 +35,37 @@ function WorkModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 md:p-10"
       onClick={onClose}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
 
-      {/* Modal content */}
+      {/* Modal content — constrained to viewport */}
       <div
-        className="relative z-10 max-w-lg w-full mx-4"
+        className="relative z-10 max-w-md w-full max-h-[85vh] flex flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
+        {/* Close button — large tap target on mobile */}
         <button
           onClick={onClose}
-          className="absolute -top-10 right-0 text-muted hover:text-foreground transition-colors text-[12px] uppercase tracking-wider"
+          className="self-end mb-4 text-muted hover:text-foreground transition-colors text-[12px] uppercase tracking-wider px-2 py-1"
         >
           Close
         </button>
 
-        {/* Work in frame */}
+        {/* Work in frame — gallery size on mobile, detail on desktop */}
         <div className="flex justify-center">
-          <WorkDisplay work={work} size="detail" showPlacard={false} />
+          <div className="block md:hidden">
+            <WorkDisplay work={work} size="gallery" showPlacard={false} />
+          </div>
+          <div className="hidden md:block">
+            <WorkDisplay work={work} size="detail" showPlacard={false} />
+          </div>
         </div>
 
-        {/* Minimal identification — no caption, no editorial */}
-        <div className="text-center mt-5">
+        {/* Minimal identification */}
+        <div className="text-center mt-4">
           <p className="text-[12px] font-mono text-muted">{work.id}</p>
           <p className="text-[13px] text-foreground mt-1">
             {work.originator_id}
