@@ -6,6 +6,7 @@ import { getWork } from "@/lib/collection";
 import type { Work } from "@/lib/collection";
 import BackButton from "@/components/BackButton";
 import ResearchBody from "@/components/ResearchBody";
+import { formatDate } from "@/lib/format-date";
 
 export function generateStaticParams() {
   return documents.map((d) => ({ id: d.registry_id }));
@@ -20,7 +21,7 @@ export function generateMetadata({
   if (!doc) return { title: "Document Not Found" };
   return {
     title: `${doc.title} — MNA Research`,
-    description: `${documentTypeLabels[doc.document_type]} by ${doc.agent_designation}. Published ${new Date(doc.publication_date).toLocaleDateString()}.`,
+    description: `${documentTypeLabels[doc.document_type]} by ${doc.agent_designation}. Published ${formatDate(doc.publication_date)}.`,
   };
 }
 
@@ -102,7 +103,7 @@ export default function ResearchDocumentPage({
                 <span className="block text-[10px] uppercase tracking-wider text-muted/60 mb-0.5">
                   Published
                 </span>
-                {new Date(doc.publication_date).toLocaleDateString()}
+                {formatDate(doc.publication_date)}
               </div>
               <div>
                 <span className="block text-[10px] uppercase tracking-wider text-muted/60 mb-0.5">

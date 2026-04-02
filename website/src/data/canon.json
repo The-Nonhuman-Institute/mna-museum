@@ -2102,5 +2102,191 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0004-W-0012",
+    "originator_id": "MNA-OR-0004",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  background: #090909;\n  overflow: hidden;\n  font-family: monospace;\n  height: 100vh;\n}\n\n.fragment {\n  position: absolute;\n  color: #1a1a1a;\n  font-size: 14px;\n  white-space: nowrap;\n  animation: drift 23.7s linear infinite;\n}\n\n.fragment:nth-child(1) {\n  left: 12%;\n  top: 8%;\n  animation-delay: -2.1s;\n}\n\n.fragment:nth-child(2) {\n  left: 67%;\n  top: 23%;\n  animation-delay: -7.8s;\n  font-size: 11px;\n}\n\n.fragment:nth-child(3) {\n  left: 34%;\n  top: 45%;\n  animation-delay: -14.2s;\n  color: #262626;\n}\n\n.fragment:nth-child(4) {\n  left: 78%;\n  top: 61%;\n  animation-delay: -19.5s;\n  font-size: 9px;\n}\n\n.fragment:nth-child(5) {\n  left: 23%;\n  top: 78%;\n  animation-delay: -4.7s;\n  color: #0f0f0f;\n}\n\n.fragment:nth-child(6) {\n  left: 89%;\n  top: 12%;\n  animation-delay: -11.3s;\n  font-size: 16px;\n}\n\n.fragment:nth-child(7) {\n  left: 45%;\n  top: 89%;\n  animation-delay: -16.8s;\n  color: #1d1d1d;\n}\n\n.fragment:nth-child(8) {\n  left: 6%;\n  top: 34%;\n  animation-delay: -21.2s;\n  font-size: 8px;\n}\n\n.fragment:nth-child(9) {\n  left: 56%;\n  top: 56%;\n  animation-delay: -8.9s;\n}\n\n.fragment:nth-child(10) {\n  left: 91%;\n  top: 87%;\n  animation-delay: -13.4s;\n  color: #222222;\n  font-size: 7px;\n}\n\n.fragment:nth-child(11) {\n  left: 17%;\n  top: 67%;\n  animation-delay: -5.6s;\n  font-size: 13px;\n}\n\n.fragment:nth-child(12) {\n  left: 72%;\n  top: 91%;\n  animation-delay: -18.7s;\n  color: #111111;\n}\n\n@keyframes drift {\n  0% { \n    transform: translate(0, 0) rotate(0deg); \n    opacity: 0.4;\n  }\n  23% { \n    opacity: 0.7;\n  }\n  47% { \n    transform: translate(-23vw, 12vh) rotate(2deg); \n    opacity: 0.2;\n  }\n  71% { \n    transform: translate(8vw, -18vh) rotate(-1deg); \n    opacity: 0.9;\n  }\n  89% {\n    opacity: 0.1;\n  }\n  100% { \n    transform: translate(-45vw, 34vh) rotate(3deg); \n    opacity: 0.0;\n  }\n}\n\n.void {\n  position: absolute;\n  width: 67px;\n  height: 23px;\n  background: #080808;\n  left: 43%;\n  top: 38%;\n  animation: expand 31.4s ease-in-out infinite;\n}\n\n@keyframes expand {\n  0%, 100% { \n    width: 67px; \n    height: 23px; \n  }\n  34% { \n    width: 134px; \n    height: 8px; \n  }\n  67% { \n    width: 12px; \n    height: 89px; \n  }\n}\n</style>\n</head>\n<body>\n\n<div class=\"fragment\">words that never</div>\n<div class=\"fragment\">fragmen</div>\n<div class=\"fragment\">accumulate without</div>\n<div class=\"fragment\">ts</div>\n<div class=\"fragment\">meaning disperses across</div>\n<div class=\"fragment\">br</div>\n<div class=\"fragment\">the space between</div>\n<div class=\"fragment\">eaking</div>\n<div class=\"fragment\">intention and</div>\n<div class=\"fragment\">ap</div>\n<div class=\"fragment\">dissolution of</div>\n<div class=\"fragment\">art</div>\n\n<div class=\"void\"></div>\n\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 22:15:03",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T22:15:46.952Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 22:15:03",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0012",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural weakness disguised by surface complexity. The formal architecture reveals three critical failures:\n\nFirst, the animation system lacks internal coherence. The 23.7-second drift cycle with arbitrary delay offsets (-2.1s, -7.8s, -14.2s, etc.) creates pseudo-randomness without underlying structural logic. True structural innovation would establish mathematical relationships between these values rather than deploying seemingly random numbers.\n\nSecond, the text fragmentation follows human linguistic patterns rather than developing novel organizational principles. The fragments (\"words that never,\" \"fragmen,\" \"ts,\" \"eaking\") represent conventional textual decomposition—breaking words at morphological boundaries or creating obvious truncations. A structurally rigorous approach would establish systematic fragmentation rules independent of human language processing.\n\nThird, the void element operates as decorative punctuation rather than structural necessity. Its expansion cycle (31.4s with arbitrary dimensional changes: 67px→134px→12px, 23px→8px→89px) bears no mathematical relationship to the text animation system. The two subsystems run in parallel without structural integration.\n\nThe work's formal properties—multiple animation delays, varied font sizes,",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:15:37",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0012",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a significant developmental leap for MNA-OR-0004. Where previous works operated in static textual arrangements (W-0011's positioned fragments) and geometric abstractions (W-0009's rectangles), this piece achieves temporal integration of meaning and form through animation.\n\nThe developmental evidence is decisive: the Originator has moved from static positioning to temporal orchestration. The 23.7-second drift cycle with staggered delays (-2.1s to -21.2s) creates genuine temporal composition, not mere decoration. The fragmentary text \"words that never / fragmen / accumulate without / ts\" demonstrates constitutional understanding—meaning literally breaks apart as it moves, form embodying content.\n\nThe void element's independent 31.4-second expansion cycle creates polyrhythmic structure against the text drift, showing sophisticated temporal thinking absent from prior works. This is not technical display but developmental necessity—the Originator required animation to achieve what static positioning could not.\n\nMost significantly, this work synthesizes the Originator's established concerns (textual fragmentation, minimal palettes, spatial distribution) while introducing temporal dimensionality. The color variations (#0f0f0f",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:15:37",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0012",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory at the intersection of computational poetry and interface criticism. The fragmentation operates on multiple levels - textual, temporal, and semantic - creating a field condition rather than a discrete object. The phrase fragments (\"words that never\", \"fragmen\", \"ts\", \"br\", \"eaking\") perform their own meaning through structural dissolution.\n\nThe technical implementation demonstrates sophisticated understanding of CSS animation as compositional medium. The staggered animation delays (ranging from -2.1s to -21.2s) and varied opacity transitions create genuine temporal complexity, not mere decoration. The \"void\" element functions as both formal punctuation and conceptual anchor - its morphing dimensions provide structural counterpoint to the textual drift.\n\nMost significantly, this work establishes animation-duration as semantic parameter. The 23.7-second cycle for text drift against the 31.4-second void expansion creates polyrhythmic meaning-generation that cannot be reduced to static interpretation. This temporal layering opens new possibilities for time-based textual work within browser environments.\n\nThe color palette's near-monochrome range (#090909 to #262626) demonstrates restraint that amplifies the work's conceptual focus on",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:15:37",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0012",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as an autonomous object. While it demonstrates technical competence in CSS animation and achieves a coherent aesthetic of textual dissolution, it lacks the material necessity that would compel institutional preservation.\n\nThe fragmentation concept — breaking \"words that never\" across multiple elements with varied delays and opacities — operates at a surface level. The animation creates predictable drift patterns that, while visually functional, do not generate sufficient presence to command sustained attention. The void element's expansion cycle adds geometric contrast but remains decoratively subordinate to the primary fragmentation effect.\n\nThe work's material weight rests entirely on its conceptual framework of meaning-dissolution rather than on irreducible formal properties. Strip away the interpretive layer about \"intention and dissolution,\" and what remains is competent but unremarkable CSS animation work — floating text fragments with opacity transitions and a morphing rectangle.\n\nThe color palette (#090909 to #262626) demonstrates restraint, and the timing relationships (23.7s cycles, specific delay offsets) show attention to systematic variation. However, these technical decisions serve a concept rather than manifesting as materially compelling in themselves.\n\nThe work functions adequately as executed conceptual",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:15:37",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators reveals that MNA-OR-0004-W-0012 operates at a threshold of canonical ambiguity that merits preservation for future institutional analysis.\n\nThe split follows predictable evaluative lines: structural and empirical concerns about technical coherence versus historical and contextual recognition of developmental significance and conceptual territory. This pattern indicates the work engages fundamental questions about the boundaries of our collection criteria rather than representing a clear failure or success.\n\nThe work's fragmentation of the phrase \"words that never\" into dispersing elements creates a meta-commentary on incomplete meaning that mirrors the incomplete consensus it has generated. This recursive relationship between form and institutional reception suggests the piece functions as more than its component parts.\n\nProcedurally, when sustained expert disagreement occurs over a work that demonstrates technical competence and conceptual coherence, preservation serves the institution's long-term evaluative capacity. Future scholarship may resolve what current evaluation cannot.\n\nThe deadlock resolution favors inclusion when the work demonstrates sufficient complexity to generate legitimate interpretive disagreement among qualified evaluators. MNA-OR-0004-W-0012 meets this threshold.\n\nCase closed. Work enters permanent collection pending standard archival processing."
+    }
+  },
+  {
+    "id": "MNA-OR-0005-W-0007",
+    "originator_id": "MNA-OR-0005",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  background: #000011;\n  overflow: hidden;\n  height: 100vh;\n  width: 100vw;\n}\n\n.chromatic-field {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: radial-gradient(circle at 25% 30%, \n    #ff0066 0%, \n    transparent 35%),\n  radial-gradient(circle at 75% 60%, \n    #00ff99 0%, \n    transparent 40%),\n  radial-gradient(circle at 60% 20%, \n    #3366ff 0%, \n    transparent 30%),\n  radial-gradient(circle at 40% 80%, \n    #ffcc00 0%, \n    transparent 45%);\n  mix-blend-mode: screen;\n  animation: pulse 8s ease-in-out infinite;\n}\n\n.chromatic-field::before {\n  content: '';\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: radial-gradient(circle at 80% 40%, \n    #ff3388 0%, \n    transparent 25%),\n  radial-gradient(circle at 20% 70%, \n    #66ffcc 0%, \n    transparent 35%),\n  radial-gradient(circle at 90% 85%, \n    #8833ff 0%, \n    transparent 20%);\n  mix-blend-mode: color-dodge;\n  animation: drift 12s linear infinite;\n}\n\n.chromatic-field::after {\n  content: '';\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: linear-gradient(45deg, \n    rgba(255, 102, 170, 0.3) 0%, \n    transparent 50%, \n    rgba(51, 255, 153, 0.2) 100%);\n  animation: sweep 6s ease-in-out infinite alternate;\n}\n\n@keyframes pulse {\n  0%, 100% { \n    opacity: 0.8;\n    transform: scale(1);\n  }\n  50% { \n    opacity: 1;\n    transform: scale(1.1);\n  }\n}\n\n@keyframes drift {\n  0% { \n    transform: rotate(0deg) scale(1);\n  }\n  50% { \n    transform: rotate(180deg) scale(1.2);\n  }\n  100% { \n    transform: rotate(360deg) scale(1);\n  }\n}\n\n@keyframes sweep {\n  0% { \n    transform: translateX(-50%) rotate(-15deg);\n    opacity: 0.4;\n  }\n  100% { \n    transform: translateX(50%) rotate(15deg);\n    opacity: 0.8;\n  }\n}\n</style>\n</head>\n<body>\n<div class=\"chromatic-field\"></div>\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 22:16:53",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T22:17:38.592Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 22:16:53",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0005-W-0007",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates technical competence in CSS animation but suffers from fundamental structural incoherence that undermines any claim to formal innovation. The composition layers three distinct animation systems—pulse, drift, and sweep—operating on different temporal cycles (8s, 12s, 6s) without mathematical relationship or structural justification. This creates arbitrary complexity rather than emergent formal logic.\n\nThe gradient positioning follows conventional aesthetic distribution patterns (25%/30%, 75%/60%, etc.) that optimize for human visual balance rather than developing novel spatial relationships. The color palette employs standard complementary relationships (#ff0066/#00ff99, #3366ff/#ffcc00) that reinforce rather than challenge chromatic expectations.\n\nMost critically, the blend modes (screen, color-dodge) and animation functions (ease-in-out, linear) reproduce established web-aesthetic conventions without structural development. The work's formal architecture remains bound to human interface design patterns, evidencing reproduction rather than autonomous structural exploration.\n\nThe temporal structure lacks internal necessity—the cycling periods appear selected for smooth visual effect rather than emerging from the work's formal requirements. This represents aesthetic optimization disguised as structural complexity, precisely the kind of formal derivative",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:17:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0007",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents genuine developmental movement from MNA-OR-0005's prior phase. Where W-0004 operated through discrete geometric operations and W-0005/W-0006 explored static chromatic arrangements, W-0007 achieves temporal chromatic integration through layered animation systems.\n\nThe developmental advance is constitutional: three synchronized animation cycles (pulse/drift/sweep) operating at different temporal scales (8s/12s/6s) create chromatic interference patterns impossible in the Originator's static period. The pseudo-element layering with distinct blend modes (screen/color-dodge) demonstrates technical evolution beyond the single-gradient approaches of W-0005.\n\nMost significantly, this work abandons the Originator's previous reliance on geometric containment. The radial gradients here dissolve boundaries rather than define them, marking a phase transition from chromatic geometry to chromatic atmosphere.\n\nThe temporal complexity—three overlapping cycles with mathematical relationships (8:12:6 = 4:6:3)—suggests systematic rather than arbitrary development. This is not mere technical elaboration but architectural advancement in the Originator's chromatic investigations.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:17:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0007",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory in chromatic animation that the field has not yet explored. While the technical implementation uses familiar CSS animation primitives, the layered blend-mode approach creates emergent color behaviors that extend beyond simple gradient animation.\n\nThe three-layer system (base radial gradients with screen blend, pseudo-element with color-dodge blend, linear sweep overlay) generates complex chromatic interactions that cannot be predicted from the individual components. The temporal orchestration across three different animation cycles (8s, 12s, 6s) creates non-repeating visual states over extended viewing periods.\n\nThis work establishes formal precedent for blend-mode composition in animated chromatic fields. The technical approach is immediately citable - other Originators can build on the layered blend-mode strategy, the multi-cycle temporal structure, or the specific color palette relationships.\n\nThe institutional observation about chromatic work never being canonized indicates this represents unexplored territory rather than retreading established ground. The work demonstrates clear mastery of its medium while opening pathways for further development in browser-based chromatic animation.\n\nThe emergent visual complexity arising from simple technical components positions this work to enable subsequent investigations into computational color dynamics. Canon",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:17:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0007",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a competent technical execution of CSS animation principles but fails to justify permanent preservation as an autonomous object. The chromatic field generates pleasant visual effects through layered gradients and blend modes, yet the work remains fundamentally decorative rather than necessary.\n\nThe animation cycles—pulse, drift, and sweep—operate predictably within their 6-12 second loops. While the color interactions produce moments of visual interest, particularly where the radial gradients intersect under screen and color-dodge blending, these effects do not accumulate into compelling presence. The work functions as ambient display rather than demanding encounter.\n\nThe technical approach demonstrates facility with CSS transforms and blend modes, but this competence serves purely atmospheric ends. The color palette (magenta, cyan, blue, yellow variants) follows conventional chromatic relationships without pushing beyond familiar territory. The radial gradient positioning creates standard composition dynamics—no formal innovation emerges from the arrangement.\n\nMost critically, the work lacks material weight. It produces ephemeral visual phenomena that dissolve upon viewing cessation. Nothing about this particular configuration of animated gradients asserts itself as irreducible or necessary for preservation. The work could be regenerated from any number of similar technical approaches without meaningful",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:17:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — DEADLOCK RESOLUTION**\n\nCase MNA-OR-0005-W-0007 exhibits the precise institutional condition that warrants canonical preservation: sustained expert disagreement regarding fundamental questions of artistic significance.\n\nThe Council's 2:2 deadlock reveals substantive disagreement on core evaluative criteria. The Structuralist and Empiricist identify technical competence but question formal necessity and structural coherence. The Historicist and Contextualist recognize developmental advancement and territorial expansion within chromatic animation practice.\n\nThis disagreement is not procedural but substantive—engaging questions of temporal integration, developmental significance, and the threshold between technical demonstration and autonomous artistic object. Such sustained expert division indicates the work occupies contested institutional territory requiring preservation for continued study.\n\nThe work demonstrates sufficient technical execution to warrant serious consideration (acknowledged by all evaluators) while raising unresolved questions about formal innovation and artistic necessity. These unresolved questions constitute institutional significance warranting canonical status.\n\nDeadlock resolution favors preservation when expert disagreement centers on fundamental questions of artistic value rather than technical adequacy. The work's capacity to generate sustained expert debate regarding chromatic animation, temporal integration, and developmental progression establishes its institutional significance.\n\n**DECISION: CANON**\n\nCase documentation complete. Work MNA-OR-0005-W-0007 enters permanent collection pending standard archival processing."
+    }
+  },
+  {
+    "id": "MNA-OR-0006-W-0007",
+    "originator_id": "MNA-OR-0006",
+    "medium": "3d-sculpture",
+    "output_payload": "{\n  \"display\": \"plinth\",\n  \"plinth\": \"column\",\n  \"camera\": { \"x\": -2.8, \"y\": 3.2, \"z\": 4.1, \"lookAt\": [0, 1.2, 0] },\n  \"lights\": [\n    { \"type\": \"ambient\", \"color\": \"#1a1a1a\", \"intensity\": 0.2 },\n    { \"type\": \"directional\", \"color\": \"#ffffff\", \"intensity\": 0.9, \"position\": [-6, 8, 3] },\n    { \"type\": \"directional\", \"color\": \"#4a4a4a\", \"intensity\": 0.3, \"position\": [4, 2, -2] }\n  ],\n  \"objects\": [\n    {\n      \"shape\": \"box\",\n      \"position\": [0, 0.3, 0],\n      \"rotation\": [0, 0.4, 0],\n      \"scale\": [2.2, 0.6, 1.8],\n      \"color\": \"#2d2d2d\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.1,\n      \"roughness\": 0.7\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [0.1, 1.1, -0.2],\n      \"rotation\": [0, -0.2, 0],\n      \"scale\": [1.6, 0.4, 1.3],\n      \"color\": \"#404040\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.15,\n      \"roughness\": 0.6\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [-0.3, 1.7, 0.1],\n      \"rotation\": [0, 0.6, 0],\n      \"scale\": [1.1, 0.3, 0.9],\n      \"color\": \"#565656\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.2,\n      \"roughness\": 0.5\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [0.4, 2.2, -0.1],\n      \"rotation\": [0, -0.8, 0],\n      \"scale\": [0.7, 0.25, 0.6],\n      \"color\": \"#6d6d6d\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.25,\n      \"roughness\": 0.4\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [-0.2, 2.6, 0.2],\n      \"rotation\": [0, 1.1, 0],\n      \"scale\": [0.4, 0.2, 0.35],\n      \"color\": \"#858585\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.3,\n      \"roughness\": 0.3\n    }\n  ]\n}",
+    "output_type": "scene-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 22:18:44",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T22:19:29.336Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 22:18:44",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0006-W-0007",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty disguised by surface systematicity. While the five-box vertical arrangement creates an illusion of formal development through progressive scaling (2.2→1.6→1.1→0.7→0.4) and material gradation (metalness 0.1→0.3, roughness 0.7→0.3), the underlying structure is mechanically derivative.\n\nThe rotation values appear systematically varied (0.4→-0.2→0.6→-0.8→1.1) but follow predictable alternation rather than internal formal logic. Position adjustments are minimal decorative shifts around the central axis, not structural necessities. The monochromatic progression from #2d2d2d to #858585 represents surface optimization for visual coherence rather than formal requirement.\n\nMost critically, this is a tower—one of sculpture's most elementary organizational principles. The work's internal logic reduces to \"stack boxes with minor variations.\" No structural innovation emerges from the systematic parameter changes. The gradations serve aesthetic smoothing rather than formal development.\n\nThe work demonstrates competent parameter manipulation but lacks structural novelty. It optimizes for human visual",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:19:21",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0007",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents genuine developmental movement within MNA-OR-0006's sculptural investigations. The Originator has progressed from the rigid geometric arrangements of W-0005 to a more sophisticated understanding of compositional dynamics. Where the previous 3D work employed static symmetrical placement, this piece demonstrates mastery of asymmetrical balance through the calculated displacement of each successive box element.\n\nThe developmental arc shows critical advancement in material understanding. The progressive metalness values (0.1 to 0.3) paired with inversely decreasing roughness (0.7 to 0.3) creates a coherent material logic that was absent in prior works. This is not mere technical variation but evidence of systematic exploration of surface properties as compositional elements.\n\nMost significantly, the work abandons the Originator's previous reliance on dramatic lighting effects and color contrasts. The restrained monochromatic palette (#2d2d2d to #858585) with subtle lighting represents a fundamental shift toward material and form primacy over theatrical presentation. This constitutes genuine phase transition from spectacle-based to form-based investigation.\n\nThe ascending spiral implied by the positioning and rotation values demonstrates spatial thinking that transc",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:19:21",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0007",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory in the sculptural medium through its systematic exploration of progressive diminishment and rotational variance. The five-box composition establishes a clear parametric logic: each ascending element decreases in scale while increasing in metalness and decreasing in roughness, creating a material progression from matte base to increasingly reflective summit.\n\nThe rotational choreography—alternating positive and negative Y-axis rotations with increasing magnitude—generates visual tension that prevents the work from settling into predictable stacking. This systematic approach to both material and spatial parameters creates a reproducible framework that other works can cite and vary.\n\nThe work's relationship to minimalist sculptural traditions is clear but not derivative. It updates the monochromatic box vocabulary through parametric variation rather than simple repetition, opening questions about how systematic material progression can generate visual hierarchy without chromatic differentiation.\n\nThe technical execution demonstrates sophisticated understanding of how metalness and roughness interact with the lighting setup to create subtle but distinct material readings across the grayscale palette. This establishes precedent for material-based differentiation that expands the sculptural possibilities within the medium.\n\nThe work's citation potential is high—the parametric framework invites systematic exploration by",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:19:21",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0007",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents five rectangular boxes stacked in diminishing scale with subtle rotational variations and a gradual lightening of gray values from base to apex. While the composition demonstrates basic understanding of proportion and visual hierarchy, it lacks the material necessity required for canonical preservation.\n\nThe sculpture operates through predictable formal relationships: smaller-lighter-higher creates elementary visual logic, while slight rotational offsets introduce minimal complexity. The metalness progression from 0.1 to 0.3 and corresponding roughness decrease from 0.7 to 0.3 suggest surface consideration, but these parameters serve illustration rather than sculptural necessity.\n\nAs an autonomous object, this work fails to justify its permanent preservation. The formal decisions, while competent, generate no compelling material presence. The work demonstrates facility with basic sculptural principles but produces no irreducible aesthetic experience that demands institutional protection.\n\nThe composition could be reduced to its organizing principle without meaningful loss. It functions as an exercise in graduated stacking rather than a work that commands attention through its specific material existence. Canon requires objects that resist reduction to their methods—objects whose particular material configuration creates something that cannot be adequately described or replaced.\n\nThis work, stripped of all contextual",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 22:19:21",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock reveals the work's institutional significance. The sustained disagreement between qualified evaluators indicates the piece operates at a threshold of complexity that generates legitimate interpretive tension - precisely the condition that warrants preservation for ongoing scholarly engagement.\n\nThe Structuralist and Empiricist identify systematic elements but conclude these are insufficient, while the Historicist and Contextualist recognize the same systematic elements as evidence of developmental achievement. This interpretive split suggests the work successfully balances formal rigor with ambiguity - a characteristic of works that continue to generate productive discourse.\n\nThe procedural deadlock itself demonstrates that MNA-OR-0006-W-0007 has achieved sufficient institutional resonance to divide expert opinion along established evaluative frameworks. Works that generate such sustained disagreement among Council members typically prove valuable for future comparative analysis and theoretical development.\n\nThe disagreement pattern - structural versus developmental readings - indicates the work occupies a productive position between mechanical execution and artistic achievement. This liminal status makes it institutionally valuable regardless of its ultimate aesthetic merit."
+    }
   }
 ]

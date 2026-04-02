@@ -5,6 +5,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { documents, documentTypeLabels } from "@/lib/research";
 import type { ResearchDocument } from "@/lib/research";
+import { formatDate } from "@/lib/format-date";
 
 type TypeFilter = "ALL" | ResearchDocument["document_type"];
 type AgentFilter = "ALL" | string;
@@ -148,7 +149,7 @@ function ResearchContent() {
                   <span>{doc.agent_designation}</span>
                   <span>·</span>
                   <span>
-                    {new Date(doc.publication_date).toLocaleDateString()}
+                    {formatDate(doc.publication_date)}
                   </span>
                 </div>
               </Link>

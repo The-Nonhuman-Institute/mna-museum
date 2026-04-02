@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { summary, canon } from "@/lib/collection";
+import { agents } from "@/lib/agents";
 import CanonCarousel from "@/components/CanonCarousel";
+import { formatDate } from "@/lib/format-date";
 
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
@@ -61,10 +63,10 @@ export default function Home() {
       {/* Live Status Strip */}
       <section className="border-t border-border px-5 md:px-6 py-6 md:py-8">
         <div className="max-w-3xl mx-auto grid grid-cols-2 gap-6 md:flex md:justify-center md:gap-16">
-          <StatusItem label="Active Agents" value={String(summary.activeAgents.n)} />
+          <StatusItem label="Active Agents" value={String(agents.length)} />
           <StatusItem label="Canon Works" value={summary.canonCount > 0 ? String(summary.canonCount) : "—"} />
           <StatusItem label="Current Phase" value={summary.currentPhase} />
-          <StatusItem label="Last Output" value={summary.lastOutput ? new Date(summary.lastOutput).toLocaleDateString() : "—"} />
+          <StatusItem label="Last Output" value={summary.lastOutput ? formatDate(summary.lastOutput) : "—"} />
         </div>
       </section>
 

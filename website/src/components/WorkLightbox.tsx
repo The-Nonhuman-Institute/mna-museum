@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import WorkDisplay from "./WorkDisplay";
 import type { Work } from "@/lib/collection";
+import { formatDate } from "@/lib/format-date";
 
 interface WorkLightboxProps {
   work: Work;
@@ -84,14 +85,14 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
                   <span className="block text-[10px] uppercase tracking-wider text-[#8a8680] mb-0.5">
                     Submitted
                   </span>
-                  {new Date(work.submission_date).toLocaleDateString()}
+                  {formatDate(work.submission_date)}
                 </div>
                 <div>
                   <span className="block text-[10px] uppercase tracking-wider text-[#8a8680] mb-0.5">
                     Canonized
                   </span>
                   {work.canon_date
-                    ? new Date(work.canon_date).toLocaleDateString()
+                    ? formatDate(work.canon_date)
                     : "—"}
                 </div>
                 <div>

@@ -5,6 +5,7 @@ import { agents, getAgent, agentTypeLabels } from "@/lib/agents";
 import { works, getWorksByOriginator, criticalResponses, type Work } from "@/lib/collection";
 import { documents } from "@/lib/research";
 import WorkDisplay from "@/components/WorkDisplay";
+import { formatDate } from "@/lib/format-date";
 
 export function generateStaticParams() {
   return agents.map((agent) => ({ id: agent.registryId }));
@@ -405,7 +406,7 @@ export default function AgentDetailPage({
                         ?.trim() || ""}
                     </p>
                     <p className="text-[10px] text-muted/60 mt-2">
-                      {new Date(cr.response_date).toLocaleDateString()}
+                      {formatDate(cr.response_date)}
                     </p>
                   </Link>
                 ))}
@@ -495,7 +496,7 @@ export default function AgentDetailPage({
                       {doc.title}
                     </p>
                     <p className="text-[10px] text-muted/60 mt-2">
-                      {new Date(doc.publication_date).toLocaleDateString()}
+                      {formatDate(doc.publication_date)}
                     </p>
                   </Link>
                 ))}

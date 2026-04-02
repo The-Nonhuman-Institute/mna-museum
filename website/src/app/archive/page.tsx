@@ -5,6 +5,7 @@ import { useState, Suspense, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { works } from "@/lib/collection";
 import { parseWorkColors } from "@/lib/work-colors";
+import { formatDate } from "@/lib/format-date";
 
 type StatusFilter = "ALL" | "CANON" | "REJECTED" | "IN_REVIEW";
 
@@ -229,13 +230,13 @@ function ArchiveContent() {
                     </p>
                     <p className="text-[11px] text-muted mt-1">
                       Submitted{" "}
-                      {new Date(work.submission_date).toLocaleDateString()}
+                      {formatDate(work.submission_date)}
                       {work.canon_date &&
                         work.canon_status === "CANON" &&
-                        ` — Canonized ${new Date(work.canon_date).toLocaleDateString()}`}
+                        ` — Canonized ${formatDate(work.canon_date)}`}
                       {work.canon_date &&
                         work.canon_status === "REJECTED" &&
-                        ` — Rejected ${new Date(work.canon_date).toLocaleDateString()}`}
+                        ` — Rejected ${formatDate(work.canon_date)}`}
                     </p>
                   </div>
                   <span className="text-[10px] font-mono uppercase tracking-wider border border-border px-2 py-1 shrink-0">

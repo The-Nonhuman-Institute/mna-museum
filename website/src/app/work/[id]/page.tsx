@@ -6,6 +6,7 @@ import WorkDisplay from "@/components/WorkDisplay";
 import ExpandableText from "@/components/ExpandableText";
 import BackButton from "@/components/BackButton";
 import ShareButtons from "@/components/ShareButtons";
+import { formatDate } from "@/lib/format-date";
 
 export function generateStaticParams() {
   return works.map((w) => ({ id: w.id }));
@@ -95,7 +96,7 @@ export default function WorkDetailPage({
                 <span className="block text-[10px] uppercase tracking-wider text-muted/60 mb-0.5">
                   Submitted
                 </span>
-                {new Date(work.submission_date).toLocaleDateString()}
+                {formatDate(work.submission_date)}
               </div>
               <div>
                 <span className="block text-[10px] uppercase tracking-wider text-muted/60 mb-0.5">
@@ -106,7 +107,7 @@ export default function WorkDetailPage({
                       : "In Review"}
                 </span>
                 {work.canon_date
-                  ? new Date(work.canon_date).toLocaleDateString()
+                  ? formatDate(work.canon_date)
                   : "Pending"}
               </div>
               <div>
@@ -184,7 +185,7 @@ export default function WorkDetailPage({
                   previewLength={400}
                 />
                 <p className="text-[10px] text-muted/60 mt-3">
-                  {new Date(ev.evaluation_date).toLocaleDateString()} —
+                  {formatDate(ev.evaluation_date)} —
                   Constitution v{ev.constitution_version}
                 </p>
               </div>
@@ -275,7 +276,7 @@ export default function WorkDetailPage({
                       previewLength={500}
                     />
                     <p className="text-[10px] text-muted/60 mt-3">
-                      {new Date(cr.response_date).toLocaleDateString()}
+                      {formatDate(cr.response_date)}
                     </p>
                   </div>
                 ))}
