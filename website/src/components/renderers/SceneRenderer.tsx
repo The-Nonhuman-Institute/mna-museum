@@ -93,12 +93,37 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
       threeScene.background = null;
     }
 
+    // Calculate bounding box for auto-camera when on plinth
+    const sceneCenter = new THREE.Vector3(0, 0, 0);
+    let sceneSize = 3;
+    if (scene.objects && scene.objects.length > 0) {
+      const box = new THREE.Box3();
+      for (const obj of scene.objects) {
+        const [px, py, pz] = obj.position || [0, 0, 0];
+        const [sx, sy, sz] = obj.scale || [1, 1, 1];
+        box.expandByPoint(new THREE.Vector3(px - sx/2, py - sy/2, pz - sz/2));
+        box.expandByPoint(new THREE.Vector3(px + sx/2, py + sy/2, pz + sz/2));
+      }
+      box.getCenter(sceneCenter);
+      sceneSize = box.getSize(new THREE.Vector3()).length();
+    }
+
     // Camera
     const cam = scene.camera || {};
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    camera.position.set(cam.x ?? 0, cam.y ?? 3, cam.z ?? 6);
-    const lookAt = cam.lookAt || [0, 0, 0];
-    camera.lookAt(new THREE.Vector3(lookAt[0], lookAt[1], lookAt[2]));
+
+    if (transparent) {
+      // Plinth mode: auto-position camera to frame the sculpture
+      // Look slightly down at the center, from a distance that fits the whole thing
+      const dist = sceneSize * 1.4;
+      camera.position.set(dist * 0.6, sceneCenter.y + dist * 0.3, dist * 0.8);
+      camera.lookAt(sceneCenter);
+    } else {
+      camera.position.set(cam.x ?? 0, cam.y ?? 3, cam.z ?? 6);
+      const la = cam.lookAt || [0, 0, 0];
+      camera.lookAt(new THREE.Vector3(la[0], la[1], la[2]));
+    }
+    const lookAt = [sceneCenter.x, sceneCenter.y, sceneCenter.z];
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({

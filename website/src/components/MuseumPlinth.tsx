@@ -60,15 +60,17 @@ export default function MuseumPlinth({
   const plinthType = plinthOverride ?? selectPlinth();
   const config = plinths[plinthType];
 
-  // Total composition: scene on top, plinth on bottom
+  // Total composition: scene overlaps plinth top surface slightly
   const plinthHeight = width / config.aspect;
   const sceneHeight = plinthHeight * (config.sceneRatio / (1 - config.sceneRatio));
-  const totalHeight = sceneHeight + plinthHeight;
+  // Overlap: scene extends down into the plinth area so sculpture sits ON the surface
+  const overlap = plinthHeight * 0.15;
+  const totalHeight = sceneHeight + plinthHeight - overlap;
 
   return (
     <div className={className} style={{ width, maxWidth: "100%" }}>
       <div style={{ position: "relative", width: "100%", height: totalHeight }}>
-        {/* Layer 1: 3D scene — positioned above plinth */}
+        {/* Layer 1: 3D scene — overlaps plinth top */}
         <div
           style={{
             position: "absolute",
@@ -76,7 +78,7 @@ export default function MuseumPlinth({
             left: 0,
             right: 0,
             height: sceneHeight,
-            overflow: "hidden",
+            zIndex: 1,
           }}
         >
           {children && (

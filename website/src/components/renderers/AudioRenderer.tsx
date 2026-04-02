@@ -93,11 +93,15 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
     );
   }
 
-  const play = () => {
+  const play = async () => {
     if (playing) return;
     setPlaying(true);
 
     const ctx = new AudioContext();
+    // Mobile Safari starts AudioContext in suspended state — must resume within user gesture
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
     ctxRef.current = ctx;
 
     // Master gain node — everything routes through this for clean shutdown

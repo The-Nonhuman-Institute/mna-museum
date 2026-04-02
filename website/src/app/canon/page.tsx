@@ -81,7 +81,7 @@ function CanonContent() {
         {hasWorks ? (
           <>
             {filtered.length > 0 ? (
-              <div className="flex flex-wrap justify-center gap-8 md:gap-12 mb-16">
+              <div className="flex flex-wrap justify-center items-end gap-8 md:gap-12 mb-16">
                 {filtered.map((work) => (
                   <Link
                     key={work.id}

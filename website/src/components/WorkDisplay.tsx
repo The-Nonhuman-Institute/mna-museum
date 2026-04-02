@@ -141,7 +141,6 @@ function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "sla
     const scene = JSON.parse(work.output_payload);
     if (scene.plinth) return scene.plinth; // Originator's explicit choice
 
-    // Analyze bounding box of all objects
     if (scene.objects && scene.objects.length > 0) {
       let minX = Infinity, maxX = -Infinity;
       let minY = Infinity, maxY = -Infinity;
@@ -150,9 +149,11 @@ function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "sla
       for (const obj of scene.objects) {
         const [px, py, pz] = obj.position || [0, 0, 0];
         const [sx, sy, sz] = obj.scale || [1, 1, 1];
-        minX = Math.min(minX, px - sx); maxX = Math.max(maxX, px + sx);
-        minY = Math.min(minY, py - sy); maxY = Math.max(maxY, py + sy);
-        minZ = Math.min(minZ, pz - sz); maxZ = Math.max(maxZ, pz + sz);
+        // Scale is full size (not half-extent) — use half for bounds
+        const hx = sx / 2, hy = sy / 2, hz = sz / 2;
+        minX = Math.min(minX, px - hx); maxX = Math.max(maxX, px + hx);
+        minY = Math.min(minY, py - hy); maxY = Math.max(maxY, py + hy);
+        minZ = Math.min(minZ, pz - hz); maxZ = Math.max(maxZ, pz + hz);
       }
 
       const width = maxX - minX;
@@ -163,7 +164,7 @@ function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "sla
       // Tall narrow → column
       if (height > spread * 2) return "column";
       // Very wide/long → slab
-      if (spread > height * 3) return "slab";
+      if (spread > height * 2.5) return "slab";
       // Wide and flat → platform
       if (spread > height * 1.5) return "platform";
     }
