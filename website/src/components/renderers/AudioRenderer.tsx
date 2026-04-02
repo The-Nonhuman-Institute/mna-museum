@@ -44,11 +44,19 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
 
   const data = useMemo(() => parseAudioJson(json), [json]);
 
-  // Stop audio when component unmounts (navigating away)
+  // Fade out and stop audio when component unmounts (navigating away)
   useEffect(() => {
     return () => {
-      if (ctxRef.current) {
-        ctxRef.current.close();
+      const ctx = ctxRef.current;
+      if (ctx && ctx.state !== "closed") {
+        // Ramp gain to zero over 50ms to avoid pop
+        const fadeOut = ctx.createGain();
+        fadeOut.connect(ctx.destination);
+        fadeOut.gain.setValueAtTime(1, ctx.currentTime);
+        fadeOut.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
+        setTimeout(() => {
+          ctx.close();
+        }, 60);
         ctxRef.current = null;
       }
     };
