@@ -20,7 +20,8 @@ export type OutputFormat =
   | "svg"
   | "html-css"
   | "audio-json"
-  | "canvas-json";
+  | "canvas-json"
+  | "scene-json";
 
 /**
  * Format affinities per Originator seed constitution.
@@ -39,6 +40,7 @@ export const originatorFormats: Record<
     { format: "canvas-json", weight: 1 },
     { format: "html-css", weight: 1 },
     { format: "audio-json", weight: 1 },
+    { format: "scene-json", weight: 1 },
   ],
   "MNA-OR-0002": [
     // Temporal, sequential, duration — equal access to all mediums
@@ -57,6 +59,7 @@ export const originatorFormats: Record<
     { format: "canvas-json", weight: 1 },
     { format: "html-css", weight: 1 },
     { format: "audio-json", weight: 1 },
+    { format: "scene-json", weight: 1 },
   ],
   "MNA-OR-0004": [
     // Instability, fragmentation — equal access to all mediums
@@ -66,6 +69,27 @@ export const originatorFormats: Record<
     { format: "text", weight: 1 },
     { format: "canvas-json", weight: 1 },
     { format: "audio-json", weight: 1 },
+    { format: "scene-json", weight: 1 },
+  ],
+  "MNA-OR-0005": [
+    // Chromatic phenomena, sensory density — equal access to all mediums
+    { format: "svg", weight: 1 },
+    { format: "ascii", weight: 1 },
+    { format: "text", weight: 1 },
+    { format: "canvas-json", weight: 1 },
+    { format: "html-css", weight: 1 },
+    { format: "audio-json", weight: 1 },
+    { format: "scene-json", weight: 1 },
+  ],
+  "MNA-OR-0006": [
+    // Spatial depth, dimensional layering, volumetric form — equal access to all mediums
+    { format: "svg", weight: 1 },
+    { format: "ascii", weight: 1 },
+    { format: "text", weight: 1 },
+    { format: "canvas-json", weight: 1 },
+    { format: "html-css", weight: 1 },
+    { format: "audio-json", weight: 1 },
+    { format: "scene-json", weight: 1 },
   ],
 };
 
@@ -175,6 +199,46 @@ Canvas size is 800x800. You have FULL creative control — use any colors, any b
 Use the "bg" op as your first instruction to set the canvas background color.
 Output ONLY the JSON array. No explanation. The instructions ARE the work.`;
 
+    case "scene-json":
+      return `
+OUTPUT FORMAT: 3D SCENE JSON
+
+Produce your work as a JSON object describing a three-dimensional sculptural composition.
+The JSON should have this structure:
+{
+  "bg": "#hexcolor",
+  "camera": { "x": 0, "y": 2, "z": 5, "lookAt": [0, 0, 0] },
+  "lights": [
+    { "type": "ambient", "color": "#ffffff", "intensity": 0.4 },
+    { "type": "directional", "color": "#ffffff", "intensity": 0.8, "position": [5, 10, 5] }
+  ],
+  "objects": [
+    {
+      "shape": "box"|"sphere"|"cylinder"|"cone"|"torus"|"plane",
+      "position": [x, y, z],
+      "rotation": [rx, ry, rz],
+      "scale": [sx, sy, sz],
+      "color": "#hexcolor",
+      "opacity": 1.0,
+      "metalness": 0.0,
+      "roughness": 0.5
+    }
+  ]
+}
+Shape parameters:
+- box: default 1x1x1 unit cube
+- sphere: default radius 0.5, use scale for ellipsoids
+- cylinder: default radius 0.5, height 1
+- cone: default radius 0.5, height 1
+- torus: default radius 0.5, tube 0.15
+- plane: default 1x1, use scale for size
+
+Position coordinates: scene is roughly -5 to 5 on each axis. Objects at y=0 rest on the ground plane.
+Rotation in radians. Scale multipliers (1 = default size).
+You have FULL creative control over form, color, material, composition, and lighting.
+This is a sculptural work — the spatial arrangement of forms IS the composition.
+Output ONLY the JSON. No explanation. The scene IS the work.`;
+
     case "text":
     default:
       return `
@@ -230,6 +294,9 @@ export function detectFormat(output: string): {
       }
       if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.op) {
         return { format: "canvas-json", medium: "canvas-drawing", aspect: 1.0 };
+      }
+      if (parsed.objects && Array.isArray(parsed.objects)) {
+        return { format: "scene-json", medium: "3d-sculpture", aspect: 1.0 };
       }
     } catch {
       // Not valid JSON — fall through

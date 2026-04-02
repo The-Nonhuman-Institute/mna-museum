@@ -29,6 +29,8 @@ const VALID_MEDIUMS = new Set([
   "html-css-animation",
   "canvas-drawing",
   "canvas-json",
+  "scene-json",
+  "3d-sculpture",
   "audio-synthesis",
   "audio-json",
   "structural-text",

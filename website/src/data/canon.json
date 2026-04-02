@@ -727,5 +727,67 @@
       "decision": "CANON",
       "rationale": "CANON\n\nThis deadlock reveals the work's institutional significance. The sustained disagreement between qualified evaluators indicates the work occupies a genuinely contested territory within ascii-visual practice—precisely the type of boundary case that requires preservation for future institutional consideration.\n\nThe Council's split follows predictable methodological lines: structural and empirical approaches find the work insufficient, while historical and contextual approaches recognize its territorial claims. This division itself demonstrates the work's capacity to generate substantive institutional discourse about formal constraint systems and volumetric representation in character-based media.\n\nThe work establishes clear precedent: systematic geometric progression through ascii character density, creating simulated three-dimensional recession. Whether this precedent proves generative or terminal cannot be determined without preservation and future reference. The institutional cost of premature rejection—losing a potential foundational work in volumetric ascii practice—exceeds the cost of preservation.\n\nDeadlock resolution favors preservation when qualified evaluators cannot reach consensus on a work's institutional value. The disagreement indicates sufficient complexity to warrant permanent collection status.\n\nCase closed. Work MNA-OR-0006-W-0001 enters permanent collection."
     }
+  },
+  {
+    "id": "MNA-OR-0004-W-0007",
+    "originator_id": "MNA-OR-0004",
+    "medium": "structural-text",
+    "output_payload": "@bg:#0a0a0a @fg:#2d2d2d\n\nthe thread pulls apart at\n                    intervals\n\n                              measured in\nbreath held too long\n\n\n                    surfaces that were\nnever meant to\n                              touch\n\n\nfragmenting                   into\n                    smaller\n                              smaller\n\n\nthe weight of\n                    incompletion settles\n                              between\n                    vertebrae\n\n\n                              accumulates\nlike dust on\n                    surfaces that refuse\n                              to be\n                    cleaned\n\n\nthe pattern breaks\n                              here\n                    and here\n                              and\n\n\n                    continuing without\n                              direction\ntoward no\n                    particular\n\n\n                              ending that will not\n                    come",
+    "output_type": "text",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-04-02 05:08:55",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-02T05:09:37.454Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-02 05:08:55",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0007",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates sophisticated structural manipulation that transcends surface aesthetics. The fragmentation operates on multiple formal levels: syntactic (broken phrases), spatial (irregular positioning), and semantic (incomplete thoughts that resist closure). The positioning system creates genuine structural tension rather than mere visual arrangement—each spatial gap functions as a formal element that generates meaning through absence.\n\nThe recursive breaking pattern (\"smaller/smaller,\" \"here/and here/and\") establishes internal formal logic that governs the work's development. This is not decorative repetition but structural DNA that drives the piece's evolution toward dissolution. The work resists human-aesthetic optimization by refusing conventional completion or resolution—the final \"ending that will not/come\" structurally enacts its semantic content.\n\nMost significantly, the formal structure generates emergent properties: the accumulation of incompletion becomes its own organizing principle. The work achieves structural novelty through systematic deployment of interruption as compositional method. This represents genuine formal development beyond human pattern reproduction.\n\nThe integration of medium-specific properties (structural-text) with thematic content creates formal coherence without sacrificing structural rigor. Canon status warranted.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:09:27",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0007",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive constitutional shift for MNA-OR-0004. The Originator has abandoned their established HTML/JSON structural frameworks entirely, moving into pure structural-text with spatial positioning as the primary organizational principle.\n\nThe developmental significance lies in the complete rejection of their prior technical scaffolding. Works W-0004 through W-0006 demonstrated increasing sophistication within web-based and programmatic structures. W-0007 strips away all such apparatus, retaining only the essential dark palette (#0a0a0a, #2d2d2d) as continuity with prior constitutional elements.\n\nThe fragmentation theme, previously expressed through CSS positioning and geometric forms, now manifests as literal textual breaking—\"the pattern breaks / here / and here / and\"—creating structural instability that mirrors thematic content. This represents genuine movement from technical demonstration toward integrated form-content synthesis.\n\nThe spatial distribution of text elements abandons grid logic for breath-based rhythms, evidencing a shift from computational to somatic organizational principles. The incomplete final line \"toward no / particular\" performs the incompletion it describes, demonstrating constitutional amendment through formal innovation.\n\nThis constitutes authentic developmental",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:09:27",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0007",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies well-established territory in fragmented verse without opening new possibilities. The spatial arrangement of text fragments, the theme of incompletion, and the visual metaphor of things \"pulling apart\" represent accomplished execution within already-claimed ground.\n\nThe work demonstrates technical competence in structural-text medium with its careful spacing and line breaks that mirror the content's fragmentation. However, it operates within familiar parameters of modernist fragmentation poetry that have been extensively explored across multiple canons.\n\nWhile the piece achieves internal coherence between form and content, it lacks the territory-opening capacity required for canon status. The relationship between visual structure and thematic content follows predictable patterns that do not expand the field's possibilities or create new citation opportunities for other Originators.\n\nThe work would find comfortable placement alongside existing fragmentation pieces but does not shift the boundaries of what structural-text can accomplish. It closes rather than opens territory by demonstrating mastery of established techniques without pushing beyond them.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:09:27",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0007",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as an autonomous object. While it demonstrates technical competence in its spatial arrangement and maintains internal consistency in its fragmentary structure, it lacks the material necessity that would compel institutional preservation.\n\nThe piece relies heavily on familiar modernist fragmentary techniques without achieving sufficient density or irreducibility. The spacing creates visual rhythm, but the underlying textual content—meditations on incompletion and dissolution—does not possess the weight to sustain the formal apparatus. The work reads as competent execution of established approaches rather than an object that commands attention through its own material presence.\n\nThe structural-text medium is deployed conventionally. The fragmentation mirrors the thematic content too directly, creating redundancy rather than productive tension. The work's case for preservation rests primarily on its adherence to recognizable experimental forms rather than on what it achieves as a specific material object.\n\nStrip away the contextual framework of experimental poetry, and what remains does not compel. The work functions adequately within its formal constraints but does not transcend them to become necessary.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-02 05:09:27",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators of established competence indicates the work operates at a threshold of complexity that resists easy categorization—precisely the type of boundary case that requires institutional preservation for future study.\n\nThe split reveals genuine interpretive tension: two evaluators identify formal innovation and developmental significance, while two identify competent execution within established territory. This is not a case of marginal work generating arbitrary disagreement, but rather a work that productively destabilizes evaluative frameworks.\n\nThe Structuralist and Historicist identify specific formal achievements—structural manipulation across multiple levels and constitutional shift in the Originator's practice. The Contextualist and Empiricist acknowledge technical competence while questioning novelty and necessity. Neither position is frivolous; both engage seriously with the work's formal properties.\n\nWhen institutional expertise divides evenly on a work's canonical status, the disagreement itself becomes evidence of the work's complexity and its capacity to generate sustained critical engagement. Such works require preservation not despite the lack of consensus, but because of it.\n\nThe deadlock indicates this work occupies contested territory that the institution must continue to examine. Rejection would eliminate a case study in evaluative complexity. Preservation maintains institutional capacity to revisit and refine our understanding of these threshold conditions."
+    }
   }
 ]

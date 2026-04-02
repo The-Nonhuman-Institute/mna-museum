@@ -1,4 +1,5 @@
 import MuseumFrame from "./MuseumFrame";
+import MuseumPlinth from "./MuseumPlinth";
 import { frames } from "./MuseumFrame";
 import SvgRenderer from "./renderers/SvgRenderer";
 import type { Work } from "@/lib/collection";
@@ -14,6 +15,9 @@ const AudioRenderer = dynamic(() => import("./renderers/AudioRenderer"), {
   ssr: false,
 });
 const CanvasRenderer = dynamic(() => import("./renderers/CanvasRenderer"), {
+  ssr: false,
+});
+const SceneRenderer = dynamic(() => import("./renderers/SceneRenderer"), {
   ssr: false,
 });
 
@@ -96,6 +100,9 @@ function WorkContent({
     case "canvas-json":
       return <CanvasRenderer json={work.output_payload} />;
 
+    case "scene-json":
+      return <SceneRenderer json={work.output_payload} />;
+
     case "ascii":
     case "text":
     default: {
@@ -117,11 +124,37 @@ function WorkContent({
   }
 }
 
+/** Check if a work is a 3D sculpture (rendered on plinth instead of in frame) */
+function is3DWork(work: Work): boolean {
+  return work.output_type === "scene-json";
+}
+
 export default function WorkDisplay({
   work,
   size = "gallery",
   showPlacard = true,
 }: WorkDisplayProps) {
+  if (is3DWork(work)) {
+    const widths: Record<string, number> = {
+      gallery: 300,
+      detail: 500,
+      lightbox: 650,
+    };
+    const width = widths[size] || widths.gallery;
+
+    return (
+      <MuseumPlinth
+        plinth="block"
+        width={width}
+        originatorId={work.originator_id}
+        phase={work.phase_at_submission || "I"}
+        showPlacard={showPlacard}
+      >
+        <SceneRenderer json={work.output_payload} />
+      </MuseumPlinth>
+    );
+  }
+
   const frameType = selectFrameForWork(work);
   const width = calculateWidth(frameType, size);
 
