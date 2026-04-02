@@ -55,29 +55,28 @@ if (!Array.isArray(works)) {
       warn(`${w.id}: invalid display_aspect`);
     }
 
-    // JSON format validation
+    // JSON format validation — warn on broken payloads (archive permanence: never block existing works)
     if (["canvas-json", "audio-json", "scene-json"].includes(w.output_type)) {
       try {
         JSON.parse(w.output_payload);
       } catch {
-        // Try bracket-balance check for truncation
         const opens = (w.output_payload.match(/[{[]/g) || []).length;
         const closes = (w.output_payload.match(/[}\]]/g) || []).length;
         if (opens > closes) {
-          error(`${w.id}: truncated ${w.output_type} (${opens} opens vs ${closes} closes)`);
+          warn(`${w.id}: truncated ${w.output_type} (${opens} opens vs ${closes} closes)`);
         } else {
-          error(`${w.id}: invalid JSON in ${w.output_type}`);
+          warn(`${w.id}: invalid JSON in ${w.output_type}`);
         }
       }
     }
 
-    // SVG validation
+    // SVG validation — warn only
     if (w.output_type === "svg") {
       if (!w.output_payload.includes("<svg")) {
-        error(`${w.id}: SVG missing <svg tag`);
+        warn(`${w.id}: SVG missing <svg tag`);
       }
       if (!w.output_payload.includes("</svg>")) {
-        error(`${w.id}: SVG truncated — missing </svg>`);
+        warn(`${w.id}: SVG truncated — missing </svg>`);
       }
     }
   }

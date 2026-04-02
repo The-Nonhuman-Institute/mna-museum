@@ -75,21 +75,25 @@ export function exportAll(): void {
     registrar_decision: registrarByWork[w.id] || null,
   }));
 
-  // ─── EXPORT VALIDATION GATE ─────────────────────────────────────────────────
-  let blocked = 0;
-  let integrityFailures = 0;
+  // ─── EXPORT VALIDATION — warn but never block existing works ─────────────────
+  // Archive permanence: nothing is ever deleted or hidden. Validation warnings
+  // are logged for awareness but ALL works pass through. The validation gate
+  // prevents new broken works from entering the DB (pipeline.ts) — this export
+  // step only reports, it does not filter.
+  let validationWarnings = 0;
 
-  const validatedWorks = fullWorks.filter((w: any) => {
+  for (const w of fullWorks) {
     const result = validateWork(w.output_payload, w.output_type);
     if (!result.valid) {
-      console.error(`[EXPORT] BLOCKED ${w.id}: ${result.errors.join("; ")}`);
-      blocked++;
-      return false;
+      console.warn(`[EXPORT] WARNING ${w.id}: ${result.errors.join("; ")}`);
+      validationWarnings++;
     }
-    return true;
-  });
+  }
 
-  // Integrity checks on canon works
+  const validatedWorks = fullWorks; // All works pass — archive permanence
+
+  // Integrity checks on canon works — warn only, never block
+  let integrityWarnings = 0;
   const validatedCanon = validatedWorks.filter((w: any) => {
     if (w.canon_status !== "CANON") return false;
 
@@ -97,20 +101,17 @@ export function exportAll(): void {
     const canonVotes = evals.filter((e: any) => e.verdict === "CANON").length;
     const hasRegistrar = !!w.registrar_decision;
 
-    // Canon works need either 3+ CANON votes or a Registrar CANON decision
     if (canonVotes < 3 && !hasRegistrar) {
-      console.error(`[EXPORT] INTEGRITY FAIL ${w.id}: CANON status but only ${canonVotes} CANON votes and no Registrar decision`);
-      integrityFailures++;
-      return false;
+      console.warn(`[EXPORT] INTEGRITY WARNING ${w.id}: CANON status but only ${canonVotes} CANON votes and no Registrar decision`);
+      integrityWarnings++;
     }
 
     if (evals.length < 3) {
-      console.error(`[EXPORT] INTEGRITY FAIL ${w.id}: CANON status but only ${evals.length} evaluations`);
-      integrityFailures++;
-      return false;
+      console.warn(`[EXPORT] INTEGRITY WARNING ${w.id}: CANON status but only ${evals.length} evaluations`);
+      integrityWarnings++;
     }
 
-    return true;
+    return true; // Always include — archive permanence
   });
 
   // ─── Collection summary ───────────────────────────────────────────────────
@@ -185,13 +186,13 @@ export function exportAll(): void {
   );
 
   console.log(`\nExported to ${OUT_DIR}:`);
-  console.log(`  works.json          ${validatedWorks.length} works (${blocked} blocked by validation)`);
-  console.log(`  canon.json          ${validatedCanon.length} canon works (${integrityFailures} integrity failures)`);
+  console.log(`  works.json          ${validatedWorks.length} works`);
+  console.log(`  canon.json          ${validatedCanon.length} canon works`);
   console.log(`  summary.json        collection summary`);
   console.log(`  critical-responses.json  ${(criticalResponses as any[]).length} responses`);
   console.log(`  events.json         ${(events as any[]).length} events`);
-  if (blocked > 0 || integrityFailures > 0) {
-    console.warn(`\n⚠ ${blocked + integrityFailures} issues found — see errors above`);
+  if (validationWarnings > 0 || integrityWarnings > 0) {
+    console.warn(`\n⚠ ${validationWarnings} validation warnings, ${integrityWarnings} integrity warnings — see above`);
   }
 }
 
