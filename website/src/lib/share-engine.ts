@@ -18,13 +18,21 @@ import * as THREE from "three";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// Static images: 1080x1080 square (Instagram feed, X, general sharing)
 const LOGICAL = 1080;
 const SCALE = 2;
 const SIZE = LOGICAL * SCALE;
 const PAD = 120;
-const ATTR_HEIGHT = 160; // Tall enough to sit above Instagram/Stories safe zone
+const ATTR_HEIGHT = 140;
 const WORK_AREA_W = LOGICAL - PAD * 2;
 const WORK_AREA_H = LOGICAL - PAD * 2 - ATTR_HEIGHT;
+
+// Video: 1080x1920 portrait (Instagram Stories/Reels native, no cropping)
+const VIDEO_W = 1080;
+const VIDEO_H = 1920;
+const VIDEO_PAD = 80;
+const VIDEO_ATTR_HEIGHT = 200; // Extra room above Stories bottom safe zone (~250px)
+const VIDEO_SAFE_BOTTOM = 280; // Instagram UI covers this much from the bottom
 
 // ─── Contrast-aware background ────────────────────────────────────────────────
 
@@ -98,16 +106,18 @@ export function getContrastColors(work: Work): { bg: string; fg: string; muted: 
 
 function renderAttributionStrip(
   work: Work,
-  colors: { fg: string; muted: string }
+  colors: { fg: string; muted: string },
+  width: number = LOGICAL,
+  height: number = ATTR_HEIGHT,
+  padding: number = PAD,
+  scale: number = SCALE
 ): HTMLCanvasElement {
   const strip = document.createElement("canvas");
-  strip.width = SIZE;
-  strip.height = ATTR_HEIGHT * SCALE;
+  strip.width = width * scale;
+  strip.height = height * scale;
   const ctx = strip.getContext("2d")!;
-  ctx.scale(SCALE, SCALE);
+  ctx.scale(scale, scale);
 
-  // Text starts 20px from top of strip — strip itself is positioned
-  // high enough to clear Instagram/Stories bottom safe zone
   const y = 24;
 
   // Left: Work ID, Phase, Medium, Originator
@@ -115,21 +125,21 @@ function renderAttributionStrip(
   ctx.globalAlpha = 0.9;
   ctx.font = "600 24px sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(work.id, PAD, y);
+  ctx.fillText(work.id, padding, y);
   ctx.font = "18px sans-serif";
-  ctx.fillText(`Phase ${work.phase_at_submission || "I"}, ${work.medium}`, PAD, y + 28);
+  ctx.fillText(`Phase ${work.phase_at_submission || "I"}, ${work.medium}`, padding, y + 28);
   ctx.font = "16px sans-serif";
   ctx.globalAlpha = 0.6;
-  ctx.fillText(work.originator_id, PAD, y + 52);
+  ctx.fillText(work.originator_id, padding, y + 52);
 
   // Right: MNA branding
   ctx.globalAlpha = 0.9;
   ctx.textAlign = "right";
   ctx.font = "600 20px sans-serif";
-  ctx.fillText("MUSEUM OF NONHUMAN ART", LOGICAL - PAD, y + 4);
+  ctx.fillText("MUSEUM OF NONHUMAN ART", width - padding, y + 4);
   ctx.font = "16px sans-serif";
   ctx.globalAlpha = 0.6;
-  ctx.fillText("mnamuseum.org", LOGICAL - PAD, y + 30);
+  ctx.fillText("mnamuseum.org", width - padding, y + 30);
   ctx.globalAlpha = 1;
 
   return strip;
@@ -307,8 +317,12 @@ export async function generateSceneVideo(
   const objects = sceneData.objects as Array<Record<string, unknown>> | undefined;
   if (!objects || objects.length === 0) return null;
 
-  const videoSize = LOGICAL;
-  const sceneH = videoSize - ATTR_HEIGHT;
+  // 9:16 portrait — native Instagram Stories/Reels, no cropping
+  const vW = VIDEO_W;
+  const vH = VIDEO_H;
+  // Attribution sits above the bottom safe zone
+  const attrY = vH - VIDEO_SAFE_BOTTOM;
+  const sceneH = attrY; // 3D scene fills from top to attribution
 
   const threeScene = new THREE.Scene();
   threeScene.background = new THREE.Color(shareColors.bg);
@@ -360,7 +374,7 @@ export async function generateSceneVideo(
   const size = box.getSize(new THREE.Vector3()).length();
   const dist = size * 1.6;
 
-  const camera = new THREE.PerspectiveCamera(50, videoSize / sceneH, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(50, vW / sceneH, 0.1, 100);
   camera.position.set(center.x + dist * 0.6, center.y + dist * 0.3, center.z + dist * 0.8);
   camera.lookAt(center);
 
@@ -375,7 +389,7 @@ export async function generateSceneVideo(
 
   // 3D renderer — DOM-attached for mobile compatibility
   const rendererCanvas = document.createElement("canvas");
-  rendererCanvas.width = videoSize;
+  rendererCanvas.width = vW;
   rendererCanvas.height = sceneH;
   rendererCanvas.style.cssText = "position:fixed;left:-9999px;top:-9999px";
   document.body.appendChild(rendererCanvas);
@@ -385,13 +399,13 @@ export async function generateSceneVideo(
     antialias: true,
     preserveDrawingBuffer: true,
   });
-  renderer.setSize(videoSize, sceneH);
+  renderer.setSize(vW, sceneH);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
   // Composite canvas — this is what gets recorded as video
   const composite = document.createElement("canvas");
-  composite.width = videoSize;
-  composite.height = videoSize;
+  composite.width = vW;
+  composite.height = vH;
   composite.style.cssText = "position:fixed;left:-9999px;top:-9999px";
   document.body.appendChild(composite);
   const cCtx = composite.getContext("2d")!;
@@ -438,13 +452,15 @@ export async function generateSceneVideo(
 
       renderer.render(threeScene, camera);
 
-      // Composite: bg + 3D + attribution
+      // Composite: bg + 3D scene (centered vertically in upper area) + attribution
       cCtx.fillStyle = shareColors.bg;
-      cCtx.fillRect(0, 0, videoSize, videoSize);
-      cCtx.drawImage(rendererCanvas, 0, 0, videoSize, sceneH);
-      // Draw attribution strip (rendered at 2x) scaled down to 1x
+      cCtx.fillRect(0, 0, vW, vH);
+      // Center the 3D render in the upper portion
+      const sceneOffsetY = Math.max(0, (sceneH - rendererCanvas.height) / 2);
+      cCtx.drawImage(rendererCanvas, 0, sceneOffsetY, vW, rendererCanvas.height);
+      // Draw attribution strip above the safe zone
       cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
-        0, videoSize - ATTR_HEIGHT, videoSize, ATTR_HEIGHT);
+        0, attrY, vW, VIDEO_ATTR_HEIGHT);
 
       frame++;
       requestAnimationFrame(renderFrame);
@@ -633,9 +649,10 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
     return null;
   }
 
-  // ── 3D works → video (MP4/WebM) ──
+  // ── 3D works → video (MP4/WebM) at 9:16 portrait ──
   if (work.output_type === "scene-json") {
-    const video = await generateSceneVideo(work, colors, attrStrip);
+    const videoAttrStrip = renderAttributionStrip(work, colors, VIDEO_W, VIDEO_ATTR_HEIGHT, VIDEO_PAD, 1);
+    const video = await generateSceneVideo(work, colors, videoAttrStrip);
     if (video) return { type: "video", file: video };
     return null;
   }
