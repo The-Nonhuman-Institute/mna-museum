@@ -25,11 +25,26 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
   try {
     data = JSON.parse(json);
   } catch {
-    return (
-      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
-        <p className="text-[#4a4540] text-xs">Invalid audio data</p>
-      </div>
-    );
+    // Try to salvage truncated JSON — find the last complete voice entry
+    try {
+      const lastBracket = json.lastIndexOf("}");
+      if (lastBracket > 0) {
+        let attempt = json.substring(0, lastBracket + 1);
+        // Close any open arrays and objects
+        const openBrackets = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
+        const openBraces = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
+        attempt += "]".repeat(Math.max(0, openBrackets)) + "}".repeat(Math.max(0, openBraces));
+        data = JSON.parse(attempt);
+      } else {
+        throw new Error("No recoverable JSON");
+      }
+    } catch {
+      return (
+        <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
+          <p className="text-[#4a4540] text-xs">Invalid audio data</p>
+        </div>
+      );
+    }
   }
 
   const play = () => {
