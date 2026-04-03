@@ -91,7 +91,7 @@ function CanonContent() {
                     <div className="absolute inset-0 z-10" />
                     <WorkDisplay work={work} size="gallery" />
                     {work.title && (
-                      <p className="text-[11px] text-muted/70 italic text-center mt-2 max-w-[300px]">
+                      <p className="text-[13px] font-serif italic text-foreground/80 text-center mt-3">
                         {work.title}
                       </p>
                     )}

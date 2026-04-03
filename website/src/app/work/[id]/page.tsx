@@ -77,7 +77,7 @@ export default function WorkDetailPage({
         {/* Work identity */}
         <div className="text-center mb-12">
           {work.title && (
-            <h2 className="text-xl md:text-2xl font-serif font-light text-foreground mb-3 italic">
+            <h2 className="text-lg md:text-xl font-serif italic text-foreground mb-4 tracking-wide">
               {work.title}
             </h2>
           )}
