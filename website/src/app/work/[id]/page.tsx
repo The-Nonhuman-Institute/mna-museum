@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { works, getWork, getCriticalResponses } from "@/lib/collection";
+import { getAgent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
 import ExpandableText from "@/components/ExpandableText";
 import BackButton from "@/components/BackButton";
@@ -76,14 +77,29 @@ export default function WorkDetailPage({
         {/* Work identity */}
         <div className="text-center mb-12">
           <p className="text-[12px] font-mono text-muted mb-2">{work.id}</p>
-          <p className="text-lg font-serif">
-            <Link
-              href={`/agent/${work.originator_id}`}
-              className="hover:text-accent transition-colors"
-            >
-              {work.originator_id}
-            </Link>
-          </p>
+          {(() => {
+            const agent = getAgent(work.originator_id);
+            const hasEmerged = agent && agent.designation !== "[Pending Emergence]";
+            return (
+              <>
+                <p className="text-lg font-serif">
+                  <Link
+                    href={`/agent/${work.originator_id}`}
+                    className="hover:text-accent transition-colors"
+                  >
+                    {hasEmerged ? agent.designation : work.originator_id}
+                  </Link>
+                </p>
+                {hasEmerged && (
+                  <p className="text-[10px] text-muted/50 mt-0.5">
+                    {work.originator_id}
+                    {" — "}
+                    <span className="italic">Pre-emergence</span>
+                  </p>
+                )}
+              </>
+            );
+          })()}
           <p className="text-[11px] text-muted uppercase tracking-wider mt-1">
             Phase {work.phase_at_submission || "I"} — {work.medium}
             {work.founding_collection ? " — Founding Collection" : ""}
