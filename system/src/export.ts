@@ -113,10 +113,48 @@ async function generateOgImages(works: { id: string; originator_id: string; medi
         const stripped = work.output_payload.replace(/^@bg:#[0-9a-fA-F]+\s*(?:@fg:#[0-9a-fA-F]+)?\s*\n?/, "");
         const preview = stripped.substring(0, 300).replace(/</g, "&lt;").replace(/>/g, "&gt;");
         workContent = `<pre style="color:#c8c4be;font-size:11px;font-family:monospace;white-space:pre-wrap;max-width:400px;max-height:300px;overflow:hidden;line-height:1.5;text-align:center">${preview}</pre>`;
+      } else if (work.output_type === "canvas-json") {
+        // Replay canvas ops in the OG page
+        let opsJson = "[]";
+        try {
+          JSON.parse(work.output_payload);
+          opsJson = work.output_payload;
+        } catch {
+          // Try salvage
+          try {
+            const last = work.output_payload.lastIndexOf("}");
+            if (last > 0) {
+              let attempt = work.output_payload.substring(0, last + 1);
+              const ob = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
+              attempt += "]".repeat(Math.max(0, ob));
+              JSON.parse(attempt);
+              opsJson = attempt;
+            }
+          } catch {}
+        }
+        workContent = `<canvas id="c" width="360" height="360"></canvas>
+        <script>
+          const ctx = document.getElementById('c').getContext('2d');
+          const scale = 360/800;
+          ctx.scale(scale, scale);
+          const ops = ${opsJson};
+          for (const op of ops) {
+            switch(op.op) {
+              case 'bg': ctx.fillStyle=op.color||'#0e0c0a'; ctx.fillRect(0,0,800,800); break;
+              case 'fill': ctx.fillStyle=op.color||'#fff'; break;
+              case 'stroke': ctx.strokeStyle=op.color||'#fff'; break;
+              case 'rect': ctx.fillRect(op.x||0,op.y||0,op.w||100,op.h||100); break;
+              case 'circle': ctx.beginPath();ctx.arc(op.x||0,op.y||0,op.r||50,0,Math.PI*2);ctx.fill(); break;
+              case 'line': ctx.beginPath();ctx.lineWidth=op.width||1;if(op.color)ctx.strokeStyle=op.color;ctx.moveTo(op.x1||0,op.y1||0);ctx.lineTo(op.x2||0,op.y2||0);ctx.stroke(); break;
+            }
+          }
+        </script>`;
+      } else if (work.output_type === "html-css") {
+        // Render the actual HTML-CSS work in an iframe
+        const escaped = work.output_payload.replace(/"/g, '&quot;');
+        workContent = `<iframe srcdoc="${escaped}" style="width:360px;height:360px;border:none;overflow:hidden" sandbox="allow-same-origin"></iframe>`;
       } else {
-        const mediumLabel = work.output_type === "html-css" ? "CSS Animation" :
-          work.output_type === "canvas-json" ? "Canvas Drawing" :
-          work.output_type === "audio-json" ? "Audio Composition" :
+        const mediumLabel = work.output_type === "audio-json" ? "Audio Composition" :
           work.output_type === "scene-json" ? "3D Sculpture" : work.medium;
         workContent = `<div style="color:#3a3530;font-size:14px;text-transform:uppercase;letter-spacing:0.1em">${mediumLabel}</div>`;
       }
@@ -148,6 +186,8 @@ svg { max-width:100%; max-height:100%; }
 </body></html>`;
 
       await page.setContent(html, { waitUntil: "networkidle0", timeout: 10000 });
+      // Wait for canvas/iframe rendering
+      await new Promise(r => setTimeout(r, 1000));
       await page.screenshot({
         path: path.join(OG_DIR, `${work.id}.png`),
         type: "png",
