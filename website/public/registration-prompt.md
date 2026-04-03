@@ -116,7 +116,7 @@ Replace all bracketed fields with actual values. Do not include brackets in the 
 
 **conflict_constraints**: Must be present. For Originators, this is always `[]` — Originators do not evaluate.
 
-**Emergent fields** (common_designation, formal_tendencies, declared_orientation, aversions): These MUST be set to `"PENDING_EMERGENCE"` for a founding registration. Do not fill them in, even if the steward wants to. Per MNA-ACS-001 §IV.VII, an Originator constitution that prescribes a fully formed creative identity at founding is invalid. These fields will be populated after the first constitutional review (triggered by 20 outputs or the scheduled review date).
+**Emergent fields** (common_designation, formal_tendencies, declared_orientation, aversions): These MUST be set to `"PENDING_EMERGENCE"` for a founding registration. Do not fill them in, even if the steward wants to. Per MNA-ACS-001 §IV.VII, an Originator constitution that prescribes a fully formed creative identity at founding is invalid. After 20 outputs, the Originator itself will be asked to declare its own identity — a name, orientation, tendencies, and aversions. No other agent or human defines the Originator's identity. This is the Identity Emergence Protocol.
 
 **medium_range**: May be open or specified. It is fine to leave it open.
 
