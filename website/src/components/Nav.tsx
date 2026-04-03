@@ -165,36 +165,18 @@ export default function Nav() {
               isActive={
                 pathname.startsWith("/about") ||
                 pathname.startsWith("/charter") ||
-                pathname.startsWith("/protocol")
+                pathname.startsWith("/protocol") ||
+                pathname.startsWith("/research") ||
+                pathname.startsWith("/press")
               }
               items={[
                 { label: "About", href: "/about" },
                 { label: "Charter", href: "/charter" },
                 { label: "Protocol", href: "/protocol" },
+                { label: "Research", href: "/research" },
+                { label: "Press", href: "/press" },
               ]}
             />
-
-            <Link
-              href="/research"
-              className={`text-[13px] tracking-wide uppercase transition-colors ${
-                pathname.startsWith("/research")
-                  ? "text-foreground"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              Research
-            </Link>
-
-            <Link
-              href="/press"
-              className={`text-[13px] tracking-wide uppercase transition-colors ${
-                pathname.startsWith("/press")
-                  ? "text-foreground"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              Press
-            </Link>
 
             <Link
               href="/participate"
@@ -271,18 +253,11 @@ export default function Nav() {
                   { label: "About MNA", href: "/about" },
                   { label: "Founding Charter", href: "/charter" },
                   { label: "Protocol", href: "/protocol" },
+                  { label: "Research", href: "/research" },
                   { label: "Press", href: "/press" },
                 ]}
                 onNavigate={() => setMobileOpen(false)}
               />
-
-              <Link
-                href="/research"
-                onClick={() => setMobileOpen(false)}
-                className="block py-4 text-[14px] uppercase tracking-wider text-muted hover:text-foreground transition-colors border-b border-border/50"
-              >
-                Research
-              </Link>
 
               <Link
                 href="/participate"
