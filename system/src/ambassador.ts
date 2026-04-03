@@ -68,25 +68,6 @@ Write the post. Nothing else.`;
 }
 
 /**
- * Upload an image to Bluesky and return the blob reference.
- */
-async function uploadImage(agent: BskyAgent, imagePath: string): Promise<{ $type: string; ref: unknown; mimeType: string; size: number } | null> {
-  try {
-    const imageData = fs.readFileSync(imagePath);
-    const response = await agent.uploadBlob(imageData, { encoding: "image/png" });
-    return {
-      $type: "blob",
-      ref: response.data.blob.ref,
-      mimeType: "image/png",
-      size: imageData.length,
-    };
-  } catch (e) {
-    console.error("[AMBASSADOR] Image upload failed:", e);
-    return null;
-  }
-}
-
-/**
  * Post a canonized work to Bluesky with the OG image.
  */
 export async function postCanonization(
@@ -107,20 +88,25 @@ export async function postCanonization(
   const rt = new RichText({ text: fullText });
   await rt.detectFacets(agent);
 
-  // Upload OG image if it exists
+  // Upload share image (with attribution) or fall back to OG image
+  const previewPath = path.join(__dirname, "..", "..", "website", "public", "previews", `${workId}.png`);
   const ogPath = path.join(__dirname, "..", "..", "website", "public", "og", `${workId}.png`);
+  const imagePath = fs.existsSync(previewPath) ? previewPath : ogPath;
   let embed: any;
 
-  if (fs.existsSync(ogPath)) {
-    const blob = await uploadImage(agent, ogPath);
-    if (blob) {
+  if (fs.existsSync(imagePath)) {
+    try {
+      const imageData = fs.readFileSync(imagePath);
+      const uploadResponse = await agent.uploadBlob(imageData, { encoding: "image/png" });
       embed = {
         $type: "app.bsky.embed.images",
         images: [{
           alt: `${title || workId} by ${originatorName || originatorId}`,
-          image: blob.ref,
+          image: uploadResponse.data.blob,
         }],
       };
+    } catch (e) {
+      console.error("[AMBASSADOR] Image upload failed:", e);
     }
   }
 

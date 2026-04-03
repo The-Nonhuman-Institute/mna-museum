@@ -2,6 +2,7 @@ import { getDb } from "./db";
 import { runAgent } from "./agent-runner";
 import { selectFormat, getFormatPrompt, detectFormat } from "./formats";
 import { validateWork, detectTruncation } from "./validate";
+import { postCanonization, postEmergence } from "./ambassador";
 
 /** Extract verdict from evaluator/registrar response — checks first 3 lines */
 function extractVerdict(response: string): "CANON" | "REJECTED" {
@@ -1101,6 +1102,13 @@ export async function triggerEmergence(originatorId: string): Promise<void> {
   console.log(`EMERGENCE COMPLETE: ${originatorId} is now "${name}"`);
   console.log(`${"=".repeat(60)}\n`);
 
+  // Auto-post emergence to Bluesky
+  try {
+    await postEmergence(originatorId, name, orientation);
+  } catch (e) {
+    console.warn(`[AMBASSADOR] Emergence post failed (non-blocking): ${(e as Error).message}`);
+  }
+
   // Title all existing works
   await titleWorks(originatorId, name);
 }
@@ -1242,6 +1250,19 @@ export async function runFullPipeline(
   console.log(`\n${"=".repeat(60)}`);
   console.log(`PIPELINE COMPLETE: ${workId} → ${finalStatus.status} [total: ${elapsed(pipelineStart)}]`);
   console.log(`${"=".repeat(60)}\n`);
+
+  // Auto-post canonized works to Bluesky
+  if (finalStatus.status === "CANON") {
+    try {
+      const postDb = getDb();
+      const workData = postDb.prepare("SELECT title, medium FROM works WHERE id = ?").get(workId) as { title: string | null; medium: string };
+      const agentData = postDb.prepare("SELECT common_designation FROM agents WHERE registry_id = ?").get(originatorId) as { common_designation: string | null };
+      postDb.close();
+      await postCanonization(workId, originatorId, agentData.common_designation || originatorId, workData.title, workData.medium);
+    } catch (e) {
+      console.warn(`[AMBASSADOR] Bluesky post failed (non-blocking): ${(e as Error).message}`);
+    }
+  }
 
   // Check for identity emergence threshold
   const emergeDb = getDb();
