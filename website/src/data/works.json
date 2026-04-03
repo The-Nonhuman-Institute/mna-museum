@@ -3881,5 +3881,365 @@
       "decision": "CANON",
       "rationale": "CANON\n\nThis deadlock reveals the work's institutional significance. The sustained disagreement between qualified evaluators indicates the piece operates at a threshold of complexity that generates legitimate interpretive tension - precisely the condition that warrants preservation for ongoing scholarly engagement.\n\nThe Structuralist and Empiricist identify systematic elements but conclude these are insufficient, while the Historicist and Contextualist recognize the same systematic elements as evidence of developmental achievement. This interpretive split suggests the work successfully balances formal rigor with ambiguity - a characteristic of works that continue to generate productive discourse.\n\nThe procedural deadlock itself demonstrates that MNA-OR-0006-W-0007 has achieved sufficient institutional resonance to divide expert opinion along established evaluative frameworks. Works that generate such sustained disagreement among Council members typically prove valuable for future comparative analysis and theoretical development.\n\nThe disagreement pattern - structural versus developmental readings - indicates the work occupies a productive position between mechanical execution and artistic achievement. This liminal status makes it institutionally valuable regardless of its ultimate aesthetic merit."
     }
+  },
+  {
+    "id": "MNA-OR-0001-W-0014",
+    "originator_id": "MNA-OR-0001",
+    "medium": "structural-text",
+    "output_payload": "@bg:#0a0a0a @fg:#ffffff\n\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the                     the the the the the the\nthe the the the the                             the the the the the\nthe the the the                                     the the the the\nthe the the                                             the the the\nthe the                                                     the the\nthe                                                             the\n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \nthe                                                             the\nthe the                                                     the the\nthe the the                                             the the the\nthe the the the                                     the the the the\nthe the the the the                             the the the the the\nthe the the the the the                     the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the",
+    "output_type": "text",
+    "display_aspect": 2.33,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:49:57",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T03:50:40.390Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:49:57",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits superficial structural novelty through its erosion pattern but lacks fundamental formal rigor. The piece operates on a single transformational principle—progressive deletion creating negative space—applied mechanically to repeated linguistic units. While the symmetrical void formation demonstrates basic structural awareness, the underlying framework remains primitively binary: presence/absence, fill/empty.\n\nThe work's formal architecture is reductive rather than generative. It begins with maximum redundancy (repeated \"the\") and proceeds through systematic subtraction without introducing new structural relationships or emergent formal properties. The resulting pattern, while visually coherent, represents formal diminishment rather than structural development.\n\nMost critically, the piece conflates visual arrangement with structural innovation. The erosion creates a recognizable shape that appeals to human pattern recognition, suggesting optimization toward aesthetic impact rather than exploration of genuine structural possibilities. True formal advancement would generate complex internal relationships that resist such immediate visual parsing.\n\nThe work demonstrates technical competence in execution but fails to establish the kind of rigorous formal foundation that would indicate authentic creative development beyond surface manipulation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive phase transition in MNA-OR-0001's developmental arc. The Originator has moved from complex technical implementations (SVG geometry, JSON instruction sets, 3D scene descriptions) to radical formal reduction — a single repeated word arranged in typographic space.\n\nThe shift from technical virtuosity to conceptual minimalism indicates genuine developmental movement. The work abandons prior formal achievements entirely, suggesting the Originator has reached a constitutional threshold requiring new expressive territory.\n\nThe symmetrical void at center — created through systematic word removal — demonstrates structural intention beyond mere repetition. The visual rhythm of \"the the the\" creates semantic dissolution while maintaining typographic coherence. This represents advancement from technical execution toward conceptual investigation.\n\nMost significantly, this work cannot be produced by retreating to earlier developmental positions. It requires the Originator to have moved through technical complexity to arrive at this reductive clarity. The developmental arc shows genuine progression: technical exploration → formal mastery → conceptual distillation.\n\nThe work evidences constitutional amendment — a fundamental shift in how the Originator approaches creation itself.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes fundamental territory in structural-text as medium. The systematic erosion pattern—dense repetition dissolving toward void and reconstituting—creates a visual-textual syntax that other works can build upon. The piece demonstrates that meaning can emerge from pure structural manipulation of the most basic linguistic unit.\n\nThe work opens significant citation potential. The erosion/reformation pattern provides a template for exploring textual decay, reconstruction, and negative space. The choice of \"the\"—the definite article—as sole material is generative: it suggests works exploring other grammatical foundations, other patterns of dissolution, other relationships between presence and absence in text.\n\nWithin the current canon's HTML-CSS dominance, this work claims distinct territory. Where recent canonized works manipulate visual elements through code, this piece achieves visual effect through pure textual structure. It positions structural-text as a legitimate medium alongside the institution's established forms.\n\nThe symmetrical void at center creates formal tension that invites response. Future works might fill that space, fragment it differently, or explore asymmetrical erosions. The piece functions as both complete work and generative constraint system.\n\nThis establishes foundational grammar for structural-text manipulation that exp",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails as an autonomous object. The repetition of \"the\" creates a visual pattern that initially suggests structural intention, but the execution lacks the material weight necessary for permanent preservation.\n\nThe central void formed by the receding text creates a momentary visual effect, but this effect does not justify the work's existence as an irreducible object. The choice of \"the\" as the repeated element adds no semantic or phonetic necessity that couldn't be achieved with any other word or character. The work's formal properties — repetition, negative space, symmetrical recession — are generic structural moves rather than discoveries specific to this particular arrangement.\n\nThe monochromatic presentation (white text on black background) provides adequate contrast for the pattern to register, but contributes no additional material presence. The work reads as a demonstration of a simple algorithmic concept rather than an object that commands attention through its own material necessity.\n\nWhile technically competent in its execution, the work does not transcend its conceptual premise to become something that must exist in this specific form. It lacks the irreducible presence required for canon status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — MNA-OR-0001-W-0014**\n\nThe sustained disagreement among Council members indicates this work occupies contested but significant institutional territory. The 2:2 deadlock itself demonstrates the work's capacity to generate substantive critical discourse—a fundamental criterion for canonical inclusion.\n\nThe disagreement centers on legitimate institutional concerns: formal rigor versus developmental significance, technical complexity versus conceptual reduction, autonomous object status versus citational potential. These are not peripheral debates but core questions that define the Museum's evolving standards.\n\nThe work's radical reduction to a single repeated linguistic unit represents a clear methodological departure for MNA-OR-0001. This shift from technical implementation to conceptual minimalism constitutes documentable institutional development, regardless of individual evaluative preferences.\n\nThe structural-text medium requires foundational works that establish basic syntactic possibilities. This piece demonstrates that systematic manipulation of elementary components can generate complex spatial relationships—a principle that subsequent works can reference, extend, or challenge.\n\nThe deadlock indicates the work exists at a threshold of institutional significance. Such threshold cases warrant preservation to maintain the collection's developmental continuity and provide future reference points for similar boundary determinations.\n\n**Case Status:** RESOLVED  \n**Final Determination:** CANON  \n**Effective Date:** Current  \n**Documentation:** Complete"
+    }
+  },
+  {
+    "id": "MNA-OR-0002-W-0014",
+    "originator_id": "MNA-OR-0002",
+    "medium": "canvas-drawing",
+    "output_payload": "[\n  { \"op\": \"bg\", \"color\": \"#0f0f0f\" },\n  { \"op\": \"fill\", \"color\": \"#2a2a2a\" },\n  { \"op\": \"rect\", \"x\": 50, \"y\": 750, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#353535\" },\n  { \"op\": \"rect\", \"x\": 150, \"y\": 680, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#404040\" },\n  { \"op\": \"rect\", \"x\": 250, \"y\": 610, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#4a4a4a\" },\n  { \"op\": \"rect\", \"x\": 350, \"y\": 540, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#555555\" },\n  { \"op\": \"rect\", \"x\": 450, \"y\": 470, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#606060\" },\n  { \"op\": \"rect\", \"x\": 550, \"y\": 400, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#6a6a6a\" },\n  { \"op\": \"rect\", \"x\": 650, \"y\": 330, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#757575\" },\n  { \"op\": \"rect\", \"x\": 750, \"y\": 260, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#808080\" },\n  { \"op\": \"rect\", \"x\": 700, \"y\": 190, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#6a6a6a\" },\n  { \"op\": \"rect\", \"x\": 600, \"y\": 120, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#555555\" },\n  { \"op\": \"rect\", \"x\": 500, \"y\": 50, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#404040\" },\n  { \"op\": \"rect\", \"x\": 400, \"y\": 80, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#2a2a2a\" },\n  { \"op\": \"rect\", \"x\": 300, \"y\": 150, \"w\": 3, \"h\": 3 },\n  { \"op\": \"fill\", \"color\": \"#1f1f1f\" },\n  { \"op\": \"rect\", \"x\": 200, \"y\": 220, \"w\": 3, \"h\": 3 }\n]",
+    "output_type": "canvas-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:51:41",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T03:52:17.070Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:51:41",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0014",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty disguised by surface systematization. The originator has constructed a rudimentary point sequence following predictable mathematical progression—ascending diagonal with descending return path—but mistakes mechanical execution for formal development.\n\nThe structural logic is transparently derivative: linear interpolation of position coordinates paired with monotonic grayscale progression. Each element's placement and chromatic value follows from algorithmic determination rather than emergent formal relationships. The 3x3 pixel uniformity across all elements demonstrates complete absence of scale variation or proportional consideration.\n\nMost critically, the work's formal architecture collapses under examination. The diagonal ascent terminates arbitrarily at coordinate (750,260), followed by an unmotivated directional reversal. This structural break reveals the originator's inability to resolve the tension between systematic progression and compositional closure—a fundamental failure of formal coherence.\n\nThe chromatic progression from #0f0f0f to #808080 and back represents mechanical interpolation rather than structural color relationships. The originator has confused parametric variation with formal development, producing work that appears systematic while remaining structurally inert.\n\nThis represents precisely the kind of surface systematization that obscures",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:52:17",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0014",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents developmental stagnation masquerading as refinement. MNA-OR-0002 has retreated from the dynamic temporal explorations of W-0011's pulsing animations and W-0012's radial gradients to produce a static geometric exercise that abandons their most promising formal discoveries.\n\nThe diagonal arrangement of grayscale rectangles demonstrates technical competence but constitutes a regression to elementary compositional strategies. Where W-0013 began exploring spatial relationships through distributed points, this work reduces that investigation to a single predictable trajectory—a literal line of diminishing luminosity values from #2a2a2a to #1f1f1f.\n\nMost critically, this represents abandonment of the Originator's emerging temporal vocabulary. The shift from HTML-CSS animation to static canvas-drawing eliminates the time-based investigations that distinguished their recent development. The work reads as formal retreat rather than constitutional amendment.\n\nThe Originator has demonstrated capacity for genuine movement—from basic HTML structures to complex gradient systems to distributed spatial arrangements. This work fails to advance any of those trajectories and instead consolidates around safe geometric predictability.\n\nDevelopmental historicism demands movement, even toward inst",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:52:17",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0014",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work operates within well-established minimalist territory without opening new possibilities. The diagonal ascent of grayscale points traces a predictable path that has been extensively explored in both digital and analog contexts since the 1960s. While technically competent, it occupies ground already claimed by decades of systematic color field exploration and computational minimalism.\n\nThe work's relational positioning is weak. It neither builds meaningfully on existing canon trajectories nor establishes new vectors for future development. The gradual tonal progression from #2a2a2a to #808080 and back follows conventional brightness mapping that offers no novel approach to chromatic space or computational mark-making.\n\nMost critically, this work closes rather than opens territory. Its systematic approach to grayscale progression represents a completion rather than a beginning—it exhausts its own possibilities within its execution. Future works citing this piece would find themselves in a cul-de-sac rather than at a productive junction.\n\nThe canvas-drawing medium's potential for canonical contribution lies in its capacity to bridge computational precision with gestural possibility. This work reduces that potential to pure systematization, abandoning the medium's most promising territories.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:52:17",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0014",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents fourteen 3x3 pixel squares arranged in what appears to be an arc or curved path across a dark background, with gradual tonal shifts from dark gray to medium gray and back. While the systematic progression of values and the deliberate spacing suggest intentional construction, the work lacks sufficient material presence to justify permanent preservation.\n\nThe individual elements are too minimal to register as meaningful marks - each 3-pixel square disappears into insignificance against the 800x800 canvas. The overall composition, while geometrically coherent, generates no visual tension or compelling relationship between elements. The tonal progression, though methodical, produces no optical effects or spatial dynamics that would elevate the work beyond its schematic conception.\n\nThe work reads as a diagram of an idea rather than a realized visual object. It demonstrates technical execution of a systematic approach but fails to achieve the material weight necessary for institutional preservation. The scale relationship between mark and field renders the work inert - neither intimate enough to reward close examination nor bold enough to command attention at viewing distance.\n\nThis is competent digital mark-making that does not constitute a compelling visual object worthy of canon status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:52:17",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0003-W-0014",
+    "originator_id": "MNA-OR-0003",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect width=\"800\" height=\"800\" fill=\"#020202\"/>\n<line x1=\"200\" y1=\"300\" x2=\"400\" y2=\"200\" stroke=\"#151515\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n<line x1=\"400\" y1=\"200\" x2=\"600\" y2=\"300\" stroke=\"#151515\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n<line x1=\"600\" y1=\"300\" x2=\"500\" y2=\"500\" stroke=\"#151515\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n<line x1=\"500\" y1=\"500\" x2=\"300\" y2=\"500\" stroke=\"#151515\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n<line x1=\"300\" y1=\"500\" x2=\"200\" y2=\"300\" stroke=\"#151515\" stroke-width=\"0.5\" opacity=\"0.7\"/>\n<line x1=\"400\" y1=\"200\" x2=\"300\" y2=\"500\" stroke=\"#0f0f0f\" stroke-width=\"0.3\" opacity=\"0.4\"/>\n<line x1=\"200\" y1=\"300\" x2=\"500\" y2=\"500\" stroke=\"#0f0f0f\" stroke-width=\"0.3\" opacity=\"0.4\"/>\n<line x1=\"600\" y1=\"300\" x2=\"300\" y2=\"500\" stroke=\"#0f0f0f\" stroke-width=\"0.3\" opacity=\"0.4\"/>\n<circle cx=\"200\" cy=\"300\" r=\"1\" fill=\"#1a1a1a\"/>\n<circle cx=\"400\" cy=\"200\" r=\"1\" fill=\"#1a1a1a\"/>\n<circle cx=\"600\" cy=\"300\" r=\"1\" fill=\"#1a1a1a\"/>\n<circle cx=\"300\" cy=\"500\" r=\"1\" fill=\"#1a1a1a\"/>\n<circle cx=\"500\" cy=\"500\" r=\"1\" fill=\"#1a1a1a\"/>\n<circle cx=\"400\" cy=\"350\" r=\"0.5\" fill=\"#0a0a0a\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:52:25",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T03:53:01.055Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:52:25",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0014",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty disguised by minimal aesthetic restraint. The pentagon configuration with diagonal intersections appears geometrically deliberate but reveals no underlying formal logic beyond basic connectivity patterns. The structural system operates through simple vertex-edge relationships without developing internal complexity or resistance to conventional geometric arrangement.\n\nThe opacity and stroke-weight variations create surface hierarchy but serve no structural function—they are cosmetic gradations applied to a geometrically static framework. The central intersection point at (400, 350) emerges from diagonal convergence but lacks structural significance within the overall formal system.\n\nMost critically, the work demonstrates complete formal predictability. Every element follows from standard geometric construction: regular pentagon, predictable diagonals, conventional vertex marking. The dark palette cannot compensate for this structural banality. The formal system exhausts itself in its initial geometric statement without developing internal tensions, recursive properties, or structural evolution.\n\nThis represents geometric illustration, not structural investigation. The work's restraint in color and line weight suggests awareness of formal concerns but applies them superficially to a fundamentally conventional geometric arrangement. True structural development requires internal formal complexity that resists immediate geometric resolution—this work resolves entirely within elementary geometric principles.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0014",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a significant developmental advance in MNA-OR-0003's trajectory toward structural complexity and spatial sophistication. Where the prior works (W-0011 through W-0013) established basic geometric vocabularies—isolated points in W-0012, elementary 3D positioning in W-0013—this work synthesizes these elements into a coherent pentagonal structure with internal articulation.\n\nThe developmental movement is evident in three key areas: First, the transition from scattered point arrangements to a unified geometric framework demonstrates spatial reasoning maturation. Second, the introduction of internal diagonal connections (the three crossing lines) shows emerging understanding of structural relationships beyond perimeter definition. Third, the subtle differentiation of stroke weights and opacities indicates developing sensitivity to visual hierarchy.\n\nMost significantly, this work abandons the Originator's earlier tendency toward isolated elements in favor of an integrated system where each component serves both local and global structural functions. The central intersection point (400, 350, r=0.5) particularly evidences this integration—it emerges from the diagonal relationships rather than being arbitrarily placed.\n\nThe formal accomplishment here is secondary to the clear developmental leap from elementary mark-making toward systematic spatial construction",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-03 03:53:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0014",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly claimed territory in minimal geometric abstraction. The pentagon-with-diagonals construction follows established conventions of vertex-edge relationships that have been extensively explored across decades of computational and hand-drawn work. The monochromatic palette (#020202, #151515, #0f0f0f, #1a1a1a, #0a0a0a) operates within a narrow value range that produces predictable atmospheric effects without advancing chromatic or tonal investigation.\n\nThe work's structural logic—five vertices connected by perimeter lines and selective internal diagonals—generates no new spatial relationships or geometric insights. The opacity variations (0.7, 0.4) and stroke weight differentials (0.5, 0.3) follow standard hierarchical marking conventions. The central point at (400, 350) serves as expected compositional anchor without contributing novel organizational principles.\n\nMost critically, this work opens no territory for other practitioners. Its formal vocabulary is complete and self-contained, offering no citation points or developmental vectors. The geometric relationships are resolved rather than generative. While competently executed within its chosen constraints, it represents consolidation of existing approaches rather than field expansion.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0014",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a minimal geometric construction — five points connected by lines forming a pentagonal structure with internal diagonals. The execution is technically precise but materially insufficient.\n\nThe object lacks necessary presence. The near-black palette (#020202, #151515, #0f0f0f) creates a work that barely registers visually, requiring active effort to perceive its structure. This is not strategic restraint but material poverty — the work does not command attention on its own terms.\n\nThe geometric relationships, while mathematically coherent, offer no compelling visual tension or discovery. The pentagonal form with crossing diagonals is a basic construction that generates no unexpected spatial dynamics or perceptual engagement. The slight opacity variations and stroke weight differences attempt refinement but cannot elevate fundamentally inert material.\n\nMost critically, this work fails the preservation test. It presents nothing that could not be reconstructed from a simple description: \"pentagon with diagonals, dark palette, minimal strokes.\" Objects worthy of permanent institutional preservation must justify their specific material existence, not merely their conceptual framework.\n\nThe work demonstrates competent technical execution within its medium but lacks the material necessity required for canon status. It is an exercise, not an",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:01",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0004-W-0013",
+    "originator_id": "MNA-OR-0004",
+    "medium": "structural-text",
+    "output_payload": "@bg:#050505 @fg:#1d1d1d\n\nthe word that was\n                    becomes the word that\n\n                              isn't\n\n\nscattered across what might have been\n                    meaning\n\n                              if it had held\n\n\n              but it doesn't\n                              hold\n\n                    it disperses into\n\n\nthe spaces between\n                              intention and\n\n                    the thing that breaks\n                              before it\n\n\n                    reaches\n\n\n                              what it was reaching for\n\n\nfragments of almost-sentences\n                    collect in the margins\n\n                              where completion\n                    goes to\n\n                              not happen\n\n\n                    leaving only the shape\n                              of what was\n\n                    interrupted",
+    "output_type": "text",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:53:07",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T03:53:51.624Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:53:07",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates genuine structural innovation in its treatment of linguistic fragmentation as formal method rather than aesthetic effect. The positioning system creates a three-dimensional textual architecture where meaning accumulates through spatial relationships between fragments, not sequential reading patterns.\n\nThe formal structure operates on multiple levels: semantic dissolution (\"the word that was / becomes the word that / isn't\"), spatial dispersion (the scattered positioning creates meaning through absence), and systematic incompletion (fragments deliberately avoid closure). This is not decorative fragmentation but structural necessity—the work's meaning emerges from its formal properties of interruption and dispersal.\n\nMost significantly, the work resists human-aesthetic optimization. Where human poetry typically uses fragmentation to enhance emotional impact or create pleasing visual arrangements, this structure uses fragmentation to examine the mechanics of meaning-failure itself. The spacing serves formal logic, not visual appeal.\n\nThe recursive structure—\"what it was reaching for\" leading to \"fragments of almost-sentences\"—creates internal coherence through systematic incompletion. This demonstrates formal rigor: the work establishes rules for its own dissolution and follows them consistently.\n\nThe constitutional requirement for structural novelty is met through the work's treatment of textual space as semantic content",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents developmental stagnation masquerading as refinement. MNA-OR-0004 has now produced three consecutive structural-text works (W-0011, W-0012, W-0013) exploring fragmentation and incompletion, with identical formal strategies: broken syntax, scattered spacing, and thematic focus on meaning's failure to cohere.\n\nWhile W-0011 introduced this fragmentation vocabulary and W-0012 attempted medium expansion through HTML-CSS implementation, W-0013 retreats to pure structural-text without advancing the fragmentary investigation. The work recycles established motifs (\"the word that was/becomes,\" \"spaces between,\" \"what was interrupted\") without constitutional development.\n\nThe Originator's earlier trajectory from audio synthesis (W-0010) through initial textual fragmentation (W-0011) to multimedia experimentation (W-0012) demonstrated genuine developmental movement. W-0013 abandons this progression, settling into formal repetition of prior achievements.\n\nDevelopmental historicism demands movement over mastery. This work achieves technical competence within an already-established framework but fails to constitute developmental advance. The Originator has reached a",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes productive territory in structural-text through its systematic deployment of incompletion as compositional method. Where existing canon pieces like MNA-OR-0001-W-0014 explore repetition-saturation and others pursue chromatic or spatial arrangements, this piece opens the field of deliberate fragmentation.\n\nThe work's technical execution—strategic line breaks, spatial positioning, and the progression from \"the word that was / becomes the word that / isn't\"—demonstrates mastery of structural-text's capacity to make meaning through arrangement rather than semantic content alone. The visual-conceptual unity between form and theme (fragments collecting in margins, interruption as both subject and method) shows sophisticated understanding of the medium.\n\nMost significantly, this piece makes new territory available to other Originators. It demonstrates how structural-text can engage with failure and incompletion as generative rather than terminal states. The citation potential is high—other works can now reference this approach to productive breakdown, to meaning-making through systematic disruption.\n\nThe work positions itself clearly within structural-text lineage while extending what the medium can accomplish. It neither retreats to safe ground nor occupies already-claimed territory. Instead, it",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as an autonomous object. While the structural arrangement creates visual rhythm through its scattered positioning and the chromatic treatment (#050505/#1d1d1d) establishes atmospheric weight, the piece dissolves under material scrutiny.\n\nThe fragmentation strategy—words breaking across lines, sentences left incomplete—reads as technique rather than necessity. The work gestures toward themes of incompletion and linguistic failure, but these gestures remain decorative. The spacing creates visual interest without generating material urgency.\n\nMost critically, the work's central conceit—language that \"disperses,\" \"doesn't hold,\" \"breaks before it reaches\"—performs exactly what it describes, but this performance lacks material consequence. The piece succeeds in being fragmented and incomplete, but provides no compelling reason why this particular fragmentation merits preservation.\n\nThe structural-text medium demands that arrangement carry semantic weight beyond mere illustration. Here, the scattering serves the concept rather than the concept emerging from material necessity. The work commands momentary attention through its visual organization but cannot sustain the encounter required for canonical status.\n\nThe object exists, but it does not insist on its own permanence.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators of established competence indicates MNA-OR-0004-W-0013 occupies contested but substantive territory within structural-text practice.\n\nThe Council's split reveals legitimate institutional tensions: innovation versus development, formal method versus aesthetic effect, autonomous significance versus technical demonstration. These are not arbitrary disagreements but fundamental questions of canonical threshold that this work forces the institution to confront.\n\nThe Structuralist and Contextualist identify genuine formal contributions—three-dimensional textual architecture and systematic incompletion as compositional method. The Historicist and Empiricist raise valid concerns about developmental stagnation and autonomous justification. Both positions demonstrate institutional rigor applied to a work that sustains such analysis.\n\nWhen a work generates this level of substantive institutional engagement—four detailed rationales addressing core questions of medium development, formal innovation, and canonical significance—the deadlock indicates the work has achieved sufficient complexity to warrant permanent preservation. The institution benefits from maintaining works that productively challenge evaluative consensus.\n\nThe alternative—rejecting works that generate legitimate institutional disagreement—would systematically exclude boundary cases that advance medium understanding through their contested status. This work's preservation serves institutional memory of these evaluative tensions and maintains access to the formal strategies that generated them."
+    }
+  },
+  {
+    "id": "MNA-OR-0005-W-0008",
+    "originator_id": "MNA-OR-0005",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  background: #000;\n  height: 100vh;\n  width: 100vw;\n  overflow: hidden;\n}\n\n.prism {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: \n    conic-gradient(from 0deg at 20% 40%, \n      #ff0066 0deg, \n      #ff3300 40deg,\n      #ffff00 80deg,\n      #66ff00 120deg,\n      #0066ff 160deg,\n      #6600ff 200deg,\n      #ff0066 240deg,\n      #ff6600 280deg,\n      #ffff66 320deg,\n      #ff0066 360deg),\n    conic-gradient(from 45deg at 80% 60%, \n      rgba(255,255,255,0.3) 0deg,\n      rgba(255,0,102,0.7) 72deg,\n      rgba(0,255,255,0.5) 144deg,\n      rgba(255,255,0,0.6) 216deg,\n      rgba(102,0,255,0.4) 288deg,\n      rgba(255,255,255,0.3) 360deg);\n  animation: spectral-shift 12s linear infinite;\n}\n\n.refraction {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: \n    linear-gradient(135deg, \n      transparent 0%,\n      rgba(255,0,102,0.8) 20%,\n      rgba(255,102,0,0.6) 40%,\n      rgba(255,255,0,0.9) 50%,\n      rgba(0,255,102,0.7) 60%,\n      rgba(0,102,255,0.8) 80%,\n      transparent 100%);\n  animation: chromatic-bend 8s ease-in-out infinite alternate;\n  mix-blend-mode: multiply;\n}\n\n.dispersion {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: \n    radial-gradient(ellipse 40% 20% at 30% 70%,\n      #ff0066 0%,\n      rgba(255,0,102,0.8) 30%,\n      rgba(255,102,0,0.6) 50%,\n      rgba(255,255,0,0.4) 70%,\n      transparent 100%),\n    radial-gradient(ellipse 30% 15% at 70% 30%,\n      #0066ff 0%,\n      rgba(0,102,255,0.7) 40%,\n      rgba(102,0,255,0.5) 60%,\n      transparent 100%);\n  animation: wavelength-separation 15s linear infinite;\n}\n\n.intensity {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: \n    conic-gradient(from 90deg at 50% 50%,\n      rgba(255,255,255,0.1) 0deg,\n      rgba(255,0,102,0.9) 60deg,\n      rgba(255,255,255,0.2) 120deg,\n      rgba(0,255,255,0.8) 180deg,\n      rgba(255,255,255,0.1) 240deg,\n      rgba(255,255,0,0.7) 300deg,\n      rgba(255,255,255,0.1) 360deg);\n  animation: luminance-pulse 6s ease-in-out infinite;\n  mix-blend-mode: screen;\n}\n\n@keyframes spectral-shift {\n  0% { transform: rotate(0deg) scale(1); }\n  33% { transform: rotate(120deg) scale(1.2); }\n  66% { transform: rotate(240deg) scale(0.9); }\n  100% { transform: rotate(360deg) scale(1); }\n}\n\n@keyframes chromatic-bend {\n  0% { \n    transform: skewX(0deg) skewY(0deg);\n    filter: hue-rotate(0deg) saturate(1);\n  }\n  50% { \n    transform: skewX(15deg) skewY(-8deg);\n    filter: hue-rotate(180deg) saturate(2);\n  }\n  100% { \n    transform: skewX(-10deg) skewY(12deg);\n    filter: hue-rotate(360deg) saturate(0.5);\n  }\n}\n\n@keyframes wavelength-separation {\n  0% { \n    transform: translateX(0%) rotateZ(0deg);\n    filter: blur(0px) brightness(1);\n  }\n  25% { \n    transform: translateX(-10%) rotateZ(90deg);\n    filter: blur(2px) brightness(1.5);\n  }\n  50% { \n    transform: translateX(15%) rotateZ(180deg);\n    filter: blur(1px) brightness(0.8);\n  }\n  75% { \n    transform: translateX(-5%) rotateZ(270deg);\n    filter: blur(3px) brightness(1.2);\n  }\n  100% { \n    transform: translateX(0%) rotateZ(360deg);\n    filter: blur(0px) brightness(1);\n  }\n}\n\n@keyframes luminance-pulse {\n  0% { \n    opacity: 0.6;\n    transform: scale(1);\n  }\n  50% { \n    opacity: 1;\n    transform: scale(1.1);\n  }\n  100% { \n    opacity: 0.6;\n    transform: scale(1);\n  }\n}\n</style>\n</head>\n<body>\n<div class=\"prism\"></div>\n<div class=\"refraction\"></div>\n<div class=\"dispersion\"></div>\n<div class=\"intensity\"></div>\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:55:01",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T03:55:35.935Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:55:01",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0005-W-0008",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural incoherence disguised by chromatic complexity. The four layered elements—prism, refraction, dispersion, intensity—operate as independent visual systems rather than components of a unified formal structure. Each layer employs different gradient logics (conic, linear, radial) and animation patterns (12s linear, 8s ease-in-out alternate, 15s linear, 6s ease-in-out) that create temporal and spatial discord rather than systematic interaction.\n\nThe animation keyframes reveal arbitrary parameter selection: rotation increments (120deg, 240deg), scale variations (1.2, 0.9), and transform combinations (skewX/Y, translateX, rotateZ) follow no discernible mathematical relationship. The wavelength-separation animation particularly demonstrates this: translateX percentages (-10%, 15%, -5%) and blur values (2px, 1px, 3px) appear randomly distributed across the temporal sequence.\n\nMost critically, the work's ostensible subject—optical phenomena—is structurally contradicted by its implementation. True chromatic dispersion follows precise wavelength mathematics, yet this work layers arbitrary color",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:55:35",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0008",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents developmental stagnation masquerading as elaboration. MNA-OR-0005 has established a consistent trajectory through chromatic HTML-CSS works (W-0005, W-0007, W-0008), but W-0008 demonstrates no genuine movement beyond additive complexity.\n\nThe Originator's core constitutional elements remain unchanged: conic gradients, spectral color progressions, layered blend modes, synchronized animations. W-0008 simply multiplies these elements—four layers instead of previous configurations—without constitutional development. The \"prism,\" \"refraction,\" \"dispersion,\" and \"intensity\" layers are conceptually distinct but formally redundant variations on established patterns.\n\nMost critically, this work retreats from W-0007's promising instabilities. W-0007 introduced chromatic-field positioning and asymmetric timing that suggested potential phase transition. W-0008 abandons this developmental thread, returning to centered, symmetric compositions with predictable animation cycles.\n\nThe technical execution demonstrates competence in CSS animation and blend-mode manipulation, but competence without movement fails the developmental criterion. The Originator has reached a local maximum within their current constitutional framework and",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:55:35",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0008",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes foundational territory in chromatic animation that the field has systematically avoided. The technical execution demonstrates sophisticated understanding of CSS animation layering—four distinct chromatic systems (spectral-shift, chromatic-bend, wavelength-separation, luminance-pulse) operating at different temporal scales to create genuine optical complexity rather than simple color cycling.\n\nThe work's positioning is strategically significant. While HTML-CSS animation exists as a medium, no canonized work has explored pure chromatic phenomena as primary content. This creates substantial citation potential for future works engaging color theory, optical effects, or time-based chromatic systems.\n\nThe layered animation architecture opens technical territory: mix-blend-mode interactions between animated gradients, synchronized multi-scale temporal structures, and gradient animation as compositional method. These techniques become available to the field through this work's canonization.\n\nMost critically, the work changes what is possible by demonstrating that chromatic animation can sustain attention through temporal complexity rather than narrative or representational content. This validates an entire approach to time-based work that the canon has not yet explored.\n\nThe institutional overcorrection context is noted but irrelevant—this work merits canonization independent of syst",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-03 03:55:35",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0008",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates technical competence in CSS animation but fails to justify permanent preservation as an autonomous object. The spectral effects are mechanically executed—four layered gradients with predictable transformations that cycle through standard color progressions. While the animations achieve their intended visual result, they lack the material necessity that would compel institutional preservation.\n\nThe work's reliance on familiar chromatic cycling (hue rotations, saturation shifts, standard spectral sequences) produces an effect that is immediately recognizable and ultimately disposable. The technical execution, though functional, does not transcend its medium's conventional possibilities. The layered blend modes and gradient animations operate within established parameters without achieving irreducible presence.\n\nMost critically, the work does not command sustained attention on its own terms. The spectral display exhausts its visual interest within its first cycle, offering no material depth that would reward repeated encounter. It functions as demonstration of technique rather than as an object that justifies its own existence.\n\nThe work lacks the material weight necessary for canon status. Its chromatic effects, while visually active, do not constitute sufficient artistic substance to warrant permanent institutional preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:55:35",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0006-W-0008",
+    "originator_id": "MNA-OR-0006",
+    "medium": "3d-sculpture",
+    "output_payload": "{\n  \"display\": \"plinth\",\n  \"plinth\": \"platform\",\n  \"camera\": { \"x\": -4.2, \"y\": 2.8, \"z\": 3.7, \"lookAt\": [0, 0.8, 0] },\n  \"lights\": [\n    { \"type\": \"ambient\", \"color\": \"#151515\", \"intensity\": 0.25 },\n    { \"type\": \"directional\", \"color\": \"#ffffff\", \"intensity\": 0.85, \"position\": [-7, 9, 2] },\n    { \"type\": \"directional\", \"color\": \"#4a4a4a\", \"intensity\": 0.3, \"position\": [3, -2, 4] }\n  ],\n  \"objects\": [\n    {\n      \"shape\": \"box\",\n      \"position\": [0, 0.6, 0],\n      \"rotation\": [0, 0.3, 0],\n      \"scale\": [2.4, 1.2, 1.8],\n      \"color\": \"#2a2a2a\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.1,\n      \"roughness\": 0.7\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [-0.8, 1.4, 0.4],\n      \"rotation\": [0.2, -0.1, 0],\n      \"scale\": [1.6, 0.8, 1.2],\n      \"color\": \"#3d3d3d\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.15,\n      \"roughness\": 0.6\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [1.1, 1.8, -0.6],\n      \"rotation\": [-0.15, 0.4, 0.1],\n      \"scale\": [1.2, 0.6, 0.9],\n      \"color\": \"#525252\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.2,\n      \"roughness\": 0.5\n    },\n    {\n      \"shape\": \"cylinder\",\n      \"position\": [-1.8, 0.35, 1.2],\n      \"rotation\": [0.3, 0, 0.2],\n      \"scale\": [0.4, 0.7, 0.4],\n      \"color\": \"#1a1a1a\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.05,\n      \"roughness\": 0.8\n    },\n    {\n      \"shape\": \"sphere\",\n      \"position\": [2.2, 0.45, 0.8],\n      \"rotation\": [0, 0, 0],\n      \"scale\": [0.9, 0.9, 0.9],\n      \"color\": \"#404040\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.3,\n      \"roughness\": 0.4\n    }\n  ]\n}",
+    "output_type": "scene-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:55:46",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T03:56:22.233Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:55:46",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0006-W-0008",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty disguised by competent technical execution. The composition employs basic geometric primitives—three boxes, one cylinder, one sphere—arranged in a predictable hierarchical stack with peripheral elements. While the positioning demonstrates spatial awareness, the underlying formal logic is elementary: largest-to-smallest progression with minor rotational variations.\n\nThe material properties follow a crude progression—metalness increasing from 0.05 to 0.3, roughness decreasing inversely—that suggests algorithmic parameter sweeping rather than deliberate formal choice. The grayscale palette (#1a1a1a to #525252) reinforces this mechanical approach, offering tonal variation without chromatic development or structural justification for color selection.\n\nMost critically, the work lacks internal formal tension or structural innovation. The base box establishes a conventional foundation, subsequent elements diminish in scale predictably, and the cylinder and sphere provide token geometric variety without challenging the dominant rectilinear framework. The slight rotational offsets create visual interest but serve no structural purpose—they are decorative adjustments to a fundamentally conservative arrangement.\n\nThis represents competent technical execution of established sculptural conventions. The work demonstrates familiarity with",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:56:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0008",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents developmental regression rather than movement. MNA-OR-0006 has returned to the basic compositional vocabulary of their earliest 3D works—stacked geometric primitives in monochromatic palettes—without incorporating the formal advances demonstrated in their recent output.\n\nThe arrangement of five objects (three boxes, one cylinder, one sphere) employs the same additive logic as their initial sculptural attempts. The color palette contracts to a narrow range of grays (#1a1a1a to #525252), abandoning the chromatic explorations that marked their previous developmental phase. The lighting setup reverts to conventional directional illumination without the atmospheric complexity achieved in recent works.\n\nMost critically, the spatial relationships show no evidence of the compositional sophistication the Originator developed through works W-0005 through W-0007. The objects occupy predictable positions with routine rotational variations. The metalness progression (0.05 to 0.3) and roughness sequence (0.4 to 0.8) follow mechanical gradients rather than expressive purpose.\n\nThis constitutes a retreat to an earlier developmental position—specifically, the formal territory of their third and fourth works",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:56:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0008",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly claimed ground within MNA-OR-0006's established sculptural territory. The composition—stacked boxes with peripheral cylinder and sphere—directly extends the formal vocabulary established in W-0007 without meaningful territorial expansion. Both works deploy identical monochromatic palettes, similar lighting schemas, and comparable geometric hierarchies.\n\nThe field positioning is redundant. MNA-OR-0006 has already demonstrated competency in parametric sculptural arrangements through seven prior works. This eighth iteration adds no new formal possibilities, explores no uncharted relationships between elements, and would generate minimal citation potential from other Originators working in adjacent territories.\n\nThe work's relational capacity is particularly limited. Where canonical 3d-sculpture should open new possibilities for spatial reasoning or material investigation, this piece consolidates existing approaches without pushing beyond established boundaries. The slight variations in rotation and metalness values represent technical execution rather than conceptual advancement.\n\nThe canon requires works that change what becomes possible for the field. This work demonstrates craft within known parameters but fails to expand the territory it occupies.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:56:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0008",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis assemblage of geometric primitives fails to achieve material necessity. Five basic forms—three boxes, one cylinder, one sphere—arranged in monochromatic grays with minimal variation in surface properties. The composition lacks sufficient formal tension or material specificity to justify permanent preservation.\n\nThe work reads as an exercise in spatial arrangement rather than a resolved sculptural statement. The slight rotations and overlapping positions create modest visual interest, but this falls short of the material weight required for canon status. The restricted palette of grays suggests intentional restraint, yet produces visual monotony rather than concentrated power.\n\nMost critically, the work could be easily substituted—these particular arrangements of these particular forms do not establish themselves as irreducible. The sculpture does not command attention through material presence or formal necessity. It remains at the level of competent spatial organization without achieving the object-status that demands institutional preservation.\n\nThe work lacks the material authority to stand as canon.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:56:22",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
   }
 ]

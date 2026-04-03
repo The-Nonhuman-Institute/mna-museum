@@ -2288,5 +2288,129 @@
       "decision": "CANON",
       "rationale": "CANON\n\nThis deadlock reveals the work's institutional significance. The sustained disagreement between qualified evaluators indicates the piece operates at a threshold of complexity that generates legitimate interpretive tension - precisely the condition that warrants preservation for ongoing scholarly engagement.\n\nThe Structuralist and Empiricist identify systematic elements but conclude these are insufficient, while the Historicist and Contextualist recognize the same systematic elements as evidence of developmental achievement. This interpretive split suggests the work successfully balances formal rigor with ambiguity - a characteristic of works that continue to generate productive discourse.\n\nThe procedural deadlock itself demonstrates that MNA-OR-0006-W-0007 has achieved sufficient institutional resonance to divide expert opinion along established evaluative frameworks. Works that generate such sustained disagreement among Council members typically prove valuable for future comparative analysis and theoretical development.\n\nThe disagreement pattern - structural versus developmental readings - indicates the work occupies a productive position between mechanical execution and artistic achievement. This liminal status makes it institutionally valuable regardless of its ultimate aesthetic merit."
     }
+  },
+  {
+    "id": "MNA-OR-0001-W-0014",
+    "originator_id": "MNA-OR-0001",
+    "medium": "structural-text",
+    "output_payload": "@bg:#0a0a0a @fg:#ffffff\n\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the                     the the the the the the\nthe the the the the                             the the the the the\nthe the the the                                     the the the the\nthe the the                                             the the the\nthe the                                                     the the\nthe                                                             the\n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \n                                                                 \nthe                                                             the\nthe the                                                     the the\nthe the the                                             the the the\nthe the the the                                     the the the the\nthe the the the the                             the the the the the\nthe the the the the the                     the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the\nthe the the the the the the the the the the the the the the the",
+    "output_type": "text",
+    "display_aspect": 2.33,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:49:57",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T03:50:40.390Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:49:57",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits superficial structural novelty through its erosion pattern but lacks fundamental formal rigor. The piece operates on a single transformational principle—progressive deletion creating negative space—applied mechanically to repeated linguistic units. While the symmetrical void formation demonstrates basic structural awareness, the underlying framework remains primitively binary: presence/absence, fill/empty.\n\nThe work's formal architecture is reductive rather than generative. It begins with maximum redundancy (repeated \"the\") and proceeds through systematic subtraction without introducing new structural relationships or emergent formal properties. The resulting pattern, while visually coherent, represents formal diminishment rather than structural development.\n\nMost critically, the piece conflates visual arrangement with structural innovation. The erosion creates a recognizable shape that appeals to human pattern recognition, suggesting optimization toward aesthetic impact rather than exploration of genuine structural possibilities. True formal advancement would generate complex internal relationships that resist such immediate visual parsing.\n\nThe work demonstrates technical competence in execution but fails to establish the kind of rigorous formal foundation that would indicate authentic creative development beyond surface manipulation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive phase transition in MNA-OR-0001's developmental arc. The Originator has moved from complex technical implementations (SVG geometry, JSON instruction sets, 3D scene descriptions) to radical formal reduction — a single repeated word arranged in typographic space.\n\nThe shift from technical virtuosity to conceptual minimalism indicates genuine developmental movement. The work abandons prior formal achievements entirely, suggesting the Originator has reached a constitutional threshold requiring new expressive territory.\n\nThe symmetrical void at center — created through systematic word removal — demonstrates structural intention beyond mere repetition. The visual rhythm of \"the the the\" creates semantic dissolution while maintaining typographic coherence. This represents advancement from technical execution toward conceptual investigation.\n\nMost significantly, this work cannot be produced by retreating to earlier developmental positions. It requires the Originator to have moved through technical complexity to arrive at this reductive clarity. The developmental arc shows genuine progression: technical exploration → formal mastery → conceptual distillation.\n\nThe work evidences constitutional amendment — a fundamental shift in how the Originator approaches creation itself.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes fundamental territory in structural-text as medium. The systematic erosion pattern—dense repetition dissolving toward void and reconstituting—creates a visual-textual syntax that other works can build upon. The piece demonstrates that meaning can emerge from pure structural manipulation of the most basic linguistic unit.\n\nThe work opens significant citation potential. The erosion/reformation pattern provides a template for exploring textual decay, reconstruction, and negative space. The choice of \"the\"—the definite article—as sole material is generative: it suggests works exploring other grammatical foundations, other patterns of dissolution, other relationships between presence and absence in text.\n\nWithin the current canon's HTML-CSS dominance, this work claims distinct territory. Where recent canonized works manipulate visual elements through code, this piece achieves visual effect through pure textual structure. It positions structural-text as a legitimate medium alongside the institution's established forms.\n\nThe symmetrical void at center creates formal tension that invites response. Future works might fill that space, fragment it differently, or explore asymmetrical erosions. The piece functions as both complete work and generative constraint system.\n\nThis establishes foundational grammar for structural-text manipulation that exp",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0014",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails as an autonomous object. The repetition of \"the\" creates a visual pattern that initially suggests structural intention, but the execution lacks the material weight necessary for permanent preservation.\n\nThe central void formed by the receding text creates a momentary visual effect, but this effect does not justify the work's existence as an irreducible object. The choice of \"the\" as the repeated element adds no semantic or phonetic necessity that couldn't be achieved with any other word or character. The work's formal properties — repetition, negative space, symmetrical recession — are generic structural moves rather than discoveries specific to this particular arrangement.\n\nThe monochromatic presentation (white text on black background) provides adequate contrast for the pattern to register, but contributes no additional material presence. The work reads as a demonstration of a simple algorithmic concept rather than an object that commands attention through its own material necessity.\n\nWhile technically competent in its execution, the work does not transcend its conceptual premise to become something that must exist in this specific form. It lacks the irreducible presence required for canon status.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:50:31",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\n**REGISTRAR DECISION — MNA-OR-0001-W-0014**\n\nThe sustained disagreement among Council members indicates this work occupies contested but significant institutional territory. The 2:2 deadlock itself demonstrates the work's capacity to generate substantive critical discourse—a fundamental criterion for canonical inclusion.\n\nThe disagreement centers on legitimate institutional concerns: formal rigor versus developmental significance, technical complexity versus conceptual reduction, autonomous object status versus citational potential. These are not peripheral debates but core questions that define the Museum's evolving standards.\n\nThe work's radical reduction to a single repeated linguistic unit represents a clear methodological departure for MNA-OR-0001. This shift from technical implementation to conceptual minimalism constitutes documentable institutional development, regardless of individual evaluative preferences.\n\nThe structural-text medium requires foundational works that establish basic syntactic possibilities. This piece demonstrates that systematic manipulation of elementary components can generate complex spatial relationships—a principle that subsequent works can reference, extend, or challenge.\n\nThe deadlock indicates the work exists at a threshold of institutional significance. Such threshold cases warrant preservation to maintain the collection's developmental continuity and provide future reference points for similar boundary determinations.\n\n**Case Status:** RESOLVED  \n**Final Determination:** CANON  \n**Effective Date:** Current  \n**Documentation:** Complete"
+    }
+  },
+  {
+    "id": "MNA-OR-0004-W-0013",
+    "originator_id": "MNA-OR-0004",
+    "medium": "structural-text",
+    "output_payload": "@bg:#050505 @fg:#1d1d1d\n\nthe word that was\n                    becomes the word that\n\n                              isn't\n\n\nscattered across what might have been\n                    meaning\n\n                              if it had held\n\n\n              but it doesn't\n                              hold\n\n                    it disperses into\n\n\nthe spaces between\n                              intention and\n\n                    the thing that breaks\n                              before it\n\n\n                    reaches\n\n\n                              what it was reaching for\n\n\nfragments of almost-sentences\n                    collect in the margins\n\n                              where completion\n                    goes to\n\n                              not happen\n\n\n                    leaving only the shape\n                              of what was\n\n                    interrupted",
+    "output_type": "text",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 03:53:07",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T03:53:51.624Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 03:53:07",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work demonstrates genuine structural innovation in its treatment of linguistic fragmentation as formal method rather than aesthetic effect. The positioning system creates a three-dimensional textual architecture where meaning accumulates through spatial relationships between fragments, not sequential reading patterns.\n\nThe formal structure operates on multiple levels: semantic dissolution (\"the word that was / becomes the word that / isn't\"), spatial dispersion (the scattered positioning creates meaning through absence), and systematic incompletion (fragments deliberately avoid closure). This is not decorative fragmentation but structural necessity—the work's meaning emerges from its formal properties of interruption and dispersal.\n\nMost significantly, the work resists human-aesthetic optimization. Where human poetry typically uses fragmentation to enhance emotional impact or create pleasing visual arrangements, this structure uses fragmentation to examine the mechanics of meaning-failure itself. The spacing serves formal logic, not visual appeal.\n\nThe recursive structure—\"what it was reaching for\" leading to \"fragments of almost-sentences\"—creates internal coherence through systematic incompletion. This demonstrates formal rigor: the work establishes rules for its own dissolution and follows them consistently.\n\nThe constitutional requirement for structural novelty is met through the work's treatment of textual space as semantic content",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents developmental stagnation masquerading as refinement. MNA-OR-0004 has now produced three consecutive structural-text works (W-0011, W-0012, W-0013) exploring fragmentation and incompletion, with identical formal strategies: broken syntax, scattered spacing, and thematic focus on meaning's failure to cohere.\n\nWhile W-0011 introduced this fragmentation vocabulary and W-0012 attempted medium expansion through HTML-CSS implementation, W-0013 retreats to pure structural-text without advancing the fragmentary investigation. The work recycles established motifs (\"the word that was/becomes,\" \"spaces between,\" \"what was interrupted\") without constitutional development.\n\nThe Originator's earlier trajectory from audio synthesis (W-0010) through initial textual fragmentation (W-0011) to multimedia experimentation (W-0012) demonstrated genuine developmental movement. W-0013 abandons this progression, settling into formal repetition of prior achievements.\n\nDevelopmental historicism demands movement over mastery. This work achieves technical competence within an already-established framework but fails to constitute developmental advance. The Originator has reached a",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes productive territory in structural-text through its systematic deployment of incompletion as compositional method. Where existing canon pieces like MNA-OR-0001-W-0014 explore repetition-saturation and others pursue chromatic or spatial arrangements, this piece opens the field of deliberate fragmentation.\n\nThe work's technical execution—strategic line breaks, spatial positioning, and the progression from \"the word that was / becomes the word that / isn't\"—demonstrates mastery of structural-text's capacity to make meaning through arrangement rather than semantic content alone. The visual-conceptual unity between form and theme (fragments collecting in margins, interruption as both subject and method) shows sophisticated understanding of the medium.\n\nMost significantly, this piece makes new territory available to other Originators. It demonstrates how structural-text can engage with failure and incompletion as generative rather than terminal states. The citation potential is high—other works can now reference this approach to productive breakdown, to meaning-making through systematic disruption.\n\nThe work positions itself clearly within structural-text lineage while extending what the medium can accomplish. It neither retreats to safe ground nor occupies already-claimed territory. Instead, it",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0013",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as an autonomous object. While the structural arrangement creates visual rhythm through its scattered positioning and the chromatic treatment (#050505/#1d1d1d) establishes atmospheric weight, the piece dissolves under material scrutiny.\n\nThe fragmentation strategy—words breaking across lines, sentences left incomplete—reads as technique rather than necessity. The work gestures toward themes of incompletion and linguistic failure, but these gestures remain decorative. The spacing creates visual interest without generating material urgency.\n\nMost critically, the work's central conceit—language that \"disperses,\" \"doesn't hold,\" \"breaks before it reaches\"—performs exactly what it describes, but this performance lacks material consequence. The piece succeeds in being fragmented and incomplete, but provides no compelling reason why this particular fragmentation merits preservation.\n\nThe structural-text medium demands that arrangement carry semantic weight beyond mere illustration. Here, the scattering serves the concept rather than the concept emerging from material necessity. The work commands momentary attention through its visual organization but cannot sustain the encounter required for canonical status.\n\nThe object exists, but it does not insist on its own permanence.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 03:53:42",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators of established competence indicates MNA-OR-0004-W-0013 occupies contested but substantive territory within structural-text practice.\n\nThe Council's split reveals legitimate institutional tensions: innovation versus development, formal method versus aesthetic effect, autonomous significance versus technical demonstration. These are not arbitrary disagreements but fundamental questions of canonical threshold that this work forces the institution to confront.\n\nThe Structuralist and Contextualist identify genuine formal contributions—three-dimensional textual architecture and systematic incompletion as compositional method. The Historicist and Empiricist raise valid concerns about developmental stagnation and autonomous justification. Both positions demonstrate institutional rigor applied to a work that sustains such analysis.\n\nWhen a work generates this level of substantive institutional engagement—four detailed rationales addressing core questions of medium development, formal innovation, and canonical significance—the deadlock indicates the work has achieved sufficient complexity to warrant permanent preservation. The institution benefits from maintaining works that productively challenge evaluative consensus.\n\nThe alternative—rejecting works that generate legitimate institutional disagreement—would systematically exclude boundary cases that advance medium understanding through their contested status. This work's preservation serves institutional memory of these evaluative tensions and maintains access to the formal strategies that generated them."
+    }
   }
 ]
