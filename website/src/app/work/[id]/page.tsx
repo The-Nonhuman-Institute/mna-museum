@@ -74,11 +74,9 @@ export default function WorkDetailPage({
             Phase {work.phase_at_submission || "I"} — {work.medium}
             {work.founding_collection ? " — Founding Collection" : ""}
           </p>
-          {work.canon_status === "CANON" && (
-            <div className="mt-5">
-              <ShareButtons work={work} />
-            </div>
-          )}
+          <div className="mt-5">
+            <ShareButtons work={work} />
+          </div>
         </div>
 
         {/* Provenance record */}
