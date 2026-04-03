@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.81.0",
+    "@atproto/api": "^0.19.6",
     "better-sqlite3": "^12.8.0",
     "dotenv": "^17.3.1",
     "mammoth": "^1.12.0",
