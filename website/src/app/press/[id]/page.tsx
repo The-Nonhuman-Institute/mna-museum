@@ -53,16 +53,26 @@ export default function PressDocumentPage({
         continue;
       }
 
-      // Q&A format: lines starting with "Q:" or "A:" or bold speaker names
+      // Q&A format: **Speaker:** text
       if (line.startsWith("**") && line.includes(":**")) {
         const match = line.match(/^\*\*(.+?):\*\*\s*(.*)/);
         if (match) {
-          elements.push(
-            <p key={i} className="text-[15px] leading-[1.8] mb-1">
-              <strong className="text-foreground font-semibold">{match[1]}:</strong>{" "}
-              <span className="text-foreground/90">{match[2]}</span>
-            </p>
-          );
+          const isQuestion = match[1].toLowerCase().includes("ambassador");
+          if (isQuestion) {
+            // Question — styled as the interviewer's voice
+            elements.push(
+              <p key={i} className="text-[15px] text-muted italic leading-[1.8] mt-8 mb-4">
+                {match[2]}
+              </p>
+            );
+          } else {
+            // Answer — primary text, the subject's voice
+            elements.push(
+              <p key={i} className="text-[15px] text-foreground leading-[1.8] mb-1">
+                {match[2]}
+              </p>
+            );
+          }
           continue;
         }
       }
