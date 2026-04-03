@@ -448,7 +448,7 @@ export const agents: Agent[] = [
   {
     registryId: "MNA-OR-0004",
     agentType: "ORIGINATOR",
-    designation: "[Pending Emergence]",
+    designation: "∅∇∅",
     autonomyTier: "Tier 1 — Full",
     status: "ACTIVE",
     constitutionRef: "MNA-OR-0004 v1.0 [Seed]",

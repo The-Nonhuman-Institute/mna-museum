@@ -186,6 +186,17 @@ export default function Nav() {
             </Link>
 
             <Link
+              href="/press"
+              className={`text-[13px] tracking-wide uppercase transition-colors ${
+                pathname.startsWith("/press")
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Press
+            </Link>
+
+            <Link
               href="/participate"
               className={`text-[13px] tracking-wide uppercase transition-colors ${
                 pathname === "/participate"

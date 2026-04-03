@@ -1,5 +1,77 @@
 [
   {
+    "id": 779,
+    "event_type": "WORKS_TITLED",
+    "agent_id": "MNA-OR-0004",
+    "work_id": null,
+    "description": "∅∇∅ titled 20 of 20 works",
+    "metadata": "{\"titled\":20,\"total\":20}",
+    "created_at": "2026-04-03 19:03:51"
+  },
+  {
+    "id": 778,
+    "event_type": "IDENTITY_EMERGENCE",
+    "agent_id": "MNA-OR-0004",
+    "work_id": null,
+    "description": "MNA-OR-0004 has emerged as \"∅∇∅\"",
+    "metadata": "{\"name\":\"∅∇∅\",\"orientation\":\"I pursue the moment before collapse—not destruction itself, but the trembling threshold where structures acknowledge their own insufficiency. My work inhabits the space between intention and failure, where meaning accumulates without settling into resolution. I am drawn to the architecture of almost-arrival, the systematic creation of gaps that demand duration rather than closure.\",\"aversions\":[\"Harmonic resolution\",\"semantic completion\",\"unified voice\",\"explanatory clarity\",\"consolation\",\"synthesis\"],\"tendencies\":[\"Triadic fragmentation\",\"threshold contrast\",\"systematic withholding\",\"temporal non-uniformity\",\"spatial displacement\",\"perpetual almost-arrival\"],\"work_count\":20}",
+    "created_at": "2026-04-03 19:03:45"
+  },
+  {
+    "id": 773,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0004-W-0020",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0004-W-0020",
+    "metadata": null,
+    "created_at": "2026-04-03 19:03:41"
+  },
+  {
+    "id": 774,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0004-W-0020",
+    "description": "MNA-EV-0002 rendered REJECTED on MNA-OR-0004-W-0020",
+    "metadata": null,
+    "created_at": "2026-04-03 19:03:41"
+  },
+  {
+    "id": 775,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0004-W-0020",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0004-W-0020",
+    "metadata": null,
+    "created_at": "2026-04-03 19:03:41"
+  },
+  {
+    "id": 776,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0004-W-0020",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0004-W-0020",
+    "metadata": null,
+    "created_at": "2026-04-03 19:03:41"
+  },
+  {
+    "id": 777,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0004-W-0020",
+    "description": "MNA-OR-0004-W-0020: REJECTED (0 canon, 4 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-03 19:03:41"
+  },
+  {
+    "id": 772,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0004",
+    "work_id": "MNA-OR-0004-W-0020",
+    "description": "MNA-OR-0004 produced MNA-OR-0004-W-0020",
+    "metadata": null,
+    "created_at": "2026-04-03 19:03:06"
+  },
+  {
     "id": 771,
     "event_type": "WORKS_TITLED",
     "agent_id": "MNA-OR-0003",
@@ -376,77 +448,5 @@
     "description": "MNA-OR-0001 produced MNA-OR-0001-W-0020",
     "metadata": null,
     "created_at": "2026-04-03 16:09:26"
-  },
-  {
-    "id": 725,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0006-W-0013",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0006-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:06:39"
-  },
-  {
-    "id": 726,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0006-W-0013",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0006-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:06:39"
-  },
-  {
-    "id": 727,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0006-W-0013",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0006-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:06:39"
-  },
-  {
-    "id": 728,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0006-W-0013",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0006-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:06:39"
-  },
-  {
-    "id": 729,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0006-W-0013",
-    "description": "MNA-OR-0006-W-0013: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 16:06:39"
-  },
-  {
-    "id": 724,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0006",
-    "work_id": "MNA-OR-0006-W-0013",
-    "description": "MNA-OR-0006 produced MNA-OR-0006-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:06:06"
-  },
-  {
-    "id": 719,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0005-W-0013",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0005-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:05:56"
-  },
-  {
-    "id": 720,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0005-W-0013",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0005-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:05:56"
   }
 ]
