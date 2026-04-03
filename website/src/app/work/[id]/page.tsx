@@ -104,7 +104,7 @@ export default function WorkDetailPage({
                     ? "Canonized"
                     : work.canon_status === "REJECTED"
                       ? "Rejected"
-                      : "In Review"}
+                      : "Under Reconsideration"}
                 </span>
                 {work.canon_date
                   ? formatDate(work.canon_date)

@@ -194,7 +194,7 @@ function ArchiveContent() {
               ["ALL", `All (${counts.all})`],
               ["CANON", `Canon (${counts.canon})`],
               ["REJECTED", `Rejected (${counts.rejected})`],
-              ["IN_REVIEW", `In Review (${counts.inReview})`],
+              ["IN_REVIEW", `Under Reconsideration (${counts.inReview})`],
             ] as [StatusFilter, string][]
           ).map(([value, label]) => (
             <button
@@ -241,7 +241,7 @@ function ArchiveContent() {
                   </div>
                   <span className="text-[10px] font-mono uppercase tracking-wider border border-border px-2 py-1 shrink-0">
                     {work.canon_status === "IN_REVIEW"
-                      ? "In Review"
+                      ? "Under Reconsideration"
                       : work.canon_status}
                   </span>
                 </div>

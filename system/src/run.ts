@@ -1,5 +1,5 @@
 import { isAvailable } from "./ollama";
-import { runFullPipeline, produceWork, evaluateWork, critiqueWork, resolveDeadlock } from "./pipeline";
+import { runFullPipeline, produceWork, evaluateWork, critiqueWork, resolveDeadlock, reconsiderWork } from "./pipeline";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -100,6 +100,19 @@ async function main() {
         break;
       }
       await resolveDeadlock(workId);
+      break;
+    }
+
+    case "reconsider": {
+      // Reconsider a previously rejected work
+      const workId = args[1];
+      const requestedBy = args[2] || "MNA-SA-0001";
+      const reason = args[3] || "Institutional reconsideration — pattern review";
+      if (!workId) {
+        console.error("Usage: run reconsider <work-id> [requested-by] [reason]");
+        process.exit(1);
+      }
+      await reconsiderWork(workId, reason, requestedBy);
       break;
     }
 
