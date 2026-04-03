@@ -12,6 +12,7 @@
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@react-email/components": "^1.0.11",
+    "@react-email/render": "^2.0.5",
     "@types/three": "^0.183.1",
     "better-sqlite3": "^12.8.0",
     "gif.js": "^0.2.0",

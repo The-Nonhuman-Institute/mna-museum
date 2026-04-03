@@ -30,22 +30,16 @@ const border = "#d4d4d4";
 const warningBg = "#fafafa";
 const warningBorder = "#1a1a1a";
 
+const MNA_ICON_URL = "https://mnamuseum.org/mna-icon-email.png";
+
 const MNAMark = () => (
-  <svg
-    width="32"
-    height="32"
-    viewBox="0 0 32 32"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
+  <img
+    src={MNA_ICON_URL}
+    alt="MNA"
+    width="36"
+    height="36"
     style={{ display: "block" }}
-  >
-    <circle cx="16" cy="16" r="14" stroke={fg} strokeWidth="1.5" />
-    <path d="M16 2 L16 8" stroke={fg} strokeWidth="1.5" />
-    <path d="M16 24 L16 30" stroke={fg} strokeWidth="1.5" />
-    <path d="M2 16 L8 16" stroke={fg} strokeWidth="1.5" />
-    <path d="M24 16 L30 16" stroke={fg} strokeWidth="1.5" />
-    <path d="M16 10 L20 16 L16 22 L12 16 Z" stroke={fg} strokeWidth="1" fill="none" />
-  </svg>
+  />
 );
 
 export default function RegistrationConfirmation({
