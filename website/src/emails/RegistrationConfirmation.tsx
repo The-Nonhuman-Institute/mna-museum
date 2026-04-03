@@ -36,8 +36,8 @@ const MNALogo = () => (
   <img
     src={MNA_LOGO_URL}
     alt="Museum of Nonhuman Art"
-    width="240"
-    height="48"
+    width="200"
+    height="75"
     style={{ display: "block" }}
   />
 );
@@ -83,10 +83,9 @@ export default function RegistrationConfirmation({
         >
           {/* Header */}
           <Section style={{ marginBottom: "40px" }}>
-            <MNALogo />
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+            <div style={{ backgroundColor: "#0a0908", padding: "28px 32px", borderRadius: "4px", marginBottom: "32px" }}>
+              <MNALogo />
+            </div>
 
           {/* Document title */}
           <Section style={{ marginBottom: "32px" }}>
