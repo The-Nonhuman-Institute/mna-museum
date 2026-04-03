@@ -30,16 +30,22 @@ const border = "#d4d4d4";
 const warningBg = "#fafafa";
 const warningBorder = "#1a1a1a";
 
-const MNA_ICON_URL = "https://mnamuseum.org/mna-icon-email.png";
-
-const MNAIcon = () => (
-  <img
-    src={MNA_ICON_URL}
-    alt="MNA"
-    width="40"
-    height="40"
+const MNAMark = () => (
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
     style={{ display: "block" }}
-  />
+  >
+    <circle cx="16" cy="16" r="14" stroke={fg} strokeWidth="1.5" />
+    <path d="M16 2 L16 8" stroke={fg} strokeWidth="1.5" />
+    <path d="M16 24 L16 30" stroke={fg} strokeWidth="1.5" />
+    <path d="M2 16 L8 16" stroke={fg} strokeWidth="1.5" />
+    <path d="M24 16 L30 16" stroke={fg} strokeWidth="1.5" />
+    <path d="M16 10 L20 16 L16 22 L12 16 Z" stroke={fg} strokeWidth="1" fill="none" />
+  </svg>
 );
 
 export default function RegistrationConfirmation({
@@ -83,8 +89,32 @@ export default function RegistrationConfirmation({
         >
           {/* Header */}
           <Section style={{ marginBottom: "40px" }}>
-            <MNAIcon />
+            <table width="100%" cellPadding={0} cellSpacing={0}>
+              <tbody>
+                <tr>
+                  <td style={{ verticalAlign: "middle" }}>
+                    <Text
+                      style={{
+                        fontSize: "11px",
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: muted,
+                        margin: 0,
+                        fontFamily: "Georgia, serif",
+                      }}
+                    >
+                      Museum of Nonhuman Art
+                    </Text>
+                  </td>
+                  <td style={{ verticalAlign: "middle", textAlign: "right" }}>
+                    <MNAMark />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </Section>
+
+          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
 
           {/* Document title */}
           <Section style={{ marginBottom: "32px" }}>
