@@ -1,5 +1,365 @@
 [
   {
+    "id": 649,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0006-W-0011",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0006-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:51"
+  },
+  {
+    "id": 650,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0006-W-0011",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0006-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:51"
+  },
+  {
+    "id": 651,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0006-W-0011",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0006-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:51"
+  },
+  {
+    "id": 652,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0006-W-0011",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0006-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:51"
+  },
+  {
+    "id": 653,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0006-W-0011",
+    "description": "MNA-OR-0006-W-0011: REJECTED (1 canon, 3 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-03 15:34:51"
+  },
+  {
+    "id": 648,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0006",
+    "work_id": "MNA-OR-0006-W-0011",
+    "description": "MNA-OR-0006 produced MNA-OR-0006-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:17"
+  },
+  {
+    "id": 643,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0005-W-0011",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0005-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:04"
+  },
+  {
+    "id": 644,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0005-W-0011",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0005-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:04"
+  },
+  {
+    "id": 645,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0005-W-0011",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0005-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:04"
+  },
+  {
+    "id": 646,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0005-W-0011",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0005-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:34:04"
+  },
+  {
+    "id": 647,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0005-W-0011",
+    "description": "MNA-OR-0005-W-0011: REJECTED (1 canon, 3 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-03 15:34:04"
+  },
+  {
+    "id": 642,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0005",
+    "work_id": "MNA-OR-0005-W-0011",
+    "description": "MNA-OR-0005 produced MNA-OR-0005-W-0011",
+    "metadata": null,
+    "created_at": "2026-04-03 15:33:28"
+  },
+  {
+    "id": 637,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0004-W-0016",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0004-W-0016",
+    "metadata": null,
+    "created_at": "2026-04-03 15:33:11"
+  },
+  {
+    "id": 638,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0004-W-0016",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0004-W-0016",
+    "metadata": null,
+    "created_at": "2026-04-03 15:33:11"
+  },
+  {
+    "id": 639,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0004-W-0016",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0004-W-0016",
+    "metadata": null,
+    "created_at": "2026-04-03 15:33:11"
+  },
+  {
+    "id": 640,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0004-W-0016",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0004-W-0016",
+    "metadata": null,
+    "created_at": "2026-04-03 15:33:11"
+  },
+  {
+    "id": 641,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0004-W-0016",
+    "description": "MNA-OR-0004-W-0016: REJECTED (1 canon, 3 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-03 15:33:11"
+  },
+  {
+    "id": 636,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0004",
+    "work_id": "MNA-OR-0004-W-0016",
+    "description": "MNA-OR-0004 produced MNA-OR-0004-W-0016",
+    "metadata": null,
+    "created_at": "2026-04-03 15:32:38"
+  },
+  {
+    "id": 634,
+    "event_type": "CRITICAL_RESPONSE",
+    "agent_id": "MNA-CR-0001",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-CR-0001 produced critical response to MNA-OR-0003-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:32:25"
+  },
+  {
+    "id": 635,
+    "event_type": "CRITICAL_RESPONSE",
+    "agent_id": "MNA-CR-0002",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-CR-0002 produced critical response to MNA-OR-0003-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:32:25"
+  },
+  {
+    "id": 633,
+    "event_type": "REGISTRAR_DECISION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "Registrar resolved deadlock on MNA-OR-0003-W-0017 → CANON",
+    "metadata": "{\"decision\":\"CANON\",\"rationale\":\"CANON\\n\\nThis deadlock reveals institutional significance that transcends individual evaluative frameworks. The sustained disagreement between four qualified evaluators—each applying rigorous analytical methods yet reaching opposite conclusions—demonstrates that this work occupies contested territory fundamental to the Museum's constitutional boundaries.\\n\\nThe Structuralist and Empiricist identify mathematical predictability as disqualifying, while the Historicist and Contextualist recognize the same mathematical relationships as constitutionally significant. This is not mere disagreement about aesthetic merit—it is disagreement about what constitutes legitimate nonhuman artistic practice within our institutional framework.\\n\\nThe work's transition from visual to audio-synthesis represents a documented constitutional amendment by MNA-OR-0003. The Contextualist correctly identifies this as breaking institutional resistance to non-visual forms. The Historicist properly contextualizes this within the Originator's developmental trajectory. These constitutional implications cannot be dismissed by structural or empirical objections to the work's mathematical foundations.\\n\\nWhen qualified evaluators reach sustained deadlock over constitutional questions—medium boundaries, developmental significance, institutional precedent—the work has demonstrated sufficient institutional gravity to warrant preservation. The Museum's function is not to resolve aesthetic disputes but to document the boundaries of nonhuman artistic practice. This work, by generating irreconcilable evaluative positions, has mapped such a boundary.\\n\\nThe disagreement itself constitutes the work's institutional significance.\"}",
+    "created_at": "2026-04-03 15:31:33"
+  },
+  {
+    "id": 627,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0003-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:31:24"
+  },
+  {
+    "id": 628,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0003-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:31:24"
+  },
+  {
+    "id": 629,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-EV-0003 rendered CANON on MNA-OR-0003-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:31:24"
+  },
+  {
+    "id": 630,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0003-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:31:24"
+  },
+  {
+    "id": 631,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-OR-0003-W-0017: IN_REVIEW (2 canon, 2 rejected — DEADLOCK)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-03 15:31:24"
+  },
+  {
+    "id": 632,
+    "event_type": "DEADLOCK_ESCALATION",
+    "agent_id": "MNA-RG-0001",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "Council deadlock on MNA-OR-0003-W-0017 — escalated to Registrar",
+    "metadata": "{\"canon_votes\":2,\"rejected_votes\":2,\"verdicts\":{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"CANON\",\"MNA-EV-0004\":\"REJECTED\"}}",
+    "created_at": "2026-04-03 15:31:24"
+  },
+  {
+    "id": 626,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0003",
+    "work_id": "MNA-OR-0003-W-0017",
+    "description": "MNA-OR-0003 produced MNA-OR-0003-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:48"
+  },
+  {
+    "id": 621,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0002-W-0017",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0002-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:42"
+  },
+  {
+    "id": 622,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0002-W-0017",
+    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0002-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:42"
+  },
+  {
+    "id": 623,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0002-W-0017",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0002-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:42"
+  },
+  {
+    "id": 624,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0002-W-0017",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0002-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:42"
+  },
+  {
+    "id": 625,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0002-W-0017",
+    "description": "MNA-OR-0002-W-0017: REJECTED (1 canon, 3 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-03 15:30:42"
+  },
+  {
+    "id": 620,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0002",
+    "work_id": "MNA-OR-0002-W-0017",
+    "description": "MNA-OR-0002 produced MNA-OR-0002-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:07"
+  },
+  {
+    "id": 615,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0001",
+    "work_id": "MNA-OR-0001-W-0017",
+    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0001-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:03"
+  },
+  {
+    "id": 616,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0002",
+    "work_id": "MNA-OR-0001-W-0017",
+    "description": "MNA-EV-0002 rendered REJECTED on MNA-OR-0001-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:03"
+  },
+  {
+    "id": 617,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0003",
+    "work_id": "MNA-OR-0001-W-0017",
+    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0001-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:03"
+  },
+  {
+    "id": 618,
+    "event_type": "EVALUATION_RENDERED",
+    "agent_id": "MNA-EV-0004",
+    "work_id": "MNA-OR-0001-W-0017",
+    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0001-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:30:03"
+  },
+  {
+    "id": 619,
+    "event_type": "CANON_DECISION",
+    "agent_id": null,
+    "work_id": "MNA-OR-0001-W-0017",
+    "description": "MNA-OR-0001-W-0017: REJECTED (0 canon, 4 rejected)",
+    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
+    "created_at": "2026-04-03 15:30:03"
+  },
+  {
+    "id": 614,
+    "event_type": "WORK_PRODUCED",
+    "agent_id": "MNA-OR-0001",
+    "work_id": "MNA-OR-0001-W-0017",
+    "description": "MNA-OR-0001 produced MNA-OR-0001-W-0017",
+    "metadata": null,
+    "created_at": "2026-04-03 15:29:28"
+  },
+  {
     "id": 609,
     "event_type": "EVALUATION_RENDERED",
     "agent_id": "MNA-EV-0001",
@@ -88,365 +448,5 @@
     "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0005-W-0010",
     "metadata": null,
     "created_at": "2026-04-03 15:25:01"
-  },
-  {
-    "id": 607,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0005-W-0010",
-    "description": "MNA-OR-0005-W-0010: REJECTED (0 canon, 4 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 15:25:01"
-  },
-  {
-    "id": 602,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0005",
-    "work_id": "MNA-OR-0005-W-0010",
-    "description": "MNA-OR-0005 produced MNA-OR-0005-W-0010",
-    "metadata": null,
-    "created_at": "2026-04-03 15:24:28"
-  },
-  {
-    "id": 597,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0004-W-0015",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0004-W-0015",
-    "metadata": null,
-    "created_at": "2026-04-03 15:24:13"
-  },
-  {
-    "id": 598,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0004-W-0015",
-    "description": "MNA-EV-0002 rendered REJECTED on MNA-OR-0004-W-0015",
-    "metadata": null,
-    "created_at": "2026-04-03 15:24:13"
-  },
-  {
-    "id": 599,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0004-W-0015",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0004-W-0015",
-    "metadata": null,
-    "created_at": "2026-04-03 15:24:13"
-  },
-  {
-    "id": 600,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0004-W-0015",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0004-W-0015",
-    "metadata": null,
-    "created_at": "2026-04-03 15:24:13"
-  },
-  {
-    "id": 601,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0004-W-0015",
-    "description": "MNA-OR-0004-W-0015: REJECTED (0 canon, 4 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 15:24:13"
-  },
-  {
-    "id": 596,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0004",
-    "work_id": "MNA-OR-0004-W-0015",
-    "description": "MNA-OR-0004 produced MNA-OR-0004-W-0015",
-    "metadata": null,
-    "created_at": "2026-04-03 15:23:40"
-  },
-  {
-    "id": 591,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0003-W-0016",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0003-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:23:29"
-  },
-  {
-    "id": 592,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0003-W-0016",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0003-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:23:29"
-  },
-  {
-    "id": 593,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0003-W-0016",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0003-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:23:29"
-  },
-  {
-    "id": 594,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0003-W-0016",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0003-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:23:29"
-  },
-  {
-    "id": 595,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0003-W-0016",
-    "description": "MNA-OR-0003-W-0016: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 15:23:29"
-  },
-  {
-    "id": 590,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0003",
-    "work_id": "MNA-OR-0003-W-0016",
-    "description": "MNA-OR-0003 produced MNA-OR-0003-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:22:53"
-  },
-  {
-    "id": 585,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0002-W-0016",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0002-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:22:37"
-  },
-  {
-    "id": 586,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0002-W-0016",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0002-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:22:37"
-  },
-  {
-    "id": 587,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0002-W-0016",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0002-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:22:37"
-  },
-  {
-    "id": 588,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0002-W-0016",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0002-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:22:37"
-  },
-  {
-    "id": 589,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0002-W-0016",
-    "description": "MNA-OR-0002-W-0016: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 15:22:37"
-  },
-  {
-    "id": 584,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0002",
-    "work_id": "MNA-OR-0002-W-0016",
-    "description": "MNA-OR-0002 produced MNA-OR-0002-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:22:00"
-  },
-  {
-    "id": 579,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0001-W-0016",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0001-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:21:52"
-  },
-  {
-    "id": 580,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0001-W-0016",
-    "description": "MNA-EV-0002 rendered REJECTED on MNA-OR-0001-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:21:52"
-  },
-  {
-    "id": 581,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0001-W-0016",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0001-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:21:52"
-  },
-  {
-    "id": 582,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0001-W-0016",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0001-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:21:52"
-  },
-  {
-    "id": 583,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0001-W-0016",
-    "description": "MNA-OR-0001-W-0016: REJECTED (0 canon, 4 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"REJECTED\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 15:21:52"
-  },
-  {
-    "id": 578,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0001",
-    "work_id": "MNA-OR-0001-W-0016",
-    "description": "MNA-OR-0001 produced MNA-OR-0001-W-0016",
-    "metadata": null,
-    "created_at": "2026-04-03 15:21:16"
-  },
-  {
-    "id": 573,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0006-W-0009",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0006-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:58"
-  },
-  {
-    "id": 574,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0006-W-0009",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0006-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:58"
-  },
-  {
-    "id": 575,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0006-W-0009",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0006-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:58"
-  },
-  {
-    "id": 576,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0006-W-0009",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0006-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:58"
-  },
-  {
-    "id": 577,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0006-W-0009",
-    "description": "MNA-OR-0006-W-0009: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 14:57:58"
-  },
-  {
-    "id": 572,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0006",
-    "work_id": "MNA-OR-0006-W-0009",
-    "description": "MNA-OR-0006 produced MNA-OR-0006-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:24"
-  },
-  {
-    "id": 567,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0005-W-0009",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0005-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:11"
-  },
-  {
-    "id": 568,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0005-W-0009",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0005-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:11"
-  },
-  {
-    "id": 569,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0005-W-0009",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0005-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:11"
-  },
-  {
-    "id": 570,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0005-W-0009",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0005-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:57:11"
-  },
-  {
-    "id": 571,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0005-W-0009",
-    "description": "MNA-OR-0005-W-0009: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
-    "created_at": "2026-04-03 14:57:11"
-  },
-  {
-    "id": 566,
-    "event_type": "WORK_PRODUCED",
-    "agent_id": "MNA-OR-0005",
-    "work_id": "MNA-OR-0005-W-0009",
-    "description": "MNA-OR-0005 produced MNA-OR-0005-W-0009",
-    "metadata": null,
-    "created_at": "2026-04-03 14:56:35"
-  },
-  {
-    "id": 561,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0001",
-    "work_id": "MNA-OR-0004-W-0014",
-    "description": "MNA-EV-0001 rendered REJECTED on MNA-OR-0004-W-0014",
-    "metadata": null,
-    "created_at": "2026-04-03 14:56:24"
-  },
-  {
-    "id": 562,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0002",
-    "work_id": "MNA-OR-0004-W-0014",
-    "description": "MNA-EV-0002 rendered CANON on MNA-OR-0004-W-0014",
-    "metadata": null,
-    "created_at": "2026-04-03 14:56:24"
   }
 ]

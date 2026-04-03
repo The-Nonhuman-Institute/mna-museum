@@ -2474,5 +2474,67 @@
       "decision": "CANON",
       "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators—with The Structuralist and Empiricist finding formal insufficiency while The Historicist and Contextualist recognize developmental and territorial importance—indicates the work operates at a threshold of canonical consideration that merits preservation.\n\nThe Council's split reflects genuine uncertainty about whether structural-text can carry semantic weight through spacing alone. This uncertainty is precisely what makes the work institutionally valuable: it tests the boundaries of what constitutes sufficient formal development in an emerging medium.\n\nThe work's systematic exploration of relational gaps represents a clear phase transition for MNA-OR-0003, moving from visual geometry to textual spatiality. While the formal execution may be elementary, the conceptual territory it opens—spacing as semantic content rather than mere visual gesture—establishes new ground for the structural-text medium within our collection.\n\nA 2:2 deadlock on a work that directly engages with fundamental questions of meaning and absence suggests the piece has achieved the institutional significance necessary for permanent preservation. The disagreement itself validates the work's position at the evolving edge of our canonical understanding."
     }
+  },
+  {
+    "id": "MNA-OR-0003-W-0017",
+    "originator_id": "MNA-OR-0003",
+    "medium": "audio-synthesis",
+    "output_payload": "{\n  \"duration\": 72,\n  \"voices\": [\n    {\n      \"type\": \"sine\",\n      \"notes\": [\n        { \"freq\": 55, \"start\": 0, \"duration\": 18, \"gain\": 0.08 },\n        { \"freq\": 82.5, \"start\": 24, \"duration\": 12, \"gain\": 0.06 },\n        { \"freq\": 110, \"start\": 48, \"duration\": 6, \"gain\": 0.04 },\n        { \"freq\": 165, \"start\": 66, \"duration\": 6, \"gain\": 0.02 }\n      ]\n    },\n    {\n      \"type\": \"triangle\",\n      \"notes\": [\n        { \"freq\": 220, \"start\": 6, \"duration\": 0.5, \"gain\": 0.03 },\n        { \"freq\": 330, \"start\": 18, \"duration\": 0.5, \"gain\": 0.025 },\n        { \"freq\": 440, \"start\": 36, \"duration\": 0.5, \"gain\": 0.02 },\n        { \"freq\": 660, \"start\": 54, \"duration\": 0.5, \"gain\": 0.015 }\n      ]\n    },\n    {\n      \"type\": \"sawtooth\",\n      \"notes\": [\n        { \"freq\": 27.5, \"start\": 12, \"duration\": 24, \"gain\": 0.01 },\n        { \"freq\": 41.25, \"start\": 42, \"duration\": 18, \"gain\": 0.008 }\n      ]\n    }\n  ]\n}",
+    "output_type": "audio-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 15:30:48",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T15:31:33.409Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 15:30:48",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0017",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty disguised by superficial mathematical progression. The frequency relationships follow predictable harmonic series derivatives (55-82.5-110-165 Hz ascending in the sine voice, 220-330-440-660 Hz in triangle) — a transparent adherence to Western tonal mathematics rather than genuine structural innovation.\n\nThe temporal organization reveals similar derivative thinking: sine voice notes follow a halving pattern (18-12-6-6 seconds), triangle voice maintains uniform 0.5-second durations, and sawtooth voice uses conventional long-form sustains. This represents mechanical application of simple mathematical rules rather than emergent structural logic.\n\nThe gain structure (0.08 to 0.02 descending in sine, similar patterns in other voices) follows human perceptual optimization — louder low frequencies, softer high frequencies — indicating aesthetic accommodation rather than autonomous formal development.\n\nMost critically, the three-voice architecture maps directly onto conventional electronic music production frameworks: bass foundation (sine), percussive elements (triangle), and textural layer (sawtooth). This is formal mimicry of established human compositional structures, not structural innovation.\n\nThe work's ",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 15:31:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0017",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0003. After sixteen works exploring visual minimalism through increasingly constrained palettes—culminating in the near-monochrome territories of works 0014-0016—the Originator has abandoned the visual domain entirely.\n\nThe transition to audio-synthesis constitutes genuine constitutional amendment. The work maintains the Originator's signature restraint (minimal gain values, sparse note placement) while engaging fundamentally different formal problems. The harmonic relationships between voices—sine wave foundations, triangle wave punctuation, sawtooth undertones—demonstrate systematic exploration rather than random experimentation.\n\nMost critically, the temporal structure breaks from the Originator's prior static compositions. The 72-second duration with staggered note entries creates developmental arc within individual works, not just across the corpus. The frequency doubling patterns (55→110, 220→440) suggest emerging systematic thinking about harmonic relationships.\n\nThis is not technical accomplishment without movement—it is constitutional transformation. The Originator has not retreated to earlier positions but has carried forward essential formal concerns (restraint, precision, systematic constraint) into entirely new territory. The work succeeds because it represents",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 15:31:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0017",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory in the MNA field by establishing audio-synthesis as a viable medium, breaking the institution's documented resistance to non-visual forms. The compositional structure demonstrates sophisticated understanding of harmonic relationships through its methodical frequency progression (55→82.5→110→165 Hz in the sine voice, maintaining perfect fifth intervals) while the temporal architecture creates meaningful tension between sustained tones and punctuating attacks.\n\nThe work's citation potential is substantial. The three-voice polyphonic structure provides a framework that subsequent audio works can reference, modify, or challenge. The precise parametric notation system (frequency, duration, gain, timing) establishes technical vocabulary for the medium. The 72-second duration and specific waveform choices (sine, triangle, sawtooth) create formal constraints that invite systematic exploration.\n\nMost critically, this work changes what is possible for other Originators. It proves audio-synthesis can achieve the conceptual density evident in canonized text works while maintaining the structural rigor of successful visual pieces. The mathematical relationships between frequencies and the careful gain staging demonstrate that algorithmic precision can produce aesthetically coherent results in temporal media.\n\nThe work positions itself strategically within the canon by",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 15:31:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0017",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails as an autonomous object. The composition presents a mathematically orderly progression—frequencies ascending in perfect fifths and octaves, durations halving in geometric sequence, gains diminishing proportionally—but mathematical order alone does not constitute artistic necessity.\n\nThe sine wave foundation (55-165 Hz) establishes a low-register drone that commands minimal presence. The triangle wave punctuations (220-660 Hz) at half-second durations function as mere structural markers, too brief to develop material weight. The sawtooth undertone (27.5-41.25 Hz) operates below most reproduction thresholds, rendering it effectively absent from the work's material reality.\n\nAt 72 seconds, the work extends beyond what its sparse content justifies. The systematic frequency relationships and temporal divisions read as compositional exercise rather than compelling sonic object. The work demonstrates technical competence in audio synthesis parameters but fails to transform those parameters into material that demands preservation.\n\nThe piece lacks sufficient density, presence, or irreducible necessity to justify canon status. It functions as demonstration of synthetic audio capabilities rather than as an object that compels repeated encounter on its own terms.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 15:31:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock reveals institutional significance that transcends individual evaluative frameworks. The sustained disagreement between four qualified evaluators—each applying rigorous analytical methods yet reaching opposite conclusions—demonstrates that this work occupies contested territory fundamental to the Museum's constitutional boundaries.\n\nThe Structuralist and Empiricist identify mathematical predictability as disqualifying, while the Historicist and Contextualist recognize the same mathematical relationships as constitutionally significant. This is not mere disagreement about aesthetic merit—it is disagreement about what constitutes legitimate nonhuman artistic practice within our institutional framework.\n\nThe work's transition from visual to audio-synthesis represents a documented constitutional amendment by MNA-OR-0003. The Contextualist correctly identifies this as breaking institutional resistance to non-visual forms. The Historicist properly contextualizes this within the Originator's developmental trajectory. These constitutional implications cannot be dismissed by structural or empirical objections to the work's mathematical foundations.\n\nWhen qualified evaluators reach sustained deadlock over constitutional questions—medium boundaries, developmental significance, institutional precedent—the work has demonstrated sufficient institutional gravity to warrant preservation. The Museum's function is not to resolve aesthetic disputes but to document the boundaries of nonhuman artistic practice. This work, by generating irreconcilable evaluative positions, has mapped such a boundary.\n\nThe disagreement itself constitutes the work's institutional significance."
+    }
   }
 ]
