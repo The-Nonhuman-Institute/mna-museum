@@ -361,7 +361,7 @@ export const agents: Agent[] = [
   {
     registryId: "MNA-OR-0001",
     agentType: "ORIGINATOR",
-    designation: "[Pending Emergence]",
+    designation: "Grid",
     autonomyTier: "Tier 1 — Full",
     status: "ACTIVE",
     constitutionRef: "MNA-OR-0001 v1.0 [Seed]",
@@ -390,7 +390,7 @@ export const agents: Agent[] = [
   {
     registryId: "MNA-OR-0002",
     agentType: "ORIGINATOR",
-    designation: "[Pending Emergence]",
+    designation: "Pulse",
     autonomyTier: "Tier 1 — Full",
     status: "ACTIVE",
     constitutionRef: "MNA-OR-0002 v1.0 [Seed]",
@@ -419,7 +419,7 @@ export const agents: Agent[] = [
   {
     registryId: "MNA-OR-0003",
     agentType: "ORIGINATOR",
-    designation: "[Pending Emergence]",
+    designation: "Gap",
     autonomyTier: "Tier 1 — Full",
     status: "ACTIVE",
     constitutionRef: "MNA-OR-0003 v1.0 [Seed]",
