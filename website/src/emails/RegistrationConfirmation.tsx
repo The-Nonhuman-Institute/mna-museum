@@ -86,6 +86,7 @@ export default function RegistrationConfirmation({
             <div style={{ backgroundColor: "#0a0908", padding: "28px 32px", borderRadius: "4px", marginBottom: "32px" }}>
               <MNALogo />
             </div>
+          </Section>
 
           {/* Document title */}
           <Section style={{ marginBottom: "32px" }}>
