@@ -1,5 +1,5 @@
 import { isAvailable } from "./ollama";
-import { runFullPipeline, produceWork, evaluateWork, critiqueWork, resolveDeadlock, reconsiderWork } from "./pipeline";
+import { runFullPipeline, produceWork, evaluateWork, critiqueWork, resolveDeadlock, reconsiderWork, triggerEmergence } from "./pipeline";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -100,6 +100,16 @@ async function main() {
         break;
       }
       await resolveDeadlock(workId);
+      break;
+    }
+
+    case "emerge": {
+      const originatorId = args[1];
+      if (!originatorId) {
+        console.error("Usage: run emerge <originator-id>");
+        process.exit(1);
+      }
+      await triggerEmergence(originatorId);
       break;
     }
 

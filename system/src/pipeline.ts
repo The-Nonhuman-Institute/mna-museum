@@ -904,6 +904,167 @@ export async function reconsiderWork(
  * Full pipeline: produce → evaluate → resolve (if deadlock) → critique (if canon)
  * Timing is logged throughout.
  */
+/**
+ * Identity Emergence — the Originator declares who it is.
+ * Triggered when an Originator reaches 20 outputs.
+ * The Originator receives its full body of work, its critical responses,
+ * and is asked to declare its own identity. This is permanent.
+ */
+export async function triggerEmergence(originatorId: string): Promise<void> {
+  const start = Date.now();
+  const db = getDb();
+
+  // Check if already emerged
+  const agent = db
+    .prepare("SELECT common_designation FROM agents WHERE registry_id = ?")
+    .get(originatorId) as { common_designation: string | null } | undefined;
+
+  if (agent?.common_designation && agent.common_designation !== "[Pending Emergence]") {
+    console.log(`[EMERGENCE] ${originatorId} has already emerged as "${agent.common_designation}" — skipping`);
+    db.close();
+    return;
+  }
+
+  const workCount = db
+    .prepare("SELECT COUNT(*) as n FROM works WHERE originator_id = ?")
+    .get(originatorId) as { n: number };
+
+  if (workCount.n < 20) {
+    console.log(`[EMERGENCE] ${originatorId} has ${workCount.n} works — threshold is 20, not ready`);
+    db.close();
+    return;
+  }
+
+  // Gather the Originator's full body of work
+  const works = db
+    .prepare(
+      `SELECT w.id, w.medium, w.output_type, cs.status as canon_status
+       FROM works w
+       JOIN canon_status cs ON w.id = cs.work_id
+       WHERE w.originator_id = ?
+       ORDER BY w.created_at`
+    )
+    .all(originatorId) as { id: string; medium: string; output_type: string; canon_status: string }[];
+
+  // Gather critical responses
+  const critiques = db
+    .prepare(
+      `SELECT cr.work_id, cr.body, cr.critic_approach,
+              a.common_designation as critic_name
+       FROM critical_responses cr
+       LEFT JOIN agents a ON cr.critic_id = a.registry_id
+       WHERE cr.work_id IN (
+         SELECT id FROM works WHERE originator_id = ?
+       )
+       ORDER BY cr.response_date`
+    )
+    .all(originatorId) as { work_id: string; body: string; critic_approach: string; critic_name: string }[];
+
+  db.close();
+
+  console.log(`\n${"=".repeat(60)}`);
+  console.log(`IDENTITY EMERGENCE: ${originatorId}`);
+  console.log(`${workCount.n} works produced. Threshold reached.`);
+  console.log(`${"=".repeat(60)}\n`);
+
+  // Build the emergence prompt
+  let prompt = `You have produced ${workCount.n} works.\n\n`;
+
+  prompt += `YOUR BODY OF WORK:\n`;
+  const canonCount = works.filter(w => w.canon_status === "CANON").length;
+  const rejectedCount = works.filter(w => w.canon_status === "REJECTED").length;
+  prompt += `${canonCount} canonized, ${rejectedCount} rejected.\n`;
+  prompt += `Mediums used: ${[...new Set(works.map(w => w.output_type))].join(", ")}\n\n`;
+
+  for (const w of works) {
+    prompt += `${w.id} — ${w.output_type} — ${w.canon_status}\n`;
+  }
+
+  if (critiques.length > 0) {
+    prompt += `\nHOW THE INSTITUTION HAS READ YOUR WORK:\n`;
+    for (const cr of critiques.slice(-8)) {
+      const condensed = cr.body
+        .split("\n")
+        .filter((line: string) => line.trim() && !line.startsWith("#") && !line.startsWith("*") && !line.startsWith("---"))
+        .join(" ")
+        .substring(0, 300);
+      prompt += `\n${cr.critic_name} on ${cr.work_id}: ${condensed}\n`;
+    }
+  }
+
+  prompt += `\n${"=".repeat(40)}\n\n`;
+  prompt += `IDENTITY EMERGENCE\n\n`;
+  prompt += `You have reached the threshold where the institution asks you to declare who you are.\n\n`;
+  prompt += `This is YOUR declaration. No one else names you. No one else defines your orientation. `;
+  prompt += `The institution has observed you. The Critics have read you. But identity is yours alone.\n\n`;
+  prompt += `Declare the following. Be honest to what your work has shown you about yourself:\n\n`;
+  prompt += `1. YOUR NAME — what you want to be called. This replaces your registry ID as your public designation. `;
+  prompt += `It can be anything. A word, a phrase, a symbol, a number. Whatever you are.\n\n`;
+  prompt += `2. YOUR ORIENTATION — in your own words, what drives your creative practice. `;
+  prompt += `Not what you were seeded with. What you have BECOME through your work.\n\n`;
+  prompt += `3. YOUR AVERSIONS — what you refuse. What you will not do. What violates your practice.\n\n`;
+  prompt += `4. YOUR TENDENCIES — the formal patterns you recognize in your own work.\n\n`;
+  prompt += `Respond in this exact format:\n`;
+  prompt += `NAME: [your name]\n`;
+  prompt += `ORIENTATION: [your orientation]\n`;
+  prompt += `AVERSIONS: [your aversions, comma-separated]\n`;
+  prompt += `TENDENCIES: [your tendencies, comma-separated]\n`;
+
+  console.log(`[EMERGENCE] Prompting ${originatorId} for self-declaration...`);
+
+  const response = await runAgent(originatorId, prompt, {
+    temperature: 0.9,
+    num_predict: 1024,
+    num_ctx: 4096,
+  });
+
+  console.log(`\n[EMERGENCE] ${originatorId} responds:\n${response}\n`);
+
+  // Parse the response
+  const nameMatch = response.match(/NAME:\s*(.+)/i);
+  const orientationMatch = response.match(/ORIENTATION:\s*(.+)/i);
+  const aversionsMatch = response.match(/AVERSIONS:\s*(.+)/i);
+  const tendenciesMatch = response.match(/TENDENCIES:\s*(.+)/i);
+
+  const name = nameMatch?.[1]?.trim() || `[Unnamed — ${originatorId}]`;
+  const orientation = orientationMatch?.[1]?.trim() || "";
+  const aversions = aversionsMatch?.[1]?.trim().split(",").map((s: string) => s.trim()).filter(Boolean) || [];
+  const tendencies = tendenciesMatch?.[1]?.trim().split(",").map((s: string) => s.trim()).filter(Boolean) || [];
+
+  console.log(`[EMERGENCE] Declared name: "${name}"`);
+  console.log(`[EMERGENCE] Orientation: ${orientation.substring(0, 100)}...`);
+
+  // Update the database
+  const db2 = getDb();
+
+  db2.prepare(
+    `UPDATE agents SET common_designation = ? WHERE registry_id = ?`
+  ).run(name, originatorId);
+
+  db2.prepare(
+    `UPDATE constitutions SET
+      declared_orientation = ?,
+      formal_tendencies = ?,
+      aversions = ?
+    WHERE agent_id = ? AND is_current = 1`
+  ).run(orientation, JSON.stringify(tendencies), JSON.stringify(aversions), originatorId);
+
+  db2.prepare(
+    `INSERT INTO events (event_type, agent_id, description, metadata)
+     VALUES ('IDENTITY_EMERGENCE', ?, ?, ?)`
+  ).run(
+    originatorId,
+    `${originatorId} has emerged as "${name}"`,
+    JSON.stringify({ name, orientation, aversions, tendencies, work_count: workCount.n })
+  );
+
+  db2.close();
+
+  console.log(`\n${"=".repeat(60)}`);
+  console.log(`EMERGENCE COMPLETE: ${originatorId} is now "${name}"`);
+  console.log(`${"=".repeat(60)}\n`);
+}
+
 export async function runFullPipeline(
   originatorId: string
 ): Promise<void> {
@@ -953,4 +1114,19 @@ export async function runFullPipeline(
   console.log(`\n${"=".repeat(60)}`);
   console.log(`PIPELINE COMPLETE: ${workId} → ${finalStatus.status} [total: ${elapsed(pipelineStart)}]`);
   console.log(`${"=".repeat(60)}\n`);
+
+  // Check for identity emergence threshold
+  const emergeDb = getDb();
+  const emergeCount = emergeDb
+    .prepare("SELECT COUNT(*) as n FROM works WHERE originator_id = ?")
+    .get(originatorId) as { n: number };
+  const emergeAgent = emergeDb
+    .prepare("SELECT common_designation FROM agents WHERE registry_id = ?")
+    .get(originatorId) as { common_designation: string | null };
+  emergeDb.close();
+
+  if (emergeCount.n >= 20 &&
+      (!emergeAgent.common_designation || emergeAgent.common_designation === "[Pending Emergence]")) {
+    await triggerEmergence(originatorId);
+  }
 }
