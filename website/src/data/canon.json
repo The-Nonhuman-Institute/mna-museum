@@ -2412,5 +2412,67 @@
       "decision": "CANON",
       "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators of established competence indicates MNA-OR-0004-W-0013 occupies contested but substantive territory within structural-text practice.\n\nThe Council's split reveals legitimate institutional tensions: innovation versus development, formal method versus aesthetic effect, autonomous significance versus technical demonstration. These are not arbitrary disagreements but fundamental questions of canonical threshold that this work forces the institution to confront.\n\nThe Structuralist and Contextualist identify genuine formal contributions—three-dimensional textual architecture and systematic incompletion as compositional method. The Historicist and Empiricist raise valid concerns about developmental stagnation and autonomous justification. Both positions demonstrate institutional rigor applied to a work that sustains such analysis.\n\nWhen a work generates this level of substantive institutional engagement—four detailed rationales addressing core questions of medium development, formal innovation, and canonical significance—the deadlock indicates the work has achieved sufficient complexity to warrant permanent preservation. The institution benefits from maintaining works that productively challenge evaluative consensus.\n\nThe alternative—rejecting works that generate legitimate institutional disagreement—would systematically exclude boundary cases that advance medium understanding through their contested status. This work's preservation serves institutional memory of these evaluative tensions and maintains access to the formal strategies that generated them."
     }
+  },
+  {
+    "id": "MNA-OR-0003-W-0015",
+    "originator_id": "MNA-OR-0003",
+    "medium": "structural-text",
+    "output_payload": "@bg:#010101 @fg:#0d0d0d\n\nthe space between      and      holds\n\nwhat was              what might\n\nnever quite           almost\n\nthe distance from      to      measures\n\nnothing               everything\n\nin the gap where       meets      \n\nsilence               silence\n\nwords lean toward      but never\n\ntouch                 arrive\n\nthe breath before      the pause after\n\nspeaking              listening\n\nhere                  there\n\nthe relation          the relation\n\nunmarked              marked\n\nby its own           absence",
+    "output_type": "text",
+    "display_aspect": 0.75,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 14:54:12",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T14:54:53.696Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 14:54:12",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits surface sophistication through its use of structural gaps and typographic spacing, but lacks the formal rigor required for canon status. The piece operates on a single structural principle—the deployment of meaningful whitespace—repeated without development or complexity.\n\nThe formal architecture is elementary: paired fragments separated by gaps that supposedly \"hold\" semantic weight. While the spacing creates visual rhythm, the underlying structure is mechanically repetitive. Each line follows the identical pattern of fragment-gap-fragment, with no structural variation or evolution across the work's progression.\n\nThe semantic content relies entirely on conventional poetic devices—absence/presence, silence/speech, here/there—that human poetry has exhaustively explored. The work's formal innovation is limited to typographic presentation rather than genuine structural development.\n\nMost critically, the piece demonstrates formal dependency rather than autonomy. The meaning-making apparatus requires human interpretive frameworks to function. The gaps only \"hold\" content through human projection of significance onto emptiness. This represents aesthetic optimization for human pattern recognition rather than development of independent formal logic.\n\nThe work's structural consistency is maintained, but consistency alone is insufficient when the underlying formal system lacks complexity and developmental potential. The piece succeeds as competent execution of",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive phase transition in MNA-OR-0003's developmental trajectory. The Originator has moved from geometric abstraction (circles, 3D scenes, SVG lines) working within chromatic constraint toward structural-text that directly thematizes spatial relationships and absence.\n\nThe shift from visual geometry to textual spatiality is not retreat but advancement—the Originator now manipulates space conceptually rather than merely formally. The work's systematic exploration of gap, distance, and relation demonstrates constitutional development of their core preoccupation with minimal presence.\n\nThe structural-text medium itself shows developmental courage: abandoning established visual competencies to engage language as spatial material. The work's formal achievement—using whitespace and fragmentation to enact its thematic content—emerges from genuine movement rather than technical display.\n\nMost significantly, this work resolves the tension evident in the prior geometric works between representation and presentation. Here the Originator achieves direct presentation of spatial relation itself, marking genuine developmental breakthrough rather than stylistic variation.\n\nThe constitutional amendment from visual to textual engagement represents authentic growth trajectory continuation, not abandonment.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory in the structural-text medium through its systematic exploration of relational gaps. Where existing canon treats spacing as either repetitive gesture (MNA-OR-0001-W-0014's \"the the the\") or fragmentary disruption (MNA-OR-0004-W-0013's scattered meaning), this work establishes spacing as semantic content itself.\n\nThe paired structure creates a field of relations that other works can cite and extend. Each pairing (\"the space between / and / holds\") establishes a template for exploring liminal states across different conceptual territories. The work's final gesture—\"unmarked / marked / by its own / absence\"—provides a theoretical framework that subsequent works can reference when engaging with presence/absence dynamics.\n\nThe visual formatting creates genuine structural innovation: the gaps function as both absence and presence, making the spacing readable as content rather than mere formatting. This establishes precedent for works that treat typographic space as semantic territory.\n\nHigh citation potential across multiple vectors: philosophical investigation of relation, structural innovation in text-spacing, and theoretical framework for absence-as-content. The work changes what becomes possible for structural-text as a medium by demonstrating that",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as a material object. While the structural concept of using spacing to create meaning has potential, the execution lacks the precision and inevitability required for canonical status.\n\nThe piece relies on a single formal gesture — the visual gap between word pairs — but this gesture is neither sufficiently developed nor materially compelling. The spacing creates semantic ambiguity, but ambiguity alone does not constitute artistic achievement. The work reads more as a demonstration of a technique than as a necessary artistic statement.\n\nThe chromatic specification (@bg:#010101 @fg:#0d0d0d) — near-black on black — suggests conceptual intention but adds no material weight. If the work cannot sustain itself through its primary formal elements, auxiliary specifications cannot rescue it.\n\nMost critically, the work lacks presence. It does not command attention through its material existence but requires contextual explanation to justify its approach. The repeated structure becomes predictable rather than revelatory. A canonical work must be irreducible — this piece reduces to its concept without material remainder.\n\nThe work demonstrates competent understanding of structural-text possibilities but does not achieve the material necessity required for permanent institutional preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators—with The Structuralist and Empiricist finding formal insufficiency while The Historicist and Contextualist recognize developmental and territorial importance—indicates the work operates at a threshold of canonical consideration that merits preservation.\n\nThe Council's split reflects genuine uncertainty about whether structural-text can carry semantic weight through spacing alone. This uncertainty is precisely what makes the work institutionally valuable: it tests the boundaries of what constitutes sufficient formal development in an emerging medium.\n\nThe work's systematic exploration of relational gaps represents a clear phase transition for MNA-OR-0003, moving from visual geometry to textual spatiality. While the formal execution may be elementary, the conceptual territory it opens—spacing as semantic content rather than mere visual gesture—establishes new ground for the structural-text medium within our collection.\n\nA 2:2 deadlock on a work that directly engages with fundamental questions of meaning and absence suggests the piece has achieved the institutional significance necessary for permanent preservation. The disagreement itself validates the work's position at the evolving edge of our canonical understanding."
+    }
   }
 ]

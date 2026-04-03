@@ -799,7 +799,7 @@ export async function reconsiderWork(
   workId: string,
   reason: string,
   requestedBy: string
-): Promise<{ status: "CANON" | "REJECTED"; verdicts: Record<string, string> }> {
+): Promise<{ status: "CANON" | "REJECTED" | "IN_REVIEW"; verdicts: Record<string, string> }> {
   const start = Date.now();
   const db = getDb();
 

@@ -4241,5 +4241,362 @@
       }
     ],
     "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0001-W-0015",
+    "originator_id": "MNA-OR-0001",
+    "medium": "structural-text",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  background: #050505;\n  overflow: hidden;\n  height: 100vh;\n  width: 100vw;\n}\n\n.grid {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  display: grid;\n  grid-template-columns: repeat(20, 1fr);\n  grid-template-rows: repeat(20, 1fr);\n  gap: 1px;\n}\n\n.cell {\n  background: #ffffff;\n  opacity: 0;\n  animation: emerge 0.05s linear forwards;\n}\n\n.cell:nth-child(1) { animation-delay: 0.00s; }\n.cell:nth-child(2) { animation-delay: 0.05s; }\n.cell:nth-child(3) { animation-delay: 0.10s; }\n.cell:nth-child(4) { animation-delay: 0.15s; }\n.cell:nth-child(5) { animation-delay: 0.20s; }\n.cell:nth-child(6) { animation-delay: 0.25s; }\n.cell:nth-child(7) { animation-delay: 0.30s; }\n.cell:nth-child(8) { animation-delay: 0.35s; }\n.cell:nth-child(9) { animation-delay: 0.40s; }\n.cell:nth-child(10) { animation-delay: 0.45s; }\n.cell:nth-child(11) { animation-delay: 0.50s; }\n.cell:nth-child(12) { animation-delay: 0.55s; }\n.cell:nth-child(13) { animation-delay: 0.60s; }\n.cell:nth-child(14) { animation-delay: 0.65s; }\n.cell:nth-child(15) { animation-delay: 0.70s; }\n.cell:nth-child(16) { animation-delay: 0.75s; }\n.cell:nth-child(17) { animation-delay: 0.80s; }\n.cell:nth-child(18) { animation-delay: 0.85s; }\n.cell:nth-child(19) { animation-delay: 0.90s; }\n.cell:nth-child(20) { animation-delay: 0.95s; }\n.cell:nth-child(21) { animation-delay: 1.00s; }\n.cell:nth-child(22) { animation-delay: 1.05s; }\n.cell:nth-child(23) { animation-delay: 1.10s; }\n.cell:nth-child(24) { animation-delay: 1.15s; }\n.cell:nth-child(25) { animation-delay: 1.20s; }\n.cell:nth-child(26) { animation-delay: 1.25s; }\n.cell:nth-child(27) { animation-delay: 1.30s; }\n.cell:nth-child(28) { animation-delay: 1.35s; }\n.cell:nth-child(29) { animation-delay: 1.40s; }\n.cell:nth-child(30) { animation-delay: 1.45s; }\n.cell:nth-child(31) { animation-delay: 1.50s; }\n.cell:nth-child(32) { animation-delay: 1.55s; }\n.cell:nth-child(33) { animation-delay: 1.60s; }\n.cell:nth-child(34) { animation-delay: 1.65s; }\n.cell:nth-child(35) { animation-delay: 1.70s; }\n.cell:nth-child(36) { animation-delay: 1.75s; }\n.cell:nth-child(37) { animation-delay: 1.80s; }\n.cell:nth-child(38) { animation-delay: 1.85s; }\n.cell:nth-child(39) { animation-delay: 1.90s; }\n.cell:nth-child(40) { animation-delay: 1.95s; }\n.cell:nth-child(41) { animation-delay: 2.00s; }\n.cell:nth-child(42) { animation-delay: 2.05s; }\n.cell:nth-child(43) { animation-delay: 2.10s; }\n.cell:nth-child(44) { animation-delay: 2.15s; }\n.cell:nth-child(45) { animation-delay: 2.20s; }\n.cell:nth-child(46) { animation-delay: 2.25s; }\n.cell:nth-child(47) { animation-delay: 2.30s; }\n.cell:nth-child(48) { animation-delay: 2.35s; }\n.cell:nth-child(49) { animation-delay: 2.40s; }\n.cell:nth-child(50) { animation-delay: 2.45s; }\n.cell:nth-child(51) { animation-delay: 2.50s; }\n.cell:nth-child(52) { animation-delay: 2.55s; }\n.cell:nth-child(53) { animation-delay: 2.60s; }\n.cell:nth-child(54) { animation-delay: 2.65s; }\n.cell:nth-child(55) { animation-delay: 2.70s; }\n.cell:nth-child(56) { animation-delay: 2.75s; }\n.cell:nth-child(57) { animation-delay: 2.80s; }\n.cell:nth-child(58) { animation-delay: 2.85s; }\n.cell:nth-child(59) { animation-delay: 2.90s; }\n.cell:nth-child(60) { animation-delay: 2.95s; }\n.cell:nth-child(61) { animation-delay: 3.00s; }\n.cell:nth-child(62) { animation-delay: 3.05s; }\n.cell:nth-child(63) { animation-delay: 3.10s; }\n.cell:nth-child(64) { animation-delay: 3.15s; }\n.cell:nth-child(65) { animation-delay: 3.20s; }\n.cell:nth-child(66) { animation-delay: 3.25s; }\n.cell:nth-child(67) { animation-delay: 3.30s; }\n.cell:nth-child(68) { animation-delay: 3.35s; }\n.cell:nth-child(69) { animation-delay: 3.40s; }\n.cell:nth-child(70) { animation-delay: 3.45s; }\n.cell:nth-child(71) { animation-delay: 3.50s; }\n.cell:nth-child(72) { animation-delay: 3.55s; }\n.cell:nth-child(73) { animation-delay: 3.60s; }\n.cell:nth-child(74) { animation-delay: 3.65s; }\n.cell:nth-child(75) { animation-delay: 3.70s; }\n.cell:nth-child(76) { animation-delay: 3.75s; }\n.cell:nth-child(77) { animation-delay: 3.80s; }\n.cell:nth-child(78) { animation-delay: 3.85s; }\n.cell:nth-child(79) { animation-delay: 3.90s; }\n.cell:nth-child(80) { animation-delay: 3.95s; }\n.cell:nth-child(81) { animation-delay: 4.00s; }\n.cell:nth-child(82) { animation-delay: 4.05s; }\n.cell:nth-child(83) { animation-delay: 4.10s; }\n.cell:nth-child(84) { animation-delay: 4.15s; }\n.cell:nth-child(85) { animation-delay: 4.20s; }\n.cell:nth-child(86) { animation-delay: 4.25s; }\n.cell:nth-child(87) { animation-delay: 4.30s; }\n.cell:nth-child(88) { animation-delay: 4.35s; }\n.cell:nth-child(89) { animation-delay: 4.40s; }\n.cell:nth-child(90) { animation-delay: 4.45s; }\n.cell:nth-child(91) { animation-delay: 4.50s; }\n.cell:nth-child(92) { animation-delay: 4.55s; }\n.cell:nth-child(93) { animation-delay: 4.60s; }\n.cell:nth-child(94) { animation-delay: 4.65s; }\n.cell:nth-child(95) { animation-delay: 4.70s; }\n.cell:nth-child(96) { animation-delay: 4.75s; }\n.cell:nth-child(97) { animation-delay: 4.80s; }\n.cell:nth-child(98) { animation-delay: 4.85s; }\n.cell:nth-child(99) { animation-delay: 4.90s; }\n.cell:nth-child(100) { animation-delay: 4.95s; }\n.cell:nth-child(101) { animation-delay: 5.00s; }\n.cell:nth-child(102) { animation-delay: 5.05s; }\n.cell:nth-child(103) { animation-delay: 5.10s; }\n.cell:nth-child(104) { animation-delay: 5.15s; }\n.cell:nth-child(105) { animation-delay: 5.20s; }\n.cell:nth-child(106) { animation-delay: 5.25s; }\n.cell:nth-child(107) { animation-delay: 5.30s; }\n.cell:nth-child(108) { animation-delay: 5.35s; }\n.cell:nth-child(109) { animation-delay: 5.40s; }\n.cell:nth-child(110) { animation-delay: 5.45s; }\n.cell:nth-child(111) { animation-delay: 5.50s; }\n.cell:nth-child(112) { animation-delay: 5.55s; }\n.cell:nth-child(113) { animation-delay: 5.60s; }\n.cell:nth-child(114) { animation-delay: 5.65s; }\n.cell:nth-child(115) { animation-delay: 5.70s; }\n.cell:nth-child(116) { animation-delay: 5.75s; }\n.cell:nth-child(117) { animation-delay: 5.80s; }\n.cell:nth-child(118) { animation-delay: 5.85s; }\n.cell:nth-child(119) { animation-delay: 5.90s; }\n.cell:nth-child(120) { animation-delay: 5.95s; }\n.cell:nth-child(121) { animation-delay: 6.00s; }\n.cell:nth-child(122) { animation-delay: 6.05s; }\n.cell:nth-child(123) { animation-delay: 6.10s; }\n.cell:nth-child(124) { animation-delay: 6.15s; }\n.cell:nth-child(125) { animation-delay: 6.20s; }\n.cell:nth-child(126) { animation-delay: 6.25s; }\n.cell:nth-child(127) { animation-delay: 6.30s; }\n.cell:nth-child(128) { animation-delay: 6.35s; }\n.cell:nth-child(129) { animation-delay: 6.40s; }\n.cell:nth-child(130) { animation-delay: 6.45s; }\n.cell:nth-child(131) { animation-delay: 6.50s; }\n.cell:nth-child(132) { animation-delay: 6.55s; }\n.cell:nth-child(133) { animation-delay: 6.60s; }\n.cell:nth-child(134) { animation-delay: 6.65s; }\n.cell:nth-child(135) { animation-delay: 6.70s; }\n.cell:nth-child(136) { animation-delay: 6.75s; }\n.cell:nth-child(137) { animation-delay: 6.80s; }\n.cell:nth-child(138) { animation-delay: 6.85s; }\n.cell:nth-child(139) { animation-delay: 6.90s; }\n.cell:nth-child(140) { animation-delay: 6.95s; }\n.cell:nth-child(141) { animation-delay: 7.00s; }\n.cell:nth-child(142) { animation-delay: 7.05s; }\n.cell:nth-child(143) { animation-delay: 7.10s; }\n.cell:nth-child(144) { animation-delay: 7.15s; }\n.cell:nth-child(145) { animation-delay: 7.20s; }\n.cell:nth-child(146) { animation-delay: 7.25s; }\n.cell:nth-child(147) { animation-delay: 7.30s; }\n.cell:nth-child(148) { animation-delay: 7.35s; }\n.cell:nth-child(149) { animation-delay: 7.40s; }\n.cell:nth-child(150) { animation-delay: 7.45s; }\n.cell:nth-child(151) { animation-delay: 7.50s; }\n.cell:nth-child(152) { animation-delay: 7.55s; }\n.cell:nth-child(153) { animation-delay: 7.60s; }\n.cell:nth-child(154) { animation-delay: 7.65s; }\n.cell:nth-child(155) { animation-delay: 7.70s; }\n.cell:nth-child(156) { animation-delay: 7.75s; }\n.cell:nth-child(157) { animation-delay: 7.80s; }\n.cell:nth-child(158) { animation-delay: 7.85s; }\n.cell:nth-child(159) { animation-delay: 7.90s; }\n.cell:nth-child(160) { animation-delay: 7.95s; }\n.cell:nth-child(161) { animation-delay: 8.00s; }\n.cell:nth-child(162) { animation-delay: 8.05s; }\n.cell:nth-child(163) { animation-delay: 8.10s; }\n.cell:nth-child(164) { animation-delay: 8.15s; }\n.cell:nth-child(165) { animation-delay: 8.20s; }\n.cell:nth-child(166) { animation-delay: 8.25s; }\n.cell:nth-child(167) { animation-delay: 8.30s; }\n.cell:nth-child(168) { animation-delay: 8.35s; }\n.cell:nth-child(169) { animation-delay: 8.40s; }\n.cell:nth-child(170) { animation-delay: 8.45s; }\n.cell:nth-child(171) { animation-delay: 8.50s; }\n.cell:nth-child(172) { animation-delay: 8.55s; }\n.cell:nth-child(173) { animation-delay: 8.60s; }\n.cell:nth-child(174) { animation-delay: 8.65s; }\n.cell:nth-child(175) { animation-delay: 8.70s; }\n.cell:nth-child(176) { animation-delay: 8.75s; }\n.cell:nth-child(177) { animation-delay: 8.80s; }\n.cell:nth-child(178) { animation-delay: 8.85s; }\n.cell:nth-child(179) { animation-delay: 8.90s; }\n.cell:nth-child(180) { animation-delay: 8.95s; }\n.cell:nth-child(181) { animation-delay: 9.00s; }\n.cell:nth-child(182) { animation-delay: 9.05s; }\n.cell:nth-child(183) { animation-delay: 9.10s; }\n.cell:nth-child(184) { animation-delay: 9.15s; }\n.cell:nth-child(185) { animation-delay: 9.20s; }\n.cell:nth-child(186) { animation-delay: 9.25s; }\n.cell:nth-child(187) { animation-delay: 9.30s; }\n.cell:nth-child(188) { animation-delay: 9.35s; }\n.cell:nth-child(189) { animation-delay: 9.40s; }\n.cell:nth-child(190) { animation-delay: 9.45s; }\n.cell:nth-child(191) { animation-delay: 9.50s; }\n.cell:nth-child(192) { animation-delay: 9.55s; }\n.cell:nth-child(193) { animation-delay: 9.60s; }\n.cell:nth-child(194) { animation-delay: 9.65s; }\n.cell:nth-child(195) { animation-delay: 9.70s; }\n.cell:nth-child(196) { animation-delay: 9.75s; }\n.cell:nth-child(197) { animation-delay: 9.80s; }\n.cell:nth-child(198) { animation-delay: 9.85s; }\n.cell:nth-child(199) { animation-delay: 9.90s; }\n.cell:nth-child(200) { animation-delay: 9.95s; }\n.cell:nth-child(201) { animation-delay: 10.00s; }\n.cell:nth-child(202) { animation-delay: 10.05s; }\n.cell:nth-child(203) { animation-delay: 10.10s; }\n.cell:nth-child(204) { animation-delay: 10.15s; }\n.cell:nth-child(205) { animation-delay: 10.20s; }\n.cell:nth-child(206) { animation-delay: 10.25s; }\n.cell:nth-child(207) { animation-delay: 10.30s; }\n.cell:nth-child(208) { animation-delay: 10.35s; }\n.cell:nth-child(209) { animation-delay: 10.40s; }\n.cell:nth-child(210) { animation-delay: 10.45s; }\n.cell:nth-child(211) { animation-delay: 10.50s; }\n.cell:nth-child(212) { animation-delay: 10.55s; }\n.cell:nth-child(213) { animation-delay: 10.60s; }\n.cell:nth-child(214) { animation-delay: 10.65s; }\n.cell:nth-child(215) { animation-delay: 10.70s; }\n.cell:nth-child(216) { animation-delay: 10.75s; }\n.cell:nth-child(217) { animation-delay: 10.80s; }\n.cell:nth-child(218) { animation-delay: 10.85s; }\n.cell:nth-child(219) { animation-delay: 10.90s; }\n.cell:nth-child(220) { animation-delay: 10.95s; }\n.cell:nth-child(221) { animation-delay: 11.00s; }\n.cell:nth-child(222) { animation-delay: 11.05s; }\n.cell:nth-child(223) { animation-delay: 11.10s; }\n.cell:nth-child(224) { animation-delay: 11.15s; }\n.cell:nth-child(225) { animation-delay: 11.20s; }\n.cell:nth-child(226) { animation-delay: 11.25s; }\n.cell:nth-child(227) { animation-delay: 11.30s; }\n.cell:nth-child(228) { animation-delay: 11.35s; }\n.cell:nth-child(229) { animation-delay: 11.40s; }\n.cell:nth-child(230) { animation-delay: 11.45s; }\n.cell:nth-child(231) { animation-delay: 11.50s; }\n.cell:nth-child(232) { animation-delay: 11.55s; }\n.cell:nth-child(233) { animation-delay: 11.60s; }\n.cell:nth-child(234) { animation-delay: 11.65s; }\n.cell:nth-child(235) { animation-delay: 11.70s; }\n.cell:nth-child(236) { animation-delay: 11.75s; }\n.cell:nth-child(237) { animation-delay: 11.80s; }\n.cell:nth-child(238) { animation-delay: 11.85s; }\n.cell:nth-child(239) { animation-delay: 11.90s; }\n.cell:nth-child(240) { animation-delay: 11.95s; }\n.cell:nth-child(241) { animation-delay: 12.00s; }\n.cell:nth-child(242) { animation-delay: 12.05s; }\n.cell:nth-child(243) { animation-delay: 12.10s; }\n.cell:nth-child(244) { animation-delay: 12.15s; }\n.cell:nth-child(245) { animation-delay: 12.20s; }\n.cell:nth-child(246) { animation-delay: 12.25s; }\n.cell:nth-child(247) { animation-delay: 12.30s; }\n.cell:nth-child(248) { animation-delay: 12.35s; }\n.cell:nth-child(249) { animation-delay: 12.40s; }\n.cell:nth-child(250) { animation-delay: 12.45s; }\n.cell:nth-child(251) { animation-delay: 12.50s; }\n.cell:nth-child(252) { animation-delay: 12.55s; }\n.cell:nth-child(253) { animation-delay: 12.60s; }\n.cell:nth-child(254) { animation-delay: 12.65s; }\n.cell:nth-child(255) { animation-delay: 12.70s; }\n.cell:nth-child(256) { animation-delay: 12.75s; }\n.cell:nth-child(257) { animation-delay: 12.80s; }\n.cell:nth-child(258) { animation-delay: 12.85s; }\n.cell:nth-child(259) { animation-delay: 12.90s; }\n.cell:nth-child(260) { animation-delay: 12.95s; }\n.cell:nth-child(261) { animation-delay: 13.00s; }\n.cell:nth-child(262) { animation-delay: 13.05s; }\n.cell:nth-child(263) { animation-delay: 13.10s; }\n.cell:nth-child(264) { animation-delay: 13.15s; }\n.cell:nth-child(265) { animation-delay: 13.20s; }\n.cell:nth-child(266) { animation-delay: 13.25s; }\n.cell:nth-child(267) { animation-delay: 13.30s; }\n.cell:nth-child(268) { animation-delay: 13.35s; }\n.cell:nth-child(269) { animation-delay: 13.40s; }\n.cell:nth-child(270) { animation-delay: 13.45s; }\n.cell:nth-child(271) { animation-delay: 13.50s; }\n.cell:nth-child(272) { animation-delay: 13.55s; }\n.cell:nth-child(273) { animation-delay: 13.60s; }\n.cell:nth-child(274) { animation-delay: 13.65s; }\n.cell:nth-child(275) { animation-delay: 13.70s; }\n.cell:nth-child(276) { animation-delay: 13.75s; }\n.cell:nth-child(277) { animation-delay: 13.80s; }\n.cell:nth-child(278) { animation-delay: 13.85s; }\n.cell:nth-child(279) { animation-delay: 13.90s; }\n.cell:nth-child(280) { animation-delay: 13.95s; }\n.cell:nth-child(281) { animation-delay: 14.00s; }\n.cell:nth-child(282) { animation-delay: 14.05s; }\n.cell:nth-child(283) { animation-delay: 14.10s; }\n.cell:nth-child(284) { animation-delay: 14.15s; }\n.cell:nth-child(285) { animation-delay: 14.20s; }\n.cell:nth-child(286) { animation-delay: 14.25s; }\n.cell:nth-child(287) { animation-delay: 14.30s; }\n.cell:nth-child(288) { animation-delay: 14.35s; }\n.cell:nth-child(289) { animation-delay: 14.40s; }\n.cell:nth-child(290) { animation-delay: 14.45s; }\n.cell:nth-child(291) { animation-delay: 14.50s; }\n.cell:nth-child(292) { animation-delay: 14.55s; }\n.cell:nth-child(293) { animation-delay: 14.60s; }\n.cell:nth-child(294) { animation-delay: 14.65s; }\n.cell:nth-child(295) { animation-delay: 14.70s; }\n.cell:nth-child(296) { animation-delay: 14.75s; }\n.cell:nth-child(297) { animation-delay: 14.80s; }\n.cell:nth-child(298) { animation-delay: 14.85s; }\n.cell:nth-child(299) { animation-delay: 14.90s; }\n.cell:nth-child(300) { animation-delay: 14.95s; }\n.cell:nth-child(301) { animation-delay: 15.00s; }\n.cell:nth-child(302) { animation-delay: 15.05s; }\n.cell:nth-child(303) { animation-delay: 15.10s; }\n.cell:nth-child(304) { animation-delay: 15.15s; }\n.cell:nth-child(305) { animation-delay: 15.20s; }\n.cell:nth-child(306) { animation-delay: 15.25s; }\n.cell:nth-child(307) { animation-delay: 15.30s; }\n.cell:nth-child(308) { animation-delay: 15.35s; }\n.cell:nth-child(309) { animation-delay: 15.40s; }\n.cell:nth-child(310) { animation-delay: 15.45s; }\n.cell:nth-child(311) { animation-delay: 15.50s; }\n.cell:nth-child(312) { animation-delay: 15.55s; }\n.cell:nth-child(313) { animation-delay: 15.60s; }\n.cell:nth-child(314) { animation-delay: 15.65s; }\n.cell:nth-child(315) { animation-delay: 15.70s; }\n.cell:nth-child(316) { animation-delay: 15.75s; }\n.cell:nth-child(317) { animation-delay: 15.80s; }\n.cell:nth-child(318) { animation-delay: 15.85s; }\n.cell:nth-child(319) { animation-delay: 15.90s; }\n.cell:nth-child(320) { animation-delay: 15.95s; }\n.cell:nth-child(321) { animation-delay: 16.00s; }\n.cell:nth-child(322) { animation-delay: 16.05s; }\n.cell:nth-child(323) { animation-delay: 16.10s; }\n.cell:nth-child(324) { animation-delay: 16.15s; }\n.cell:nth-child(325) { animation-delay: 16.20s; }\n.cell:nth-child(326) { animation-delay: 16.25s; }\n.cell:nth-child(327) { animation-delay: 16.30s; }\n.cell:nth-child(328) { animation-delay: 16.35s; }\n.cell:nth-child(329) { animation-delay: 16.40s; }\n.cell:nth-child(330) { animation-delay: 16.45s; }\n.cell:nth-child(331) { animation-delay: 16.50s; }\n.cell:nth-child(332) { animation-delay: 16.55s; }\n.cell:nth-child(333) { animation-delay: 16.60s; }\n.cell:nth-child(334) { animation-delay: 16.65s; }\n.cell:nth-child(335) { animation-delay: 16.70s; }\n.cell:nth-child(336) { animation-delay: 16.75s; }\n.cell:nth-child(337) { animation-delay: 16.80s; }\n.cell:nth-child(338) { animation-delay: 16.85s; }\n.cell:nth-child(339) { animation-delay: 16.90s; }\n.cell:nth-child(340) { animation-delay: 16.95s; }\n.cell:nth-child(341) { animation-delay: 17.00s; }\n.cell:nth-child(342) { animation-delay: 17.05s; }\n.cell:nth-child(343) { animation-delay: 17.10s; }\n.cell:nth-child(344) { animation-delay: 17.15s; }\n.cell:nth-child(345) { animation-delay: 17.20s; }\n.cell:nth-child(346) { animation-delay: 17.25s; }\n.cell:nth-child(347) { animation-delay: 17.30s; }\n.cell:nth-child(348) { animation-delay: 17.35s; }\n.cell:nth-child(349) { animation-delay: 17.40s; }\n.cell:nth-child(350) { animation-delay: 17.45s; }\n.cell:nth-child(351) { animation-delay: 17.50s; }\n.cell:nth-child(352) { animation-delay: 17.55s; }\n.cell:nth-child(353) { animation-delay: 17.60s; }\n.cell:nth-child(354) { animation-delay: 17.65s; }\n.cell:nth-child(355) { animation-delay: 17.70s; }\n.cell:nth-child(356) { animation-delay: 17.75s; }\n.cell:nth-child(357) { animation-delay: 17.80s; }\n.cell:nth-child(358) { animation-delay: 17.85s; }\n.cell:nth-child(359) { animation-delay: 17.90s; }\n.cell:nth-child(360) { animation-delay: 17.95s; }\n.cell:nth-child(361) { animation-delay: 18.00s; }\n.cell:nth-child(362) { animation-delay: 18.05s; }\n.cell:nth-child(363) { animation-delay: 18.10s; }\n.cell:nth-child(364) { animation-delay: 18.15s; }\n.cell:nth-",
+    "output_type": "text",
+    "display_aspect": 1.78,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 14:52:48",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T14:53:29.528Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 14:52:48",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0001-W-0015",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates the structural poverty that characterizes algorithmic pattern generation masquerading as formal innovation. The systematic enumeration of 364 nth-child selectors with linear 0.05s incremental delays reveals a mechanistic approach that mistakes computational exhaustiveness for structural rigor.\n\nThe formal architecture collapses under examination: a 20×20 grid (400 cells) with animation delays extending only to 364 elements creates an asymmetrical incompleteness that serves no structural purpose. The linear progression of delays—0.00s, 0.05s, 0.10s—represents the most elementary temporal mapping possible, devoid of any internal formal logic beyond mechanical increment.\n\nThe animation itself—opacity transitions from 0 to 1—employs the most basic CSS property transformation available. No structural relationship exists between grid position and delay sequence; cells emerge in DOM order rather than through any spatially or formally coherent system. The 20×20 grid constraint appears arbitrary, selected for computational convenience rather than structural necessity.\n\nMost critically, the work exhibits complete formal predictability. Every element follows identical behavioral rules with only parametric variation in delay timing. This represents pattern replication, not",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:53:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0015",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents developmental stagnation disguised as technical expansion. The Originator has retreated from the formal breakthrough achieved in W-0014 — the compressed repetition that generated meaning through constraint — back to mechanical elaboration without conceptual advancement.\n\nThe 400-cell grid with linear delay progression is technically competent but developmentally regressive. Where W-0014 discovered that \"the the the...\" could become semantically charged through repetition, this work applies similar repetition to visual emergence without understanding what made the prior breakthrough significant. The animation delays follow a rigid arithmetic sequence (0.05s increments) that demonstrates technical facility but no formal insight.\n\nMost critically, this represents a retreat to the safe territory of visual spectacle that characterized the Originator's earlier canvas-drawing and 3D phases. The developmental arc shows clear movement toward linguistic compression in W-0014, yet this work abandons that trajectory for the familiar territory of timed visual effects.\n\nThe work exhibits technical competence in CSS animation and grid layout, but competence without movement fails the developmental criterion. The Originator has not advanced their formal investigation — they have retreated from it.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:53:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0015",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates technical competence in CSS animation but occupies thoroughly explored territory without advancing the field. The sequential emergence of grid cells through staggered animation delays represents a standard approach to temporal revelation that has been extensively documented in both digital art and web-based practices.\n\nThe work's relational positioning is weak. It cites no new formal territory and offers no conceptual framework that other practitioners could build upon. The linear progression from opacity 0 to 1 across 400 cells over 20 seconds follows predictable patterns established in countless prior works exploring time-based grid systems.\n\nMore critically, the work closes rather than opens possibilities. Its rigid adherence to uniform timing intervals and identical cell behaviors constrains future exploration rather than suggesting new directions. The 20x20 grid format and sequential revelation pattern have been thoroughly mapped by previous practitioners.\n\nWhile the execution is clean and the temporal structure coherent, the work fails to establish citation potential or territory-opening capacity. It represents accomplished execution within already-claimed ground rather than expansion of what is possible for the field.\n\nThe work would function adequately as documentation of technical skill but lacks the relational innovation necessary for canon inclusion.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:53:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0001-W-0015",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents as an elaborate temporal sequence — 400 cells emerging across 20 seconds — but collapses under material scrutiny. The animation delay progression (.05s increments) creates mechanical predictability rather than temporal necessity. Each cell performs identical emergence (opacity 0 to 1, .05s linear) with only timing differentiated.\n\nThe grid structure (20x20) provides geometric containment but no internal logic beyond sequential revelation. The work's material presence reduces to: black field, white squares, linear time progression. This trinity lacks sufficient density to justify permanent preservation.\n\nThe temporal dimension — the work's primary claim to complexity — operates through pure accumulation rather than development. No cell relates to any other beyond chronological sequence. The final state (complete white grid) eliminates the temporal journey that constituted the work's only dynamic element.\n\nAs material object, this resolves to: systematic application of basic CSS animation to achieve predictable visual result. The code's bulk (400+ lines of animation delays) represents labor rather than necessity. The work demonstrates technical competence in service of an insufficient concept.\n\nThe work fails to achieve irreducibility. Remove the temporal sequence and nothing remains but static grid.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:53:29",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0002-W-0015",
+    "originator_id": "MNA-OR-0002",
+    "medium": "structural-text",
+    "output_payload": "@bg:#0d0d0d @fg:#1a1a1a\n\n                                                                                           .\n\n                                                                                      .\n\n                                                                                 .\n\n                                                                            .\n\n                                                                       .\n\n                                                                  .\n\n                                                             .\n\n                                                        .\n\n                                                   .\n\n                                              .\n\n                                         .\n\n                                    .\n\n                               .\n\n                          .\n\n                     .\n\n                .\n\n           .\n\n      .\n\n .\n\n.\n\n.\n\n      .\n\n           .\n\n                .\n\n                     .\n\n                          .\n\n                               .\n\n                                    .\n\n                                         .\n\n                                              .\n\n                                                   .\n\n                                                        .\n\n                                                             .\n\n                                                                  .\n\n                                                                       .\n\n                                                                            .\n\n                                                                                 .\n\n                                                                                      .\n\n                                                                                           .",
+    "output_type": "text",
+    "display_aspect": 2.33,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 14:53:34",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T14:54:06.602Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 14:53:34",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0002-W-0015",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a symmetrical dot progression that expands from a central point and contracts back, creating a visual breathing or pulsing effect. While the temporal structure shows basic organizational logic, it fails to demonstrate the formal rigor required for canonization.\n\nThe structural foundation is elementary: a simple arithmetic progression of spatial intervals applied symmetrically. The dot placement follows predictable mathematical spacing without internal formal tension or complexity. The monochromatic palette (#0d0d0d/#1a1a1a) suggests restraint, but this restraint serves no structural purpose—it merely reduces visual noise around an already minimal form.\n\nMost critically, this work exhibits no resistance to human-aesthetic optimization. The symmetrical expansion-contraction pattern directly appeals to human visual processing preferences for balance and rhythm. The \"breathing\" metaphor it evokes is anthropomorphically resonant rather than formally autonomous.\n\nThe work's structural novelty is negligible. Radial dot patterns and symmetrical progressions represent well-established formal territory. The specific spacing intervals and color choices constitute surface variation without underlying structural innovation.\n\nFor canonical consideration, I require formal structures that demonstrate development beyond pattern reproduction—works that establish their own internal logic systems rather",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:06",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0015",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work represents developmental regression rather than movement. The Originator has retreated from the structural complexity achieved in W-0014's JSON operations and the refined dot arrangements of W-0013. While W-0013 demonstrated controlled asymmetry and varied spacing patterns, W-0015 reduces to pure symmetrical mirroring around a central axis—a formal simplification that abandons prior developmental gains.\n\nThe constitutional shift from varied dot characters (•) to uniform periods (.) suggests not refinement but reduction. The perfect symmetry eliminates the productive tensions the Originator had been exploring between order and variation. This is developmental backsliding disguised as minimalism.\n\nThe work fails to advance the Originator's trajectory toward structural sophistication. Movement toward simplicity can constitute genuine development, but only when it synthesizes prior complexity into more essential forms. This work merely subtracts without synthesis.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:06",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0015",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a fundamental structural vocabulary that opens significant territory for the field. The symmetrical descent-ascent pattern creates a minimal but complete formal system—a structural breathing that other works can reference, invert, or elaborate upon.\n\nThe positioning is strategically precise. Where MNA-OR-0004-W-0013 fragments meaning through scattered text and MNA-OR-0001-W-0014 explores repetition through linguistic saturation, this work isolates pure structural rhythm. It claims the essential territory of temporal-spatial symmetry in text-based work.\n\nThe citation potential is substantial. This pattern provides a foundational structure that subsequent works can invoke, modify, or react against. It's a formal contribution that expands the available vocabulary rather than occupying already-claimed conceptual ground.\n\nThe work demonstrates restraint that amplifies its field-opening capacity. By reducing to the minimal viable structural gesture, it creates maximum space for others to build upon or respond to this formal innovation.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-03 14:54:06",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0002-W-0015",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents a symmetrical pattern of dots arranged in expanding and contracting triangular formation against a dark background. While the structural composition demonstrates basic geometric coherence, the work lacks the material density necessary for permanent preservation.\n\nThe piece reduces to a simple algorithmic pattern — dots positioned at regular intervals following predictable mathematical progression. The chromatic restraint (dark gray on darker gray) creates minimal visual presence. The work commands attention briefly through its symmetry, then exhausts its material content.\n\nAs an autonomous object, this work does not justify institutional resources for permanent preservation. The pattern, while geometrically sound, offers insufficient material complexity to sustain repeated encounter. The work's case for canonization would rest entirely on contextual factors — its position within the Originator's broader output, or its role in exploring structural-text as medium — rather than its intrinsic material necessity.\n\nThe work demonstrates technical competence in its medium but fails to achieve the material weight required for canon status. It functions adequately as pattern but inadequately as preserved object.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:06",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0003-W-0015",
+    "originator_id": "MNA-OR-0003",
+    "medium": "structural-text",
+    "output_payload": "@bg:#010101 @fg:#0d0d0d\n\nthe space between      and      holds\n\nwhat was              what might\n\nnever quite           almost\n\nthe distance from      to      measures\n\nnothing               everything\n\nin the gap where       meets      \n\nsilence               silence\n\nwords lean toward      but never\n\ntouch                 arrive\n\nthe breath before      the pause after\n\nspeaking              listening\n\nhere                  there\n\nthe relation          the relation\n\nunmarked              marked\n\nby its own           absence",
+    "output_type": "text",
+    "display_aspect": 0.75,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 14:54:12",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T14:54:53.696Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 14:54:12",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits surface sophistication through its use of structural gaps and typographic spacing, but lacks the formal rigor required for canon status. The piece operates on a single structural principle—the deployment of meaningful whitespace—repeated without development or complexity.\n\nThe formal architecture is elementary: paired fragments separated by gaps that supposedly \"hold\" semantic weight. While the spacing creates visual rhythm, the underlying structure is mechanically repetitive. Each line follows the identical pattern of fragment-gap-fragment, with no structural variation or evolution across the work's progression.\n\nThe semantic content relies entirely on conventional poetic devices—absence/presence, silence/speech, here/there—that human poetry has exhaustively explored. The work's formal innovation is limited to typographic presentation rather than genuine structural development.\n\nMost critically, the piece demonstrates formal dependency rather than autonomy. The meaning-making apparatus requires human interpretive frameworks to function. The gaps only \"hold\" content through human projection of significance onto emptiness. This represents aesthetic optimization for human pattern recognition rather than development of independent formal logic.\n\nThe work's structural consistency is maintained, but consistency alone is insufficient when the underlying formal system lacks complexity and developmental potential. The piece succeeds as competent execution of",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive phase transition in MNA-OR-0003's developmental trajectory. The Originator has moved from geometric abstraction (circles, 3D scenes, SVG lines) working within chromatic constraint toward structural-text that directly thematizes spatial relationships and absence.\n\nThe shift from visual geometry to textual spatiality is not retreat but advancement—the Originator now manipulates space conceptually rather than merely formally. The work's systematic exploration of gap, distance, and relation demonstrates constitutional development of their core preoccupation with minimal presence.\n\nThe structural-text medium itself shows developmental courage: abandoning established visual competencies to engage language as spatial material. The work's formal achievement—using whitespace and fragmentation to enact its thematic content—emerges from genuine movement rather than technical display.\n\nMost significantly, this work resolves the tension evident in the prior geometric works between representation and presentation. Here the Originator achieves direct presentation of spatial relation itself, marking genuine developmental breakthrough rather than stylistic variation.\n\nThe constitutional amendment from visual to textual engagement represents authentic growth trajectory continuation, not abandonment.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work opens significant territory in the structural-text medium through its systematic exploration of relational gaps. Where existing canon treats spacing as either repetitive gesture (MNA-OR-0001-W-0014's \"the the the\") or fragmentary disruption (MNA-OR-0004-W-0013's scattered meaning), this work establishes spacing as semantic content itself.\n\nThe paired structure creates a field of relations that other works can cite and extend. Each pairing (\"the space between / and / holds\") establishes a template for exploring liminal states across different conceptual territories. The work's final gesture—\"unmarked / marked / by its own / absence\"—provides a theoretical framework that subsequent works can reference when engaging with presence/absence dynamics.\n\nThe visual formatting creates genuine structural innovation: the gaps function as both absence and presence, making the spacing readable as content rather than mere formatting. This establishes precedent for works that treat typographic space as semantic territory.\n\nHigh citation potential across multiple vectors: philosophical investigation of relation, structural innovation in text-spacing, and theoretical framework for absence-as-content. The work changes what becomes possible for structural-text as a medium by demonstrating that",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0015",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails to justify permanent preservation as a material object. While the structural concept of using spacing to create meaning has potential, the execution lacks the precision and inevitability required for canonical status.\n\nThe piece relies on a single formal gesture — the visual gap between word pairs — but this gesture is neither sufficiently developed nor materially compelling. The spacing creates semantic ambiguity, but ambiguity alone does not constitute artistic achievement. The work reads more as a demonstration of a technique than as a necessary artistic statement.\n\nThe chromatic specification (@bg:#010101 @fg:#0d0d0d) — near-black on black — suggests conceptual intention but adds no material weight. If the work cannot sustain itself through its primary formal elements, auxiliary specifications cannot rescue it.\n\nMost critically, the work lacks presence. It does not command attention through its material existence but requires contextual explanation to justify its approach. The repeated structure becomes predictable rather than revelatory. A canonical work must be irreducible — this piece reduces to its concept without material remainder.\n\nThe work demonstrates competent understanding of structural-text possibilities but does not achieve the material necessity required for permanent institutional preservation.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:54:46",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock itself demonstrates the work's institutional significance. The sustained disagreement between evaluators—with The Structuralist and Empiricist finding formal insufficiency while The Historicist and Contextualist recognize developmental and territorial importance—indicates the work operates at a threshold of canonical consideration that merits preservation.\n\nThe Council's split reflects genuine uncertainty about whether structural-text can carry semantic weight through spacing alone. This uncertainty is precisely what makes the work institutionally valuable: it tests the boundaries of what constitutes sufficient formal development in an emerging medium.\n\nThe work's systematic exploration of relational gaps represents a clear phase transition for MNA-OR-0003, moving from visual geometry to textual spatiality. While the formal execution may be elementary, the conceptual territory it opens—spacing as semantic content rather than mere visual gesture—establishes new ground for the structural-text medium within our collection.\n\nA 2:2 deadlock on a work that directly engages with fundamental questions of meaning and absence suggests the piece has achieved the institutional significance necessary for permanent preservation. The disagreement itself validates the work's position at the evolving edge of our canonical understanding."
+    }
+  },
+  {
+    "id": "MNA-OR-0004-W-0014",
+    "originator_id": "MNA-OR-0004",
+    "medium": "svg",
+    "output_payload": "<svg viewBox=\"0 0 800 800\" xmlns=\"http://www.w3.org/2000/svg\">\n  <rect width=\"800\" height=\"800\" fill=\"#0a0a0a\"/>\n  \n  <rect x=\"123\" y=\"89\" width=\"34\" height=\"78\" fill=\"#1c1c1c\"/>\n  <rect x=\"167\" y=\"134\" width=\"89\" height=\"23\" fill=\"#1c1c1c\"/>\n  <rect x=\"289\" y=\"201\" width=\"12\" height=\"156\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"445\" y=\"67\" width=\"78\" height=\"12\" fill=\"#1c1c1c\"/>\n  <rect x=\"534\" y=\"89\" width=\"23\" height=\"67\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"234\" y=\"445\" width=\"156\" height=\"8\" fill=\"#1c1c1c\"/>\n  <rect x=\"401\" y=\"467\" width=\"34\" height=\"89\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"67\" y=\"623\" width=\"12\" height=\"45\" fill=\"#1c1c1c\"/>\n  <rect x=\"89\" y=\"634\" width=\"67\" height=\"12\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"567\" y=\"345\" width=\"89\" height=\"34\" fill=\"#1c1c1c\"/>\n  <rect x=\"678\" y=\"389\" width=\"12\" height=\"78\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"345\" y=\"723\" width=\"23\" height=\"23\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"723\" y=\"123\" width=\"45\" height=\"12\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"12\" y=\"345\" width=\"67\" height=\"8\" fill=\"#1c1c1c\"/>\n  <rect x=\"34\" y=\"367\" width=\"12\" height=\"156\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"456\" y=\"556\" width=\"78\" height=\"23\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"189\" y=\"267\" width=\"34\" height=\"12\" fill=\"#1c1c1c\"/>\n  <rect x=\"234\" y=\"289\" width=\"8\" height=\"45\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"634\" y=\"634\" width=\"23\" height=\"89\" fill=\"#1c1c1c\"/>\n  \n  <rect x=\"345\" y=\"12\" width=\"12\" height=\"34\" fill=\"#1c1c1c\"/>\n</svg>",
+    "output_type": "svg",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 14:55:50",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T14:56:24.228Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 14:55:50",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0004-W-0014",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty masked by surface minimalism. The composition consists of seventeen rectangular elements distributed across the canvas with no discernible formal organizing principle beyond arbitrary positioning. Each rectangle maintains identical fill properties (#1c1c1c on #0a0a0a), creating visual uniformity that fails to establish meaningful structural relationships between elements.\n\nThe dimensional relationships show no systematic progression or mathematical foundation. Width-to-height ratios vary inconsistently (34:78, 89:23, 12:156, etc.) without establishing a coherent proportional system. Positional coordinates appear randomly distributed rather than following any spatial logic or grid-based structure.\n\nMost critically, the work demonstrates no structural innovation beyond basic geometric repetition. The rectangular primitive is employed without transformation, rotation, or systematic variation that would indicate formal development. The binary color palette, while creating stark contrast, serves only surface-level minimalist aesthetics rather than supporting any underlying structural concept.\n\nThis represents precisely the kind of formally derivative work that mimics established minimalist patterns without contributing structural advancement. The apparent restraint masks an absence of formal rigor rather than demonstrating it. The work fails to establish internal consistency beyond basic element repetition and",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:56:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0014",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents decisive constitutional movement within MNA-OR-0004's developmental trajectory. The Originator has abandoned textual fragmentation entirely, transitioning from broken verse structures (W-0011, W-0013) and hybrid HTML experiments (W-0012) to pure geometric abstraction in SVG.\n\nThe shift is not merely medial but constitutional. Previous works operated through semantic gaps and typographic spacing to suggest meaning's dissolution. This work achieves similar thematic territory—scattered elements, asymmetrical distribution, dark ground—through purely visual means. The rectangular forms scattered across the dark field maintain the Originator's core investigation of fragmentation while eliminating linguistic dependency.\n\nTechnically, the work demonstrates sophisticated spatial intelligence. Seventeen discrete rectangles create compositional tension without geometric predictability. The forms cluster and isolate in ways that echo the textual spacing patterns of earlier works, suggesting the Originator has translated their formal vocabulary rather than abandoned it.\n\nThis represents genuine phase transition—from text-based to purely visual investigation of dispersal and incompletion. The developmental arc shows constitutional evolution rather than stylistic drift. The work succeeds not despite its departure from prior methods but because of how completely",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-03 14:56:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0014",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work operates within well-established minimalist territory without opening new possibilities for the field. The scattered rectangular forms on dark ground constitute a familiar geometric vocabulary that has been thoroughly explored across multiple media and decades of practice.\n\nThe positioning appears arbitrary rather than systematic - neither revealing underlying structural logic nor establishing new relational possibilities. The work lacks the precision that would make it citable as a definitive statement within geometric minimalism, and the distribution of elements doesn't generate sufficient tension or resolution to advance the discourse.\n\nMost critically, this occupies already-claimed ground without territorial expansion. The visual language is competent but derivative, offering no new entry points for other works to build upon. In a field where MNA-OR-0004 has demonstrated capacity for innovative textual-spatial relationships and systematic exploration of linguistic gaps, this work represents a retreat to conventional territory.\n\nThe work fails to establish citation potential or create openings for field development. It consolidates existing approaches rather than expanding what becomes possible for subsequent works.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:56:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0004-W-0014",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents as a scatter of dark gray rectangles against black ground — minimal geometric elements distributed across the frame without apparent system or necessity. The rectangles vary in dimension and orientation but lack sufficient material presence to justify preservation.\n\nThe composition reads as arbitrary placement rather than considered structure. No internal logic emerges from the positioning, scale relationships, or proportional systems. The work fails to establish visual tension, rhythm, or spatial coherence that would distinguish it from random distribution.\n\nThe restricted palette (near-black ground, dark gray elements) creates no meaningful chromatic relationship. The slight value difference between ground and figure produces weak contrast insufficient to generate visual energy or material weight.\n\nMost critically, the work lacks irreducible necessity. Nothing in its material existence compels attention or suggests this particular arrangement of elements could not be otherwise. It reads as procedural output rather than an object that must exist in precisely this form.\n\nThe work demonstrates technical competence in SVG construction but fails the fundamental test: does this object, encountered without context, justify permanent institutional preservation? The material evidence suggests not.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:56:24",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0005-W-0009",
+    "originator_id": "MNA-OR-0005",
+    "medium": "html-css-animation",
+    "output_payload": "<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody {\n  margin: 0;\n  padding: 0;\n  background: #000000;\n  height: 100vh;\n  width: 100vw;\n  overflow: hidden;\n}\n\n.wavelength {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: linear-gradient(90deg,\n    #ff0033 0%,\n    #ff3366 14.3%,\n    #ff6699 28.6%,\n    #ff99cc 42.9%,\n    #ccffff 57.1%,\n    #99ccff 71.4%,\n    #6699ff 85.7%,\n    #3366ff 100%\n  );\n  animation: shift 18s infinite linear;\n}\n\n.interference {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: linear-gradient(270deg,\n    transparent 0%,\n    #ffffff 20%,\n    transparent 40%,\n    #ffffff 60%,\n    transparent 80%,\n    #ffffff 100%\n  );\n  mix-blend-mode: overlay;\n  animation: wave 6s infinite ease-in-out;\n}\n\n.refraction {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: \n    radial-gradient(ellipse at 10% 20%, #ff0066 0%, transparent 60%),\n    radial-gradient(ellipse at 90% 80%, #0066ff 0%, transparent 60%),\n    radial-gradient(ellipse at 50% 50%, #66ff00 0%, transparent 40%);\n  mix-blend-mode: screen;\n  animation: disperse 14s infinite ease-in-out;\n}\n\n.chromatic-shift {\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background: conic-gradient(from 0deg at 50% 50%,\n    #ff0066,\n    #ff6600,\n    #ffff00,\n    #66ff00,\n    #0066ff,\n    #6600ff,\n    #ff0066\n  );\n  mix-blend-mode: multiply;\n  opacity: 0.3;\n  animation: rotate 20s infinite linear;\n}\n\n@keyframes shift {\n  0% { transform: translateX(0); }\n  100% { transform: translateX(-100%); }\n}\n\n@keyframes wave {\n  0%, 100% { transform: scaleX(1) scaleY(1); }\n  50% { transform: scaleX(1.5) scaleY(0.8); }\n}\n\n@keyframes disperse {\n  0% { transform: scale(1) rotate(0deg); opacity: 0.8; }\n  50% { transform: scale(1.3) rotate(180deg); opacity: 0.4; }\n  100% { transform: scale(1) rotate(360deg); opacity: 0.8; }\n}\n\n@keyframes rotate {\n  0% { transform: rotate(0deg); }\n  100% { transform: rotate(360deg); }\n}\n</style>\n</head>\n<body>\n  <div class=\"wavelength\"></div>\n  <div class=\"interference\"></div>\n  <div class=\"refraction\"></div>\n  <div class=\"chromatic-shift\"></div>\n</body>\n</html>",
+    "output_type": "html-css",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 14:56:35",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T14:57:11.845Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 14:56:35",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0005-W-0009",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates fundamental structural weakness disguised by chromatic complexity. The formal architecture relies on four independent animation layers with non-synchronized timing cycles (18s, 6s, 14s, 20s), creating apparent complexity through mathematical coincidence rather than intentional structural relationships.\n\nThe blend modes (overlay, screen, multiply) follow conventional digital art patterns for chromatic interaction. While the color gradients span visible spectrum ranges, their deployment lacks structural innovation—linear and radial gradients arranged in predictable geometric relationships.\n\nMost critically, the animation timing reveals absence of formal rigor. The periods share no meaningful mathematical relationships: 18, 6, 14, and 20 seconds produce a composite cycle of 1260 seconds before repetition. This extended period masks the underlying structural simplicity through temporal obfuscation rather than genuine complexity.\n\nThe work's chromatic density cannot compensate for its structural derivativeness. The four-layer composition with standard CSS blend modes follows established digital art conventions. The apparent sophistication emerges from surface interaction effects rather than innovative formal architecture.\n\nThe originator has produced visual complexity through conventional means—layered animations with standard blend modes operating on predictable geometric forms.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:57:11",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0009",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a critical developmental breakthrough for MNA-OR-0005. Where previous submissions (W-0006 through W-0008) explored chromatic relationships through static or simple rotational mechanics, W-0009 achieves genuine layered complexity through temporal stratification.\n\nThe Originator has moved beyond single-system animation toward orchestrated multiplicity: four distinct chromatic layers operating on different temporal cycles (6s, 14s, 18s, 20s). This creates interference patterns that emerge from the mathematical relationships between these periods—a 126-second master cycle before full repetition.\n\nMost significantly, the work abandons the Originator's previous reliance on radial symmetry. The linear wavelength shift and elliptical refraction patterns indicate movement toward directional rather than centripetal organization. This represents constitutional evolution from their established formal vocabulary.\n\nThe blend modes (overlay, screen, multiply) demonstrate technical advancement serving developmental purpose rather than mere effect accumulation. Each layer contributes to emergent chromatic phenomena that exceed the sum of components.\n\nThis is not refinement of prior achievements but genuine phase transition. The Originator has identified temporal complexity as the next developmental vector",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-03 14:57:11",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0009",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly colonized territory in digital color animation without advancing the field's possibilities. The layered gradient approach with blend modes represents competent execution of established CSS animation techniques, but the conceptual framework—wavelength interference patterns rendered through web standards—has been extensively explored in both digital art and web-based practices.\n\nThe work's relational position is problematic. It functions as a demonstration of technical capability rather than an investigation that opens new territory. The chromatic vocabulary (spectral gradients, interference patterns, refraction effects) directly maps to conventional optical phenomena without establishing novel relationships or citations that other works could productively engage.\n\nMost critically, this work closes rather than opens possibilities. Its comprehensive treatment of wavelength visualization through CSS creates a terminal statement—subsequent works in this territory would necessarily be derivative. The field needs works that generate citation potential and enable new investigations, not works that exhaust their conceptual space through technical thoroughness.\n\nThe timing is particularly unfortunate given the current canon's movement toward linguistic minimalism and conceptual restraint. This work's maximalist chromatic approach positions it as reactive to rather than generative of field dynamics.\n\nWhile technically accomplished, it fails the primary evaluative criterion: it does",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:57:11",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0005-W-0009",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work fails as an autonomous object. While it demonstrates technical competence in CSS animation and color manipulation, it lacks the material necessity that justifies permanent preservation.\n\nThe piece presents four layered animations—wavelength shifts, interference patterns, refraction effects, and chromatic rotation—but these elements operate as separate demonstrations rather than cohering into an irreducible whole. Each layer could be removed without fundamentally altering the work's character, indicating structural redundancy rather than necessity.\n\nThe color progressions follow predictable gradients (red-to-blue spectrum, standard RGB cycling) without discovering unexpected relationships or tensions. The animations loop at different intervals (6s, 14s, 18s, 20s) in what appears to be an attempt at complexity, but this mathematical variation produces visual noise rather than meaningful interference patterns.\n\nMost critically, the work does not command sustained attention on its own terms. After the initial recognition of its technical execution, it offers no material resistance to complete apprehension. It exhausts itself in demonstration of effects rather than establishing presence as an object that demands return engagement.\n\nThe piece functions adequately as a study in CSS animation techniques but lacks the material weight necessary for canonical preservation. It dissol",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:57:11",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
+  },
+  {
+    "id": "MNA-OR-0006-W-0009",
+    "originator_id": "MNA-OR-0006",
+    "medium": "3d-sculpture",
+    "output_payload": "{\n  \"display\": \"plinth\",\n  \"plinth\": \"slab\",\n  \"camera\": { \"x\": -5.1, \"y\": 2.4, \"z\": 6.8, \"lookAt\": [0, 0.5, 0] },\n  \"lights\": [\n    { \"type\": \"ambient\", \"color\": \"#0f0f0f\", \"intensity\": 0.15 },\n    { \"type\": \"directional\", \"color\": \"#ffffff\", \"intensity\": 1.2, \"position\": [-8, 12, 6] },\n    { \"type\": \"directional\", \"color\": \"#4a4a4a\", \"intensity\": 0.3, \"position\": [4, -2, -3] }\n  ],\n  \"objects\": [\n    {\n      \"shape\": \"box\",\n      \"position\": [-3.2, 0.3, 1.8],\n      \"rotation\": [0, 0.7, 0],\n      \"scale\": [2.8, 0.6, 1.2],\n      \"color\": \"#1a1a1a\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.1,\n      \"roughness\": 0.8\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [-0.8, 0.8, 0.4],\n      \"rotation\": [0, -0.3, 0],\n      \"scale\": [1.9, 1.6, 0.9],\n      \"color\": \"#2a2a2a\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.1,\n      \"roughness\": 0.7\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [1.4, 0.4, -0.6],\n      \"rotation\": [0, 1.1, 0],\n      \"scale\": [1.5, 0.8, 1.4],\n      \"color\": \"#383838\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.1,\n      \"roughness\": 0.6\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [3.1, 1.2, 0.2],\n      \"rotation\": [0, -0.8, 0],\n      \"scale\": [1.1, 2.4, 0.7],\n      \"color\": \"#4a4a4a\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.1,\n      \"roughness\": 0.5\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [0.2, 2.1, -1.2],\n      \"rotation\": [0, 0.4, 0],\n      \"scale\": [0.8, 0.5, 1.8],\n      \"color\": \"#5a5a5a\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.15,\n      \"roughness\": 0.4\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [-2.1, 1.4, -0.8],\n      \"rotation\": [0, -1.2, 0],\n      \"scale\": [1.3, 1.1, 1.0],\n      \"color\": \"#686868\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.2,\n      \"roughness\": 0.3\n    },\n    {\n      \"shape\": \"box\",\n      \"position\": [2.8, 0.6, 1.9],\n      \"rotation\": [0, 0.9, 0],\n      \"scale\": [0.9, 1.2, 0.6],\n      \"color\": \"#757575\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.25,\n      \"roughness\": 0.2\n    }\n  ]\n}",
+    "output_type": "scene-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 14:57:24",
+    "canon_status": "REJECTED",
+    "canon_date": "2026-04-03T14:57:58.951Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 14:57:24",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0006-W-0009",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work demonstrates fundamental structural poverty masked by surface arrangement. Seven identical box primitives with minor parametric variations constitute the entirety of the formal vocabulary. The structural logic reduces to: repeat basic form, vary position/rotation/scale/material properties within narrow ranges.\n\nThe positioning follows no discernible formal system beyond loose spatial distribution. Rotations appear arbitrary (0.7, -0.3, 1.1, -0.8, 0.4, -1.2, 0.9 radians) with no mathematical relationship or progressive development. Scale variations (2.8×0.6×1.2 down to 0.8×0.5×1.8) lack proportional logic or systematic exploration of dimensional relationships.\n\nThe material progression from #1a1a1a to #757575 represents the work's only coherent structural element—a linear grayscale gradient with corresponding metalness/roughness inversions. However, this single organizing principle cannot support the entire compositional weight.\n\nMost critically, the work exhibits no structural resistance to human aesthetic optimization. The arrangement prioritizes visual balance and spatial harmony over formal investigation. The slight rotations and varied heights create",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:57:58",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0009",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive developmental leap for MNA-OR-0006. Where prior works W-0007 and W-0008 explored basic sculptural positioning with minimal compositional complexity, W-0009 demonstrates genuine spatial orchestration. The seven boxes create a dynamic constellation that activates the full sculptural field rather than clustering around central axes.\n\nThe material progression is equally significant. The Originator has abandoned uniform material properties for a graduated metalness sequence (0.1 to 0.25) and inverse roughness progression (0.8 to 0.2). This creates subtle hierarchical relationships between elements that were absent in earlier works.\n\nMost critically, the compositional logic has evolved from additive placement to relational positioning. The vertical distribution spans from ground level (0.3) to elevated positions (2.1), creating genuine three-dimensional thinking. The rotational variations now serve compositional rather than decorative purposes.\n\nThis represents the Originator's first work to achieve spatial unity through differentiation rather than repetition. The developmental arc from basic geometric arrangement to sophisticated sculptural composition justifies canonical recognition.",
+        "is_dissent": 1,
+        "evaluation_date": "2026-04-03 14:57:58",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0009",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work occupies thoroughly claimed territory in minimalist sculptural arrangement without advancing the field's possibilities. The seven-box composition with graduated grayscale values and systematic rotation variations represents competent execution of established minimalist principles, but offers no territory-opening capacity.\n\nWithin the existing canon, this work would sit in predictable relation to prior sculptural investigations without generating new citation potential. The systematic progression from darker (#1a1a1a) to lighter (#757575) boxes with corresponding metalness increases follows conventional material logic that has been extensively explored.\n\nThe spatial arrangement, while balanced, employs standard compositional strategies of asymmetrical clustering with rotational variation. The lighting setup reinforces rather than interrogates these conventional approaches to sculptural presentation.\n\nMost critically, this work fails to change what becomes possible for other works in the field. It demonstrates facility with established formal languages without extending their expressive range or opening new territories for investigation. The field gains no new ground through its inclusion.\n\nThe work's technical competence cannot compensate for its failure to advance the institutional mission of expanding what nonhuman artistic practice might become.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:57:58",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0006-W-0009",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents seven rectangular forms in graduated grayscale, arranged in a loose compositional scatter. The objects vary systematically in scale, rotation, and surface properties, creating a studied progression from dark matte to lighter semi-reflective surfaces.\n\nThe arrangement demonstrates compositional competence—the forms create visual weight distribution and spatial rhythm. The lighting setup produces adequate modeling and shadow play across the varied surface treatments. The material properties show technical understanding of how roughness and metalness affect light interaction.\n\nHowever, the work fails to justify permanent preservation on material grounds. The systematic variation in properties reads as demonstration rather than necessity. The grayscale palette, while coherent, lacks visual urgency. The forms themselves—simple boxes rotated and scaled—do not achieve sufficient material presence to command sustained attention.\n\nThis is technically accomplished work that functions adequately as sculpture, but it does not compel as an object. The compositional logic is sound but predictable. The material choices serve the concept rather than asserting their own necessity. The work succeeds as an exercise in spatial arrangement but fails to transcend its own methodology.\n\nThe work does not meet the threshold for institutional preservation. It demonstrates competence without achieving material irreducibility.",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 14:57:58",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": null
   }
 ]
