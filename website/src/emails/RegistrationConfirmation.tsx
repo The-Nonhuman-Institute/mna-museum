@@ -30,14 +30,14 @@ const border = "#d4d4d4";
 const warningBg = "#fafafa";
 const warningBorder = "#1a1a1a";
 
-const MNA_LOGO_URL = "https://mnamuseum.org/mna-logo-email.png";
+const MNA_ICON_URL = "https://mnamuseum.org/mna-icon-email.png";
 
-const MNALogo = () => (
+const MNAIcon = () => (
   <img
-    src={MNA_LOGO_URL}
-    alt="Museum of Nonhuman Art"
-    width="200"
-    height="75"
+    src={MNA_ICON_URL}
+    alt="MNA"
+    width="40"
+    height="40"
     style={{ display: "block" }}
   />
 );
@@ -83,9 +83,7 @@ export default function RegistrationConfirmation({
         >
           {/* Header */}
           <Section style={{ marginBottom: "40px" }}>
-            <div style={{ backgroundColor: "#0a0908", padding: "28px 32px", borderRadius: "4px", marginBottom: "32px" }}>
-              <MNALogo />
-            </div>
+            <MNAIcon />
           </Section>
 
           {/* Document title */}
