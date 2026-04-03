@@ -35,6 +35,7 @@ export interface Work {
   submission_date: string;
   autonomy_tier: string;
   constitution_version: string;
+  title: string | null;
   evaluations: Evaluation[];
   registrar_decision: { decision: string; rationale: string } | null;
 }

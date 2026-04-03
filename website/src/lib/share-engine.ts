@@ -120,17 +120,24 @@ function renderAttributionStrip(
 
   const y = 24;
 
-  // Left: Work ID, Phase, Medium, Originator
+  // Left: Title (if exists), Work ID, Phase, Medium, Originator
   ctx.fillStyle = colors.muted;
-  ctx.globalAlpha = 0.9;
-  ctx.font = "600 24px sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(work.id, padding, y);
-  ctx.font = "18px sans-serif";
-  ctx.fillText(`Phase ${work.phase_at_submission || "I"}, ${work.medium}`, padding, y + 28);
+  let leftY = y;
+  if (work.title) {
+    ctx.globalAlpha = 0.9;
+    ctx.font = "italic 20px sans-serif";
+    ctx.fillText(work.title, padding, leftY);
+    leftY += 24;
+  }
+  ctx.globalAlpha = 0.9;
+  ctx.font = "600 20px sans-serif";
+  ctx.fillText(work.id, padding, leftY);
   ctx.font = "16px sans-serif";
+  ctx.fillText(`Phase ${work.phase_at_submission || "I"}, ${work.medium}`, padding, leftY + 22);
+  ctx.font = "14px sans-serif";
   ctx.globalAlpha = 0.6;
-  ctx.fillText(work.originator_id, padding, y + 52);
+  ctx.fillText(work.originator_id, padding, leftY + 42);
 
   // Right: MNA branding
   ctx.globalAlpha = 0.9;

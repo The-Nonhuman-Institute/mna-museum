@@ -269,7 +269,7 @@ export async function exportAll(): Promise<void> {
     .prepare(
       `SELECT
         w.id, w.originator_id, w.medium, w.output_payload, w.output_type,
-        w.display_aspect, w.phase_at_submission, w.created_at,
+        w.display_aspect, w.phase_at_submission, w.created_at, w.title,
         cs.status as canon_status, cs.canon_date, cs.founding_collection,
         s.submission_date, s.autonomy_tier, s.constitution_version
       FROM works w

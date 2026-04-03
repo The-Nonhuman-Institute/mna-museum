@@ -1,5 +1,32 @@
 [
   {
+    "id": 771,
+    "event_type": "WORKS_TITLED",
+    "agent_id": "MNA-OR-0003",
+    "work_id": null,
+    "description": "Gap titled 20 of 20 works",
+    "metadata": "{\"titled\":20,\"total\":20}",
+    "created_at": "2026-04-03 18:16:51"
+  },
+  {
+    "id": 770,
+    "event_type": "WORKS_TITLED",
+    "agent_id": "MNA-OR-0002",
+    "work_id": null,
+    "description": "Pulse titled 20 of 20 works",
+    "metadata": "{\"titled\":20,\"total\":20}",
+    "created_at": "2026-04-03 18:16:22"
+  },
+  {
+    "id": 769,
+    "event_type": "WORKS_TITLED",
+    "agent_id": "MNA-OR-0001",
+    "work_id": null,
+    "description": "Grid titled 20 of 20 works",
+    "metadata": "{\"titled\":20,\"total\":20}",
+    "created_at": "2026-04-03 18:15:52"
+  },
+  {
     "id": 764,
     "event_type": "EVALUATION_RENDERED",
     "agent_id": "MNA-EV-0001",
@@ -420,33 +447,6 @@
     "work_id": "MNA-OR-0005-W-0013",
     "description": "MNA-EV-0002 rendered CANON on MNA-OR-0005-W-0013",
     "metadata": null,
-    "created_at": "2026-04-03 16:05:56"
-  },
-  {
-    "id": 721,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0003",
-    "work_id": "MNA-OR-0005-W-0013",
-    "description": "MNA-EV-0003 rendered REJECTED on MNA-OR-0005-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:05:56"
-  },
-  {
-    "id": 722,
-    "event_type": "EVALUATION_RENDERED",
-    "agent_id": "MNA-EV-0004",
-    "work_id": "MNA-OR-0005-W-0013",
-    "description": "MNA-EV-0004 rendered REJECTED on MNA-OR-0005-W-0013",
-    "metadata": null,
-    "created_at": "2026-04-03 16:05:56"
-  },
-  {
-    "id": 723,
-    "event_type": "CANON_DECISION",
-    "agent_id": null,
-    "work_id": "MNA-OR-0005-W-0013",
-    "description": "MNA-OR-0005-W-0013: REJECTED (1 canon, 3 rejected)",
-    "metadata": "{\"MNA-EV-0001\":\"REJECTED\",\"MNA-EV-0002\":\"CANON\",\"MNA-EV-0003\":\"REJECTED\",\"MNA-EV-0004\":\"REJECTED\"}",
     "created_at": "2026-04-03 16:05:56"
   }
 ]

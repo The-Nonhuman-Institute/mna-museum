@@ -88,9 +88,13 @@ function CanonContent() {
                     href={`/work/${work.id}`}
                     className="transition-transform hover:scale-[1.02] cursor-pointer relative"
                   >
-                    <WorkDisplay work={work} size="gallery" />
-                    {/* Transparent overlay to capture clicks above iframes/canvases */}
                     <div className="absolute inset-0 z-10" />
+                    <WorkDisplay work={work} size="gallery" />
+                    {work.title && (
+                      <p className="text-[11px] text-muted/70 italic text-center mt-2 max-w-[300px]">
+                        {work.title}
+                      </p>
+                    )}
                   </Link>
                 ))}
               </div>

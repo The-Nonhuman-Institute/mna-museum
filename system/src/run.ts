@@ -1,5 +1,5 @@
 import { isAvailable } from "./ollama";
-import { runFullPipeline, produceWork, evaluateWork, critiqueWork, resolveDeadlock, reconsiderWork, triggerEmergence } from "./pipeline";
+import { runFullPipeline, produceWork, evaluateWork, critiqueWork, resolveDeadlock, reconsiderWork, triggerEmergence, titleWorks } from "./pipeline";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -100,6 +100,17 @@ async function main() {
         break;
       }
       await resolveDeadlock(workId);
+      break;
+    }
+
+    case "title": {
+      // Trigger retroactive titling for an emerged agent
+      const originatorId = args[1];
+      if (!originatorId) {
+        console.error("Usage: run title <originator-id>");
+        process.exit(1);
+      }
+      await titleWorks(originatorId);
       break;
     }
 

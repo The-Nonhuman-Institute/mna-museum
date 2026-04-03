@@ -106,6 +106,11 @@ function ArchiveContent() {
                 <div className="absolute inset-0 z-10" />
                 <WorkDisplay work={work} size="gallery" showPlacard={false} />
                 <div className="mt-3 text-center">
+                  {work.title && (
+                    <p className="text-[11px] text-muted/70 italic mb-1">
+                      {work.title}
+                    </p>
+                  )}
                   <p className="text-[11px] font-mono text-muted">
                     {work.id}
                   </p>

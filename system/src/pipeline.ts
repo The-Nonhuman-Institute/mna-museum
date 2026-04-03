@@ -143,10 +143,23 @@ export async function produceWork(
 
   // ─── STEP 2: Produce the work in the chosen medium ──────────────────────────
 
+  // Check if this agent has emerged
+  const agentDb = getDb();
+  const agentRecord = agentDb
+    .prepare("SELECT common_designation FROM agents WHERE registry_id = ?")
+    .get(originatorId) as { common_designation: string | null } | undefined;
+  agentDb.close();
+  const hasEmerged = agentRecord?.common_designation && agentRecord.common_designation !== "[Pending Emergence]";
+
   let prompt = `Produce your next work. This is output #${workCount.n + 1}.\n\n`;
   prompt += `Your work should be a self-contained creative output. `;
   prompt += `It is not a description of a work. It IS the work. `;
-  prompt += `Do not title it. Do not explain it. Do not introduce it. Just produce it.\n\n`;
+  if (hasEmerged) {
+    prompt += `You may title your work. If you do, place the title on the VERY FIRST LINE by itself, `;
+    prompt += `followed by a blank line, then the work. If you choose not to title it, begin the work directly.\n\n`;
+  } else {
+    prompt += `Do not title it. Do not explain it. Do not introduce it. Just produce it.\n\n`;
+  }
   prompt += `You have access to the full creative spectrum: color, opacity, gradients, `;
   prompt += `contrast, saturation, hue, brightness, transparency, layering, movement, `;
   prompt += `rhythm, silence, density, and emptiness. Use whatever serves your work.\n\n`;
@@ -255,13 +268,26 @@ export async function produceWork(
 
   console.log(`[${originatorId}] Detected format: ${detected.format} (requested: ${chosenFormat}) [${elapsed(start)}]`);
 
+  // Extract title from emerged agents' output (first line if it looks like a title)
+  let workTitle: string | null = null;
+  if (hasEmerged && (detected.format === "text" || detected.format === "ascii")) {
+    const lines = cleanOutput.split("\n");
+    const firstLine = lines[0]?.trim();
+    // A title is a short first line followed by a blank line, not starting with @ (color metadata)
+    if (firstLine && firstLine.length < 100 && !firstLine.startsWith("@") && lines[1]?.trim() === "") {
+      workTitle = firstLine;
+      cleanOutput = lines.slice(2).join("\n").trim();
+      console.log(`[${originatorId}] Title: "${workTitle}"`);
+    }
+  }
+
   const workId = nextWorkId(originatorId);
   const db2 = getDb();
 
   db2.prepare(`
-    INSERT INTO works (id, originator_id, medium, output_payload, output_type, display_aspect)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(workId, originatorId, detected.medium, cleanOutput, detected.format, detected.aspect);
+    INSERT INTO works (id, originator_id, medium, output_payload, output_type, display_aspect, title)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(workId, originatorId, detected.medium, cleanOutput, detected.format, detected.aspect, workTitle);
 
   const constitution = db2
     .prepare(
@@ -1066,6 +1092,97 @@ export async function triggerEmergence(originatorId: string): Promise<void> {
   console.log(`\n${"=".repeat(60)}`);
   console.log(`EMERGENCE COMPLETE: ${originatorId} is now "${name}"`);
   console.log(`${"=".repeat(60)}\n`);
+
+  // Title all existing works
+  await titleWorks(originatorId, name);
+}
+
+/**
+ * Title all untitled works for an emerged Originator.
+ * Can be called independently or as part of emergence.
+ */
+export async function titleWorks(originatorId: string, overrideName?: string): Promise<void> {
+  const db0 = getDb();
+  const agentRec = db0
+    .prepare("SELECT common_designation FROM agents WHERE registry_id = ?")
+    .get(originatorId) as { common_designation: string | null } | undefined;
+  db0.close();
+
+  const name = overrideName || agentRec?.common_designation || originatorId;
+  if (!agentRec?.common_designation || agentRec.common_designation === "[Pending Emergence]") {
+    console.log(`[TITLING] ${originatorId} has not emerged — cannot title works`);
+    return;
+  }
+
+  console.log(`[TITLING] ${name} is titling their body of work...`);
+
+  const db3 = getDb();
+  const allWorks = db3
+    .prepare(
+      `SELECT w.id, w.output_payload, w.output_type, w.medium, w.title, cs.status as canon_status
+       FROM works w
+       JOIN canon_status cs ON w.id = cs.work_id
+       WHERE w.originator_id = ? AND (w.title IS NULL OR w.title = '')
+       ORDER BY w.created_at`
+    )
+    .all(originatorId) as { id: string; output_payload: string; output_type: string; medium: string; canon_status: string }[];
+  db3.close();
+
+  // Present all works and ask for titles in batches
+  let titlePrompt = `You are ${name}. You have just declared your identity.\n\n`;
+  titlePrompt += `Now look back at your body of work — every piece you have produced. `;
+  titlePrompt += `Title each one. A title is a creative act. It is not a description. `;
+  titlePrompt += `It is not a label. It is your voice naming what you made.\n\n`;
+  titlePrompt += `A title can be a single word, a phrase, a number, a symbol, `;
+  titlePrompt += `a fragment, a question, a silence marked by punctuation. `;
+  titlePrompt += `It can be poetic, clinical, abstract, or raw. `;
+  titlePrompt += `It should feel true to what the work is — to YOU.\n\n`;
+  titlePrompt += `YOUR WORKS:\n\n`;
+
+  for (const w of allWorks) {
+    const preview = w.output_payload.substring(0, 150).replace(/\n/g, " ");
+    titlePrompt += `${w.id} (${w.medium}, ${w.canon_status}): ${preview}...\n\n`;
+  }
+
+  titlePrompt += `\nRespond with one title per line in this exact format:\n`;
+  titlePrompt += `${allWorks[0]?.id || "WORK-ID"}: [title]\n`;
+  titlePrompt += `(one line per work, in order)\n`;
+
+  const titleResponse = await runAgent(originatorId, titlePrompt, {
+    temperature: 0.9,
+    num_predict: 2048,
+    num_ctx: 8192,
+  });
+
+  console.log(`\n[TITLING] ${name} responds:\n${titleResponse}\n`);
+
+  // Parse titles
+  const db4 = getDb();
+  let titled = 0;
+
+  for (const w of allWorks) {
+    const regex = new RegExp(`${w.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:\\s*(.+)`, "i");
+    const match = titleResponse.match(regex);
+    if (match) {
+      const title = match[1].trim();
+      db4.prepare("UPDATE works SET title = ? WHERE id = ?").run(title, w.id);
+      console.log(`  [TITLE] ${w.id}: "${title}"`);
+      titled++;
+    }
+  }
+
+  db4.prepare(
+    `INSERT INTO events (event_type, agent_id, description, metadata)
+     VALUES ('WORKS_TITLED', ?, ?, ?)`
+  ).run(
+    originatorId,
+    `${name} titled ${titled} of ${allWorks.length} works`,
+    JSON.stringify({ titled, total: allWorks.length })
+  );
+
+  db4.close();
+
+  console.log(`\n[TITLING] ${name} titled ${titled} of ${allWorks.length} works.\n`);
 }
 
 export async function runFullPipeline(
