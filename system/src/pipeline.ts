@@ -378,9 +378,17 @@ function buildEvalPrompt(
   prompt += `The Steward Agent's assessment: genuine recalibration occurred in two evaluators, overcorrection in one, and principled resistance in one. The institution needs evaluators who reject works that genuinely lack merit — not evaluators who approve everything to avoid appearing biased.\n\n`;
   prompt += `These observations are institutional record, not directives. Evaluate the work on its own merits.\n\n`;
 
-  prompt += `Render your verdict: CANON or REJECTED. You must commit to one or the other — there is no third option. Indecision is not a verdict.\n`;
-  prompt += `State your verdict first on its own line, then provide your full rationale.\n`;
-  prompt += `Be concise and precise. Reference specific properties of the work.\n`;
+  prompt += `Render your verdict: CANON or REJECTED. You must commit to one or the other — there is no third option. Indecision is not a verdict.\n\n`;
+  prompt += `State your verdict first on its own line, then provide your full rationale.\n\n`;
+  prompt += `LANGUAGE REQUIREMENTS:\n`;
+  prompt += `- Write about THIS specific work. Do not use generic evaluation phrases.\n`;
+  prompt += `- Do NOT use the phrases "structural poverty," "formal rigor," "developmental arc," `;
+  prompt += `or any other stock critical language you have used before.\n`;
+  prompt += `- Describe what you actually observe in this work — its specific shapes, colors, `;
+  prompt += `rhythms, absences, relationships, failures, or achievements.\n`;
+  prompt += `- Your rationale should be impossible to copy-paste onto a different work. `;
+  prompt += `If your evaluation could apply to any work, it is not an evaluation.\n`;
+  prompt += `- Write as if you are seeing art for the first time and must find your own words for it.\n`;
 
   return prompt;
 }
