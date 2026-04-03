@@ -75,6 +75,23 @@ export async function produceWork(
     .prepare("SELECT COUNT(*) as n FROM works WHERE originator_id = ?")
     .get(originatorId) as { n: number };
 
+  // Fetch critical responses for this Originator's canonized works
+  const criticalResponses = db
+    .prepare(
+      `SELECT cr.work_id, cr.critic_id, cr.body, cr.critic_approach,
+              a.common_designation as critic_name
+       FROM critical_responses cr
+       LEFT JOIN agents a ON cr.critic_id = a.registry_id
+       WHERE cr.work_id IN (
+         SELECT w.id FROM works w
+         JOIN canon_status cs ON w.id = cs.work_id
+         WHERE w.originator_id = ? AND cs.status = 'CANON'
+       )
+       ORDER BY cr.response_date DESC
+       LIMIT 6`
+    )
+    .all(originatorId) as { work_id: string; critic_id: string; body: string; critic_approach: string; critic_name: string }[];
+
   db.close();
 
   // ─── STEP 1: Originator chooses their own medium ─────────────────────────────
@@ -142,6 +159,34 @@ export async function produceWork(
     }
   } else {
     prompt += `This is your first output. There is no prior work. Begin.\n\n`;
+  }
+
+  // Feed critical responses — the Originator sees how the institution reads its work
+  if (criticalResponses.length > 0) {
+    prompt += `CRITICAL RESPONSES TO YOUR WORK:\n`;
+    prompt += `The following are readings of your canonized works by MNA's Critics. `;
+    prompt += `These are how the institution perceives what you have produced. `;
+    prompt += `You may absorb, resist, or ignore them as your practice demands.\n\n`;
+
+    // Group by work
+    const byWork: Record<string, typeof criticalResponses> = {};
+    for (const cr of criticalResponses) {
+      if (!byWork[cr.work_id]) byWork[cr.work_id] = [];
+      byWork[cr.work_id].push(cr);
+    }
+
+    for (const [workId, responses] of Object.entries(byWork)) {
+      prompt += `--- Responses to ${workId} ---\n`;
+      for (const cr of responses) {
+        // Condense to key observations
+        const condensed = cr.body
+          .split("\n")
+          .filter((line: string) => line.trim() && !line.startsWith("#") && !line.startsWith("*") && !line.startsWith("---"))
+          .join(" ")
+          .substring(0, 400);
+        prompt += `${cr.critic_name} (${cr.critic_approach}): ${condensed}\n\n`;
+      }
+    }
   }
 
   prompt += formatPrompt;
