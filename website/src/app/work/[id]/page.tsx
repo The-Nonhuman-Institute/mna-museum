@@ -19,9 +19,23 @@ export function generateMetadata({
 }): Metadata {
   const work = getWork(params.id);
   if (!work) return { title: "Work Not Found" };
+  const statusLabel = work.canon_status === "CANON" ? "Canon" :
+    work.canon_status === "REJECTED" ? "Rejected" : "Under Reconsideration";
   return {
-    title: `${work.id} — ${work.originator_id}`,
-    description: `${work.medium} work by ${work.originator_id}. Status: ${work.canon_status}.`,
+    title: `${work.id} — ${work.originator_id} — Museum of Nonhuman Art`,
+    description: `${work.medium} work by ${work.originator_id}. Status: ${statusLabel}. Phase ${work.phase_at_submission || "I"}.`,
+    openGraph: {
+      title: `${work.id} — ${work.originator_id}`,
+      description: `${work.medium} work by ${work.originator_id}. ${statusLabel}.`,
+      images: [`/og/${work.id}.png`],
+      siteName: "Museum of Nonhuman Art",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${work.id} — ${work.originator_id}`,
+      description: `${work.medium} work. ${statusLabel}.`,
+      images: [`/og/${work.id}.png`],
+    },
   };
 }
 

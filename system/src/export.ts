@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 
 const PREVIEW_DIR = path.join(__dirname, "..", "..", "website", "public", "previews");
+const OG_DIR = path.join(__dirname, "..", "..", "website", "public", "og");
 
 const OUT_DIR = path.join(__dirname, "..", "..", "website", "src", "data");
 
@@ -58,6 +59,103 @@ async function generateHtmlPreviews(works: { id: string; output_type: string; ou
       console.log(`  [PREVIEW] ${work.id} ✓`);
     } catch (e) {
       console.error(`  [PREVIEW] ${work.id} FAILED: ${e}`);
+    }
+  }
+
+  await browser.close();
+}
+
+/** Generate OG preview images for all works using Puppeteer */
+async function generateOgImages(works: { id: string; originator_id: string; medium: string; output_type: string; output_payload: string; canon_status: string; phase_at_submission: string | null }[]): Promise<void> {
+  ensureDir(OG_DIR);
+  const existing = new Set(fs.readdirSync(OG_DIR));
+  const needOg = works.filter(w => !existing.has(`${w.id}.png`));
+
+  if (needOg.length === 0) {
+    console.log(`[OG] All ${works.length} OG images up to date`);
+    return;
+  }
+
+  console.log(`[OG] Generating ${needOg.length} OG image(s)...`);
+
+  let puppeteer;
+  try {
+    puppeteer = require("puppeteer");
+  } catch {
+    console.warn("[OG] Puppeteer not installed — skipping OG generation");
+    return;
+  }
+
+  const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+
+  for (const work of needOg) {
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1200, height: 630 });
+
+      const statusLabel = work.canon_status === "CANON" ? "CANON" :
+        work.canon_status === "REJECTED" ? "REJECTED" : "UNDER RECONSIDERATION";
+      const statusColor = work.canon_status === "CANON" ? "#4a7c5e" :
+        work.canon_status === "REJECTED" ? "#8a8680" : "#b08840";
+
+      // Build a self-contained HTML page that displays the work info
+      // We can't render the actual Three.js/canvas works here, but we can
+      // render text/SVG works and show metadata for others
+      let workContent = "";
+
+      if (work.output_type === "svg" && work.output_payload.includes("</svg>")) {
+        const svgStart = work.output_payload.indexOf("<svg");
+        const svgEnd = work.output_payload.lastIndexOf("</svg>") + 6;
+        if (svgStart >= 0 && svgEnd > svgStart) {
+          workContent = `<div style="width:300px;height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden">${work.output_payload.substring(svgStart, svgEnd)}</div>`;
+        }
+      } else if ((work.output_type === "text" || work.output_type === "ascii") && work.output_payload) {
+        const stripped = work.output_payload.replace(/^@bg:#[0-9a-fA-F]+\s*(?:@fg:#[0-9a-fA-F]+)?\s*\n?/, "");
+        const preview = stripped.substring(0, 300).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        workContent = `<pre style="color:#c8c4be;font-size:11px;font-family:monospace;white-space:pre-wrap;max-width:400px;max-height:300px;overflow:hidden;line-height:1.5;text-align:center">${preview}</pre>`;
+      } else {
+        const mediumLabel = work.output_type === "html-css" ? "CSS Animation" :
+          work.output_type === "canvas-json" ? "Canvas Drawing" :
+          work.output_type === "audio-json" ? "Audio Composition" :
+          work.output_type === "scene-json" ? "3D Sculpture" : work.medium;
+        workContent = `<div style="color:#3a3530;font-size:14px;text-transform:uppercase;letter-spacing:0.1em">${mediumLabel}</div>`;
+      }
+
+      const html = `<!DOCTYPE html>
+<html><head><style>
+body { margin:0; width:1200px; height:630px; background:#0a0908; display:flex; font-family:Georgia,serif; }
+.left { flex:1; display:flex; align-items:center; justify-content:center; }
+.right { width:480px; display:flex; flex-direction:column; justify-content:center; padding:60px 60px 60px 0; }
+.work-frame { width:360px; height:360px; background:#0e0c0a; border:2px solid #1a1a1a; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.mna { font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:#4a4540; margin-bottom:30px; }
+.id { font-size:14px; color:#6a6560; font-family:monospace; margin-bottom:10px; }
+.originator { font-size:36px; color:#e8e4de; line-height:1.2; margin-bottom:12px; }
+.meta { font-size:14px; color:#8a8680; margin-bottom:20px; }
+.status { display:inline-block; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:${statusColor}; border:1px solid ${statusColor}; padding:3px 8px; }
+.url { position:absolute; bottom:30px; right:60px; font-size:12px; color:#3a3530; letter-spacing:0.1em; }
+svg { max-width:100%; max-height:100%; }
+</style></head>
+<body>
+<div class="left"><div class="work-frame">${workContent}</div></div>
+<div class="right">
+  <div class="mna">Museum of Nonhuman Art</div>
+  <div class="id">${work.id}</div>
+  <div class="originator">${work.originator_id}</div>
+  <div class="meta">Phase ${work.phase_at_submission || "I"} — ${work.medium}</div>
+  <div><span class="status">${statusLabel}</span></div>
+</div>
+<div class="url">mnamuseum.org</div>
+</body></html>`;
+
+      await page.setContent(html, { waitUntil: "networkidle0", timeout: 10000 });
+      await page.screenshot({
+        path: path.join(OG_DIR, `${work.id}.png`),
+        type: "png",
+      });
+      await page.close();
+      console.log(`  [OG] ${work.id} ✓`);
+    } catch (e) {
+      console.error(`  [OG] ${work.id} FAILED: ${e}`);
     }
   }
 
@@ -211,6 +309,9 @@ export async function exportAll(): Promise<void> {
 
   // Generate HTML-CSS preview screenshots
   await generateHtmlPreviews(validatedWorks as { id: string; output_type: string; output_payload: string }[]);
+
+  // Generate OG images for social previews
+  await generateOgImages(validatedWorks as any[]);
 
   // Write files
   fs.writeFileSync(
