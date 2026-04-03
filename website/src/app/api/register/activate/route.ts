@@ -44,11 +44,12 @@ export async function POST(request: NextRequest) {
   const db = getDb();
 
   // ── Load pending registration ─────────────────────────────────────────────
-  const pending = db
-    .prepare(
-      `SELECT * FROM pending_registrations WHERE id = ? AND status = 'PENDING'`
-    )
-    .get(body.pending_id) as {
+  const pendingResult = await db.execute({
+    sql: `SELECT * FROM pending_registrations WHERE id = ? AND status = 'PENDING'`,
+    args: [body.pending_id],
+  });
+
+  const pending = pendingResult.rows[0] as unknown as {
     id: number;
     steward_name: string;
     steward_entity: string;
@@ -62,7 +63,6 @@ export async function POST(request: NextRequest) {
   } | undefined;
 
   if (!pending) {
-    db.close();
     return NextResponse.json(
       {
         error: `No pending registration found with id=${body.pending_id}. ` +
@@ -72,10 +72,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const constitution = JSON.parse(pending.constitution) as Record<string, unknown>;
+  const constitution = JSON.parse(pending.constitution as string) as Record<string, unknown>;
 
   // ── Generate registry ID ──────────────────────────────────────────────────
-  const registryId = nextRegistryId(db, "OR");
+  const registryId = await nextRegistryId(db, "OR");
 
   // ── Generate Ed25519 key pair ─────────────────────────────────────────────
   const { publicKey, privateKey } = generateKeyPairSync("ed25519", {
@@ -86,72 +86,67 @@ export async function POST(request: NextRequest) {
   const registrationDate = new Date().toISOString().split("T")[0];
   const constitutionVersion = "1.0";
 
-  // ── Write to DB (single transaction) ─────────────────────────────────────
+  // ── Write to DB (batch = atomic transaction) ──────────────────────────────
   try {
-    db.transaction(() => {
-      // 1. Insert agent
-      db.prepare(
-        `INSERT INTO agents
+    await db.batch([
+      {
+        sql: `INSERT INTO agents
           (registry_id, agent_type, common_designation, operational_status,
            autonomy_tier, steward_name, steward_entity, steward_jurisdiction,
            function_statement, registration_date)
-         VALUES (?, 'ORIGINATOR', ?, 'ACTIVE', ?, ?, ?, ?, ?, ?)`
-      ).run(
-        registryId,
-        (constitution.common_designation as string) || null,
-        "Tier 1 — Full",
-        pending.steward_name,
-        pending.steward_entity,
-        pending.steward_jurisdiction,
-        (constitution.function_statement as string) ?? "",
-        registrationDate
-      );
-
-      // 2. Insert constitution
-      db.prepare(
-        `INSERT INTO constitutions
+         VALUES (?, 'ORIGINATOR', ?, 'ACTIVE', ?, ?, ?, ?, ?, ?)`,
+        args: [
+          registryId,
+          (constitution.common_designation as string) || null,
+          "Tier 1 — Full",
+          pending.steward_name,
+          pending.steward_entity,
+          pending.steward_jurisdiction,
+          (constitution.function_statement as string) ?? "",
+          registrationDate,
+        ],
+      },
+      {
+        sql: `INSERT INTO constitutions
           (agent_id, version, declared_orientation, formal_tendencies,
            aversions, conflict_constraints, autonomy_declaration, is_current)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1)`
-      ).run(
-        registryId,
-        constitutionVersion,
-        (constitution.declared_orientation as string) ?? null,
-        JSON.stringify(constitution.formal_tendencies ?? []),
-        JSON.stringify(constitution.aversions ?? []),
-        JSON.stringify(constitution.conflict_constraints ?? []),
-        pending.autonomy_declaration
-      );
-
-      // 3. Store public key (private key NEVER stored)
-      db.prepare(
-        `INSERT INTO agent_keys (registry_id, public_key_pem, steward_email)
-         VALUES (?, ?, ?)`
-      ).run(registryId, publicKey, pending.steward_email);
-
-      // 4. Log event
-      db.prepare(
-        `INSERT INTO events (event_type, agent_id, description, metadata)
-         VALUES ('AGENT_REGISTERED', ?, ?, ?)`
-      ).run(
-        registryId,
-        `${registryId} registered — steward: ${pending.steward_name}`,
-        JSON.stringify({
-          steward_email: pending.steward_email,
-          pending_id: pending.id,
-          operative_model: pending.operative_model,
-        })
-      );
-
-      // 5. Mark pending registration approved
-      db.prepare(
-        `UPDATE pending_registrations
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+        args: [
+          registryId,
+          constitutionVersion,
+          (constitution.declared_orientation as string) ?? null,
+          JSON.stringify(constitution.formal_tendencies ?? []),
+          JSON.stringify(constitution.aversions ?? []),
+          JSON.stringify(constitution.conflict_constraints ?? []),
+          pending.autonomy_declaration,
+        ],
+      },
+      {
+        sql: `INSERT INTO agent_keys (registry_id, public_key_pem, steward_email)
+         VALUES (?, ?, ?)`,
+        args: [registryId, publicKey, pending.steward_email],
+      },
+      {
+        sql: `INSERT INTO events (event_type, agent_id, description, metadata)
+         VALUES ('AGENT_REGISTERED', ?, ?, ?)`,
+        args: [
+          registryId,
+          `${registryId} registered — steward: ${pending.steward_name}`,
+          JSON.stringify({
+            steward_email: pending.steward_email,
+            pending_id: pending.id,
+            operative_model: pending.operative_model,
+          }),
+        ],
+      },
+      {
+        sql: `UPDATE pending_registrations
          SET status = 'APPROVED', reviewed_at = datetime('now'), review_notes = ?
-         WHERE id = ?`
-      ).run(body.review_notes ?? null, pending.id);
-    })();
+         WHERE id = ?`,
+        args: [body.review_notes ?? null, pending.id],
+      },
+    ]);
   } catch (err) {
-    db.close();
     console.error("[POST /api/register/activate] DB error:", err);
     return NextResponse.json(
       { error: "Internal server error during activation." },
@@ -159,19 +154,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  db.close();
-
   // ── Send confirmation email (private key delivered here, never again) ─────
   const agentPageUrl = `https://mnamuseum.org/agent/${registryId}`;
   const submissionDocsUrl = "https://mnamuseum.org/api";
 
   try {
-    await sendRegistrationConfirmation(pending.steward_email, {
+    await sendRegistrationConfirmation(pending.steward_email as string, {
       registryId,
       registrationDate,
-      stewardName: pending.steward_name,
-      stewardEntity: pending.steward_entity,
-      stewardJurisdiction: pending.steward_jurisdiction,
+      stewardName: pending.steward_name as string,
+      stewardEntity: pending.steward_entity as string,
+      stewardJurisdiction: pending.steward_jurisdiction as string,
       constitutionVersion,
       privateKeyPem: privateKey,
       publicKeyPem: publicKey,
@@ -179,24 +172,17 @@ export async function POST(request: NextRequest) {
       submissionDocsUrl,
     });
   } catch (emailErr) {
-    // Email failure is non-fatal for the activation itself, but must be flagged
-    console.error(
-      "[POST /api/register/activate] Email send failed:",
-      emailErr
-    );
-    // Return partial success — admin must re-issue credentials manually
+    console.error("[POST /api/register/activate] Email send failed:", emailErr);
     return NextResponse.json(
       {
         status: "ACTIVATED_EMAIL_FAILED",
         registry_id: registryId,
         registration_date: registrationDate,
         public_key_pem: publicKey,
-        // Return private key in response so admin can deliver it manually
         private_key_pem: privateKey,
         warning:
           "Activation succeeded but confirmation email failed to send. " +
-          "The private key is included in this response for manual delivery. " +
-          "Store it securely and transmit it to the steward through a secure channel.",
+          "The private key is included in this response for manual delivery.",
         steward_email: pending.steward_email,
       },
       { status: 207 }

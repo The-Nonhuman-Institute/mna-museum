@@ -225,15 +225,13 @@ export async function POST(request: NextRequest) {
   let pendingId: number;
   try {
     const db = getDb();
-    const result = db
-      .prepare(
-        `INSERT INTO pending_registrations
-          (steward_name, steward_entity, steward_jurisdiction, steward_email,
-           constitution, autonomy_declaration, record_permanence_acknowledged,
-           operative_model, review_notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
+    const result = await db.execute({
+      sql: `INSERT INTO pending_registrations
+        (steward_name, steward_entity, steward_jurisdiction, steward_email,
+         constitution, autonomy_declaration, record_permanence_acknowledged,
+         operative_model, review_notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
         sd.steward_name ?? "",
         sd.steward_entity ?? "",
         sd.steward_jurisdiction ?? "",
@@ -242,10 +240,10 @@ export async function POST(request: NextRequest) {
         body.autonomy_declaration,
         body.record_permanence_acknowledged ? 1 : 0,
         body.operative_model ?? null,
-        warnings.length > 0 ? warnings.join("\n\n") : null
-      );
-    pendingId = result.lastInsertRowid as number;
-    db.close();
+        warnings.length > 0 ? warnings.join("\n\n") : null,
+      ],
+    });
+    pendingId = Number(result.lastInsertRowid);
   } catch (err) {
     console.error("[POST /api/register] DB error:", err);
     return NextResponse.json(
