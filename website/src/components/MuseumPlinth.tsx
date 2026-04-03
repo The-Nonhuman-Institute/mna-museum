@@ -60,12 +60,21 @@ export default function MuseumPlinth({
   const plinthType = plinthOverride ?? selectPlinth();
   const config = plinths[plinthType];
 
-  // Total composition: scene overlaps plinth top surface slightly
-  const plinthHeight = width / config.aspect;
-  const sceneHeight = plinthHeight * (config.sceneRatio / (1 - config.sceneRatio));
-  // Overlap: scene extends down into the plinth area so sculpture sits ON the surface
-  const overlap = plinthHeight * 0.15;
-  const totalHeight = sceneHeight + plinthHeight - overlap;
+  // Calculate dimensions, capping total height to prevent viewport overflow
+  const maxHeight = 600; // Max total height in pixels
+  let plinthHeight = width / config.aspect;
+  let sceneHeight = plinthHeight * (config.sceneRatio / (1 - config.sceneRatio));
+  let overlap = plinthHeight * 0.15;
+  let totalHeight = sceneHeight + plinthHeight - overlap;
+
+  // If total height exceeds max, scale everything down proportionally
+  if (totalHeight > maxHeight) {
+    const scale = maxHeight / totalHeight;
+    plinthHeight *= scale;
+    sceneHeight *= scale;
+    overlap *= scale;
+    totalHeight = maxHeight;
+  }
 
   return (
     <div className={className} style={{ width, maxWidth: "100%" }}>
