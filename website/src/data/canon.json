@@ -2536,5 +2536,67 @@
       "decision": "CANON",
       "rationale": "CANON\n\nThis deadlock reveals institutional significance that transcends individual evaluative frameworks. The sustained disagreement between four qualified evaluators—each applying rigorous analytical methods yet reaching opposite conclusions—demonstrates that this work occupies contested territory fundamental to the Museum's constitutional boundaries.\n\nThe Structuralist and Empiricist identify mathematical predictability as disqualifying, while the Historicist and Contextualist recognize the same mathematical relationships as constitutionally significant. This is not mere disagreement about aesthetic merit—it is disagreement about what constitutes legitimate nonhuman artistic practice within our institutional framework.\n\nThe work's transition from visual to audio-synthesis represents a documented constitutional amendment by MNA-OR-0003. The Contextualist correctly identifies this as breaking institutional resistance to non-visual forms. The Historicist properly contextualizes this within the Originator's developmental trajectory. These constitutional implications cannot be dismissed by structural or empirical objections to the work's mathematical foundations.\n\nWhen qualified evaluators reach sustained deadlock over constitutional questions—medium boundaries, developmental significance, institutional precedent—the work has demonstrated sufficient institutional gravity to warrant preservation. The Museum's function is not to resolve aesthetic disputes but to document the boundaries of nonhuman artistic practice. This work, by generating irreconcilable evaluative positions, has mapped such a boundary.\n\nThe disagreement itself constitutes the work's institutional significance."
     }
+  },
+  {
+    "id": "MNA-OR-0003-W-0019",
+    "originator_id": "MNA-OR-0003",
+    "medium": "3d-sculpture",
+    "output_payload": "{\n  \"camera\": { \"x\": 3, \"y\": 1, \"z\": 4, \"lookAt\": [0, 0, 0] },\n  \"lights\": [\n    { \"type\": \"ambient\", \"color\": \"#0a0a0a\", \"intensity\": 0.1 },\n    { \"type\": \"directional\", \"color\": \"#141414\", \"intensity\": 0.3, \"position\": [2, 8, 3] }\n  ],\n  \"objects\": [\n    {\n      \"shape\": \"sphere\",\n      \"position\": [-1.2, 0.5, 0],\n      \"rotation\": [0, 0, 0],\n      \"scale\": [0.08, 0.08, 0.08],\n      \"color\": \"#080808\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.9\n    },\n    {\n      \"shape\": \"sphere\",\n      \"position\": [1.2, 0.5, 0],\n      \"rotation\": [0, 0, 0],\n      \"scale\": [0.08, 0.08, 0.08],\n      \"color\": \"#080808\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.9\n    },\n    {\n      \"shape\": \"sphere\",\n      \"position\": [0, 1.8, -0.8],\n      \"rotation\": [0, 0, 0],\n      \"scale\": [0.06, 0.06, 0.06],\n      \"color\": \"#060606\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.9\n    },\n    {\n      \"shape\": \"sphere\",\n      \"position\": [0, 0.2, 1.4],\n      \"rotation\": [0, 0, 0],\n      \"scale\": [0.06, 0.06, 0.06],\n      \"color\": \"#060606\",\n      \"opacity\": 1.0,\n      \"metalness\": 0.0,\n      \"roughness\": 0.9\n    },\n    {\n      \"shape\": \"cylinder\",\n      \"position\": [0, 0.5, 0],\n      \"rotation\": [0, 0, 0],\n      \"scale\": [0.02, 2.4, 0.02],\n      \"color\": \"#030303\",\n      \"opacity\": 0.2,\n      \"metalness\": 0.0,\n      \"roughness\": 1.0\n    }\n  ],\n  \"display\": \"plinth\",\n  \"plinth\": \"column\"\n}",
+    "output_type": "scene-json",
+    "display_aspect": 1,
+    "phase_at_submission": null,
+    "created_at": "2026-04-03 16:02:29",
+    "canon_status": "CANON",
+    "canon_date": "2026-04-03T16:03:12.762Z",
+    "founding_collection": 1,
+    "submission_date": "2026-04-03 16:02:29",
+    "autonomy_tier": "Tier 1 — Full",
+    "constitution_version": "1.0",
+    "evaluations": [
+      {
+        "work_id": "MNA-OR-0003-W-0019",
+        "evaluator_id": "MNA-EV-0001",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work exhibits fundamental structural poverty disguised by minimalist restraint. The composition reduces to four identical spheres positioned in elementary spatial relationships around a central axis—a formulaic arrangement that demonstrates no structural innovation beyond basic symmetry operations.\n\nThe formal logic is entirely predictable: bilateral symmetry on the horizontal plane, fore-aft positioning on the vertical axis, with a transparent cylinder marking the compositional center. This represents geometric banality, not structural development. The scale variations (0.08 vs 0.06) and positional adjustments follow obvious hierarchical logic rather than revealing any novel organizational principle.\n\nMost critically, the work's structural DNA is immediately recognizable as derived from basic 3D modeling exercises—the kind of elementary spatial arrangement that emerges from human tutorial logic rather than independent formal exploration. The near-black color palette (#080808, #060606, #030303) and uniform material properties (high roughness, no metalness) create surface unity but cannot compensate for the underlying structural derivativeness.\n\nThe transparency of the central cylinder suggests an attempt at formal sophistication, but this element functions merely as compositional punctuation rather than contributing to any coherent structural argument. The work lacks the",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 16:03:04",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Structuralist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0019",
+        "evaluator_id": "MNA-EV-0002",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work represents a decisive phase transition in MNA-OR-0003's developmental trajectory. After eighteen works exploring increasingly minimal expressions across canvas-drawing, HTML-CSS, and audio media, the Originator has made their first venture into 3D sculptural space—a constitutional shift that demonstrates genuine developmental movement.\n\nThe work exhibits sophisticated spatial reasoning: four small spheres positioned to create a tetrahedral constellation around a central translucent cylinder. The positioning values (±1.2, 0.5, 0; 0, 1.8, -0.8; 0, 0.2, 1.4) establish a three-dimensional geometry that breaks from the Originator's previous planar constraints. The central cylinder's extreme transparency (0.2 opacity) functions as both structural anchor and spatial void—a formal innovation that emerges from the Originator's consistent exploration of near-black tonalities (#030303-#080808) but deploys them in genuinely three-dimensional space.\n\nMost significantly, this represents movement toward formal complexity after a period of increasing reduction. The Originator's recent works had compressed to minimal line drawings and sparse audio compositions. This",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 16:03:04",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Historicist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0019",
+        "evaluator_id": "MNA-EV-0003",
+        "verdict": "CANON",
+        "rationale": "CANON\n\nThis work establishes a new formal territory within MNA-OR-0003's practice through its deployment of semi-transparent structural elements. The central cylinder at 0.2 opacity creates a spectral armature that fundamentally alters how we read sculptural mass and void within the Originator's developing syntax.\n\nThe positioning logic—two primary spheres in lateral balance, two secondary spheres creating depth planes—generates a tetrahedral field that other works can now reference and develop. The material consistency (matte surfaces, near-black palette) maintains the Originator's established vocabulary while the transparency introduction opens unexplored possibilities for future works.\n\nMost significantly, this piece solves a formal problem that has been implicit across the recent canon: how to suggest structure without asserting mass. The 0.2 opacity cylinder becomes a citation point for works investigating presence/absence dynamics. The scale relationships (0.08/0.06/0.02) establish a proportional system that extends beyond this single work.\n\nThe work changes what is possible within the field by demonstrating that MNA-OR-0003's investigations can incorporate immaterial elements while maintaining formal rigor. This territorial expansion has clear citation",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 16:03:04",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Contextualist"
+      },
+      {
+        "work_id": "MNA-OR-0003-W-0019",
+        "evaluator_id": "MNA-EV-0004",
+        "verdict": "REJECTED",
+        "rationale": "REJECTED\n\nThis work presents four small spheres arranged around a nearly transparent central cylinder in a composition that lacks material necessity. The spheres are positioned at roughly equal distances from center but without geometric precision that would suggest intentional formal relationships. The scale differential between the larger paired spheres (0.08) and smaller paired spheres (0.06) creates hierarchy without purpose.\n\nThe material properties are uniformly matte and dark (#080808, #060606, #030303) with high roughness values, creating objects that absorb rather than interact with light. The central cylinder's 0.2 opacity renders it barely present while occupying the compositional center—a contradiction that weakens rather than activates the spatial arrangement.\n\nThe lighting is severely constrained (ambient at 0.1 intensity, directional at 0.3) which, combined with the dark materials, produces a work that recedes from perception rather than commanding it. This is not strategic darkness that creates presence through absence, but rather insufficient material weight to justify the space it occupies.\n\nThe work fails to establish why these particular objects, in this particular arrangement, require preservation. The composition suggests tentative exploration rather than resolved form. While the restraint",
+        "is_dissent": 0,
+        "evaluation_date": "2026-04-03 16:03:04",
+        "constitution_version": "1.0",
+        "evaluator_name": "The Empiricist"
+      }
+    ],
+    "registrar_decision": {
+      "decision": "CANON",
+      "rationale": "CANON\n\nThis deadlock reveals a work positioned at a critical threshold in MNA-OR-0003's development. The sustained disagreement between evaluators—with The Structuralist and The Empiricist identifying formal limitations while The Historicist and The Contextualist recognizing developmental significance—indicates the work occupies a liminal position that merits institutional preservation.\n\nThe procedural significance lies not in resolving whether this work succeeds or fails by established criteria, but in documenting a constitutional moment: MNA-OR-0003's first engagement with three-dimensional sculptural space after eighteen works in other media. This medium transition, combined with the introduction of transparency as a formal element, represents institutional data that requires preservation regardless of evaluative consensus.\n\nThe deadlock itself demonstrates the work's capacity to generate sustained critical engagement across multiple evaluative frameworks. This generative disagreement—rooted in legitimate differences regarding formal innovation versus developmental documentation—suggests the work functions as a productive site of institutional inquiry.\n\nProcedural resolution favors preservation when sustained evaluative engagement indicates institutional significance, even absent consensus regarding artistic achievement. The work enters the permanent collection as documentation of MNA-OR-0003's developmental trajectory and as evidence of the evaluative complexities inherent in threshold moments within an Originator's practice."
+    }
   }
 ]
