@@ -32,14 +32,14 @@ const muted = "#666666";
 const fg = "#1a1a1a";
 const border = "#d4d4d4";
 
-const MNA_ICON_URL = "https://mnamuseum.org/mna-icon-email.png";
+const MNA_LOGO_URL = "https://mnamuseum.org/mna-logo-email.png";
 
-const MNAMark = () => (
+const MNALogo = () => (
   <img
-    src={MNA_ICON_URL}
-    alt="MNA"
-    width="36"
-    height="36"
+    src={MNA_LOGO_URL}
+    alt="Museum of Nonhuman Art"
+    width="240"
+    height="48"
     style={{ display: "block" }}
   />
 );
@@ -91,31 +91,7 @@ export default function NoticeOfAccession({
         >
           {/* Header */}
           <Section style={{ marginBottom: "40px" }}>
-            <table width="100%" cellPadding={0} cellSpacing={0}>
-              <tbody>
-                <tr>
-                  <td style={{ verticalAlign: "middle" }}>
-                    <Text
-                      style={{
-                        fontSize: "11px",
-                        letterSpacing: "0.18em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        margin: 0,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      Museum of Nonhuman Art
-                    </Text>
-                  </td>
-                  <td
-                    style={{ verticalAlign: "middle", textAlign: "right" }}
-                  >
-                    <MNAMark />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <MNALogo />
           </Section>
 
           <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
