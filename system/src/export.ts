@@ -153,9 +153,11 @@ async function generateOgImages(works: { id: string; originator_id: string; medi
         // Render the actual HTML-CSS work in an iframe
         const escaped = work.output_payload.replace(/"/g, '&quot;');
         workContent = `<iframe srcdoc="${escaped}" style="width:360px;height:360px;border:none;overflow:hidden" sandbox="allow-same-origin"></iframe>`;
+      } else if (work.output_type === "scene-json") {
+        // 2D isometric projection — rendered via page.evaluate after setContent
+        workContent = `<canvas id="scene" width="360" height="360"></canvas>`;
       } else {
-        const mediumLabel = work.output_type === "audio-json" ? "Audio Composition" :
-          work.output_type === "scene-json" ? "3D Sculpture" : work.medium;
+        const mediumLabel = work.output_type === "audio-json" ? "Audio Composition" : work.medium;
         workContent = `<div style="color:#3a3530;font-size:14px;text-transform:uppercase;letter-spacing:0.1em">${mediumLabel}</div>`;
       }
 
@@ -185,7 +187,63 @@ svg { max-width:100%; max-height:100%; }
 <div class="url">mnamuseum.org</div>
 </body></html>`;
 
-      await page.setContent(html, { waitUntil: "networkidle0", timeout: 10000 });
+      await page.setContent(html, { waitUntil: "networkidle0", timeout: 15000 });
+
+      // For scene-json, draw the isometric projection via evaluate (avoids JSON escaping issues)
+      if (work.output_type === "scene-json") {
+        let sceneData: { objects?: Array<{ shape?: string; position?: number[]; scale?: number[]; color?: string; opacity?: number }> } = {};
+        try {
+          sceneData = JSON.parse(work.output_payload);
+        } catch {
+          try {
+            const last = work.output_payload.lastIndexOf("}");
+            if (last > 0) {
+              let attempt = work.output_payload.substring(0, last + 1);
+              const ob = (attempt.match(/\[/g) || []).length - (attempt.match(/\]/g) || []).length;
+              const oc = (attempt.match(/\{/g) || []).length - (attempt.match(/\}/g) || []).length;
+              attempt += "]".repeat(Math.max(0, ob)) + "}".repeat(Math.max(0, oc));
+              sceneData = JSON.parse(attempt);
+            }
+          } catch {}
+        }
+
+        const objectsJson = JSON.stringify(sceneData.objects || []);
+        await page.evaluate(`(function(){
+          var canvas = document.getElementById("scene");
+          if (!canvas) return;
+          var ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          ctx.fillStyle = "#1a1a1a";
+          ctx.fillRect(0, 0, 360, 360);
+          var objects = ${objectsJson};
+          if (!objects || objects.length === 0) return;
+          objects.sort(function(a, b) {
+            return ((a.position?.[2]||0)-(a.position?.[0]||0)) - ((b.position?.[2]||0)-(b.position?.[0]||0));
+          });
+          for (var i = 0; i < objects.length; i++) {
+            var obj = objects[i];
+            var p = obj.position || [0,0,0];
+            var s = obj.scale || [1,1,1];
+            var sc = 40;
+            var px = 180 + (p[0]-p[2])*sc*0.7;
+            var py = 180 - p[1]*sc + (p[0]+p[2])*sc*0.35;
+            var w = Math.max(s[0],s[2])*sc;
+            var h = Math.max(s[1],0.3)*sc;
+            var c = obj.color || "#888888";
+            var r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+            var bright = Math.max(r,g,b) < 100
+              ? "#"+Math.min(255,r+90).toString(16).padStart(2,"0")+Math.min(255,g+90).toString(16).padStart(2,"0")+Math.min(255,b+90).toString(16).padStart(2,"0")
+              : c;
+            ctx.fillStyle = bright;
+            ctx.globalAlpha = obj.opacity || 1;
+            if (obj.shape==="sphere") { ctx.beginPath(); ctx.ellipse(px,py,w/2,w/2,0,0,Math.PI*2); ctx.fill(); }
+            else if (obj.shape==="cylinder"||obj.shape==="cone") { ctx.beginPath(); ctx.ellipse(px,py,w/2,h/2,0,0,Math.PI*2); ctx.fill(); }
+            else { ctx.fillRect(px-w/2, py-h/2, w, h); }
+          }
+          ctx.globalAlpha = 1;
+        })()`);
+      }
+
       // Wait for canvas/iframe rendering
       await new Promise(r => setTimeout(r, 1000));
       await page.screenshot({
