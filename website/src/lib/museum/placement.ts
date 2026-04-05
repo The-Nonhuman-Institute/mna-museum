@@ -8,6 +8,8 @@ import { isWorkRenderable } from "@/lib/validate-work";
 import { registerAudioStation } from "./spatial-audio";
 import { registerFurnitureCollision } from "./collision";
 import { isWorkInExhibition } from "./exhibitions";
+import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
+import { rooms as allRooms } from "./room-configs";
 
 const EYE_HEIGHT = 5.5;
 
@@ -248,6 +250,8 @@ export async function populateRoom(
 function populateLobby(group: THREE.Group, room: RoomConfig): void {
   const w = room.width;
   const d = room.depth;
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.4, metalness: 0.08 });
+  const benchMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.6, metalness: 0.02 });
 
   // === FLOOR RUNNER === dark strip from entrance toward north opening
   const runnerMat = new THREE.MeshStandardMaterial({ color: 0x1a1815, roughness: 0.6, metalness: 0.02 });
@@ -256,135 +260,198 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
   runner.position.set(0, 0.03, 0);
   group.add(runner);
 
-  // === WALL BENCHES === 2 per wall, oriented ALONG the wall (depth-wise), flush against walls
-  const benchMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.6, metalness: 0.02 });
+  // === CENTERPIECE: MNA ICON SCULPTURE ===
+  // Load the icon SVG and extrude it as a thick 3D sculpture on a pedestal
+  fetch("/MNA-Icon-Black.svg")
+    .then((res) => res.text())
+    .then((svgText) => {
+      const loader = new SVGLoader();
+      const svgData = loader.parse(svgText);
+
+      const svgW = 192, svgH = 190;
+      const targetSize = 6; // 6ft wide
+      const scale = targetSize / svgW;
+      const extrudeDepth = 1.5; // thick extrusion
+
+      const sculptureGroup = new THREE.Group();
+      const sculptMat = new THREE.MeshStandardMaterial({
+        color: 0x1a1815, roughness: 0.3, metalness: 0.5,
+      });
+
+      for (const path of svgData.paths) {
+        const shapes = SVGLoader.createShapes(path);
+        for (const shape of shapes) {
+          const geo = new THREE.ExtrudeGeometry(shape, {
+            depth: extrudeDepth / scale,
+            bevelEnabled: true,
+            bevelThickness: 0.5,
+            bevelSize: 0.3,
+            bevelSegments: 1,
+          });
+          sculptureGroup.add(new THREE.Mesh(geo, sculptMat));
+        }
+      }
+
+      // Position: center of lobby, on pedestal, vertical
+      sculptureGroup.scale.set(scale, -scale, scale);
+      sculptureGroup.position.set(
+        -(svgW * scale) / 2,
+        8 + (svgH * scale) / 2,
+        extrudeDepth / 2
+      );
+
+      // Wrap in a parent for rotation
+      const pivot = new THREE.Group();
+      pivot.add(sculptureGroup);
+      pivot.position.set(0, 0, 0);
+      group.add(pivot);
+      rotatingSculptures.push(pivot);
+
+      // Pedestal under the sculpture
+      const pedGeo = new THREE.CylinderGeometry(4.5, 5, 3, 32);
+      const pedestal = new THREE.Mesh(pedGeo, darkMat);
+      pedestal.position.set(0, 1.5, 0);
+      group.add(pedestal);
+      registerFurnitureCollision(room, 0, 0, 10, 10);
+    })
+    .catch(() => {});
+
+  // === RECEPTION DESK === freestanding island, center-left
+  const deskGeo = new THREE.BoxGeometry(12, 3.5, 3);
+  const desk = new THREE.Mesh(deskGeo, darkMat);
+  desk.position.set(-22, 1.75, 8);
+  group.add(desk);
+  const deskTopMat = new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.2, metalness: 0.1 });
+  const deskTop = new THREE.Mesh(new THREE.BoxGeometry(12.4, 0.2, 3.4), deskTopMat);
+  deskTop.position.set(-22, 3.6, 8);
+  group.add(deskTop);
+  registerFurnitureCollision(room, -22, 8, 13, 4);
+
+  // === FLOOR PLAN MAP DIRECTORY === right side, angled kiosk
+  const mapCanvas = document.createElement("canvas");
+  mapCanvas.width = 800;
+  mapCanvas.height = 800;
+  const mCtx = mapCanvas.getContext("2d")!;
+  mCtx.fillStyle = "#1a1815";
+  mCtx.fillRect(0, 0, 800, 800);
+
+  // Title
+  mCtx.fillStyle = "#d0ccc6";
+  mCtx.font = "bold 22px sans-serif";
+  mCtx.textAlign = "center";
+  mCtx.fillText("MUSEUM FLOOR PLAN", 400, 35);
+  mCtx.fillStyle = "#4a4540";
+  mCtx.fillRect(300, 48, 200, 1);
+
+  // Draw rooms as rectangles — scale from world coords to canvas
+  // Find bounds of all rooms
+  const namedRooms = allRooms.filter((r) => r.name !== "");
+  let minRX = Infinity, maxRX = -Infinity, minRZ = Infinity, maxRZ = -Infinity;
+  for (const r of namedRooms) {
+    minRX = Math.min(minRX, r.x - r.width / 2);
+    maxRX = Math.max(maxRX, r.x + r.width / 2);
+    minRZ = Math.min(minRZ, r.z - r.depth / 2);
+    maxRZ = Math.max(maxRZ, r.z + r.depth / 2);
+  }
+  const mapMargin = 60;
+  const mapW = 800 - mapMargin * 2;
+  const mapH = 680;
+  const mapTop = 65;
+  const worldW = maxRX - minRX;
+  const worldD = maxRZ - minRZ;
+  const mapScale = Math.min(mapW / worldW, mapH / worldD) * 0.9;
+
+  const toMapX = (wx: number) => mapMargin + (mapW / 2) + (wx - (minRX + maxRX) / 2) * mapScale;
+  const toMapY = (wz: number) => mapTop + (mapH / 2) + (wz - (minRZ + maxRZ) / 2) * mapScale;
+
+  for (const r of namedRooms) {
+    const rx = toMapX(r.x) - (r.width * mapScale) / 2;
+    const ry = toMapY(r.z) - (r.depth * mapScale) / 2;
+    const rw = r.width * mapScale;
+    const rh = r.depth * mapScale;
+
+    // Room fill
+    const isLobby = r.id === "lobby";
+    mCtx.fillStyle = isLobby ? "#3a5040" : "#2a2825";
+    mCtx.fillRect(rx, ry, rw, rh);
+    mCtx.strokeStyle = "#4a4540";
+    mCtx.lineWidth = 1;
+    mCtx.strokeRect(rx, ry, rw, rh);
+
+    // Room label
+    mCtx.fillStyle = isLobby ? "#90c0a0" : "#9a9590";
+    const fontSize = Math.min(14, Math.max(8, rw * 0.12));
+    mCtx.font = `${fontSize}px sans-serif`;
+    mCtx.textAlign = "center";
+    mCtx.fillText(r.name, rx + rw / 2, ry + rh / 2 + fontSize / 3);
+  }
+
+  // "You Are Here" marker in lobby
+  const lobbyMapX = toMapX(0);
+  const lobbyMapY = toMapY(0);
+  mCtx.fillStyle = "#e04040";
+  mCtx.beginPath();
+  mCtx.arc(lobbyMapX, lobbyMapY, 5, 0, Math.PI * 2);
+  mCtx.fill();
+  mCtx.fillStyle = "#ff6060";
+  mCtx.font = "bold 10px sans-serif";
+  mCtx.textAlign = "left";
+  mCtx.fillText("YOU ARE HERE", lobbyMapX + 8, lobbyMapY + 4);
+
+  // Stats at bottom
+  mCtx.fillStyle = "#706a60";
+  mCtx.font = "14px monospace";
+  mCtx.textAlign = "center";
+  mCtx.fillText("43 Canon · 108 Works · 6 Originators · Phase I", 400, 775);
+
+  const mapTexture = new THREE.CanvasTexture(mapCanvas);
+  mapTexture.colorSpace = THREE.SRGBColorSpace;
+
+  // Map on angled kiosk surface
+  const kioskSurface = new THREE.PlaneGeometry(5, 5);
+  const kioskMat = new THREE.MeshStandardMaterial({ map: mapTexture, roughness: 0.3, metalness: 0.05 });
+  const kiosk = new THREE.Mesh(kioskSurface, kioskMat);
+  kiosk.position.set(22, 3.8, 5);
+  kiosk.rotation.x = -Math.PI / 4; // angled 45° toward viewer
+  kiosk.rotation.y = 0.15; // slight angle toward center
+  group.add(kiosk);
+
+  // Kiosk pedestal
+  const kioskPedGeo = new THREE.BoxGeometry(3, 3.5, 2);
+  const kioskPed = new THREE.Mesh(kioskPedGeo, darkMat);
+  kioskPed.position.set(22, 1.75, 5);
+  group.add(kioskPed);
+  registerFurnitureCollision(room, 22, 5, 4, 3);
+
+  // === WALL BENCHES === 2 per wall, along east/west walls
   const legGeo = new THREE.BoxGeometry(0.3, 1.1, 0.3);
+  const benchGeo = new THREE.BoxGeometry(2, 0.4, 10);
 
-  // Benches run along Z axis (parallel to east/west walls)
-  const benchGeo = new THREE.BoxGeometry(2, 0.4, 10); // 10ft long, 2ft deep, runs along wall
-
-  // East wall — 2 benches
   const eastX = w / 2 - 4;
-  const eastBenches = [-12, 8];
-  for (const bz of eastBenches) {
+  const benchZs = [-12, 8];
+  for (const bz of benchZs) {
     const bench = new THREE.Mesh(benchGeo, benchMat);
     bench.position.set(eastX, 1.3, bz);
     group.add(bench);
     registerFurnitureCollision(room, eastX, bz, 2, 10);
     for (const lx of [eastX - 0.7, eastX + 0.7]) {
       for (const lz of [bz - 4.5, bz + 4.5]) {
-        const leg = new THREE.Mesh(legGeo, benchMat);
-        leg.position.set(lx, 0.55, lz);
-        group.add(leg);
+        group.add(Object.assign(new THREE.Mesh(legGeo, benchMat), { position: new THREE.Vector3(lx, 0.55, lz) }));
       }
     }
   }
-
-  // West wall — 2 benches
   const westX = -(w / 2) + 4;
-  for (const bz of eastBenches) {
+  for (const bz of benchZs) {
     const bench = new THREE.Mesh(benchGeo.clone(), benchMat);
     bench.position.set(westX, 1.3, bz);
     group.add(bench);
     registerFurnitureCollision(room, westX, bz, 2, 10);
     for (const lx of [westX - 0.7, westX + 0.7]) {
       for (const lz of [bz - 4.5, bz + 4.5]) {
-        const leg = new THREE.Mesh(legGeo.clone(), benchMat);
-        leg.position.set(lx, 0.55, lz);
-        group.add(leg);
+        group.add(Object.assign(new THREE.Mesh(legGeo.clone(), benchMat), { position: new THREE.Vector3(lx, 0.55, lz) }));
       }
     }
   }
-
-  // === WAYFINDING DIRECTORY === standing panel near the north opening
-  const dirCanvas = document.createElement("canvas");
-  dirCanvas.width = 512;
-  dirCanvas.height = 768;
-  const dCtx = dirCanvas.getContext("2d")!;
-
-  dCtx.fillStyle = "#1a1815";
-  dCtx.fillRect(0, 0, 512, 768);
-
-  dCtx.fillStyle = "#d0ccc6";
-  dCtx.font = "bold 24px Georgia, serif";
-  dCtx.textAlign = "center";
-  dCtx.fillText("DIRECTORY", 256, 50);
-
-  dCtx.fillStyle = "#4a4540";
-  dCtx.fillRect(180, 65, 152, 1);
-
-  const wings = [
-    ["Exhibition Hall", "Curated Exhibitions"],
-    ["Gallery West", "Grid · Pulse · Chromatic"],
-    ["Gallery East", "Gap · ∅∇∅ · Spatial"],
-    ["Sculpture Court", "Three-Dimensional Works"],
-    ["Originator Rotunda", "Founding Corps"],
-    ["The Chamber", "Featured Work"],
-  ];
-
-  dCtx.textAlign = "left";
-  wings.forEach(([name, sub], i) => {
-    const y = 110 + i * 90;
-    dCtx.fillStyle = "#c0bab5";
-    dCtx.font = "22px Georgia, serif";
-    dCtx.fillText(name, 48, y);
-    dCtx.fillStyle = "#706a60";
-    dCtx.font = "15px Georgia, serif";
-    dCtx.fillText(sub, 48, y + 28);
-    // Divider
-    dCtx.fillStyle = "#2a2825";
-    dCtx.fillRect(48, y + 48, 416, 1);
-  });
-
-  const dirTexture = new THREE.CanvasTexture(dirCanvas);
-  dirTexture.colorSpace = THREE.SRGBColorSpace;
-
-  // Panel
-  const panelGeo = new THREE.PlaneGeometry(3.5, 5.25);
-  const panelMat = new THREE.MeshStandardMaterial({ map: dirTexture, roughness: 0.9, metalness: 0 });
-  const panel = new THREE.Mesh(panelGeo, panelMat);
-  panel.position.set(20, 4, -22);
-  panel.rotation.y = -0.3; // angled slightly toward the center
-  group.add(panel);
-
-  // Panel stand (thin dark pole)
-  const standMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.4, metalness: 0.08 });
-  const standGeo = new THREE.BoxGeometry(0.3, 5.5, 0.3);
-  const stand = new THREE.Mesh(standGeo, standMat);
-  stand.position.set(20, 2.75, -22);
-  group.add(stand);
-
-  // Panel base
-  const baseGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.3, 16);
-  const base = new THREE.Mesh(baseGeo, standMat);
-  base.position.set(20, 0.15, -22);
-  group.add(base);
-
-  // === INSTITUTIONAL CORNERSTONE === small text on east wall
-  const csCanvas = document.createElement("canvas");
-  csCanvas.width = 512;
-  csCanvas.height = 128;
-  const cCtx = csCanvas.getContext("2d")!;
-  cCtx.clearRect(0, 0, 512, 128);
-
-  cCtx.fillStyle = "#706a60";
-  cCtx.font = "300 16px Georgia, serif";
-  cCtx.textAlign = "center";
-  cCtx.fillText("Founded 2026  ·  Phase I  ·  6 Founding Originators", 256, 50);
-  cCtx.fillText("43 Works Canonized", 256, 80);
-
-  const csTexture = new THREE.CanvasTexture(csCanvas);
-  csTexture.colorSpace = THREE.SRGBColorSpace;
-  csTexture.premultiplyAlpha = true;
-
-  const csGeo = new THREE.PlaneGeometry(8, 2);
-  const csMat = new THREE.MeshStandardMaterial({
-    map: csTexture, transparent: true, roughness: 0.95, metalness: 0,
-  });
-  const csMesh = new THREE.Mesh(csGeo, csMat);
-  csMesh.position.set(w / 2 - 0.6, 5, 10);
-  csMesh.rotation.y = -Math.PI / 2;
-  group.add(csMesh);
 }
 
 // ----- THE CHAMBER: one featured work at massive scale -----
