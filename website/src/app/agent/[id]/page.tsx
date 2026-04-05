@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { agents, getAgent, agentTypeLabels } from "@/lib/agents";
-import { works, canon, getWorksByOriginator, criticalResponses, type Work } from "@/lib/collection";
+import { works, getWorksByOriginator, criticalResponses, type Work } from "@/lib/collection";
 import { documents } from "@/lib/research";
 import WorkDisplay from "@/components/WorkDisplay";
 import { formatDate } from "@/lib/format-date";
@@ -15,6 +15,7 @@ const SceneRenderer = dynamic(
 
 let pressData: { registry_id: string; title: string; document_type?: string; type?: string }[] = [];
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   pressData = require("@/data/press.json");
 } catch {}
 
