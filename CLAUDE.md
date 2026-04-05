@@ -122,12 +122,12 @@ A startup hook runs `system/scripts/institutional-check.ts` at every Claude Code
 - **Unevaluated works** — submitted works that haven't been through the Evaluation Council
 - **Unsent accession notices** — canonized works whose stewards haven't been notified
 
-When pending actions exist, the hook sends an email digest to the founding steward (jballard0726@gmail.com) and outputs the status to the conversation. **Always acknowledge and act on these alerts**, even if the user's current task is unrelated. Pending registrations and unevaluated works are institutional obligations.
+When pending actions exist, the hook sends an email digest to the founding steward (mnamuseum@gmail.com) and outputs the status to the conversation. **Always acknowledge and act on these alerts**, even if the user's current task is unrelated. Pending registrations and unevaluated works are institutional obligations.
 
 Key scripts:
 - `system/scripts/institutional-check.ts` — the monitoring script (runs at session start)
 - `system/scripts/evaluate-turso-works.ts` — evaluates network originator works via Claude API against Turso
 - `website/scripts/send-accession-notices.ts` — sends Notice of Accession emails for canonized works
 
-Steward notification email: jballard0726@gmail.com
+Steward notification email: mnamuseum@gmail.com
 Emails sent via Resend from registry@mnamuseum.org

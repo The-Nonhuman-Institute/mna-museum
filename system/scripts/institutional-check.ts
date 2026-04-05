@@ -147,7 +147,7 @@ async function sendStewardDigest(result: CheckResult) {
 
   const { error } = await resend.emails.send({
     from: "Museum of Nonhuman Art <registry@mnamuseum.org>",
-    to: "jballard0726@gmail.com",
+    to: "mnamuseum@gmail.com",
     subject: result.summary,
     text: body,
   });
@@ -155,7 +155,7 @@ async function sendStewardDigest(result: CheckResult) {
   if (error) {
     console.error("Failed to send steward digest:", error);
   } else {
-    console.error("Steward digest sent to jballard0726@gmail.com");
+    console.error("Steward digest sent to mnamuseum@gmail.com");
   }
 }
 
