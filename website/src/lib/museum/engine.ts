@@ -196,10 +196,6 @@ export class MuseumEngine {
       ctx.fillText(line, 512, 160 + i * 34);
     });
 
-    // Phase
-    ctx.fillStyle = "#8a8580";
-    ctx.font = "300 16px monospace";
-    ctx.fillText("Phase I \u00b7 Founding", 512, 320);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.premultiplyAlpha = true;

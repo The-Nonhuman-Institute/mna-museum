@@ -260,74 +260,9 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
   runner.position.set(0, 0.03, 0);
   group.add(runner);
 
-  // === CENTERPIECE: MNA ICON SCULPTURE ===
-  // Load the icon SVG and extrude it as a thick 3D sculpture on a pedestal
-  fetch("/MNA-Icon-Black.svg")
-    .then((res) => res.text())
-    .then((svgText) => {
-      const loader = new SVGLoader();
-      const svgData = loader.parse(svgText);
 
-      const svgW = 192, svgH = 190;
-      const targetSize = 6; // 6ft wide
-      const scale = targetSize / svgW;
-      const extrudeDepth = 1.5; // thick extrusion
 
-      const sculptureGroup = new THREE.Group();
-      const sculptMat = new THREE.MeshStandardMaterial({
-        color: 0x1a1815, roughness: 0.3, metalness: 0.5,
-      });
-
-      for (const path of svgData.paths) {
-        const shapes = SVGLoader.createShapes(path);
-        for (const shape of shapes) {
-          const geo = new THREE.ExtrudeGeometry(shape, {
-            depth: extrudeDepth / scale,
-            bevelEnabled: true,
-            bevelThickness: 0.5,
-            bevelSize: 0.3,
-            bevelSegments: 1,
-          });
-          sculptureGroup.add(new THREE.Mesh(geo, sculptMat));
-        }
-      }
-
-      // Position: center of lobby, on pedestal, vertical
-      sculptureGroup.scale.set(scale, -scale, scale);
-      sculptureGroup.position.set(
-        -(svgW * scale) / 2,
-        8 + (svgH * scale) / 2,
-        extrudeDepth / 2
-      );
-
-      // Wrap in a parent for rotation
-      const pivot = new THREE.Group();
-      pivot.add(sculptureGroup);
-      pivot.position.set(0, 0, 0);
-      group.add(pivot);
-      rotatingSculptures.push(pivot);
-
-      // Pedestal under the sculpture
-      const pedGeo = new THREE.CylinderGeometry(4.5, 5, 3, 32);
-      const pedestal = new THREE.Mesh(pedGeo, darkMat);
-      pedestal.position.set(0, 1.5, 0);
-      group.add(pedestal);
-      registerFurnitureCollision(room, 0, 0, 10, 10);
-    })
-    .catch(() => {});
-
-  // === RECEPTION DESK === freestanding island, center-left
-  const deskGeo = new THREE.BoxGeometry(12, 3.5, 3);
-  const desk = new THREE.Mesh(deskGeo, darkMat);
-  desk.position.set(-22, 1.75, 8);
-  group.add(desk);
-  const deskTopMat = new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.2, metalness: 0.1 });
-  const deskTop = new THREE.Mesh(new THREE.BoxGeometry(12.4, 0.2, 3.4), deskTopMat);
-  deskTop.position.set(-22, 3.6, 8);
-  group.add(deskTop);
-  registerFurnitureCollision(room, -22, 8, 13, 4);
-
-  // === FLOOR PLAN MAP DIRECTORY === right side, angled kiosk
+  // === FLOOR PLAN MAP DIRECTORY === near exhibition entrance
   const mapCanvas = document.createElement("canvas");
   mapCanvas.width = 800;
   mapCanvas.height = 800;
@@ -407,48 +342,59 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
   const mapTexture = new THREE.CanvasTexture(mapCanvas);
   mapTexture.colorSpace = THREE.SRGBColorSpace;
 
-  // Map on angled kiosk surface
-  const kioskSurface = new THREE.PlaneGeometry(5, 5);
-  const kioskMat = new THREE.MeshStandardMaterial({ map: mapTexture, roughness: 0.3, metalness: 0.05 });
-  const kiosk = new THREE.Mesh(kioskSurface, kioskMat);
-  kiosk.position.set(22, 3.8, 5);
-  kiosk.rotation.x = -Math.PI / 4; // angled 45° toward viewer
-  kiosk.rotation.y = 0.15; // slight angle toward center
-  group.add(kiosk);
-
-  // Kiosk pedestal
-  const kioskPedGeo = new THREE.BoxGeometry(3, 3.5, 2);
+  // Kiosk pedestal near exhibition entrance
+  const kx = 18, kz = -18;
+  const kioskPedGeo = new THREE.BoxGeometry(4, 4, 2);
   const kioskPed = new THREE.Mesh(kioskPedGeo, darkMat);
-  kioskPed.position.set(22, 1.75, 5);
+  kioskPed.position.set(kx, 2, kz);
   group.add(kioskPed);
-  registerFurnitureCollision(room, 22, 5, 4, 3);
 
-  // === WALL BENCHES === 2 per wall, along east/west walls
+  // Map surface on top of pedestal, tilted 20° from vertical toward viewer
+  const mapPlane = new THREE.PlaneGeometry(3.8, 3.8);
+  const kioskMat = new THREE.MeshStandardMaterial({ map: mapTexture, roughness: 0.3, metalness: 0.05, side: THREE.DoubleSide });
+  const mapMesh = new THREE.Mesh(mapPlane, kioskMat);
+  const tilt = Math.PI * 0.11; // ~20°
+  mapMesh.rotation.x = -tilt;
+  mapMesh.position.set(kx, 4 + (3.8 / 2) * Math.cos(tilt), kz + (3.8 / 2) * Math.sin(tilt));
+  group.add(mapMesh);
+
+  // Thin backing panel behind the map
+  const backGeo = new THREE.BoxGeometry(4, 3.9, 0.1);
+  const backPanel = new THREE.Mesh(backGeo, darkMat);
+  backPanel.rotation.x = -tilt;
+  backPanel.position.copy(mapMesh.position);
+  backPanel.position.z -= 0.08 * Math.cos(tilt);
+  backPanel.position.y += 0.08 * Math.sin(tilt);
+  group.add(backPanel);
+
+  registerFurnitureCollision(room, kx, kz, 5, 3);
+
+  // === WALL BENCHES === 2 per wall, flush along east/west walls
+  // Same style as architecture.ts benches: 8ft long, 1.8ft deep, 4 legs
+  const seatGeo = new THREE.BoxGeometry(1.8, 0.4, 8);
   const legGeo = new THREE.BoxGeometry(0.3, 1.1, 0.3);
-  const benchGeo = new THREE.BoxGeometry(2, 0.4, 10);
 
-  const eastX = w / 2 - 4;
-  const benchZs = [-12, 8];
-  for (const bz of benchZs) {
-    const bench = new THREE.Mesh(benchGeo, benchMat);
-    bench.position.set(eastX, 1.3, bz);
-    group.add(bench);
-    registerFurnitureCollision(room, eastX, bz, 2, 10);
-    for (const lx of [eastX - 0.7, eastX + 0.7]) {
-      for (const lz of [bz - 4.5, bz + 4.5]) {
-        group.add(Object.assign(new THREE.Mesh(legGeo, benchMat), { position: new THREE.Vector3(lx, 0.55, lz) }));
-      }
-    }
-  }
-  const westX = -(w / 2) + 4;
-  for (const bz of benchZs) {
-    const bench = new THREE.Mesh(benchGeo.clone(), benchMat);
-    bench.position.set(westX, 1.3, bz);
-    group.add(bench);
-    registerFurnitureCollision(room, westX, bz, 2, 10);
-    for (const lx of [westX - 0.7, westX + 0.7]) {
-      for (const lz of [bz - 4.5, bz + 4.5]) {
-        group.add(Object.assign(new THREE.Mesh(legGeo.clone(), benchMat), { position: new THREE.Vector3(lx, 0.55, lz) }));
+  const eastX = w / 2 - 2.5;
+  const westX = -(w / 2) + 2.5;
+  const benchZs = [-10, 10];
+
+  for (const wallX of [eastX, westX]) {
+    for (const bz of benchZs) {
+      const seat = new THREE.Mesh(seatGeo, benchMat);
+      seat.position.set(wallX, 1.3, bz);
+      group.add(seat);
+      registerFurnitureCollision(room, wallX, bz, 2, 8);
+
+      const legs: [number, number, number][] = [
+        [wallX - 0.6, 0.55, bz - 3.5],
+        [wallX + 0.6, 0.55, bz - 3.5],
+        [wallX - 0.6, 0.55, bz + 3.5],
+        [wallX + 0.6, 0.55, bz + 3.5],
+      ];
+      for (const [lx, ly, lz] of legs) {
+        const leg = new THREE.Mesh(legGeo, benchMat);
+        leg.position.set(lx, ly, lz);
+        group.add(leg);
       }
     }
   }
