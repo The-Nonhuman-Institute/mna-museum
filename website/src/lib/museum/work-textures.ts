@@ -24,32 +24,80 @@ function createCanvas(aspect: number): [HTMLCanvasElement, CanvasRenderingContex
   return [canvas, ctx, w, h];
 }
 
+// Ensure minimum contrast for readability in the 3D museum
+function ensureReadable(bg: string, fg: string): string {
+  const parse = (hex: string) => {
+    const c = hex.replace("#", "");
+    const r = parseInt(c.substring(0, 2), 16) || 0;
+    const g = parseInt(c.substring(2, 4), 16) || 0;
+    const b = parseInt(c.substring(4, 6), 16) || 0;
+    return [r, g, b];
+  };
+  const [br, bg2, bb] = parse(bg);
+  const [fr, fg2, fb] = parse(fg);
+  const bgLum = (0.299 * br + 0.587 * bg2 + 0.114 * bb);
+  const fgLum = (0.299 * fr + 0.587 * fg2 + 0.114 * fb);
+  const contrast = Math.abs(fgLum - bgLum);
+
+  // If contrast is too low, brighten/darken the fg to minimum readable level
+  if (contrast < 80) {
+    if (bgLum < 128) {
+      // Dark bg — brighten fg
+      const boost = Math.max(0.45, (fr + fg2 + fb) / (255 * 3));
+      const target = Math.min(255, Math.round(bgLum + 100));
+      return `rgb(${target}, ${target - 5}, ${target - 10})`;
+    } else {
+      // Light bg — darken fg
+      const target = Math.max(0, Math.round(bgLum - 100));
+      return `rgb(${target}, ${target}, ${target})`;
+    }
+  }
+  return fg;
+}
+
 // --- TEXT ---
 function renderText(payload: string, bg: string, fg: string, aspect: number): HTMLCanvasElement {
   const [canvas, ctx, w, h] = createCanvas(aspect);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
+  fg = ensureReadable(bg, fg);
   ctx.fillStyle = fg;
   ctx.textBaseline = "top";
 
   const lines = payload.split("\n");
-  const margin = w * 0.06;
-  const maxWidth = w - margin * 2;
-  let fontSize = Math.min(28, Math.max(10, Math.floor(h / (lines.length * 1.5 + 2))));
+  const margin = w * 0.08;
+  const availW = w - margin * 2;
+  const availH = h - margin * 2;
+
+  // Find the largest font size that fits ALL lines without any compression
+  // Minimum 12px — text must be readable
+  let fontSize = 30;
+  let lineHeight = 0;
+  let totalH = 0;
+  let maxLineW = 0;
+
+  while (fontSize > 12) {
+    ctx.font = `${fontSize}px monospace`;
+    lineHeight = fontSize * 1.5;
+    totalH = lines.length * lineHeight;
+    maxLineW = Math.max(...lines.map((l) => ctx.measureText(l).width));
+
+    if (totalH <= availH && maxLineW <= availW) break;
+    fontSize--;
+  }
+
   ctx.font = `${fontSize}px monospace`;
+  const startY = Math.max(margin, (h - totalH) / 2);
 
-  const lineHeight = fontSize * 1.4;
-  const totalH = lines.length * lineHeight;
-  let y = Math.max(margin, (h - totalH) / 2);
+  // Determine alignment based on content shape
+  const centered = maxLineW < availW * 0.7;
+  ctx.textAlign = centered ? "center" : "left";
+  const textX = centered ? w / 2 : margin;
 
-  const maxLineW = Math.max(...lines.map((l) => ctx.measureText(l).width));
-  ctx.textAlign = maxLineW > maxWidth * 0.8 ? "left" : "center";
-  const textX = ctx.textAlign === "left" ? margin : w / 2;
-
-  for (const line of lines) {
-    if (y > h - margin) break;
-    ctx.fillText(line, textX, y, maxWidth);
-    y += lineHeight;
+  for (let i = 0; i < lines.length; i++) {
+    const y = startY + i * lineHeight;
+    if (y + fontSize > h) break; // don't draw if it would clip
+    ctx.fillText(lines[i], textX, y); // NO maxWidth — no compression/warping
   }
   return canvas;
 }
@@ -59,6 +107,7 @@ function renderAscii(payload: string, bg: string, fg: string, aspect: number): H
   const [canvas, ctx, w, h] = createCanvas(aspect);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
+  fg = ensureReadable(bg, fg);
 
   const lines = payload.split("\n");
   const maxLen = Math.max(...lines.map((l) => l.length), 1);
@@ -90,24 +139,39 @@ function renderSvg(payload: string, aspect: number): Promise<HTMLCanvasElement> 
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
 
-    // Base64 encode — most reliable cross-browser SVG→Image method
-    const base64 = btoa(unescape(encodeURIComponent(payload)));
-    const dataUri = `data:image/svg+xml;base64,${base64}`;
+    // Add explicit dimensions to SVG if missing width/height attributes
+    let svgStr = payload;
+    if (!/<svg[^>]*width=/.test(svgStr)) {
+      svgStr = svgStr.replace("<svg", `<svg width="${w}" height="${h}"`);
+    }
+    // Add xmlns if missing (required for Blob rendering)
+    if (!svgStr.includes("xmlns=")) {
+      svgStr = svgStr.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
+    // Blob URL preserves internal url(#id) references for gradients/filters
+    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
 
     const img = new Image();
 
-    const timeout = setTimeout(() => resolve(canvas), 3000);
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      resolve(canvas);
+    }, 3000);
 
     img.onload = () => {
       clearTimeout(timeout);
       ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
       resolve(canvas);
     };
     img.onerror = () => {
       clearTimeout(timeout);
+      URL.revokeObjectURL(url);
       resolve(canvas);
     };
-    img.src = dataUri;
+    img.src = url;
   });
 }
 
@@ -118,7 +182,18 @@ function renderCanvasJson(payload: string, aspect: number): HTMLCanvasElement {
   ctx.fillRect(0, 0, w, h);
 
   try {
-    const parsed = JSON.parse(payload);
+    let jsonStr = payload;
+    try { JSON.parse(jsonStr); } catch {
+      // Auto-close truncated JSON
+      jsonStr = jsonStr.replace(/,\s*{\s*"[^"]*"\s*:\s*[^}]*$/, "");
+      jsonStr = jsonStr.replace(/,\s*"[^"]*"?\s*$/, "");
+      jsonStr = jsonStr.replace(/,\s*$/, "");
+      let braces = 0, brackets = 0;
+      for (const ch of jsonStr) { if (ch === "{") braces++; else if (ch === "}") braces--; else if (ch === "[") brackets++; else if (ch === "]") brackets--; }
+      while (brackets > 0) { jsonStr += "]"; brackets--; }
+      while (braces > 0) { jsonStr += "}"; braces--; }
+    }
+    const parsed = JSON.parse(jsonStr);
     const ops: any[] = Array.isArray(parsed) ? parsed : (parsed.ops || parsed.operations || []);
 
     ctx.save();

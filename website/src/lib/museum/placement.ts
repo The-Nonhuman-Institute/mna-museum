@@ -6,6 +6,7 @@ import { renderWorkToTexture } from "./work-textures";
 import { createFramedWork, createPlacard } from "./frames3d";
 import { isWorkRenderable } from "@/lib/validate-work";
 import { registerAudioStation } from "./spatial-audio";
+import { registerFurnitureCollision } from "./collision";
 import { isWorkInExhibition } from "./exhibitions";
 
 const EYE_HEIGHT = 5.5;
@@ -91,7 +92,7 @@ function generateWallSlots(
 
 type PlinthType = "block" | "column" | "platform" | "slab";
 
-function getSculptureBounds(payload: string): { w: number; h: number; d: number } {
+function getSculptureBounds(payload: string): { w: number; h: number; d: number; explicitPlinth?: string } {
   try {
     const data = JSON.parse(payload);
     const objs = data.objects || [];
@@ -99,19 +100,27 @@ function getSculptureBounds(payload: string): { w: number; h: number; d: number 
     for (const o of objs) {
       const p = o.position || [0, 0, 0];
       const s = o.scale || [1, 1, 1];
-      minX = Math.min(minX, p[0] - s[0]); maxX = Math.max(maxX, p[0] + s[0]);
-      minY = Math.min(minY, p[1] - s[1]); maxY = Math.max(maxY, p[1] + s[1]);
-      minZ = Math.min(minZ, p[2] - s[2]); maxZ = Math.max(maxZ, p[2] + s[2]);
+      // Scale is full size, use half for bounds (matches standard site)
+      const hx = s[0] / 2, hy = s[1] / 2, hz = s[2] / 2;
+      minX = Math.min(minX, p[0] - hx); maxX = Math.max(maxX, p[0] + hx);
+      minY = Math.min(minY, p[1] - hy); maxY = Math.max(maxY, p[1] + hy);
+      minZ = Math.min(minZ, p[2] - hz); maxZ = Math.max(maxZ, p[2] + hz);
     }
-    return { w: maxX - minX, h: maxY - minY, d: maxZ - minZ };
+    return { w: maxX - minX, h: maxY - minY, d: maxZ - minZ, explicitPlinth: data.plinth };
   } catch { return { w: 2, h: 2, d: 2 }; }
 }
 
-function selectPlinthType(bounds: { w: number; h: number; d: number }): PlinthType {
+function selectPlinthType(bounds: { w: number; h: number; d: number; explicitPlinth?: string }): PlinthType {
+  // Originator's explicit choice takes priority
+  if (bounds.explicitPlinth && ["block", "column", "platform", "slab"].includes(bounds.explicitPlinth)) {
+    return bounds.explicitPlinth as PlinthType;
+  }
   const { w, h, d } = bounds;
-  if (h > w * 2 && h > d * 2) return "column";
-  if (w > h * 2 || d > h * 2) return "slab";
-  if (w > h * 1.3 && d > h * 1.3) return "platform";
+  const spread = Math.max(w, d);
+  // Match standard site thresholds exactly
+  if (h > spread * 2) return "column";
+  if (spread > h * 2.5) return "slab";
+  if (spread > h * 1.5) return "platform";
   return "block";
 }
 
@@ -283,6 +292,9 @@ export async function populateRoom(
     case "chamber":
       populateChamber(roomGroup, room);
       break;
+    case "auditorium":
+      populateAuditorium(roomGroup, room);
+      break;
     default:
       break;
   }
@@ -310,12 +322,12 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
 
   // East wall — 2 benches
   const eastX = w / 2 - 4;
-  const eastBenches = [-12, 8]; // z positions — spaced apart
+  const eastBenches = [-12, 8];
   for (const bz of eastBenches) {
     const bench = new THREE.Mesh(benchGeo, benchMat);
     bench.position.set(eastX, 1.3, bz);
     group.add(bench);
-    // 4 legs
+    registerFurnitureCollision(room, eastX, bz, 2, 10);
     for (const lx of [eastX - 0.7, eastX + 0.7]) {
       for (const lz of [bz - 4.5, bz + 4.5]) {
         const leg = new THREE.Mesh(legGeo, benchMat);
@@ -331,6 +343,7 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
     const bench = new THREE.Mesh(benchGeo.clone(), benchMat);
     bench.position.set(westX, 1.3, bz);
     group.add(bench);
+    registerFurnitureCollision(room, westX, bz, 2, 10);
     for (const lx of [westX - 0.7, westX + 0.7]) {
       for (const lz of [bz - 4.5, bz + 4.5]) {
         const leg = new THREE.Mesh(legGeo.clone(), benchMat);
@@ -463,6 +476,7 @@ function populateChamber(group: THREE.Group, room: RoomConfig): void {
   const platform = new THREE.Mesh(platformGeo, platformMat);
   platform.position.set(0, 0.75, 0);
   group.add(platform);
+  registerFurnitureCollision(room, 0, 0, targetSize * 1.3, targetSize * 1.3);
 
   // Freestanding lectern — near entrance, right side, angled reading surface
   const agent = getAgent(featured.originator_id);
@@ -473,6 +487,7 @@ function populateChamber(group: THREE.Group, room: RoomConfig): void {
   const pedestal = new THREE.Mesh(pedGeo, lecternMat);
   pedestal.position.set(15, 1.6, room.depth / 2 - 18);
   group.add(pedestal);
+  registerFurnitureCollision(room, 15, room.depth / 2 - 18, 3, 2);
 
   // Angled reading surface with label rendered directly on it
   const labelCanvas = document.createElement("canvas");
@@ -604,6 +619,7 @@ async function populateGallery(group: THREE.Group, room: RoomConfig): Promise<vo
       const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
       pedestal.position.set(x, 1.25, z);
       group.add(pedestal);
+      registerFurnitureCollision(room, x, z, 3, 3);
 
       // Glowing indicator on top
       const indicatorGeo = new THREE.SphereGeometry(0.3, 16, 16);
@@ -664,6 +680,7 @@ function populateSculptureCourt(group: THREE.Group, room: RoomConfig): void {
     const plinth = new THREE.Mesh(plinthGeo, plinthMat);
     plinth.position.set(x, pd.h / 2, z);
     group.add(plinth);
+    registerFurnitureCollision(room, x, z, pd.w + 1, pd.d + 1);
 
     const sculpture = buildSculpture(work.output_payload);
     if (sculpture) {
@@ -743,4 +760,91 @@ function populateOriginatorRotunda(group: THREE.Group, room: RoomConfig): void {
     panel.rotation.y = pos.rotY;
     group.add(panel);
   }
+}
+
+// ----- AUDITORIUM: stepped seating + stage + projection screen -----
+
+function populateAuditorium(group: THREE.Group, room: RoomConfig): void {
+  const seatMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.6, metalness: 0.02 });
+  const stageMat = new THREE.MeshStandardMaterial({ color: 0x3a3530, roughness: 0.4, metalness: 0.05 });
+  const screenMat = new THREE.MeshStandardMaterial({
+    color: 0x080810,
+    roughness: 0.15,
+    metalness: 0.1,
+    emissive: 0x050508,
+    emissiveIntensity: 0.2,
+  });
+
+  const w = room.width;
+  const d = room.depth;
+
+  // Stage — wide, shallow platform at the north end
+  const stageW = w * 0.85;
+  const stageD = 10;
+  const stageH = 2;
+  const stageGeo = new THREE.BoxGeometry(stageW, stageH, stageD);
+  const stage = new THREE.Mesh(stageGeo, stageMat);
+  stage.position.set(0, stageH / 2, -(d / 2) + stageD / 2 + 2);
+  group.add(stage);
+  // No collision on stage/seating — player needs variable Y to walk up steps (future feature)
+
+  // Massive projection screen — covers most of the back wall
+  const screenW = w * 0.75;
+  const screenH = 13;
+  const screenGeo = new THREE.BoxGeometry(screenW, screenH, 0.3);
+  const screen = new THREE.Mesh(screenGeo, screenMat);
+  screen.position.set(0, stageH + screenH / 2 + 1, -(d / 2) + 0.8);
+  group.add(screen);
+
+  // Thin bezel frame around screen
+  const bezelMat = new THREE.MeshStandardMaterial({ color: 0x1a1815, roughness: 0.3, metalness: 0.5 });
+  const bezelW = 0.5;
+  // Top
+  const btGeo = new THREE.BoxGeometry(screenW + bezelW * 2, bezelW, 0.4);
+  const bt = new THREE.Mesh(btGeo, bezelMat);
+  bt.position.set(0, stageH + screenH + 1 + bezelW / 2, -(d / 2) + 0.8);
+  group.add(bt);
+  // Bottom
+  const bb = new THREE.Mesh(btGeo.clone(), bezelMat);
+  bb.position.set(0, stageH + 1 - bezelW / 2, -(d / 2) + 0.8);
+  group.add(bb);
+  // Left
+  const blGeo = new THREE.BoxGeometry(bezelW, screenH + bezelW * 2, 0.4);
+  const bl = new THREE.Mesh(blGeo, bezelMat);
+  bl.position.set(-(screenW / 2) - bezelW / 2, stageH + screenH / 2 + 1, -(d / 2) + 0.8);
+  group.add(bl);
+  // Right
+  const br = new THREE.Mesh(blGeo.clone(), bezelMat);
+  br.position.set(screenW / 2 + bezelW / 2, stageH + screenH / 2 + 1, -(d / 2) + 0.8);
+  group.add(br);
+
+  // 5 rows of stepped seating — wide, gently rising
+  const rowCount = 5;
+  const rowD = 5;
+  const rowGap = 1.5;
+  const rowW = w * 0.8;
+
+  for (let i = 0; i < rowCount; i++) {
+    const z = -2 + i * (rowD + rowGap);
+    const y = i * 1.2;
+
+    // Step platform
+    const stepGeo = new THREE.BoxGeometry(rowW, 0.5 + y, rowD);
+    const step = new THREE.Mesh(stepGeo, stageMat);
+    step.position.set(0, (0.5 + y) / 2, z);
+    group.add(step);
+
+    // Bench seat on each row
+    const benchGeo = new THREE.BoxGeometry(rowW - 4, 0.4, 1.5);
+    const bench = new THREE.Mesh(benchGeo, seatMat);
+    bench.position.set(0, y + 1.2, z - 0.5);
+    group.add(bench);
+  }
+
+  // Podium — off-center on stage
+  const podiumGeo = new THREE.BoxGeometry(2.2, 3.5, 1.5);
+  const podium = new THREE.Mesh(podiumGeo, seatMat);
+  podium.position.set(stageW * 0.35, stageH + 1.75, -(d / 2) + stageD / 2 + 2);
+  group.add(podium);
+  registerFurnitureCollision(room, stageW * 0.35, -(d / 2) + stageD / 2 + 2, 2.2, 1.5);
 }

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RoomConfig } from "./room-configs";
+import { registerFurnitureCollision } from "./collision";
 // BufferGeometryUtils removed — not needed since we add meshes directly
 
 // Architectural detail — baseboards, crown molding, benches, door frames,
@@ -343,6 +344,7 @@ function addBenches(group: THREE.Group, room: RoomConfig): void {
     const seat = new THREE.Mesh(seatGeo, mat);
     seat.position.set(0, 1.3, z);
     group.add(seat);
+    registerFurnitureCollision(room, 0, z, 8, 2);
 
     // Legs (4 corners)
     const legGeo = new THREE.BoxGeometry(0.3, 1.1, 0.3);
@@ -376,6 +378,7 @@ function addLanternPedestals(group: THREE.Group, room: RoomConfig): void {
     const ped = new THREE.Mesh(pedGeo, mat);
     ped.position.set(x, 1.25, z);
     group.add(ped);
+    registerFurnitureCollision(room, x, z, 1.5, 1.5);
 
     // Warm glowing cube on top
     const glowGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);

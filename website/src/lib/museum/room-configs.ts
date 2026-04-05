@@ -12,7 +12,8 @@ export type RoomPurpose =
   | "gallery"
   | "sculpture"
   | "originator"
-  | "chamber";
+  | "chamber"
+  | "auditorium";
 
 export interface Connection {
   to: string;
@@ -158,6 +159,9 @@ export const rooms: RoomConfig[] = [
     ],
     purpose: "sculpture",
   },
+
+  // ===== THE AUDITORIUM ===== closed for now — requires variable Y for seating
+  // Will reopen when step/ramp system is built
 
   // ===== ORIGINATOR ROTUNDA ===== 20ft ceiling
   // E wall at x=-60 → center(-95,-160) w=70

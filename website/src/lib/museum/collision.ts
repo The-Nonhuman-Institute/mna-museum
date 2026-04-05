@@ -16,6 +16,25 @@ interface WallAABB {
 }
 
 let wallCache: WallAABB[] | null = null;
+const furnitureColliders: WallAABB[] = [];
+
+// Register a furniture piece as a collision box (world-space coords)
+export function registerFurnitureCollision(
+  room: RoomConfig,
+  localX: number,
+  localZ: number,
+  width: number,
+  depth: number,
+): void {
+  const wx = room.x + localX;
+  const wz = room.z + localZ;
+  furnitureColliders.push({
+    minX: wx - width / 2,
+    maxX: wx + width / 2,
+    minZ: wz - depth / 2,
+    maxZ: wz + depth / 2,
+  });
+}
 
 function generateWallsForRoom(room: RoomConfig): WallAABB[] {
   const walls: WallAABB[] = [];
@@ -211,11 +230,20 @@ export function resolveCollision(
   const newPos = position.clone().add(delta);
   const resolved = new THREE.Vector3(newPos.x, 0, newPos.z);
 
-  // Iterative resolution (max 4 passes)
+  // Iterative resolution against walls + furniture (max 4 passes)
   for (let pass = 0; pass < 4; pass++) {
     let pushed = false;
+    // Walls
     for (const wall of walls) {
       const hit = circleIntersectsAABB(resolved.x, resolved.z, PLAYER_RADIUS, wall);
+      if (hit) {
+        resolved.add(hit.penetration);
+        pushed = true;
+      }
+    }
+    // Furniture
+    for (const furn of furnitureColliders) {
+      const hit = circleIntersectsAABB(resolved.x, resolved.z, PLAYER_RADIUS, furn);
       if (hit) {
         resolved.add(hit.penetration);
         pushed = true;
@@ -250,4 +278,5 @@ export function getCurrentRoom(position: THREE.Vector3): RoomConfig | null {
 
 export function clearWallCache(): void {
   wallCache = null;
+  furnitureColliders.length = 0;
 }

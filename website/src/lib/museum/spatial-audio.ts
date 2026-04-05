@@ -6,7 +6,7 @@ import * as THREE from "three";
 
 const PLAY_DISTANCE = 25;
 const FULL_VOLUME_DISTANCE = 6;
-const FADE_TIME = 0.5; // seconds for gain transitions
+const FADE_TIME = 1.0; // seconds for gain transitions — longer = smoother, less clipping
 
 interface AudioStation {
   workId: string;
@@ -39,9 +39,29 @@ export function registerAudioStation(
   });
 }
 
+function repairJson(str: string): string {
+  // Auto-close truncated JSON by counting unmatched braces/brackets
+  let braces = 0, brackets = 0;
+  for (const ch of str) {
+    if (ch === "{") braces++;
+    else if (ch === "}") braces--;
+    else if (ch === "[") brackets++;
+    else if (ch === "]") brackets--;
+  }
+  // Remove trailing incomplete key/value
+  let fixed = str.replace(/,\s*"[^"]*"?\s*$/, "");
+  fixed = fixed.replace(/,\s*{\s*"[^"]*"\s*:\s*[^}]*$/, "");
+  fixed = fixed.replace(/,\s*$/, "");
+  while (brackets > 0) { fixed += "]"; brackets--; }
+  while (braces > 0) { fixed += "}"; braces--; }
+  return fixed;
+}
+
 function initStation(station: AudioStation): boolean {
   try {
-    const data = JSON.parse(station.payload);
+    let jsonStr = station.payload;
+    try { JSON.parse(jsonStr); } catch { jsonStr = repairJson(jsonStr); }
+    const data = JSON.parse(jsonStr);
     const duration = Math.min(data.duration || 60, 120);
     const voices = (data.voices || []).slice(0, 3);
 
