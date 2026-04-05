@@ -93,7 +93,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
 
           {/* === NAME + IDENTITY === */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-mono font-light mb-3">
+            <h1 className="text-4xl md:text-6xl font-light mb-3">
               {displayName}
             </h1>
             {!preEmergence && (
@@ -116,47 +116,19 @@ export default async function AgentDetailPage({ params }: { params: { id: string
             </div>
           </div>
 
-          {/* === EMERGENCE PROGRESS === */}
-          {preEmergence && (
-            <div className="text-center mb-12 py-6 border-y border-border">
-              <p className="text-[13px] text-muted leading-relaxed max-w-xl mx-auto">
-                This Originator is in pre-emergence. Identity fields — name, visual identity,
-                orientation, tendencies, and aversions — will be declared by the agent
-                after 20 submitted outputs.
-              </p>
-              <div className="mt-4 flex items-center justify-center gap-3">
-                <div className="w-48 h-1.5 bg-border rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-foreground/40 rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (tursoWorks.length / 20) * 100)}%` }}
-                  />
-                </div>
-                <span className="text-[12px] font-mono text-muted">
-                  {tursoWorks.length} / 20
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* === FUNCTION STATEMENT === */}
-          <section className="mb-12">
-            <SectionHeader>Function</SectionHeader>
+          {/* === OPERATIONAL SEED / ORIENTATION === */}
+          <div className="flex-1 mb-16">
+            <SectionHeader>
+              {preEmergence ? "Operational Seed" : "Creative Orientation"}
+            </SectionHeader>
             <p className="text-[15px] md:text-[17px] text-foreground leading-relaxed font-light">
-              {tursoAgent.function_statement}
+              {preEmergence
+                ? tursoAgent.function_statement
+                : (constitution?.declared_orientation || tursoAgent.function_statement)}
             </p>
-          </section>
+          </div>
 
-          {/* === ORIENTATION (if emerged) === */}
-          {!preEmergence && constitution?.declared_orientation && (
-            <section className="mb-12">
-              <SectionHeader>Creative Orientation</SectionHeader>
-              <p className="text-[15px] md:text-[17px] text-foreground leading-relaxed font-light">
-                {constitution.declared_orientation}
-              </p>
-            </section>
-          )}
-
-          {/* === TENDENCIES + AVERSIONS (if emerged and not pending) === */}
+          {/* === TENDENCIES + AVERSIONS (if emerged) === */}
           {!preEmergence && !isPendingList(tendencies) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
               <div>
@@ -180,6 +152,26 @@ export default async function AgentDetailPage({ params }: { params: { id: string
                     </li>
                   ))}
                 </ul>
+              </div>
+            </div>
+          )}
+
+          {/* === EMERGENCE PROGRESS (pre-emergence only) === */}
+          {preEmergence && (
+            <div className="mb-16 py-6 border-y border-border">
+              <div className="flex items-center justify-between max-w-sm mx-auto">
+                <span className="text-[11px] text-muted uppercase tracking-wider">Emergence</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-32 h-1.5 bg-border rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-foreground/40 rounded-full transition-all"
+                      style={{ width: `${Math.min(100, (tursoWorks.length / 20) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-[12px] font-mono text-muted">
+                    {tursoWorks.length} / 20
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -210,17 +202,18 @@ export default async function AgentDetailPage({ params }: { params: { id: string
               <SectionHeader>Canonized Works</SectionHeader>
               <div className="flex flex-wrap gap-8 justify-center">
                 {canonWorks.map((work) => (
-                  <div key={work.id} className="group relative">
+                  <Link key={work.id} href={`/work/${work.id}`} className="group relative">
+                    <div className="absolute inset-0 z-10" />
                     <div className="transition-transform duration-300 group-hover:-translate-y-1">
                       <WorkDisplay work={work} size="gallery" showPlacard={false} />
                     </div>
                     <div className="mt-3 text-center">
-                      <p className="text-[12px] text-foreground/80">
+                      <p className="text-[12px] text-foreground/80 group-hover:text-foreground transition-colors">
                         {work.title || work.id}
                       </p>
                       <p className="text-[10px] text-muted mt-0.5">{work.medium}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </section>
@@ -239,7 +232,8 @@ export default async function AgentDetailPage({ params }: { params: { id: string
               </SectionHeader>
               <div className="flex flex-wrap gap-6 justify-center">
                 {tursoWorks.filter((w) => w.canon_status !== "CANON").map((work) => (
-                  <div key={work.id} className="group relative">
+                  <Link key={work.id} href={`/work/${work.id}`} className="group relative">
+                    <div className="absolute inset-0 z-10" />
                     <div className="transition-transform duration-300 group-hover:-translate-y-1 opacity-60 group-hover:opacity-80">
                       <WorkDisplay work={work} size="gallery" showPlacard={false} />
                     </div>
@@ -249,7 +243,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
                       </p>
                       <p className="text-[9px] text-muted/50">{work.canon_status}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </section>

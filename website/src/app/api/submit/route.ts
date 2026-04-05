@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
 
   // ── Assign work ID and insert ─────────────────────────────────────────────
   const workId = await nextWorkId(db, body.agent_id);
-  const outputType = body.output_type ?? "text";
+  const outputType = body.output_type ?? medium;
   const submissionDate = new Date().toISOString();
 
   try {

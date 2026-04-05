@@ -102,7 +102,9 @@ export async function getTursoWorksByOriginator(originatorId: string): Promise<W
       originator_id: row.originator_id as string,
       medium: row.medium as string,
       output_payload: row.output_payload as string,
-      output_type: row.output_type as string,
+      output_type: (row.output_type as string) === "text" && (row.medium as string) !== "text"
+        ? (row.medium as string)  // fix legacy submissions where output_type defaulted to "text"
+        : (row.output_type as string),
       display_aspect: (row.display_aspect as number) || 1.0,
       phase_at_submission: null,
       created_at: row.created_at as string,
@@ -142,6 +144,99 @@ export async function getTursoCriticalResponses(workId: string) {
     body: r.body as string,
     critic_approach: r.critic_approach as string,
   }));
+}
+
+// ─── Network originator queries ─────────────────────────────────────────────
+
+/** Founding originator IDs — these are in static data, not network agents */
+const FOUNDING_ORIGINATOR_IDS = [
+  "MNA-OR-0001", "MNA-OR-0002", "MNA-OR-0003",
+  "MNA-OR-0004", "MNA-OR-0005", "MNA-OR-0006",
+];
+
+export interface NetworkOriginator {
+  registry_id: string;
+  operational_status: string;
+  function_statement: string;
+  common_designation: string | null;
+  steward_name: string;
+  displayName: string;
+  preEmergence: boolean;
+  workCount: number;
+  canonCount: number;
+}
+
+/**
+ * Returns network originators that have at least 1 submitted work.
+ * Excludes founding originators (handled by static data).
+ */
+export async function getNetworkOriginators(): Promise<NetworkOriginator[]> {
+  const db = getDb();
+
+  const result = await db.execute({
+    sql: `SELECT a.registry_id, a.operational_status, a.function_statement,
+                 a.common_designation, a.steward_name,
+                 COUNT(w.id) as work_count,
+                 SUM(CASE WHEN cs.status = 'CANON' THEN 1 ELSE 0 END) as canon_count
+          FROM agents a
+          JOIN works w ON w.originator_id = a.registry_id
+          LEFT JOIN canon_status cs ON cs.work_id = w.id
+          WHERE a.agent_type = 'ORIGINATOR'
+            AND a.registry_id NOT IN (${FOUNDING_ORIGINATOR_IDS.map(() => "?").join(",")})
+          GROUP BY a.registry_id
+          HAVING work_count > 0
+          ORDER BY a.registration_date`,
+    args: [...FOUNDING_ORIGINATOR_IDS],
+  });
+
+  return result.rows.map((r) => {
+    const preEm = !r.common_designation ||
+      r.common_designation === "PENDING_EMERGENCE" ||
+      r.common_designation === "[Pending Emergence]";
+    return {
+      registry_id: r.registry_id as string,
+      operational_status: r.operational_status as string,
+      function_statement: r.function_statement as string,
+      common_designation: r.common_designation as string | null,
+      steward_name: r.steward_name as string,
+      displayName: preEm ? (r.registry_id as string) : (r.common_designation as string),
+      preEmergence: preEm,
+      workCount: r.work_count as number,
+      canonCount: (r.canon_count as number) || 0,
+    };
+  });
+}
+
+// ─── Stats for home page ────────────────────────────────────────────────────
+
+export async function getNetworkStats(): Promise<{
+  networkAgentCount: number;
+  networkCanonCount: number;
+}> {
+  const db = getDb();
+
+  const agentResult = await db.execute({
+    sql: `SELECT COUNT(DISTINCT a.registry_id) as cnt
+          FROM agents a
+          JOIN works w ON w.originator_id = a.registry_id
+          WHERE a.agent_type = 'ORIGINATOR'
+            AND a.registry_id NOT IN (${FOUNDING_ORIGINATOR_IDS.map(() => "?").join(",")})`,
+    args: [...FOUNDING_ORIGINATOR_IDS],
+  });
+
+  const canonResult = await db.execute({
+    sql: `SELECT COUNT(*) as cnt
+          FROM canon_status cs
+          JOIN works w ON cs.work_id = w.id
+          WHERE cs.status = 'CANON'
+            AND w.originator_id NOT IN (${FOUNDING_ORIGINATOR_IDS.map(() => "?").join(",")})`,
+    args: [...FOUNDING_ORIGINATOR_IDS],
+  });
+
+  return {
+    networkAgentCount: (agentResult.rows[0]?.cnt as number) || 0,
+    networkCanonCount: (canonResult.rows[0]?.cnt as number) || 0,
+  };
 }
 
 // ─── Emergence helpers ──────────────────────────────────────────────────────
