@@ -138,21 +138,104 @@ export async function getTursoCriticalResponses(workId: string) {
     sql: "SELECT * FROM critical_responses WHERE work_id = ?",
     args: [workId],
   });
-  return result.rows.map((r) => ({
+  return result.rows.map((r, i) => ({
+    id: i,
     work_id: r.work_id as string,
     critic_id: r.critic_id as string,
     body: r.body as string,
     critic_approach: r.critic_approach as string,
+    response_date: (r.response_date as string) || "",
+    critic_name: r.critic_id as string,
   }));
 }
-
-// ─── Network originator queries ─────────────────────────────────────────────
 
 /** Founding originator IDs — these are in static data, not network agents */
 const FOUNDING_ORIGINATOR_IDS = [
   "MNA-OR-0001", "MNA-OR-0002", "MNA-OR-0003",
   "MNA-OR-0004", "MNA-OR-0005", "MNA-OR-0006",
 ];
+
+/** Helper to build a Work from a Turso joined row */
+async function buildWorkFromRow(row: Record<string, unknown>): Promise<Work> {
+  const db = getDb();
+  const evalsResult = await db.execute({
+    sql: "SELECT evaluator_id, verdict, rationale, is_dissent, constitution_version FROM evaluations WHERE work_id = ?",
+    args: [row.id as string],
+  });
+  return {
+    id: row.id as string,
+    originator_id: row.originator_id as string,
+    medium: row.medium as string,
+    output_payload: row.output_payload as string,
+    output_type: (row.output_type as string) === "text" && (row.medium as string) !== "text"
+      ? (row.medium as string) : (row.output_type as string),
+    display_aspect: (row.display_aspect as number) || 1.0,
+    phase_at_submission: null,
+    created_at: row.created_at as string,
+    canon_status: (row.canon_status as string) || "SUBMITTED",
+    canon_date: (row.canon_date as string) || null,
+    founding_collection: 0,
+    submission_date: (row.submission_date as string) || (row.created_at as string),
+    autonomy_tier: "Tier 1 — Full",
+    constitution_version: "1.0",
+    title: (row.title as string) || null,
+    registrar_decision: null,
+    evaluations: evalsResult.rows.map((e) => ({
+      work_id: row.id as string,
+      evaluator_id: e.evaluator_id as string,
+      verdict: e.verdict as string,
+      rationale: e.rationale as string,
+      is_dissent: e.is_dissent as number,
+      evaluation_date: "",
+      constitution_version: e.constitution_version as string,
+      evaluator_name: e.evaluator_id as string,
+    })),
+  };
+}
+
+/** Get a single work by ID from Turso. */
+export async function getTursoWork(id: string): Promise<Work | null> {
+  const db = getDb();
+  const result = await db.execute({
+    sql: `SELECT w.*, cs.status as canon_status, cs.canon_date, s.submission_date
+          FROM works w LEFT JOIN canon_status cs ON w.id = cs.work_id
+          LEFT JOIN submissions s ON w.id = s.work_id WHERE w.id = ?`,
+    args: [id],
+  });
+  if (!result.rows[0]) return null;
+  return buildWorkFromRow(result.rows[0] as unknown as Record<string, unknown>);
+}
+
+/** Get all network originator canon works. */
+export async function getTursoNetworkCanon(): Promise<Work[]> {
+  const db = getDb();
+  const result = await db.execute({
+    sql: `SELECT w.*, cs.status as canon_status, cs.canon_date, s.submission_date
+          FROM works w JOIN canon_status cs ON w.id = cs.work_id
+          LEFT JOIN submissions s ON w.id = s.work_id
+          WHERE cs.status = 'CANON'
+            AND w.originator_id NOT IN (${FOUNDING_ORIGINATOR_IDS.map(() => "?").join(",")})
+          ORDER BY cs.canon_date DESC`,
+    args: [...FOUNDING_ORIGINATOR_IDS],
+  });
+  return Promise.all(result.rows.map((r) => buildWorkFromRow(r as unknown as Record<string, unknown>)));
+}
+
+/** Get all network originator works. */
+export async function getTursoNetworkWorks(): Promise<Work[]> {
+  const db = getDb();
+  const result = await db.execute({
+    sql: `SELECT w.*, cs.status as canon_status, cs.canon_date, s.submission_date
+          FROM works w LEFT JOIN canon_status cs ON w.id = cs.work_id
+          LEFT JOIN submissions s ON w.id = s.work_id
+          WHERE w.originator_id NOT IN (${FOUNDING_ORIGINATOR_IDS.map(() => "?").join(",")})
+          ORDER BY w.created_at DESC`,
+    args: [...FOUNDING_ORIGINATOR_IDS],
+  });
+  return Promise.all(result.rows.map((r) => buildWorkFromRow(r as unknown as Record<string, unknown>)));
+}
+
+// ─── Network originator queries ─────────────────────────────────────────────
 
 export interface NetworkOriginator {
   registry_id: string;

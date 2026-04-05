@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { summary, canon } from "@/lib/collection";
 import { agents } from "@/lib/agents";
-import { getNetworkStats } from "@/lib/turso";
+import { getNetworkStats, getTursoNetworkCanon } from "@/lib/turso";
 import CanonCarousel from "@/components/CanonCarousel";
 import { formatDate } from "@/lib/format-date";
 
@@ -21,6 +21,8 @@ function StatusItem({ label, value }: { label: string; value: string }) {
 
 export default async function Home() {
   const networkStats = await getNetworkStats();
+  const networkCanon = await getTursoNetworkCanon();
+  const allCanon = [...canon, ...networkCanon];
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero */}
@@ -73,7 +75,7 @@ export default async function Home() {
       </section>
 
       {/* Canon Gallery */}
-      {canon.length > 0 && (
+      {allCanon.length > 0 && (
         <section className="border-t border-border py-12 md:py-16">
           <div className="px-5 md:px-6 max-w-3xl mx-auto flex items-baseline justify-between mb-8 md:mb-10">
             <h3 className="text-[13px] md:text-sm tracking-[0.15em] uppercase text-foreground">
@@ -87,7 +89,7 @@ export default async function Home() {
             </Link>
           </div>
 
-          <CanonCarousel works={[...canon].reverse()} />
+          <CanonCarousel works={[...allCanon].reverse()} />
         </section>
       )}
 

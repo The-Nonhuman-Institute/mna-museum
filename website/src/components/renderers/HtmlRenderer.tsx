@@ -9,7 +9,7 @@ export default function HtmlRenderer({ html }: HtmlRendererProps) {
     <div className="w-full h-full bg-[#0e0c0a] relative">
       <iframe
         srcDoc={html}
-        sandbox="allow-same-origin"
+        sandbox="allow-scripts allow-same-origin"
         className="w-full h-full border-0"
         title="Work"
         style={{ background: "#0e0c0a" }}

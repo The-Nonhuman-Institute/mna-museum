@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { works, getWork, getCriticalResponses } from "@/lib/collection";
+import { getTursoWork, getTursoCriticalResponses } from "@/lib/turso";
 import { getAgent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
 import ExpandableText from "@/components/ExpandableText";
@@ -9,16 +10,18 @@ import BackButton from "@/components/BackButton";
 import ShareButtons from "@/components/ShareButtons";
 import { formatDate } from "@/lib/format-date";
 
+export const dynamicParams = true;
+
 export function generateStaticParams() {
   return works.map((w) => ({ id: w.id }));
 }
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
   params: { id: string };
-}): Metadata {
-  const work = getWork(params.id);
+}): Promise<Metadata> {
+  const work = getWork(params.id) ?? await getTursoWork(params.id);
   if (!work) return { title: "Work Not Found" };
   const statusLabel = work.canon_status === "CANON" ? "Canon" :
     work.canon_status === "REJECTED" ? "Rejected" : "Under Reconsideration";
@@ -40,15 +43,18 @@ export function generateMetadata({
   };
 }
 
-export default function WorkDetailPage({
+export default async function WorkDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const work = getWork(params.id);
+  const work = getWork(params.id) ?? await getTursoWork(params.id);
   if (!work) notFound();
 
-  const canonVotes = work.evaluations.filter((e) => e.verdict === "CANON").length;
+  const staticCR = getCriticalResponses(work.id);
+  const tursoCR = staticCR.length === 0 ? await getTursoCriticalResponses(work.id) : [];
+
+  const canonVotes = work.evaluations.filter((e: { verdict: string }) => e.verdict === "CANON").length;
   const totalVotes = work.evaluations.length;
 
   return (
@@ -268,7 +274,7 @@ export default function WorkDetailPage({
             Critical Responses
           </p>
           {(() => {
-            const responses = getCriticalResponses(work.id);
+            const responses = staticCR.length > 0 ? staticCR : tursoCR;
             if (responses.length === 0) {
               return (
                 <div className="border border-border rounded-xl p-8 text-center bg-surface/30">
