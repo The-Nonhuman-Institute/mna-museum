@@ -3,7 +3,7 @@ import { Work, canon, works } from "@/lib/collection";
 import { getAgent, getAgentsByType } from "@/lib/agents";
 import { RoomConfig } from "./room-configs";
 import { renderWorkToTexture } from "./work-textures";
-import { createFramedWork, createPlacard } from "./frames3d";
+import { createFramedWork } from "./frames3d";
 import { isWorkRenderable } from "@/lib/validate-work";
 import { registerAudioStation } from "./spatial-audio";
 import { registerFurnitureCollision } from "./collision";

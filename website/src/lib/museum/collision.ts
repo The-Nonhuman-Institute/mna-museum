@@ -6,7 +6,6 @@ import { RoomConfig, rooms } from "./room-configs";
 // Doorways create gaps in walls that the player can walk through
 
 const PLAYER_RADIUS = 1.5;
-const WALL_THICKNESS = 0.5; // collision wall half-thickness
 
 interface WallAABB {
   minX: number;

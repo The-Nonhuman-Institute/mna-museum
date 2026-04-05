@@ -43,7 +43,6 @@ function ensureReadable(bg: string, fg: string): string {
   if (contrast < 80) {
     if (bgLum < 128) {
       // Dark bg — brighten fg
-      const boost = Math.max(0.45, (fr + fg2 + fb) / (255 * 3));
       const target = Math.min(255, Math.round(bgLum + 100));
       return `rgb(${target}, ${target - 5}, ${target - 10})`;
     } else {
@@ -194,7 +193,8 @@ function renderCanvasJson(payload: string, aspect: number): HTMLCanvasElement {
       while (braces > 0) { jsonStr += "}"; braces--; }
     }
     const parsed = JSON.parse(jsonStr);
-    const ops: any[] = Array.isArray(parsed) ? parsed : (parsed.ops || parsed.operations || []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ops: any[] = Array.isArray(parsed) ? parsed : ((parsed as Record<string, unknown>).ops || (parsed as Record<string, unknown>).operations || []) as any[];
 
     ctx.save();
     ctx.scale(w / 800, h / 800);
@@ -242,63 +242,6 @@ function renderCanvasJson(payload: string, aspect: number): HTMLCanvasElement {
     // fallback — dark canvas
   }
   return canvas;
-}
-
-// --- HTML-CSS: extract colors + structure from the HTML, render a representative visual ---
-function renderHtmlCss(payload: string, aspect: number): Promise<HTMLCanvasElement> {
-  return new Promise((resolve) => {
-    const [canvas, ctx, w, h] = createCanvas(aspect);
-
-    // Extract background color from CSS
-    const bgMatch = payload.match(/background:\s*([#\w]+)/);
-    const bg = bgMatch ? bgMatch[1] : "#0a0a0a";
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, w, h);
-
-    // Extract all colors mentioned in the CSS
-    const colorMatches = payload.match(/#[0-9a-fA-F]{3,8}/g) || [];
-    const colors = Array.from(new Set(colorMatches)).filter(c => c !== bg).slice(0, 8);
-
-    // Extract animation/element hints
-    const hasAnimation = /animation|@keyframes|transition|transform/.test(payload);
-    const hasAbsolute = /position:\s*absolute/.test(payload);
-
-    // Draw representative shapes using the work's actual colors
-    if (colors.length > 0) {
-      const cellSize = Math.min(w, h) * 0.08;
-      const cols = Math.ceil(Math.sqrt(colors.length * 3));
-
-      for (let i = 0; i < colors.length * 3; i++) {
-        const color = colors[i % colors.length];
-        ctx.fillStyle = color;
-        const cx = w * 0.15 + (i % cols) * cellSize * 1.8;
-        const cy = h * 0.15 + Math.floor(i / cols) * cellSize * 1.8;
-
-        if (hasAbsolute) {
-          // Scattered positioning for absolute-positioned works
-          const rx = w * 0.1 + Math.random() * w * 0.8;
-          const ry = h * 0.1 + Math.random() * h * 0.8;
-          const size = cellSize * (0.5 + Math.random() * 2);
-          ctx.globalAlpha = 0.4 + Math.random() * 0.6;
-          ctx.fillRect(rx - size / 2, ry - size / 2, size, size);
-        } else {
-          ctx.globalAlpha = 0.6 + Math.random() * 0.4;
-          ctx.fillRect(cx, cy, cellSize, cellSize);
-        }
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    // Animated indicator
-    if (hasAnimation) {
-      ctx.fillStyle = "rgba(255,255,255,0.15)";
-      ctx.font = `${Math.max(10, w * 0.025)}px monospace`;
-      ctx.textAlign = "center";
-      ctx.fillText("\u25B6 ANIMATED WORK", w / 2, h - w * 0.04);
-    }
-
-    resolve(canvas);
-  });
 }
 
 // --- AUDIO placeholder ---

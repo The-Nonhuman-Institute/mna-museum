@@ -57,13 +57,10 @@ function getDoorWidth(room: RoomConfig, wall: string): number {
 }
 
 export function addArchitecturalDetail(group: THREE.Group, room: RoomConfig): void {
-  const w = room.width;
-  const d = room.depth;
-  const h = room.height;
   const isCorridor = room.name === "";
 
   // Skip minimal detail for thresholds
-  if (isCorridor && d <= 10) {
+  if (isCorridor && room.depth <= 10) {
     return;
   }
 
@@ -248,7 +245,7 @@ function addDoorFrames(group: THREE.Group, room: RoomConfig): void {
     const dw = conn.width;
     const dh = conn.height;
 
-    let x = 0, z = 0, rotY = 0;
+    let x = 0, z = 0;
     let isEW = false;
 
     switch (conn.wall) {

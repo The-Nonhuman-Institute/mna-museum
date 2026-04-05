@@ -4,7 +4,7 @@ import { buildRoom } from "./rooms";
 import { addLanternsToRoom, createGlobalLights } from "./lighting";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { resolveCollision, getCurrentRoom, clearWallCache } from "./collision";
-import { RoomConfig, rooms, getRoomById } from "./room-configs";
+import { RoomConfig, getRoomById } from "./room-configs";
 import { disposeMaterials } from "./materials";
 import { populateRoom, rotatingSculptures } from "./placement";
 import { disposeAnimatedTextures } from "./animated-textures";
@@ -94,7 +94,7 @@ export class MuseumEngine {
     if (!config) return;
 
     const group = buildRoom(config);
-    addLanternsToRoom(group, config);
+    addLanternsToRoom();
     addArchitecturalDetail(group, config);
     this.scene.add(group);
     this.loadedRooms.add(id);
