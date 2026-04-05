@@ -181,6 +181,20 @@ export function initDb(): void {
     );
   `);
 
+  // Visual identity columns (added post-founding for emergence protocol VII.V)
+  const hasVisualSymbol = db.prepare(
+    "SELECT COUNT(*) as n FROM pragma_table_info('constitutions') WHERE name = 'visual_symbol'"
+  ).get() as { n: number };
+
+  if (hasVisualSymbol.n === 0) {
+    db.exec(`
+      ALTER TABLE constitutions ADD COLUMN visual_symbol TEXT;
+      ALTER TABLE constitutions ADD COLUMN visual_color TEXT;
+      ALTER TABLE constitutions ADD COLUMN visual_form TEXT;
+    `);
+    console.log("Added visual identity columns to constitutions table");
+  }
+
   db.close();
   console.log("Database initialized at", DB_PATH);
 }
