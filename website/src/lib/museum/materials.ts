@@ -30,7 +30,7 @@ export function wallMaterial(): THREE.MeshStandardMaterial {
       color: 0xb0a8a0,
       map: concreteWallTexture(),
       normalMap: concreteNormalMap(),
-      normalScale: new THREE.Vector2(0.3, 0.3),
+      normalScale: new THREE.Vector2(0.8, 0.8),
       roughness: 0.85,
       metalness: 0.0,
     });

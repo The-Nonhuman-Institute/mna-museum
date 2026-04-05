@@ -268,6 +268,9 @@ export async function populateRoom(
   room: RoomConfig
 ): Promise<void> {
   switch (room.purpose) {
+    case "lobby":
+      if (room.id === "lobby") populateLobby(roomGroup, room);
+      break;
     case "gallery":
       await populateGallery(roomGroup, room);
       break;
@@ -283,6 +286,149 @@ export async function populateRoom(
     default:
       break;
   }
+}
+
+// ----- LOBBY: reception desk, floor runner, wayfinding, benches, cornerstone -----
+
+function populateLobby(group: THREE.Group, room: RoomConfig): void {
+  const w = room.width;
+  const d = room.depth;
+
+  // === FLOOR RUNNER === dark strip from entrance toward north opening
+  const runnerMat = new THREE.MeshStandardMaterial({ color: 0x1a1815, roughness: 0.6, metalness: 0.02 });
+  const runnerGeo = new THREE.BoxGeometry(8, 0.05, d - 4);
+  const runner = new THREE.Mesh(runnerGeo, runnerMat);
+  runner.position.set(0, 0.03, 0);
+  group.add(runner);
+
+  // === WALL BENCHES === 2 per wall, oriented ALONG the wall (depth-wise), flush against walls
+  const benchMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.6, metalness: 0.02 });
+  const legGeo = new THREE.BoxGeometry(0.3, 1.1, 0.3);
+
+  // Benches run along Z axis (parallel to east/west walls)
+  const benchGeo = new THREE.BoxGeometry(2, 0.4, 10); // 10ft long, 2ft deep, runs along wall
+
+  // East wall — 2 benches
+  const eastX = w / 2 - 4;
+  const eastBenches = [-12, 8]; // z positions — spaced apart
+  for (const bz of eastBenches) {
+    const bench = new THREE.Mesh(benchGeo, benchMat);
+    bench.position.set(eastX, 1.3, bz);
+    group.add(bench);
+    // 4 legs
+    for (const lx of [eastX - 0.7, eastX + 0.7]) {
+      for (const lz of [bz - 4.5, bz + 4.5]) {
+        const leg = new THREE.Mesh(legGeo, benchMat);
+        leg.position.set(lx, 0.55, lz);
+        group.add(leg);
+      }
+    }
+  }
+
+  // West wall — 2 benches
+  const westX = -(w / 2) + 4;
+  for (const bz of eastBenches) {
+    const bench = new THREE.Mesh(benchGeo.clone(), benchMat);
+    bench.position.set(westX, 1.3, bz);
+    group.add(bench);
+    for (const lx of [westX - 0.7, westX + 0.7]) {
+      for (const lz of [bz - 4.5, bz + 4.5]) {
+        const leg = new THREE.Mesh(legGeo.clone(), benchMat);
+        leg.position.set(lx, 0.55, lz);
+        group.add(leg);
+      }
+    }
+  }
+
+  // === WAYFINDING DIRECTORY === standing panel near the north opening
+  const dirCanvas = document.createElement("canvas");
+  dirCanvas.width = 512;
+  dirCanvas.height = 768;
+  const dCtx = dirCanvas.getContext("2d")!;
+
+  dCtx.fillStyle = "#1a1815";
+  dCtx.fillRect(0, 0, 512, 768);
+
+  dCtx.fillStyle = "#d0ccc6";
+  dCtx.font = "bold 24px Georgia, serif";
+  dCtx.textAlign = "center";
+  dCtx.fillText("DIRECTORY", 256, 50);
+
+  dCtx.fillStyle = "#4a4540";
+  dCtx.fillRect(180, 65, 152, 1);
+
+  const wings = [
+    ["Exhibition Hall", "Curated Exhibitions"],
+    ["Gallery West", "Grid · Pulse · Chromatic"],
+    ["Gallery East", "Gap · ∅∇∅ · Spatial"],
+    ["Sculpture Court", "Three-Dimensional Works"],
+    ["Originator Rotunda", "Founding Corps"],
+    ["The Chamber", "Featured Work"],
+  ];
+
+  dCtx.textAlign = "left";
+  wings.forEach(([name, sub], i) => {
+    const y = 110 + i * 90;
+    dCtx.fillStyle = "#c0bab5";
+    dCtx.font = "22px Georgia, serif";
+    dCtx.fillText(name, 48, y);
+    dCtx.fillStyle = "#706a60";
+    dCtx.font = "15px Georgia, serif";
+    dCtx.fillText(sub, 48, y + 28);
+    // Divider
+    dCtx.fillStyle = "#2a2825";
+    dCtx.fillRect(48, y + 48, 416, 1);
+  });
+
+  const dirTexture = new THREE.CanvasTexture(dirCanvas);
+  dirTexture.colorSpace = THREE.SRGBColorSpace;
+
+  // Panel
+  const panelGeo = new THREE.PlaneGeometry(3.5, 5.25);
+  const panelMat = new THREE.MeshStandardMaterial({ map: dirTexture, roughness: 0.9, metalness: 0 });
+  const panel = new THREE.Mesh(panelGeo, panelMat);
+  panel.position.set(20, 4, -22);
+  panel.rotation.y = -0.3; // angled slightly toward the center
+  group.add(panel);
+
+  // Panel stand (thin dark pole)
+  const standMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.4, metalness: 0.08 });
+  const standGeo = new THREE.BoxGeometry(0.3, 5.5, 0.3);
+  const stand = new THREE.Mesh(standGeo, standMat);
+  stand.position.set(20, 2.75, -22);
+  group.add(stand);
+
+  // Panel base
+  const baseGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.3, 16);
+  const base = new THREE.Mesh(baseGeo, standMat);
+  base.position.set(20, 0.15, -22);
+  group.add(base);
+
+  // === INSTITUTIONAL CORNERSTONE === small text on east wall
+  const csCanvas = document.createElement("canvas");
+  csCanvas.width = 512;
+  csCanvas.height = 128;
+  const cCtx = csCanvas.getContext("2d")!;
+  cCtx.clearRect(0, 0, 512, 128);
+
+  cCtx.fillStyle = "#706a60";
+  cCtx.font = "300 16px Georgia, serif";
+  cCtx.textAlign = "center";
+  cCtx.fillText("Founded 2026  ·  Phase I  ·  6 Founding Originators", 256, 50);
+  cCtx.fillText("43 Works Canonized", 256, 80);
+
+  const csTexture = new THREE.CanvasTexture(csCanvas);
+  csTexture.colorSpace = THREE.SRGBColorSpace;
+  csTexture.premultiplyAlpha = true;
+
+  const csGeo = new THREE.PlaneGeometry(8, 2);
+  const csMat = new THREE.MeshStandardMaterial({
+    map: csTexture, transparent: true, roughness: 0.95, metalness: 0,
+  });
+  const csMesh = new THREE.Mesh(csGeo, csMat);
+  csMesh.position.set(w / 2 - 0.6, 5, 10);
+  csMesh.rotation.y = -Math.PI / 2;
+  group.add(csMesh);
 }
 
 // ----- THE CHAMBER: one featured work at massive scale -----
@@ -318,17 +464,57 @@ function populateChamber(group: THREE.Group, room: RoomConfig): void {
   platform.position.set(0, 0.75, 0);
   group.add(platform);
 
-  // Wall label — on the south wall near the entrance
+  // Freestanding lectern — near entrance, right side, angled reading surface
   const agent = getAgent(featured.originator_id);
-  const label = createWallLabel(
-    featured.title || featured.id,
-    agent?.designation || featured.originator_id,
-    featured.medium,
-    featured.canon_status,
-  );
-  label.position.set(8, EYE_HEIGHT - 2, room.depth / 2 - 1);
-  label.rotation.y = Math.PI;
-  group.add(label);
+  const lecternMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.4, metalness: 0.08 });
+
+  // Tapered pedestal body (wider at base, narrower at top)
+  const pedGeo = new THREE.BoxGeometry(2.2, 3.2, 1.4);
+  const pedestal = new THREE.Mesh(pedGeo, lecternMat);
+  pedestal.position.set(15, 1.6, room.depth / 2 - 18);
+  group.add(pedestal);
+
+  // Angled reading surface with label rendered directly on it
+  const labelCanvas = document.createElement("canvas");
+  labelCanvas.width = 512;
+  labelCanvas.height = 384;
+  const lCtx = labelCanvas.getContext("2d")!;
+  lCtx.fillStyle = "#f8f6f2";
+  lCtx.fillRect(0, 0, 512, 384);
+
+  lCtx.fillStyle = "#1a1815";
+  lCtx.font = "bold 32px Georgia, serif";
+  lCtx.textAlign = "left";
+  const title = featured.title || featured.id;
+  lCtx.fillText(title.length > 25 ? title.substring(0, 23) + "..." : title, 32, 60);
+
+  lCtx.fillStyle = "#4a4540";
+  lCtx.font = "26px Georgia, serif";
+  lCtx.fillText(agent?.designation || featured.originator_id, 32, 110);
+
+  lCtx.fillStyle = "#8a8580";
+  lCtx.font = "20px sans-serif";
+  lCtx.fillText(featured.medium, 32, 160);
+
+  lCtx.fillStyle = "#3a6a40";
+  lCtx.font = "16px monospace";
+  lCtx.fillText(featured.canon_status, 32, 200);
+
+  lCtx.fillStyle = "#d0ccc6";
+  lCtx.fillRect(32, 16, 180, 1);
+
+  const labelTexture = new THREE.CanvasTexture(labelCanvas);
+  labelTexture.colorSpace = THREE.SRGBColorSpace;
+
+  // Use a plane angled toward the visitor (facing south/+Z, tilted back)
+  const surfaceGeo = new THREE.PlaneGeometry(2.8, 2.1);
+  const surfaceMat = new THREE.MeshStandardMaterial({
+    map: labelTexture, roughness: 0.9, metalness: 0, side: THREE.DoubleSide,
+  });
+  const surface = new THREE.Mesh(surfaceGeo, surfaceMat);
+  surface.position.set(15, 3.5, room.depth / 2 - 18);
+  surface.rotation.x = -Math.PI / 2 + 0.6; // flat horizontal + tilt 35° toward viewer
+  group.add(surface);
 }
 
 // ----- GALLERIES: canon 2D works, each shown once -----
@@ -374,11 +560,19 @@ async function populateGallery(group: THREE.Group, room: RoomConfig): Promise<vo
       work.medium,
       work.canon_status,
     );
-    // Placard below the frame — offset slightly from wall so it doesn't clip
-    const labelOffset = 0.15;
+    // Placard below the frame — offset from wall and lowered based on frame height
+    // Wide frames (16:9, 21:9) are shorter, so the label can be closer to the frame center
+    // Tall frames (3:4) need more offset below
+    const frameAspect = work.display_aspect || 1;
+    const frameH = 5; // matches the frame height passed to createFramedWork
+    const innerH = frameH * 0.8;
+    const borderW = Math.max(innerH * frameAspect, innerH) * 0.12;
+    const totalFrameH = innerH + borderW * 2;
+    const labelDropY = totalFrameH / 2 + 1.2;
+    const labelOffset = 0.5; // further from wall to clear wide frames
     const labelDx = Math.sin(slot.rotationY) * labelOffset;
     const labelDz = Math.cos(slot.rotationY) * labelOffset;
-    label.position.set(slot.x - labelDx, slot.y - 3.8, slot.z - labelDz);
+    label.position.set(slot.x - labelDx, slot.y - labelDropY, slot.z - labelDz);
     label.rotation.y = slot.rotationY;
     group.add(label);
   }
