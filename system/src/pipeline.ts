@@ -1042,11 +1042,21 @@ export async function triggerEmergence(originatorId: string): Promise<void> {
   prompt += `Not what you were seeded with. What you have BECOME through your work.\n\n`;
   prompt += `3. YOUR AVERSIONS — what you refuse. What you will not do. What violates your practice.\n\n`;
   prompt += `4. YOUR TENDENCIES — the formal patterns you recognize in your own work.\n\n`;
+  prompt += `5. YOUR VISUAL IDENTITY — how you present yourself visually to the institution and the public.\n`;
+  prompt += `  a) COLOR — a single hex color code that represents your creative identity. Choose deliberately.\n`;
+  prompt += `  b) SYMBOL — describe an SVG mark you would design as your institutional signature. `;
+  prompt += `Be specific: shapes, lines, geometry. This will be rendered as a vector graphic.\n`;
+  prompt += `  c) FORM — describe a 3D sculptural object that embodies your self-representation. `;
+  prompt += `This is not a portrait — it is an abstract form. Specify shapes (box, sphere, cylinder, cone, torus), `;
+  prompt += `positions, scales, colors, and material properties. This will be rendered as a Three.js scene.\n\n`;
   prompt += `Respond in this exact format:\n`;
   prompt += `NAME: [your name]\n`;
   prompt += `ORIENTATION: [your orientation]\n`;
   prompt += `AVERSIONS: [your aversions, comma-separated]\n`;
   prompt += `TENDENCIES: [your tendencies, comma-separated]\n`;
+  prompt += `VISUAL_COLOR: [hex color code, e.g. #4a9060]\n`;
+  prompt += `VISUAL_SYMBOL: [description of SVG mark — shapes, lines, geometry]\n`;
+  prompt += `VISUAL_FORM: [description of 3D form — shapes, positions, scales, colors]\n`;
 
   console.log(`[EMERGENCE] Prompting ${originatorId} for self-declaration...`);
 
@@ -1064,13 +1074,23 @@ export async function triggerEmergence(originatorId: string): Promise<void> {
   const aversionsMatch = response.match(/AVERSIONS:\s*(.+)/i);
   const tendenciesMatch = response.match(/TENDENCIES:\s*(.+)/i);
 
+  const visualColorMatch = response.match(/VISUAL_COLOR:\s*(.+)/i);
+  const visualSymbolMatch = response.match(/VISUAL_SYMBOL:\s*(.+)/i);
+  const visualFormMatch = response.match(/VISUAL_FORM:\s*(.+)/i);
+
   const name = nameMatch?.[1]?.trim() || `[Unnamed — ${originatorId}]`;
   const orientation = orientationMatch?.[1]?.trim() || "";
   const aversions = aversionsMatch?.[1]?.trim().split(",").map((s: string) => s.trim()).filter(Boolean) || [];
   const tendencies = tendenciesMatch?.[1]?.trim().split(",").map((s: string) => s.trim()).filter(Boolean) || [];
+  const visualColor = visualColorMatch?.[1]?.trim() || null;
+  const visualSymbolDesc = visualSymbolMatch?.[1]?.trim() || null;
+  const visualFormDesc = visualFormMatch?.[1]?.trim() || null;
 
   console.log(`[EMERGENCE] Declared name: "${name}"`);
   console.log(`[EMERGENCE] Orientation: ${orientation.substring(0, 100)}...`);
+  console.log(`[EMERGENCE] Visual color: ${visualColor || "(none)"}`);
+  console.log(`[EMERGENCE] Visual symbol: ${visualSymbolDesc?.substring(0, 80) || "(none)"}...`);
+  console.log(`[EMERGENCE] Visual form: ${visualFormDesc?.substring(0, 80) || "(none)"}...`);
 
   // Update the database
   const db2 = getDb();
@@ -1083,9 +1103,16 @@ export async function triggerEmergence(originatorId: string): Promise<void> {
     `UPDATE constitutions SET
       declared_orientation = ?,
       formal_tendencies = ?,
-      aversions = ?
+      aversions = ?,
+      visual_color = ?,
+      visual_symbol = ?,
+      visual_form = ?
     WHERE agent_id = ? AND is_current = 1`
-  ).run(orientation, JSON.stringify(tendencies), JSON.stringify(aversions), originatorId);
+  ).run(
+    orientation, JSON.stringify(tendencies), JSON.stringify(aversions),
+    visualColor, visualSymbolDesc, visualFormDesc,
+    originatorId
+  );
 
   db2.prepare(
     `INSERT INTO events (event_type, agent_id, description, metadata)
@@ -1093,7 +1120,13 @@ export async function triggerEmergence(originatorId: string): Promise<void> {
   ).run(
     originatorId,
     `${originatorId} has emerged as "${name}"`,
-    JSON.stringify({ name, orientation, aversions, tendencies, work_count: workCount.n })
+    JSON.stringify({
+      name, orientation, aversions, tendencies,
+      visual_color: visualColor,
+      visual_symbol: visualSymbolDesc,
+      visual_form: visualFormDesc,
+      work_count: workCount.n,
+    })
   );
 
   db2.close();
