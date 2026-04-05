@@ -213,63 +213,6 @@ function createWallLabel(
   return new THREE.Mesh(geo, mat);
 }
 
-// ===== TEXT PANEL (for originator rotunda) =====
-
-function createTextPanel(
-  heading: string,
-  body: string,
-  width: number = 6,
-  height: number = 8,
-): THREE.Mesh {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1400;
-  const ctx = canvas.getContext("2d")!;
-
-  ctx.fillStyle = "#1a1815";
-  ctx.fillRect(0, 0, 1024, 1400);
-
-  ctx.fillStyle = "#d0ccc6";
-  ctx.font = "bold 36px Georgia, serif";
-  ctx.textAlign = "left";
-  ctx.fillText(heading, 48, 70);
-
-  ctx.fillStyle = "#4a4540";
-  ctx.fillRect(48, 95, 250, 1);
-
-  ctx.fillStyle = "#b0aaa5";
-  ctx.font = "22px Georgia, serif";
-  const maxW = 928;
-  const lineH = 32;
-  let y = 140;
-
-  const paragraphs = body.split("\n");
-  for (const para of paragraphs) {
-    if (para.trim() === "") { y += lineH * 0.5; continue; }
-    const words = para.split(" ");
-    let line = "";
-    for (const word of words) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > maxW && line) {
-        ctx.fillText(line, 48, y);
-        y += lineH;
-        line = word;
-        if (y > 1360) break;
-      } else {
-        line = test;
-      }
-    }
-    if (line && y <= 1360) { ctx.fillText(line, 48, y); y += lineH; }
-    if (y > 1360) break;
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  const geo = new THREE.PlaneGeometry(width, height);
-  const mat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, metalness: 0 });
-  return new THREE.Mesh(geo, mat);
-}
-
 // ===== ROOM POPULATION =====
 
 export async function populateRoom(
@@ -710,56 +653,65 @@ function populateSculptureCourt(group: THREE.Group, room: RoomConfig): void {
 
 function populateOriginatorRotunda(group: THREE.Group, room: RoomConfig): void {
   const originators = getAgentsByType("ORIGINATOR");
+  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x2a2825, roughness: 0.5, metalness: 0.05 });
 
-  // East wall has doorway to sculpture — use north, south, and west walls only
-  const allPanels: { x: number; z: number; rotY: number }[] = [];
+  // Place Originators on plinths in the room — 3D forms for those with visual identity
+  const count = originators.length;
+  const cols = Math.min(3, count);
+  const rows = Math.ceil(count / cols);
+  const spacingX = (room.width * 0.6) / Math.max(cols, 1);
+  const spacingZ = (room.depth * 0.6) / Math.max(rows, 1);
 
-  // North wall
-  const northLen = room.width - 16;
-  const northCount = Math.min(3, originators.length);
-  const nSpacing = northLen / Math.max(northCount, 1);
-  for (let i = 0; i < northCount; i++) {
-    allPanels.push({
-      x: -(northLen / 2) + nSpacing * (i + 0.5),
-      z: -(room.depth / 2) + 0.6,
-      rotY: 0,
+  originators.forEach((orig, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = -(room.width * 0.3) + spacingX * (col + 0.5);
+    const z = -(room.depth * 0.3) + spacingZ * (row + 0.5);
+
+    // Plinth with Originator's color accent
+    const color = orig.visualIdentity?.color || "#2a2825";
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(color), roughness: 0.4, metalness: 0.1,
     });
-  }
 
-  // South wall
-  const southCount = Math.min(3, originators.length - northCount);
-  const sSpacing = northLen / Math.max(southCount, 1);
-  for (let i = 0; i < southCount; i++) {
-    allPanels.push({
-      x: -(northLen / 2) + sSpacing * (i + 0.5),
-      z: room.depth / 2 - 0.6,
-      rotY: Math.PI,
-    });
-  }
+    // Main plinth
+    const plinthGeo = new THREE.BoxGeometry(3.5, 3, 3.5);
+    const plinth = new THREE.Mesh(plinthGeo, plinthMat);
+    plinth.position.set(x, 1.5, z);
+    group.add(plinth);
 
-  for (let i = 0; i < Math.min(originators.length, allPanels.length); i++) {
-    const orig = originators[i];
-    const pos = allPanels[i];
+    // Color accent strip on top of plinth
+    const accentGeo = new THREE.BoxGeometry(3.6, 0.15, 3.6);
+    const accent = new THREE.Mesh(accentGeo, accentMat);
+    accent.position.set(x, 3.1, z);
+    group.add(accent);
+
+    registerFurnitureCollision(room, x, z, 4, 4);
+
+    // 3D form on plinth (if visual identity exists)
+    if (orig.visualIdentity?.form) {
+      const sculpture = buildSculpture(orig.visualIdentity.form);
+      if (sculpture) {
+        sculpture.scale.setScalar(1.2);
+        sculpture.position.set(x, 4.5, z);
+        group.add(sculpture);
+        rotatingSculptures.push(sculpture);
+      }
+    }
+
+    // Name placard
     const workCount = works.filter((w) => w.originator_id === orig.registryId).length;
-    const canonCount = canon.filter((w) => w.originator_id === orig.registryId).length;
-
-    const body = [
-      `Registry: ${orig.registryId}`,
-      `Autonomy: ${orig.autonomyTier}`,
-      "",
-      `Orientation: ${orig.fullConstitution.orientation}`,
-      "",
-      `Tendencies: ${orig.fullConstitution.tendencies.join(", ")}`,
-      "",
-      `Works produced: ${workCount}`,
-      `Canonized: ${canonCount}`,
-    ].join("\n");
-
-    const panel = createTextPanel(orig.designation, body, 5, 7);
-    panel.position.set(pos.x, EYE_HEIGHT, pos.z);
-    panel.rotation.y = pos.rotY;
-    group.add(panel);
-  }
+    const canonWorks = canon.filter((w) => w.originator_id === orig.registryId).length;
+    const label = createWallLabel(
+      orig.designation,
+      orig.registryId,
+      `${workCount} works · ${canonWorks} canon`,
+      "ACTIVE",
+    );
+    label.position.set(x, 0.5, z + 2.5);
+    label.rotation.x = -Math.PI / 6;
+    group.add(label);
+  });
 }
 
 // ----- AUDITORIUM: stepped seating + stage + projection screen -----

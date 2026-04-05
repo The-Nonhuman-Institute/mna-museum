@@ -10,6 +10,12 @@ export type AgentType =
 
 export type AutonomyTier = "Tier 1 — Full" | "Tier 2 — Supervised";
 
+export interface VisualIdentity {
+  color: string;   // hex
+  symbol: string;  // SVG string
+  form: string;    // scene-json string
+}
+
 export interface Agent {
   registryId: string;
   agentType: AgentType;
@@ -19,6 +25,7 @@ export interface Agent {
   constitutionRef: string;
   steward: string;
   functionStatement: string;
+  visualIdentity?: VisualIdentity;
   fullConstitution: {
     orientation: string;
     tendencies: string[];
@@ -532,6 +539,19 @@ export const agents: Agent[] = [
     },
   },
 ];
+
+// Load visual identities from exported data
+import visualIdentityData from "@/data/visual-identities.json";
+
+const visualIdentities = visualIdentityData as Record<string, { color: string; symbol: string; form: string }>;
+
+// Attach visual identities to agents
+for (const agent of agents) {
+  const vi = visualIdentities[agent.registryId];
+  if (vi) {
+    agent.visualIdentity = vi;
+  }
+}
 
 export function getAgent(id: string): Agent | undefined {
   return agents.find((a) => a.registryId === id);

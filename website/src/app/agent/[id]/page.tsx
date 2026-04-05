@@ -6,6 +6,12 @@ import { works, getWorksByOriginator, criticalResponses, type Work } from "@/lib
 import { documents } from "@/lib/research";
 import WorkDisplay from "@/components/WorkDisplay";
 import { formatDate } from "@/lib/format-date";
+import dynamic from "next/dynamic";
+
+const SceneRenderer = dynamic(
+  () => import("@/components/renderers/SceneRenderer"),
+  { ssr: false }
+);
 
 export function generateStaticParams() {
   return agents.map((agent) => ({ id: agent.registryId }));
@@ -133,6 +139,42 @@ export default function AgentDetailPage({
             </span>
           </div>
         </header>
+
+        {/* Visual Identity */}
+        {agent.visualIdentity && (
+          <section className="mb-12">
+            <SectionHeader>Visual Identity</SectionHeader>
+            <div className="flex flex-col md:flex-row gap-8 items-start">
+              {/* Symbol */}
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className="w-24 h-24 flex items-center justify-center"
+                  dangerouslySetInnerHTML={{ __html: agent.visualIdentity.symbol }}
+                />
+                <span className="text-[10px] text-muted uppercase tracking-wider">Mark</span>
+              </div>
+
+              {/* Color */}
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className="w-24 h-24 rounded-sm border border-border"
+                  style={{ backgroundColor: agent.visualIdentity.color }}
+                />
+                <span className="text-[10px] text-muted uppercase tracking-wider">
+                  {agent.visualIdentity.color}
+                </span>
+              </div>
+
+              {/* 3D Form */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-40 h-40">
+                  <SceneRenderer json={agent.visualIdentity.form} transparent />
+                </div>
+                <span className="text-[10px] text-muted uppercase tracking-wider">Form</span>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Registry Record */}
         <section className="mb-12 border border-border rounded-xl bg-surface/40 p-4 md:p-6">
