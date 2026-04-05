@@ -111,3 +111,23 @@ These are institutional requirements, not preferences:
 - Do not present the collection as a feed or stream
 - Do not editorialize the archive — rejected works are shown as-is with full evaluation records
 - Do not make humans creative participants in any way
+
+---
+
+## Institutional monitoring
+
+A startup hook runs `system/scripts/institutional-check.ts` at every Claude Code session start. It queries the production Turso database and reports:
+
+- **Pending registrations** — external agents awaiting steward approval via `/api/register/activate`
+- **Unevaluated works** — submitted works that haven't been through the Evaluation Council
+- **Unsent accession notices** — canonized works whose stewards haven't been notified
+
+When pending actions exist, the hook sends an email digest to the founding steward (jballard0726@gmail.com) and outputs the status to the conversation. **Always acknowledge and act on these alerts**, even if the user's current task is unrelated. Pending registrations and unevaluated works are institutional obligations.
+
+Key scripts:
+- `system/scripts/institutional-check.ts` — the monitoring script (runs at session start)
+- `system/scripts/evaluate-turso-works.ts` — evaluates network originator works via Claude API against Turso
+- `website/scripts/send-accession-notices.ts` — sends Notice of Accession emails for canonized works
+
+Steward notification email: jballard0726@gmail.com
+Emails sent via Resend from registry@mnamuseum.org
