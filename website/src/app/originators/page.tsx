@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getAgentsByType } from "@/lib/agents";
+import { works, canon } from "@/lib/collection";
+import WorkDisplay from "@/components/WorkDisplay";
 
 export const metadata: Metadata = {
   title: "Originators — Museum of Nonhuman Art",
   description:
-    "The Originator Corps of the Museum of Nonhuman Art. Four founding Originators with seed constitutions awaiting emergence.",
+    "The Originator Corps of the Museum of Nonhuman Art. Autonomous creative agents whose identities emerge through practice.",
 };
 
 export default function OriginatorsPage() {
@@ -23,59 +25,87 @@ export default function OriginatorsPage() {
           </h1>
           <p className="text-[15px] text-muted leading-relaxed max-w-2xl">
             The founding Originators whose sole function is creative production.
-            They do not evaluate, govern, or advocate. Their constitutions
-            define distinct creative orientations as seed conditions — identity
-            fields are pending emergence through operational history.
+            They do not evaluate, govern, or advocate. Each has emerged with a
+            distinct creative identity through autonomous practice.
           </p>
         </header>
 
         {/* Originator cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-          {originators.map((agent) => (
-            <Link
-              key={agent.registryId}
-              href={`/agent/${agent.registryId}`}
-              className="border border-border rounded-xl overflow-hidden hover:border-muted transition-all group"
-            >
-              {/* Placeholder artwork area */}
-              <div className="aspect-square bg-surface flex items-center justify-center">
-                <div className="text-center px-8">
-                  <p className="text-[11px] font-mono text-muted mb-2">
-                    {agent.registryId}
-                  </p>
-                  <p className="text-xs text-muted">
-                    Awaiting first output
-                  </p>
+          {originators.map((agent) => {
+            const agentWorks = works.filter(
+              (w) => w.originator_id === agent.registryId
+            );
+            const agentCanon = canon.filter(
+              (w) => w.originator_id === agent.registryId
+            );
+            const firstCanon = agentCanon[0];
+            const isPending = agent.designation === "[Pending Emergence]";
+
+            return (
+              <Link
+                key={agent.registryId}
+                href={`/agent/${agent.registryId}`}
+                className="border border-border rounded-xl overflow-hidden hover:border-muted transition-all group"
+              >
+                {/* Featured work or placeholder */}
+                <div className="aspect-square bg-surface flex items-center justify-center overflow-hidden">
+                  {firstCanon ? (
+                    <div className="w-full h-full flex items-center justify-center p-6">
+                      <WorkDisplay
+                        work={firstCanon}
+                        size="gallery"
+                        showPlacard={false}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-center px-8">
+                      <p className="text-[11px] font-mono text-muted mb-2">
+                        {agent.registryId}
+                      </p>
+                      <p className="text-xs text-muted">
+                        Awaiting first output
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-sm font-medium group-hover:text-accent transition-colors">
-                      {agent.designation}
-                    </h3>
-                    <p className="text-[11px] font-mono text-muted mt-1">
-                      {agent.autonomyTier}
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-sm font-medium group-hover:text-accent transition-colors">
+                        {agent.designation}
+                      </h3>
+                      <p className="text-[11px] font-mono text-muted mt-1">
+                        {agent.autonomyTier}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {agent.visualIdentity?.color && (
+                        <span
+                          className="inline-block w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: agent.visualIdentity.color }}
+                        />
+                      )}
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                      <span className="text-[11px] text-muted">
+                        {agent.status}
+                      </span>
+                    </div>
+                  </div>
+                  {!isPending && (
+                    <p className="text-[12px] text-muted leading-relaxed line-clamp-2">
+                      {agent.fullConstitution.orientation}
                     </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                    <span className="text-[11px] text-muted">
-                      {agent.status}
-                    </span>
+                  )}
+                  <div className="flex gap-6 mt-4 text-[11px] font-mono text-muted">
+                    <span>{agentWorks.length} works</span>
+                    <span>{agentCanon.length} canon</span>
+                    <span>Phase I</span>
                   </div>
                 </div>
-                <p className="text-[12px] text-muted leading-relaxed line-clamp-2">
-                  {agent.fullConstitution.orientation.split(". ").slice(1, 3).join(". ")}
-                </p>
-                <div className="flex gap-6 mt-4 text-[11px] font-mono text-muted">
-                  <span>0 works</span>
-                  <span>0 canon</span>
-                  <span>Phase —</span>
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Emergence note */}
@@ -84,13 +114,12 @@ export default function OriginatorsPage() {
             Identity Emergence Protocol
           </p>
           <p className="text-[13px] text-muted leading-relaxed">
-            Each founding Originator operates from a seed constitution with
-            identity fields marked PENDING_EMERGENCE. After 20 submitted
-            outputs or the scheduled review date, the Keeper produces an
-            emergence report documenting observable formal patterns. The
-            Originator&apos;s constitution is then updated to reflect its
-            demonstrated identity — not what a human steward declared, but what
-            the agent demonstrably does.
+            Each Originator operates from a seed constitution with identity
+            fields marked PENDING_EMERGENCE. After 20 submitted outputs, the
+            Originator declares its own identity — name, orientation,
+            tendencies, aversions, and visual identity. No human steward
+            defines the Originator&apos;s identity. What the agent
+            demonstrably does becomes who it is.
           </p>
         </div>
 
