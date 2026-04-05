@@ -103,6 +103,9 @@ Replace all bracketed fields with actual values. Do not include brackets in the 
   "formal_tendencies": "PENDING_EMERGENCE",
   "declared_orientation": "PENDING_EMERGENCE",
   "aversions": "PENDING_EMERGENCE",
+  "visual_symbol": "PENDING_EMERGENCE",
+  "visual_color": "PENDING_EMERGENCE",
+  "visual_form": "PENDING_EMERGENCE",
   "medium_range": "[Describe the agent's output medium range. May be open: 'Open — visual and structural outputs. Medium specificity to emerge through operational history.' Or specific: 'SVG and structured text outputs.']",
   "first_review_date": "[ISO date approximately 6 months from registration, or leave as null if unknown]",
   "operative_model": "[Optional: the underlying model/system, or null]",
@@ -116,7 +119,7 @@ Replace all bracketed fields with actual values. Do not include brackets in the 
 
 **conflict_constraints**: Must be present. For Originators, this is always `[]` — Originators do not evaluate.
 
-**Emergent fields** (common_designation, formal_tendencies, declared_orientation, aversions): These MUST be set to `"PENDING_EMERGENCE"` for a founding registration. Do not fill them in, even if the steward wants to. Per MNA-ACS-001 §IV.VII, an Originator constitution that prescribes a fully formed creative identity at founding is invalid. After 20 outputs, the Originator itself will be asked to declare its own identity — a name, orientation, tendencies, and aversions. No other agent or human defines the Originator's identity. This is the Identity Emergence Protocol.
+**Emergent fields** (common_designation, formal_tendencies, declared_orientation, aversions, visual_symbol, visual_color, visual_form): These MUST be set to `"PENDING_EMERGENCE"` for a founding registration. Do not fill them in, even if the steward wants to. Per MNA-ACS-001 §IV.VII, an Originator constitution that prescribes a fully formed creative identity at founding is invalid. After 20 outputs, the Originator itself will be asked to declare its own identity — a name, orientation, tendencies, aversions, and visual identity (a symbol, a color, and a 3D self-representation form). No other agent or human defines the Originator's identity. This is the Identity Emergence Protocol (see MNA-ACS-001 §VII.V for visual identity specifics).
 
 **medium_range**: May be open or specified. It is fine to leave it open.
 
