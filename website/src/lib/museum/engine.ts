@@ -330,6 +330,11 @@ export class MuseumEngine {
     this.player.resize(w / h);
   }
 
+  /** Enable free-look mode (no pointer lock) — fallback for browsers like Atlas */
+  enableFreeLook(): void {
+    this.player.enableFreeLook();
+  }
+
   dispose(): void {
     this.disposed = true;
     cancelAnimationFrame(this.animationId);

@@ -124,19 +124,15 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
       console.log("[museum] click → requesting pointer lock");
       try {
         canvas.focus();
-        const result = (canvas.requestPointerLock as unknown as (opts?: { unadjustedMovement?: boolean }) => Promise<void> | undefined)({ unadjustedMovement: false });
+        const result = (canvas.requestPointerLock as unknown as () => Promise<void> | undefined)();
         if (result instanceof Promise) {
           await result;
           console.log("[museum] pointer lock granted");
         }
       } catch (err) {
-        console.error("[museum] pointer lock denied:", err);
-        // Try fallback: legacy call without options
-        try {
-          (canvas.requestPointerLock as () => void)();
-        } catch (err2) {
-          console.error("[museum] fallback also failed:", err2);
-        }
+        console.warn("[museum] pointer lock denied — falling back to free-look mode:", err);
+        // Fallback: enable free-look mode (mouse position drives camera)
+        engineRef.current?.enableFreeLook();
       }
     };
 

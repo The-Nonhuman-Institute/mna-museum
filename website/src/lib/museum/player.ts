@@ -15,8 +15,11 @@ export class PlayerController {
   private pitch = 0; // vertical rotation
   private keys: Record<string, boolean> = {};
   private isLocked = false;
+  private freeLook = false; // pointer-lock-free fallback for browsers that block it
   private domElement: HTMLElement;
   private velocity = new THREE.Vector3();
+  private mouseX = 0; // for free-look mode
+  private mouseY = 0;
 
   // Expose for collision system
   position = new THREE.Vector3(0, EYE_HEIGHT, 0);
@@ -68,15 +71,32 @@ export class PlayerController {
   }
 
   private handleMouseMove(e: MouseEvent): void {
-    if (!this.isLocked) return;
+    if (this.isLocked) {
+      // Pointer-lock mode: use movement deltas
+      this.yaw -= e.movementX * MOUSE_SENSITIVITY;
+      this.pitch -= e.movementY * MOUSE_SENSITIVITY;
+      this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
+    } else if (this.freeLook) {
+      // Free-look mode: track absolute position relative to canvas center
+      const rect = this.domElement.getBoundingClientRect();
+      this.mouseX = (e.clientX - rect.left) / rect.width;  // 0..1
+      this.mouseY = (e.clientY - rect.top) / rect.height;  // 0..1
+    }
+  }
 
-    this.yaw -= e.movementX * MOUSE_SENSITIVITY;
-    this.pitch -= e.movementY * MOUSE_SENSITIVITY;
-    this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
+  /** Enable free-look mode for browsers where pointer lock is blocked. */
+  enableFreeLook(): void {
+    this.freeLook = true;
+    this.onLockChange?.(true); // Tell the UI we've "entered" the museum
+  }
+
+  disableFreeLook(): void {
+    this.freeLook = false;
+    this.onLockChange?.(false);
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
-    if (!this.isLocked) return;
+    if (!this.isLocked && !this.freeLook) return;
     this.keys[e.code] = true;
   }
 
@@ -85,11 +105,23 @@ export class PlayerController {
   }
 
   get locked(): boolean {
-    return this.isLocked;
+    return this.isLocked || this.freeLook;
   }
 
   // Returns desired movement delta (before collision)
   update(dt: number): THREE.Vector3 {
+    // In free-look mode, smoothly rotate toward mouse position
+    if (this.freeLook) {
+      const FREE_LOOK_SPEED = 1.5; // radians per second
+      const targetYaw = -((this.mouseX - 0.5) * Math.PI * 2);
+      const targetPitch = -((this.mouseY - 0.5) * Math.PI * 0.8);
+      const yawDiff = targetYaw - this.yaw;
+      const pitchDiff = targetPitch - this.pitch;
+      this.yaw += yawDiff * Math.min(1, dt * FREE_LOOK_SPEED);
+      this.pitch += pitchDiff * Math.min(1, dt * FREE_LOOK_SPEED);
+      this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
+    }
+
     // Calculate movement direction in XZ plane
     const forward = new THREE.Vector3(
       -Math.sin(this.yaw),
