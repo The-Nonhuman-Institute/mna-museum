@@ -74,11 +74,16 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
   });
   const [ready, setReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const hasEnteredRef = useRef(false);
 
+  // Stable callback — doesn't change on state updates
   const onStateChange = useCallback((s: MuseumState) => {
     setState(s);
-    if (s.isLocked && !hasEntered) setHasEntered(true);
-  }, [hasEntered]);
+    if (s.isLocked && !hasEnteredRef.current) {
+      hasEnteredRef.current = true;
+      setHasEntered(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (isMobileDevice()) { setIsMobile(true); return; }
@@ -87,7 +92,8 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     engineRef.current = new MuseumEngine(el, onStateChange, museumData);
     setReady(true);
     return () => { engineRef.current?.dispose(); engineRef.current = null; };
-  }, [onStateChange, museumData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Redraw map when open and player moves
   useEffect(() => {
