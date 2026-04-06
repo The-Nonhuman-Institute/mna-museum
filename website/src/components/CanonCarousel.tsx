@@ -29,11 +29,13 @@ export default function CanonCarousel({ works }: CanonCarouselProps) {
               <WorkDisplay work={work} size="gallery" showPlacard={false} />
             </div>
             <div className="mt-3 text-center">
-              <p className="text-[11px] font-mono text-muted group-hover:text-foreground transition-colors">
-                {work.id}
-              </p>
-              <p className="text-[10px] text-muted/60 mt-0.5">
-                {work.originator_id}
+              {work.title && (
+                <p className="text-[13px] font-serif italic text-foreground/80 group-hover:text-foreground transition-colors">
+                  {work.title}
+                </p>
+              )}
+              <p className="text-[11px] text-muted/80 mt-0.5">
+                {work.originator_name || work.originator_id}
               </p>
             </div>
           </Link>
