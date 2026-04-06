@@ -1,30 +1,12 @@
 import * as THREE from "three";
 
-// Animated HTML-CSS works — captured from hidden iframes via html2canvas.
-// Performance strategy:
-// - Initial capture once on load (so works aren't blank)
-// - Active capture loop only when player is within ACTIVATION_DISTANCE
-// - Capture rate is throttled (CAPTURE_INTERVAL_MS) to prevent FPS drops
-// - Works far from player keep their last captured frame
+// HTML-CSS works are captured ONCE as a first-frame snapshot via html2canvas.
+// Live animation is reserved for the standard site (work detail pages).
+// In the museum, frames show a static image — like a real museum hangs paintings,
+// not video screens. This keeps FPS stable and presentation consistent.
 
-const CAPTURE_SIZE = 384;
-const ACTIVATION_DISTANCE = 35; // start animating when player is within 35 units
-const CAPTURE_INTERVAL_MS = 100; // ~10 frames per second when active
-const MAX_CONCURRENT_CAPTURES = 2; // up to 2 works capture in parallel
-
-interface AnimatedWork {
-  texture: THREE.CanvasTexture;
-  canvas: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D;
-  iframe: HTMLIFrameElement;
-  worldPosition: THREE.Vector3 | null; // set by placement after frame is positioned
-  lastCaptureTime: number;
-  ready: boolean;
-  capturing: boolean;
-}
-
-const animatedWorks: AnimatedWork[] = [];
-let activeCaptures = 0;
+const iframes: HTMLIFrameElement[] = [];
+const CAPTURE_SIZE = 512;
 
 export function createAnimatedTexture(htmlPayload: string): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
@@ -43,24 +25,34 @@ export function createAnimatedTexture(htmlPayload: string): THREE.CanvasTexture 
   iframe.sandbox.add("allow-same-origin");
   iframe.sandbox.add("allow-scripts");
   document.body.appendChild(iframe);
-
-  const work: AnimatedWork = {
-    texture,
-    canvas,
-    ctx,
-    iframe,
-    worldPosition: null,
-    lastCaptureTime: 0,
-    ready: false,
-    capturing: false,
-  };
-  animatedWorks.push(work);
+  iframes.push(iframe);
 
   iframe.onload = () => {
+    // Wait for animation to settle into a representative frame
     setTimeout(async () => {
-      await captureFrame(work);
-      work.ready = true;
-    }, 500);
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc || !doc.body) return;
+
+        const html2canvas = (await import("html2canvas")).default;
+        const captured = await html2canvas(doc.body, {
+          width: CAPTURE_SIZE,
+          height: CAPTURE_SIZE,
+          backgroundColor: null,
+          logging: false,
+          scale: 1,
+        });
+
+        ctx.clearRect(0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
+        ctx.drawImage(captured, 0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
+        texture.needsUpdate = true;
+
+        // Iframe served its purpose — remove it to free memory
+        iframe.remove();
+      } catch {
+        // Capture failed — texture stays as dark background
+      }
+    }, 1500);
   };
 
   iframe.srcdoc = htmlPayload;
@@ -68,74 +60,19 @@ export function createAnimatedTexture(htmlPayload: string): THREE.CanvasTexture 
   return texture;
 }
 
-/**
- * Register a frame's world position so we can check player proximity.
- * Called by placement.ts after positioning the frame in the scene.
- */
-export function registerAnimatedWorkPosition(texture: THREE.CanvasTexture, position: THREE.Vector3): void {
-  const work = animatedWorks.find((w) => w.texture === texture);
-  if (work) work.worldPosition = position.clone();
+/** No-op — kept for API compatibility with placement.ts */
+export function registerAnimatedWorkPosition(_texture: THREE.CanvasTexture, _position: THREE.Vector3): void {
+  // No-op: works are static snapshots, no proximity tracking needed
 }
 
-async function captureFrame(work: AnimatedWork): Promise<void> {
-  if (work.capturing) return;
-  if (activeCaptures >= MAX_CONCURRENT_CAPTURES) return;
-
-  work.capturing = true;
-  activeCaptures++;
-
-  try {
-    const doc = work.iframe.contentDocument;
-    if (!doc || !doc.body) return;
-
-    const html2canvas = (await import("html2canvas")).default;
-    const captured = await html2canvas(doc.body, {
-      width: CAPTURE_SIZE,
-      height: CAPTURE_SIZE,
-      backgroundColor: null,
-      logging: false,
-      scale: 1,
-    });
-
-    work.ctx.clearRect(0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
-    work.ctx.drawImage(captured, 0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
-    work.texture.needsUpdate = true;
-    work.lastCaptureTime = performance.now();
-  } catch {
-    // Capture failed — texture stays as last good frame
-  } finally {
-    work.capturing = false;
-    activeCaptures--;
-  }
-}
-
-/**
- * Update animated textures based on player position.
- * Call this from the engine's animation loop.
- */
-export function updateAnimatedTextures(playerPosition: THREE.Vector3): void {
-  const now = performance.now();
-
-  for (const work of animatedWorks) {
-    if (!work.ready || !work.worldPosition) continue;
-    if (work.capturing) continue;
-
-    const distance = work.worldPosition.distanceTo(playerPosition);
-    if (distance > ACTIVATION_DISTANCE) continue;
-
-    // Within range — capture if interval has elapsed
-    const elapsed = now - work.lastCaptureTime;
-    if (elapsed < CAPTURE_INTERVAL_MS) continue;
-
-    captureFrame(work);
-  }
+/** No-op — kept for API compatibility with engine.ts */
+export function updateAnimatedTextures(_playerPosition: THREE.Vector3): void {
+  // No-op: nothing to update
 }
 
 export function disposeAnimatedTextures(): void {
-  for (const work of animatedWorks) {
-    if (work.iframe.parentNode) work.iframe.remove();
-    work.texture.dispose();
+  for (const iframe of iframes) {
+    if (iframe.parentNode) iframe.remove();
   }
-  animatedWorks.length = 0;
-  activeCaptures = 0;
+  iframes.length = 0;
 }
