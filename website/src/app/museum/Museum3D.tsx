@@ -103,10 +103,24 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     const container = containerRef.current;
     if (!container) return;
 
-    const handleClick = () => {
+    const handleClick = async () => {
       if (state.isLocked) return;
-      const canvas = container.querySelector("canvas");
-      if (canvas) (canvas as HTMLCanvasElement).requestPointerLock();
+      const canvas = container.querySelector("canvas") as HTMLCanvasElement | null;
+      if (!canvas) {
+        console.error("[museum] no canvas found for pointer lock");
+        return;
+      }
+      console.log("[museum] click → requesting pointer lock");
+      try {
+        // Modern promise-based API (Chrome 96+)
+        const result = (canvas.requestPointerLock as unknown as () => Promise<void> | undefined)();
+        if (result instanceof Promise) {
+          await result;
+          console.log("[museum] pointer lock granted");
+        }
+      } catch (err) {
+        console.error("[museum] pointer lock denied:", err);
+      }
     };
 
     container.addEventListener("click", handleClick);
