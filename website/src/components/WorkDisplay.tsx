@@ -191,7 +191,8 @@ export default function WorkDisplay({
   if (!isWorkRenderable(work)) {
     return (
       <MuseumFrame frame="1x1" width={300} showPlacard={showPlacard}
-        originatorId={work.originator_id} phase={work.phase_at_submission || "I"}>
+        originatorId={work.originator_id}
+        originatorName={work.originator_name} phase={work.phase_at_submission || "I"}>
         <WorkFallback workId={work.id} />
       </MuseumFrame>
     );
@@ -211,6 +212,7 @@ export default function WorkDisplay({
         plinth={plinthType}
         width={width}
         originatorId={work.originator_id}
+        originatorName={work.originator_name}
         phase={work.phase_at_submission || "I"}
         showPlacard={showPlacard}
       >

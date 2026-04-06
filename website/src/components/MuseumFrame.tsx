@@ -46,6 +46,7 @@ export interface MuseumFrameProps {
   artworkAspect?: number;
   workId?: string;
   originatorId?: string;
+  originatorName?: string | null;
   phase?: string;
   showPlacard?: boolean;
   /** Width in pixels. The frame renders at exactly this width. */
@@ -62,6 +63,7 @@ export default function MuseumFrame({
   artworkAspect = 1,
   workId,
   originatorId,
+  originatorName,
   phase,
   showPlacard = true,
   width = 400,
@@ -117,8 +119,8 @@ export default function MuseumFrame({
       {/* Placard */}
       {showPlacard && (workId || originatorId) && (
         <div className="mt-3 text-center">
-          {originatorId && (
-            <p className="text-[11px] text-[#8a8680]">{originatorId}</p>
+          {(originatorName || originatorId) && (
+            <p className="text-[11px] text-[#8a8680]">{originatorName || originatorId}</p>
           )}
           {phase && (
             <p className="text-[9px] text-[#8a8680]/60 uppercase tracking-wider mt-0.5">

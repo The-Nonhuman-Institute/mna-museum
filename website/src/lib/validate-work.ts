@@ -69,6 +69,11 @@ export function validateWorkData(data: unknown): Work[] {
       (w as Record<string, unknown>).display_aspect = 1.0;
     }
 
+    // originator_name is optional — default to null if missing
+    if (typeof w.originator_name !== "string") {
+      (w as Record<string, unknown>).originator_name = null;
+    }
+
     valid.push(w as unknown as Work);
   }
 

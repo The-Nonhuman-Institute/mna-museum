@@ -42,6 +42,7 @@ export interface MuseumPlinthProps {
   children?: React.ReactNode;
   plinth?: PlinthType;
   originatorId?: string;
+  originatorName?: string | null;
   phase?: string;
   showPlacard?: boolean;
   width?: number;
@@ -52,6 +53,7 @@ export default function MuseumPlinth({
   children,
   plinth: plinthOverride,
   originatorId,
+  originatorName,
   phase,
   showPlacard = true,
   width = 400,
@@ -119,7 +121,7 @@ export default function MuseumPlinth({
       {/* Placard */}
       {showPlacard && originatorId && (
         <div className="mt-3 text-center">
-          <p className="text-[11px] text-[#8a8680]">{originatorId}</p>
+          <p className="text-[11px] text-[#8a8680]">{originatorName || originatorId}</p>
           {phase && (
             <p className="text-[9px] text-[#8a8680]/60 uppercase tracking-wider mt-0.5">
               Phase {phase}

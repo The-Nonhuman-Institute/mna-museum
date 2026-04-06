@@ -19,6 +19,7 @@ export interface Evaluation {
 export interface Work {
   id: string;
   originator_id: string;
+  originator_name: string | null;
   medium: string;
   output_payload: string;
   output_type: string;
@@ -102,6 +103,7 @@ async function buildWork(row: Record<string, unknown>): Promise<Work> {
   return {
     id: workId,
     originator_id: row.originator_id as string,
+    originator_name: (row.originator_name as string) || null,
     medium,
     output_payload: row.output_payload as string,
     output_type: outputType,
@@ -141,10 +143,12 @@ function baseWorkQuery(hasTitle: boolean): string {
                  w.display_aspect, w.phase_at_submission, w.created_at,
                  ${hasTitle ? "w.title," : "NULL as title,"}
                  cs.status as canon_status, cs.canon_date, cs.founding_collection,
-                 s.submission_date, s.autonomy_tier, s.constitution_version
+                 s.submission_date, s.autonomy_tier, s.constitution_version,
+                 a.common_designation as originator_name
           FROM works w
           LEFT JOIN canon_status cs ON w.id = cs.work_id
-          LEFT JOIN submissions s ON w.id = s.work_id`;
+          LEFT JOIN submissions s ON w.id = s.work_id
+          LEFT JOIN agents a ON w.originator_id = a.registry_id`;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
