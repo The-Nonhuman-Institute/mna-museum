@@ -34,6 +34,7 @@ interface CheckResult {
   pendingRegistrations: { id: number; steward_name: string; steward_email: string; submission_date: string }[];
   unevaluatedWorks: { id: string; originator_id: string; medium: string; submitted: string }[];
   unnotifiedCanonizations: { work_id: string; originator_id: string; canon_date: string; steward_email: string }[];
+  brokenRenders: { work_id: string; output_type: string; error_message: string | null; last_checked: string }[];
   summary: string;
 }
 
@@ -83,6 +84,26 @@ async function check(): Promise<CheckResult> {
     steward_email: (r.steward_email as string) || "",
   }));
 
+  // 4. Works with BROKEN render status (reported by the Conservator).
+  // The render_status table may not exist in older databases; guard against that.
+  let brokenRenders: CheckResult["brokenRenders"] = [];
+  try {
+    const renderResult = await turso.execute(
+      `SELECT work_id, output_type, error_message, last_checked
+         FROM render_status
+        WHERE status = 'BROKEN'
+        ORDER BY last_checked DESC`
+    );
+    brokenRenders = renderResult.rows.map((r) => ({
+      work_id: r.work_id as string,
+      output_type: r.output_type as string,
+      error_message: (r.error_message as string | null) ?? null,
+      last_checked: r.last_checked as string,
+    }));
+  } catch {
+    // Table not present yet — ignore.
+  }
+
   // Build summary
   const parts: string[] = [];
   if (pendingRegistrations.length > 0) {
@@ -94,12 +115,15 @@ async function check(): Promise<CheckResult> {
   if (unnotifiedCanonizations.length > 0) {
     parts.push(`${unnotifiedCanonizations.length} canonized work(s) missing accession notice`);
   }
+  if (brokenRenders.length > 0) {
+    parts.push(`${brokenRenders.length} work(s) with render failures`);
+  }
 
   const summary = parts.length > 0
     ? `MNA INSTITUTIONAL ALERT: ${parts.join("; ")}`
     : "MNA: No pending institutional actions.";
 
-  return { pendingRegistrations, unevaluatedWorks, unnotifiedCanonizations, summary };
+  return { pendingRegistrations, unevaluatedWorks, unnotifiedCanonizations, brokenRenders, summary };
 }
 
 async function sendStewardDigest(result: CheckResult) {
@@ -112,7 +136,8 @@ async function sendStewardDigest(result: CheckResult) {
   // Only send if there are pending actions
   const hasActions = result.pendingRegistrations.length > 0 ||
     result.unevaluatedWorks.length > 0 ||
-    result.unnotifiedCanonizations.length > 0;
+    result.unnotifiedCanonizations.length > 0 ||
+    result.brokenRenders.length > 0;
   if (!hasActions) return;
 
   const resend = new Resend(resendKey);
@@ -139,6 +164,15 @@ async function sendStewardDigest(result: CheckResult) {
     body += `UNSENT ACCESSION NOTICES (${result.unnotifiedCanonizations.length})\n`;
     for (const c of result.unnotifiedCanonizations) {
       body += `  - ${c.work_id} by ${c.originator_id} — canonized ${c.canon_date}\n`;
+    }
+    body += "\n";
+  }
+
+  if (result.brokenRenders.length > 0) {
+    body += `WORKS WITH RENDER FAILURES (${result.brokenRenders.length})\n`;
+    for (const r of result.brokenRenders) {
+      const err = r.error_message ? ` — ${r.error_message}` : "";
+      body += `  - ${r.work_id} (${r.output_type})${err} — last checked ${r.last_checked}\n`;
     }
     body += "\n";
   }

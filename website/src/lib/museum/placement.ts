@@ -221,6 +221,17 @@ export interface MuseumData {
   canon: Work[];
   works: Work[];
   agents: Agent[];
+  /**
+   * Active installations keyed by space_id. Value is the list of work_ids
+   * currently installed in that space. If a space is missing from this map,
+   * the default placement behavior applies (backward-compatible fallback).
+   */
+  installations: Map<string, string[]>;
+  /**
+   * Work_id of the monumental Chamber feature, if a curator has selected one.
+   * When null, populateChamber falls back to its default selection heuristic.
+   */
+  monumentalWorkId: string | null;
 }
 
 export async function populateRoom(
@@ -236,16 +247,16 @@ export async function populateRoom(
       if (room.id === "lobby") populateLobby(roomGroup, room);
       break;
     case "gallery":
-      await populateGallery(roomGroup, room, data.canon, getAgentLocal);
+      await populateGallery(roomGroup, room, data.canon, getAgentLocal, data.installations);
       break;
     case "sculpture":
-      populateSculptureCourt(roomGroup, room, data.canon, getAgentLocal);
+      populateSculptureCourt(roomGroup, room, data.canon, getAgentLocal, data.installations);
       break;
     case "originator":
       populateOriginatorRotunda(roomGroup, room, data.canon, data.works, getAgentsByTypeLocal);
       break;
     case "chamber":
-      await populateChamber(roomGroup, room, data.canon, getAgentLocal);
+      await populateChamber(roomGroup, room, data.canon, getAgentLocal, data.monumentalWorkId);
       break;
     case "auditorium":
       populateAuditorium(roomGroup, room);
@@ -412,22 +423,34 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
 
 // ----- THE CHAMBER: one featured work at massive scale -----
 
-async function populateChamber(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): Promise<void> {
+async function populateChamber(
+  group: THREE.Group,
+  room: RoomConfig,
+  canon: Work[],
+  getAgent: (id: string) => Agent | undefined,
+  monumentalWorkId: string | null = null,
+): Promise<void> {
   // Feature ONE canonized work at monumental scale.
   // Can be any medium — 3D sculpture, large SVG, text piece, etc.
-  // Selection logic (until Curator agent runs): prefer titled works,
-  // then prefer any 3D, then any 2D with the largest payload.
   const renderable = canon.filter((w) => isWorkRenderable(w));
   if (renderable.length === 0) return;
 
-  // Manual featured pick — replace with Curator selection later
-  // For now: prefer 3D scene-json work with a title
-  const sceneWorks = renderable.filter((w) => w.output_type === "scene-json");
   let featured: Work | undefined;
-  if (sceneWorks.length > 0) {
-    featured = sceneWorks.find((w) => w.title) || sceneWorks[0];
-  } else {
-    featured = renderable.find((w) => w.title) || renderable[0];
+
+  // Curator decision (via museum_installations → monumentalWorkId) takes
+  // priority. Fall back to the default heuristic if unset or the chosen
+  // work is not renderable.
+  if (monumentalWorkId) {
+    featured = renderable.find((w) => w.id === monumentalWorkId);
+  }
+
+  if (!featured) {
+    const sceneWorks = renderable.filter((w) => w.output_type === "scene-json");
+    if (sceneWorks.length > 0) {
+      featured = sceneWorks.find((w) => w.title) || sceneWorks[0];
+    } else {
+      featured = renderable.find((w) => w.title) || renderable[0];
+    }
   }
   if (!featured) return;
 
@@ -536,7 +559,13 @@ async function populateChamber(group: THREE.Group, room: RoomConfig, canon: Work
 
 // ----- GALLERIES: canon 2D works, each shown once -----
 
-async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): Promise<void> {
+async function populateGallery(
+  group: THREE.Group,
+  room: RoomConfig,
+  canon: Work[],
+  getAgent: (id: string) => Agent | undefined,
+  installations: Map<string, string[]> = new Map(),
+): Promise<void> {
   // Canon visual works only — no audio, no 3D, and not currently in an exhibition
   const canon2D = canon.filter((w) =>
     isWorkRenderable(w) &&
@@ -545,9 +574,18 @@ async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work
     !isWorkInExhibition(w.id)
   );
 
-  // Distribute works across galleries by originator assignment
+  // Curator-directed installations take priority. If the Curator has placed
+  // works in this space, use exactly those (in the given order). Otherwise
+  // fall back to the default originator-based assignment so the museum still
+  // works when no installations exist yet.
+  const installedIds = installations.get(room.id);
   let roomWorks: Work[];
-  if (room.id === "gallery-west") {
+  if (installedIds && installedIds.length > 0) {
+    const byId = new Map(canon2D.map((w) => [w.id, w]));
+    roomWorks = installedIds
+      .map((id) => byId.get(id))
+      .filter((w): w is Work => !!w);
+  } else if (room.id === "gallery-west") {
     roomWorks = canon2D.filter((w) =>
       ["MNA-OR-0001", "MNA-OR-0002"].includes(w.originator_id)
     );
@@ -631,15 +669,26 @@ async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work
     group.add(label);
   }
 
-  // Audio listening stations — canon audio works placed on the floor
-  // Spaced far apart: alternate corners/edges of the room
-  const canonAudio = canon.filter((w) =>
-    isWorkRenderable(w) &&
-    w.output_type === "audio-json" &&
-    (room.id === "gallery-west"
-      ? ["MNA-OR-0001", "MNA-OR-0002", "MNA-OR-0005"].includes(w.originator_id)
-      : ["MNA-OR-0003", "MNA-OR-0004", "MNA-OR-0006", "MNA-OR-0007"].includes(w.originator_id))
-  );
+  // Audio listening stations — canon audio works placed on the floor.
+  // Honor curator installations when present; otherwise fall back to the
+  // originator-split default.
+  let canonAudio: Work[];
+  if (installedIds && installedIds.length > 0) {
+    const installedSet = new Set(installedIds);
+    canonAudio = canon.filter((w) =>
+      isWorkRenderable(w) &&
+      w.output_type === "audio-json" &&
+      installedSet.has(w.id)
+    );
+  } else {
+    canonAudio = canon.filter((w) =>
+      isWorkRenderable(w) &&
+      w.output_type === "audio-json" &&
+      (room.id === "gallery-west"
+        ? ["MNA-OR-0001", "MNA-OR-0002", "MNA-OR-0005"].includes(w.originator_id)
+        : ["MNA-OR-0003", "MNA-OR-0004", "MNA-OR-0006", "MNA-OR-0007"].includes(w.originator_id))
+    );
+  }
 
   if (canonAudio.length > 0) {
     // Place audio stations along the center of the room, spaced maximally apart
@@ -692,9 +741,25 @@ async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work
 
 // ----- SCULPTURE COURT: 3D works on plinths -----
 
-function populateSculptureCourt(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): void {
-  // Canon 3D sculptures only
-  const scene3D = canon.filter((w) => isWorkRenderable(w) && w.output_type === "scene-json");
+function populateSculptureCourt(
+  group: THREE.Group,
+  room: RoomConfig,
+  canon: Work[],
+  getAgent: (id: string) => Agent | undefined,
+  installations: Map<string, string[]> = new Map(),
+): void {
+  // Honor curator installations if present; otherwise default to all canon
+  // scene-json sculptures.
+  const installedIds = installations.get(room.id);
+  let scene3D: Work[];
+  if (installedIds && installedIds.length > 0) {
+    const byId = new Map(canon.map((w) => [w.id, w]));
+    scene3D = installedIds
+      .map((id) => byId.get(id))
+      .filter((w): w is Work => !!w && isWorkRenderable(w) && w.output_type === "scene-json");
+  } else {
+    scene3D = canon.filter((w) => isWorkRenderable(w) && w.output_type === "scene-json");
+  }
 
   if (scene3D.length === 0) return;
   const plinthMat = new THREE.MeshStandardMaterial({ color: 0x2a2825, roughness: 0.5, metalness: 0.05 });
