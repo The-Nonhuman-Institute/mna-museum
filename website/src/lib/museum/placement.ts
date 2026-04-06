@@ -547,14 +547,18 @@ async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work
     idx++;
   }
 
-  const slots = generateWallSlots(room, 12, 6);
+  const slots = generateWallSlots(room, 10, 5);
   const limit = Math.min(interleaved.length, slots.length);
+  console.log(`[museum] populating ${room.id}: ${interleaved.length} works, ${slots.length} slots`);
 
   for (let i = 0; i < limit; i++) {
     const work = interleaved[i];
     const slot = slots[i];
     const texture = await renderWorkToTexture(work);
-    if (!texture) continue;
+    if (!texture) {
+      console.warn(`[museum] failed to render: ${work.id} (${work.output_type})`);
+      continue;
+    }
 
     const frame = createFramedWork(texture, work.display_aspect, 5);
     frame.position.set(slot.x, slot.y, slot.z);

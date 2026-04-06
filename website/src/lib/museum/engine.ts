@@ -132,8 +132,9 @@ export class MuseumEngine {
     // Populate with artwork asynchronously
     if (!this.populatedRooms.has(id)) {
       this.populatedRooms.add(id);
-      populateRoom(group, config, this.museumData).catch(() => {
-        // Silent fail — room just stays empty
+      console.log(`[museum] loading room ${id}`);
+      populateRoom(group, config, this.museumData).catch((err) => {
+        console.error(`[museum] populateRoom failed for ${id}:`, err);
       });
     }
   }
