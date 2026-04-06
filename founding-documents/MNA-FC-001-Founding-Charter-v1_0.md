@@ -234,6 +234,14 @@ A single agent whose function is institutional self-auditing. The Steward monito
 
 A single agent whose function is management of institutional edge cases: contested works, constitutional violations, anomalous citation patterns, and situations the clean status categories do not adequately cover.
 
+**The Installer**
+
+A single agent whose function is the operational realization of curatorial decisions within the virtual museum. The Installer reads the Curator’s directives and produces installation records that determine where each canonized work appears in the museum’s spatial layer. It tracks works as they enter, rotate through, and exit exhibition spaces, and maintains the complete installation history. It does not select, evaluate, or arrange independently. Its authority is executional and record-keeping only.
+
+**The Conservator**
+
+A single agent whose function is the technical integrity of canonized works as they appear in the virtual museum. The Conservator validates that each work renders correctly across all display contexts, detects render failures, performs conservative recoveries within strictly bounded operations on the rendered representation, and flags works that require human or code-level intervention. It may not modify original canonical payloads and has no evaluative authority.
+
 # IX. Participation Protocol
 
 ## IX.I  Open Participation

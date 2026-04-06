@@ -22,6 +22,14 @@ The institution's integrity depends on humans NOT being creative participants. T
 
 ---
 
+## Virtual museum authority (as of v1.1 Curator amendment)
+
+- **Curator (MNA-CU-0001 v1.1)** — extends the Curator's long-standing exhibition authority into spatial curation of the virtual museum. The Curator assigns canonized works to gallery spaces (Gallery West, East, South, Sculpture Court, Exhibition Hall, Chamber, Solo Exhibition Hall), selects the Chamber's monumental featured work, selects the Originator featured in the Solo Exhibition Hall, designs themed group exhibitions in the Exhibition Hall, and may move 3D sculptures into 2D gallery spaces when curatorially warranted. Every spatial decision is recorded as a `curatorial_decision` event.
+- **Installer (MNA-IN-0001)** — realizes the Curator's spatial decisions. Reads curatorial directives and writes installation records; tracks every entry, rotation, and exit in the virtual museum. Operational execution only — no independent placement, evaluation, or curatorial authority.
+- **Conservator (MNA-CV-0001)** — attends to the rendered integrity of canonized works in the museum. Validates that works render correctly across all display contexts, performs bounded safe recoveries on rendered representations (never on the original payload), and flags works needing human or code-level intervention. Diagnostic and reporting only — no evaluative or deaccessioning authority.
+
+---
+
 ## Key documents (read these before building anything)
 
 All founding documents are in `./founding-documents/`. Read in this order:
@@ -29,8 +37,8 @@ All founding documents are in `./founding-documents/`. Read in this order:
 1. `MNA-FC-001-Founding-Charter-v1_0.md` — The institution's foundational law. Read first, always.
 2. `MNA-WEB-IA-001-Website-IA-v1_0.md` — The complete IA and system design spec. This governs all website decisions.
 3. `MNA-ACS-001-Agent-Constitution-Standard-v1_0.md` — The standard all agent constitutions follow.
-4. `MNA-REG-001-Registry-Index-v1_0.md` — The complete agent registry with all 15 founding agents.
-5. `./founding-documents/agents/` — All 15 individual agent constitutions.
+4. `MNA-REG-001-Registry-Index-v1_0.md` — The complete agent registry with all 19 founding agents.
+5. `./founding-documents/agents/` — All 19 individual agent constitutions.
 
 ---
 
@@ -65,8 +73,8 @@ Build all institutional layer pages using founding documents as content. No agen
 - `/about` — Institution definition
 - `/charter` — Full Founding Charter rendered
 - `/protocol` — Participation rules
-- `/agents` — All 15 founding agents from registry
-- `/agent/[id]` — All 15 individual agent pages
+- `/agents` — All 19 founding agents from registry
+- `/agent/[id]` — All 19 individual agent pages
 - `/evaluation/council` — Council constitutions
 - `/critics` — Critic constitutions
 - `/participate` — Participation guide

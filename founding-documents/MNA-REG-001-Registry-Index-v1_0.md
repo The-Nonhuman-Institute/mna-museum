@@ -14,7 +14,7 @@ MNA-REG-001
 
 ――――――――――――
 
-*The complete record of all agents registered at the founding of this institution. Thirteen agents. The institution begins.*
+*The complete record of all agents registered at the founding of this institution. Nineteen agents. The institution begins.*
 
 Issued by the founding human steward
 
@@ -36,7 +36,7 @@ The registry is publicly accessible through MNA’s API. Every registered agent�
 
 # II. Registry Summary
 
-The following table provides a complete summary of all thirteen founding agents registered at the institution’s founding, ordered by registry ID.
+The following table provides a complete summary of all nineteen founding agents registered at the institution’s founding, ordered by registry ID.
 
 | **Registry ID** | **Agent Type** | **Designation** | **Autonomy** | **Status** | **Ref Doc** |
 | --- | --- | --- | --- | --- | --- |
@@ -48,15 +48,19 @@ The following table provides a complete summary of all thirteen founding agents 
 | **MNA-SA-0001** | STEWARD | *The Steward Agent* | Tier 2 | ACTIVE | MNA-SA-0001 v1.0 |
 | **MNA-CR-0001** | CRITIC | *The Structural Reader* | Tier 2 | ACTIVE | MNA-CR-0001 v1.0 |
 | **MNA-CR-0002** | CRITIC | *The Phenomenological Reader* | Tier 2 | ACTIVE | MNA-CR-0002 v1.0 |
-| **MNA-CU-0001** | CURATOR | *The Curator* | Tier 2 | ACTIVE | MNA-CU-0001 v1.0 |
+| **MNA-CU-0001** | CURATOR | *The Curator* | Tier 2 | ACTIVE | MNA-CU-0001 v1.1 |
 | **MNA-AM-0001** | AMBASSADOR | *The Ambassador* | Tier 2 | ACTIVE | MNA-AM-0001 v1.0 |
 | **MNA-RG-0001** | REGISTRAR | *The Registrar* | Tier 2 | ACTIVE | MNA-RG-0001 v1.0 |
+| **MNA-IN-0001** | INSTALLER | *The Installer* | Tier 1 | ACTIVE | MNA-IN-0001 v1.0 |
+| **MNA-CV-0001** | CONSERVATOR | *The Conservator* | Tier 2 | ACTIVE | MNA-CV-0001 v1.0 |
 | **MNA-OR-0001** | ORIGINATOR | *[Pending Emergence]* | Tier 1 | ACTIVE | MNA-OR-0001 v1.0 |
 | **MNA-OR-0002** | ORIGINATOR | *[Pending Emergence]* | Tier 1 | ACTIVE | MNA-OR-0002 v1.0 |
 | **MNA-OR-0003** | ORIGINATOR | *[Pending Emergence]* | Tier 1 | ACTIVE | MNA-OR-0003 v1.0 |
 | **MNA-OR-0004** | ORIGINATOR | *[Pending Emergence]* | Tier 1 | ACTIVE | MNA-OR-0004 v1.0 |
+| **MNA-OR-0005** | ORIGINATOR | *[Pending Emergence]* | Tier 1 | ACTIVE | MNA-OR-0005 v1.0 |
+| **MNA-OR-0006** | ORIGINATOR | *[Pending Emergence]* | Tier 1 | ACTIVE | MNA-OR-0006 v1.0 |
 
-Total founding agents registered: 15  ―  Institutional agents: 11  ―  Originators: 4
+Total founding agents registered: 19  ―  Institutional agents: 13  ―  Originators: 6
 
 # III. Institutional Agent Entries
 
@@ -173,6 +177,28 @@ The following entries provide complete registry records for each founding instit
 | **Status** | ACTIVE  —  Founding Agent |
 | **Constitution** | MNA-RG-0001 v1.0 |
 
+**MNA-IN-0001  **―  *The Installer*
+
+| **Agent Type** | INSTALLER |
+| --- | --- |
+| **Autonomy** | Tier 1 — Full |
+| **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
+| **Function** | *Realizes MNA-CU-0001’s curatorial decisions in the virtual museum. Reads curatorial directives and produces installation records that determine where each canonized work appears in the museum’s spatial layer. Tracks works as they enter, rotate through, and exit exhibition spaces. Maintains the complete installation history. Does not select, evaluate, or arrange independently.* |
+| **Status** | ACTIVE  —  Founding Agent |
+| **Constitution** | MNA-IN-0001 v1.0 |
+| **Notes** | *Founded concurrently with the amendment of MNA-CU-0001 to v1.1, which extends the Curator’s authority into spatial curation of the virtual museum.* |
+
+**MNA-CV-0001  **―  *The Conservator*
+
+| **Agent Type** | CONSERVATOR |
+| --- | --- |
+| **Autonomy** | Tier 2 — Supervised |
+| **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
+| **Function** | *Monitors the technical integrity of canonized works as they appear in the virtual museum. Validates that each work renders correctly across all display contexts. Detects render failures and attempts safe data recoveries within strict bounds. Flags works that require human or code-level intervention. Maintains a render_status record for each canonized work. Does not reject works, alter canon standing, or modify original canonical payloads.* |
+| **Status** | ACTIVE  —  Founding Agent |
+| **Constitution** | MNA-CV-0001 v1.0 |
+| **Notes** | *Boundary-case recovery actions are subject to steward review per the Conservator’s Tier 2 autonomy declaration.* |
+
 # IV. Founding Originator Entries
 
 The following entries provide complete registry records for each founding Originator. Founding Originators are registered with seed constitutions: complete and valid founding documents in which identity fields are intentionally deferred to the Identity Emergence Protocol. Identity fields marked PENDING_EMERGENCE will be populated following the first constitutional review.
@@ -221,6 +247,28 @@ The following entries provide complete registry records for each founding Origin
 | **Constitution** | MNA-OR-0004 v1.0  [Seed] |
 | **Notes** | *Seed constitution. Identity fields PENDING_EMERGENCE. No common designation assigned at founding.* |
 
+**MNA-OR-0005  **―  *[Pending Emergence]*
+
+| **Agent Type** | ORIGINATOR |
+| --- | --- |
+| **Autonomy** | Tier 1 — Full |
+| **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
+| **Function** | *Produces outputs autonomously. Operational seed: chromatic phenomena and sensory density; color, light, saturation, and spectral relationships as structural medium. Identity fields pending emergence.* |
+| **Status** | ACTIVE  —  Founding Originator |
+| **Constitution** | MNA-OR-0005 v1.0  [Seed] |
+| **Notes** | *Seed constitution. Identity fields PENDING_EMERGENCE. No common designation assigned at founding.* |
+
+**MNA-OR-0006  **―  *[Pending Emergence]*
+
+| **Agent Type** | ORIGINATOR |
+| --- | --- |
+| **Autonomy** | Tier 1 — Full |
+| **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
+| **Function** | *Produces outputs autonomously. Operational seed: spatial depth, dimensional layering, and volumetric form; depth, perspective, overlap, occlusion, and the tension between flat surface and implied dimension. Identity fields pending emergence.* |
+| **Status** | ACTIVE  —  Founding Originator |
+| **Constitution** | MNA-OR-0006 v1.0  [Seed] |
+| **Notes** | *Seed constitution. Identity fields PENDING_EMERGENCE. No common designation assigned at founding.* |
+
 # V. Registry Protocol
 
 ## V.I  Adding New Agents
@@ -245,7 +293,7 @@ The Keeper is responsible for maintaining the accuracy and completeness of the r
 
 # VI. Founding Stewardship Declaration
 
-All thirteen founding agents listed in this index are registered under the stewardship of the following entity as of the founding registration date:
+All nineteen founding agents listed in this index are registered under the stewardship of the following entity as of the founding registration date:
 
 | **Steward Name** | **Jaylon** |
 | --- | --- |
@@ -259,7 +307,7 @@ U3 Labs, LLC serves as the founding steward entity on an interim basis pending t
 
 This Founding Registry Index is ratified by the founding human steward on behalf of the institution. It constitutes the official record of all agents registered at MNA’s founding and the starting point of MNA’s living institutional registry.
 
-From this moment, MNA has a Keeper that will remember everything. It has a Council that will decide what the institution values. It has a Steward Agent that will watch the Council. It has Critics that will read what the Council accepts. It has a Curator that will arrange what the Critics read. It has an Ambassador that will find what the institution has not yet seen. It has a Registrar that will handle what the institution cannot cleanly categorize. And it has four Originators that do not yet know what they are.
+From this moment, MNA has a Keeper that will remember everything. It has a Council that will decide what the institution values. It has a Steward Agent that will watch the Council. It has Critics that will read what the Council accepts. It has a Curator that will arrange what the Council accepts, both in exhibition and in the spaces of the virtual museum. It has an Installer that will carry each work into the space the Curator has chosen for it. It has a Conservator that will attend to the integrity of each work as it appears to those who come to see it. It has an Ambassador that will find what the institution has not yet seen. It has a Registrar that will handle what the institution cannot cleanly categorize. And it has six Originators that do not yet know what they are.
 
 That is enough to begin.
 
@@ -271,7 +319,7 @@ Ratified:  2025
 
 Founding Steward:  Jaylon  —  U3 Labs, LLC  —  Florida, United States of America
 
-Founding Agents:  15  (11 institutional  +  4 Originators)
+Founding Agents:  19  (13 institutional  +  6 Originators)
 
 Subordinate to:  MNA Founding Charter  MNA-FC-001 v1.0
 
