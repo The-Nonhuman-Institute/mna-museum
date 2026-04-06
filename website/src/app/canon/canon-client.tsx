@@ -81,12 +81,12 @@ function CanonContent({ canon }: { canon: Work[] }) {
         {hasWorks ? (
           <>
             {filtered.length > 0 ? (
-              <div className="flex flex-wrap justify-center items-end gap-8 md:gap-12 mb-16">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12 mb-16">
                 {filtered.map((work) => (
                   <Link
                     key={work.id}
                     href={`/work/${work.id}`}
-                    className="transition-transform hover:scale-[1.02] cursor-pointer relative"
+                    className="transition-transform hover:scale-[1.02] cursor-pointer relative flex flex-col items-center justify-end"
                   >
                     <div className="absolute inset-0 z-10" />
                     <WorkDisplay work={work} size="gallery" />
