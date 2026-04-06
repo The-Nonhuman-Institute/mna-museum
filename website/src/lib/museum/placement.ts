@@ -519,11 +519,31 @@ async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work
     );
   }
 
-  const slots = generateWallSlots(room, 10, 5);
-  const limit = Math.min(roomWorks.length, slots.length);
+  // Interleave works from different originators so every artist gets wall space
+  const byOriginator: Record<string, Work[]> = {};
+  for (const w of roomWorks) {
+    (byOriginator[w.originator_id] ||= []).push(w);
+  }
+  const interleaved: Work[] = [];
+  let remaining = true;
+  let idx = 0;
+  const originatorIds = Object.keys(byOriginator);
+  while (remaining) {
+    remaining = false;
+    for (const oid of originatorIds) {
+      if (idx < byOriginator[oid].length) {
+        interleaved.push(byOriginator[oid][idx]);
+        remaining = true;
+      }
+    }
+    idx++;
+  }
+
+  const slots = generateWallSlots(room, 12, 6);
+  const limit = Math.min(interleaved.length, slots.length);
 
   for (let i = 0; i < limit; i++) {
-    const work = roomWorks[i];
+    const work = interleaved[i];
     const slot = slots[i];
     const texture = await renderWorkToTexture(work);
     if (!texture) continue;
