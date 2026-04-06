@@ -1,6 +1,7 @@
 [build]
-builder = "nixpacks"
-buildCommand = "cd party && npm install"
+builder = "dockerfile"
+dockerfilePath = "party/Dockerfile"
+dockerContext = "party"
 
 [deploy]
-startCommand = "cd party && node server.js"
+startCommand = "node server.js"
