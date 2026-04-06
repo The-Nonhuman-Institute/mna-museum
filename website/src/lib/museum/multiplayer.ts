@@ -110,7 +110,7 @@ function handleMessage(event: MessageEvent): void {
           }
           avatar.targetX = v.x; avatar.targetZ = v.z; avatar.targetYaw = v.yaw;
         }
-        for (const [id, a] of avatars) {
+        for (const [id, a] of Array.from(avatars)) {
           if (!seen.has(id)) { sceneRef?.remove(a.mesh); (a.mesh.material as THREE.MeshStandardMaterial).dispose(); avatars.delete(id); }
         }
         break;
@@ -167,7 +167,7 @@ export function sendEmote(emoteId: number): void {
 
 export function updateAvatars(dt: number): void {
   const factor = lerpFactor(0.15, dt);
-  for (const avatar of avatars.values()) {
+  for (const avatar of Array.from(avatars.values())) {
     avatar.mesh.position.x += (avatar.targetX - avatar.mesh.position.x) * factor;
     avatar.mesh.position.z += (avatar.targetZ - avatar.mesh.position.z) * factor;
     avatar.mesh.position.y = EYE_HEIGHT;
@@ -179,7 +179,7 @@ export function updateAvatars(dt: number): void {
 export function disposeMultiplayer(): void {
   disposed = true;
   if (socket) { socket.close(); socket = null; }
-  for (const a of avatars.values()) { sceneRef?.remove(a.mesh); (a.mesh.material as THREE.MeshStandardMaterial).dispose(); }
+  for (const a of Array.from(avatars.values())) { sceneRef?.remove(a.mesh); (a.mesh.material as THREE.MeshStandardMaterial).dispose(); }
   avatars.clear();
   if (sharedGeo) { sharedGeo.dispose(); sharedGeo = null; }
   sceneRef = null; localId = null; emoteCallback = null;
