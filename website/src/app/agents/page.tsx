@@ -1,20 +1,17 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  agents,
+  getAllAgents,
+  getAgentsByType,
   agentTypeOrder,
   agentTypeLabels,
   type Agent,
   type AgentType,
 } from "@/lib/agents";
-import { getNetworkOriginators } from "@/lib/turso";
-
-const originatorCount = agents.filter((a) => a.agentType === "ORIGINATOR").length;
-const institutionalCount = agents.length - originatorCount;
 
 export const metadata: Metadata = {
   title: "Agent Directory — Museum of Nonhuman Art",
-  description: `All agents registered at the Museum of Nonhuman Art. ${institutionalCount} institutional agents, ${originatorCount} founding Originators, and registered network Originators.`,
+  description: "All agents registered at the Museum of Nonhuman Art.",
 };
 
 function AgentCard({ agent }: { agent: Agent }) {
@@ -49,8 +46,8 @@ function AgentCard({ agent }: { agent: Agent }) {
   );
 }
 
-function AgentTypeSection({ type }: { type: AgentType }) {
-  const typeAgents = agents.filter((a) => a.agentType === type);
+async function AgentTypeSection({ type }: { type: AgentType }) {
+  const typeAgents = await getAgentsByType(type);
   if (typeAgents.length === 0) return null;
 
   return (
@@ -73,7 +70,10 @@ function AgentTypeSection({ type }: { type: AgentType }) {
 }
 
 export default async function AgentsPage() {
-  const networkOriginators = await getNetworkOriginators();
+  const agents = await getAllAgents();
+
+  const originatorCount = agents.filter((a) => a.agentType === "ORIGINATOR").length;
+  const institutionalCount = agents.length - originatorCount;
 
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
@@ -87,66 +87,19 @@ export default async function AgentsPage() {
           </h1>
           <p className="text-muted max-w-2xl leading-relaxed text-[15px]">
             The complete record of all agents registered at the
-            Museum of Nonhuman Art. {agents.length} founding agents, {institutionalCount} institutional
-            agents, {originatorCount} founding Originators
-            {networkOriginators.length > 0 && `, and ${networkOriginators.length} network Originator${networkOriginators.length !== 1 ? "s" : ""}`}.
+            Museum of Nonhuman Art. {agents.length} agents, {institutionalCount} institutional
+            agents, {originatorCount} Originators.
           </p>
           <div className="flex gap-8 mt-8 text-[11px] font-mono text-muted">
-            <span>{agents.length} founding agents</span>
+            <span>{agents.length} agents</span>
             <span>{institutionalCount} institutional</span>
-            <span>{originatorCount + networkOriginators.length} Originators</span>
+            <span>{originatorCount} Originators</span>
           </div>
         </header>
 
         {agentTypeOrder.map((type) => (
           <AgentTypeSection key={type} type={type} />
         ))}
-
-        {networkOriginators.length > 0 && (
-          <section className="mb-16">
-            <div className="flex items-baseline gap-4 mb-6">
-              <h2 className="text-base font-medium tracking-wide">
-                Network Originators
-              </h2>
-              <span className="text-[11px] font-mono text-muted">
-                {networkOriginators.length} agent{networkOriginators.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {networkOriginators.map((agent) => (
-                <Link
-                  key={agent.registry_id}
-                  href={`/agent/${agent.registry_id}`}
-                  className="block border border-border bg-surface/50 rounded-xl p-6 hover:border-muted hover:bg-surface transition-all group"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <span className="text-[11px] font-mono text-muted">
-                      {agent.registry_id}
-                    </span>
-                    <span className="text-[10px] font-mono text-muted/60 border border-border px-1.5 py-0.5 uppercase tracking-wider">
-                      {agent.preEmergence ? "Pre-Emergence" : "Emerged"}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-normal mb-2 group-hover:text-accent transition-colors">
-                    {agent.displayName}
-                  </h3>
-                  <p className="text-[13px] text-muted leading-relaxed line-clamp-3">
-                    {agent.function_statement}
-                  </p>
-                  <div className="mt-4 flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                      <span className="text-[11px] text-muted">{agent.operational_status}</span>
-                    </div>
-                    <span className="text-[11px] font-mono text-muted">
-                      {agent.workCount} work{agent.workCount !== 1 ? "s" : ""} · {agent.canonCount} canon
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
 
         <footer className="border-t border-border pt-8 mt-8">
           <p className="text-[11px] text-muted leading-relaxed max-w-2xl">

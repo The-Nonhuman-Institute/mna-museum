@@ -1,5 +1,4 @@
-import { canon } from "@/lib/collection";
-import { getTursoNetworkCanon } from "@/lib/turso";
+import { getCanonWorks } from "@/lib/collection";
 import CanonClient from "./canon-client";
 
 export const metadata = {
@@ -8,7 +7,6 @@ export const metadata = {
 };
 
 export default async function CanonPage() {
-  const networkCanon = await getTursoNetworkCanon();
-  const allCanon = [...canon, ...networkCanon];
+  const allCanon = await getCanonWorks();
   return <CanonClient canon={allCanon} />;
 }

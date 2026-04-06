@@ -1,5 +1,4 @@
-import { works } from "@/lib/collection";
-import { getTursoNetworkWorks } from "@/lib/turso";
+import { getAllWorks } from "@/lib/collection";
 import ArchiveClient from "./archive-client";
 
 export const metadata = {
@@ -8,7 +7,6 @@ export const metadata = {
 };
 
 export default async function ArchivePage() {
-  const networkWorks = await getTursoNetworkWorks();
-  const allWorks = [...works, ...networkWorks];
+  const allWorks = await getAllWorks();
   return <ArchiveClient works={allWorks} />;
 }
