@@ -245,7 +245,7 @@ export async function populateRoom(
       populateOriginatorRotunda(roomGroup, room, data.canon, data.works, getAgentsByTypeLocal);
       break;
     case "chamber":
-      populateChamber(roomGroup, room, data.canon, getAgentLocal);
+      await populateChamber(roomGroup, room, data.canon, getAgentLocal);
       break;
     case "auditorium":
       populateAuditorium(roomGroup, room);
@@ -412,40 +412,76 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
 
 // ----- THE CHAMBER: one featured work at massive scale -----
 
-function populateChamber(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): void {
-  // Feature the most evocative 3D canon work at enormous scale
-  const sceneWorks = canon.filter((w) => isWorkRenderable(w) && w.output_type === "scene-json");
-  if (sceneWorks.length === 0) return;
+async function populateChamber(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): Promise<void> {
+  // Feature ONE canonized work at monumental scale.
+  // Can be any medium — 3D sculpture, large SVG, text piece, etc.
+  // Selection logic (until Curator agent runs): prefer titled works,
+  // then prefer any 3D, then any 2D with the largest payload.
+  const renderable = canon.filter((w) => isWorkRenderable(w));
+  if (renderable.length === 0) return;
 
-  // Pick a featured work — prefer works with titles (more intentional)
-  const featured = sceneWorks.find((w) => w.title) || sceneWorks[0];
+  // Manual featured pick — replace with Curator selection later
+  // For now: prefer 3D scene-json work with a title
+  const sceneWorks = renderable.filter((w) => w.output_type === "scene-json");
+  let featured: Work | undefined;
+  if (sceneWorks.length > 0) {
+    featured = sceneWorks.find((w) => w.title) || sceneWorks[0];
+  } else {
+    featured = renderable.find((w) => w.title) || renderable[0];
+  }
+  if (!featured) return;
 
-  const sculpture = buildSculpture(featured.output_payload);
-  if (!sculpture) return;
+  const agent = getAgent(featured.originator_id);
 
-  // Massive scale — the work fills the chamber
-  const bounds = getSculptureBounds(featured.output_payload);
-  const maxDim = Math.max(bounds.w, bounds.h, bounds.d);
-  const targetSize = Math.min(room.width, room.depth) * 0.4;
-  const scale = maxDim > 0.1 ? targetSize / maxDim : 5;
+  if (featured.output_type === "scene-json") {
+    // ── 3D SCULPTURE PATH ───────────────────────────────────
+    const sculpture = buildSculpture(featured.output_payload);
+    if (!sculpture) return;
 
-  sculpture.scale.setScalar(scale);
-  sculpture.position.set(0, bounds.h * scale * 0.3 + 2, 0);
-  group.add(sculpture);
-  rotatingSculptures.push(sculpture);
+    const bounds = getSculptureBounds(featured.output_payload);
+    const maxDim = Math.max(bounds.w, bounds.h, bounds.d);
+    const targetSize = Math.min(room.width, room.depth) * 0.4;
+    const scale = maxDim > 0.1 ? targetSize / maxDim : 5;
 
-  // Circular platform beneath
-  const platformGeo = new THREE.CylinderGeometry(targetSize * 0.6, targetSize * 0.65, 1.5, 32);
-  const platformMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2825, roughness: 0.4, metalness: 0.08,
-  });
-  const platform = new THREE.Mesh(platformGeo, platformMat);
-  platform.position.set(0, 0.75, 0);
-  group.add(platform);
-  registerFurnitureCollision(room, 0, 0, targetSize * 1.3, targetSize * 1.3);
+    sculpture.scale.setScalar(scale);
+    sculpture.position.set(0, bounds.h * scale * 0.3 + 2, 0);
+    group.add(sculpture);
+    rotatingSculptures.push(sculpture);
+
+    // Circular platform beneath
+    const platformGeo = new THREE.CylinderGeometry(targetSize * 0.6, targetSize * 0.65, 1.5, 32);
+    const platformMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2825, roughness: 0.4, metalness: 0.08,
+    });
+    const platform = new THREE.Mesh(platformGeo, platformMat);
+    platform.position.set(0, 0.75, 0);
+    group.add(platform);
+    registerFurnitureCollision(room, 0, 0, targetSize * 1.3, targetSize * 1.3);
+  } else {
+    // ── 2D MONUMENTAL FRAMED WORK PATH ──────────────────────
+    // Render as a giant framed work on the north wall
+    const texture = await renderWorkToTexture(featured);
+    if (!texture) return;
+
+    // Massive frame — fills most of the back wall vertically
+    const wallH = room.height - 6; // leave room for ceiling clearance
+    const monumentalHeight = Math.min(wallH * 0.85, 24); // up to 24ft tall
+    const frame = createFramedWork(texture, featured.display_aspect, monumentalHeight);
+
+    // Mount on the north wall at eye-level-plus
+    const offsetFromWall = 0.6;
+    frame.position.set(0, monumentalHeight * 0.55 + 4, -(room.depth / 2) + offsetFromWall);
+    frame.rotation.y = 0;
+    group.add(frame);
+
+    // Register animated work position (no-op for static, real for HTML-CSS)
+    if (featured.output_type === "html-css") {
+      const worldPos = new THREE.Vector3(room.x, monumentalHeight * 0.55 + 4, room.z - room.depth / 2 + offsetFromWall);
+      registerAnimatedWorkPosition(texture, worldPos);
+    }
+  }
 
   // Freestanding lectern — near entrance, right side, angled reading surface
-  const agent = getAgent(featured.originator_id);
   const lecternMat = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.4, metalness: 0.08 });
 
   // Tapered pedestal body (wider at base, narrower at top)
