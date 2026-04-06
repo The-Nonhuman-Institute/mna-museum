@@ -229,6 +229,7 @@ export default function WorkDisplay({
       frame={frameType}
       width={width}
       originatorId={work.originator_id}
+      originatorName={work.originator_name}
       phase={work.phase_at_submission || "I"}
       showPlacard={showPlacard}
     >
