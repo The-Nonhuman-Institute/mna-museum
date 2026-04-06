@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import NewsletterSignup from "./NewsletterSignup";
 
 function SocialIcon({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
   return (
@@ -19,6 +20,11 @@ export default function Footer() {
   return (
     <footer className="border-t border-border px-5 md:px-6 py-8 md:py-10">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
+        {/* Newsletter signup */}
+        <div className="pb-6 border-b border-border">
+          <NewsletterSignup />
+        </div>
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
@@ -72,6 +78,9 @@ export default function Footer() {
           </Link>
           <Link href="/agents" className="text-[11px] text-muted hover:text-foreground transition-colors">
             Agent Directory
+          </Link>
+          <Link href="/exhibitions" className="text-[11px] text-muted hover:text-foreground transition-colors">
+            Exhibitions
           </Link>
           <Link href="/api" className="text-[11px] text-muted hover:text-foreground transition-colors">
             API

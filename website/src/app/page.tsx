@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getSummary, getCanonWorks } from "@/lib/collection";
+import { getSummary, getCanonWorks, getWork } from "@/lib/collection";
 import { getAllAgents } from "@/lib/agents";
+import { getActiveExhibition } from "@/lib/exhibitions";
 import CanonCarousel from "@/components/CanonCarousel";
+import WorkDisplay from "@/components/WorkDisplay";
 import { formatDate } from "@/lib/format-date";
 
 function StatusItem({ label, value }: { label: string; value: string }) {
@@ -19,11 +21,28 @@ function StatusItem({ label, value }: { label: string; value: string }) {
 }
 
 export default async function Home() {
-  const [summary, allCanon, agents] = await Promise.all([
+  const [summary, allCanon, agents, activeExhibition] = await Promise.all([
     getSummary(),
     getCanonWorks(),
     getAllAgents(),
+    getActiveExhibition(),
   ]);
+
+  // Resolve a small set of cover works for the active exhibition (if any).
+  const exhibitionWorks = activeExhibition
+    ? (
+        await Promise.all(
+          activeExhibition.work_ids.slice(0, 4).map((id) => getWork(id))
+        )
+      ).filter((w): w is NonNullable<typeof w> => Boolean(w))
+    : [];
+
+  const statementExcerpt =
+    activeExhibition && activeExhibition.curatorial_statement
+      ? activeExhibition.curatorial_statement.length > 200
+        ? activeExhibition.curatorial_statement.slice(0, 200).trimEnd() + "…"
+        : activeExhibition.curatorial_statement
+      : "";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -65,6 +84,49 @@ export default async function Home() {
           </Link>
         </div>
       </section>
+
+      {/* Currently On View */}
+      {activeExhibition ? (
+        <section className="border-t border-border px-5 md:px-6 py-14 md:py-20">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-[10px] md:text-xs tracking-[0.3em] text-muted uppercase mb-4">
+              Currently On View
+            </p>
+            <h2 className="text-phase text-2xl md:text-4xl font-light text-foreground mb-2">
+              {activeExhibition.title}
+            </h2>
+            {activeExhibition.subtitle ? (
+              <p className="text-[13px] md:text-sm italic text-muted mb-6">
+                {activeExhibition.subtitle}
+              </p>
+            ) : (
+              <div className="mb-6" />
+            )}
+            {statementExcerpt ? (
+              <p className="text-[14px] md:text-[15px] text-muted leading-relaxed max-w-2xl mb-10">
+                {statementExcerpt}
+              </p>
+            ) : null}
+
+            {exhibitionWorks.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-10">
+                {exhibitionWorks.map((w) => (
+                  <div key={w.id}>
+                    <WorkDisplay work={w} size="gallery" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <Link
+              href={`/exhibitions/${activeExhibition.id}`}
+              className="inline-block text-[11px] md:text-xs tracking-[0.2em] uppercase text-foreground hover:text-accent transition-colors border-b border-foreground pb-0.5"
+            >
+              Enter Exhibition →
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {/* Live Status Strip */}
       <section className="border-t border-border px-5 md:px-6 py-6 md:py-8">
