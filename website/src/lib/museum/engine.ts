@@ -6,7 +6,7 @@ import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { resolveCollision, getCurrentRoom, clearWallCache } from "./collision";
 import { RoomConfig, getRoomById } from "./room-configs";
 import { disposeMaterials } from "./materials";
-import { populateRoom, rotatingSculptures } from "./placement";
+import { populateRoom, rotatingSculptures, MuseumData } from "./placement";
 import { disposeAnimatedTextures } from "./animated-textures";
 import { updateSpatialAudio, disposeSpatialAudio } from "./spatial-audio";
 import { addArchitecturalDetail, disposeArchitectureMaterials } from "./architecture";
@@ -46,10 +46,12 @@ export class MuseumEngine {
   private emoteFlashTimeout: ReturnType<typeof setTimeout> | null = null;
   private loadedRooms = new Set<string>();
   private populatedRooms = new Set<string>();
+  private museumData: MuseumData;
 
-  constructor(container: HTMLElement, onStateChange: StateCallback) {
+  constructor(container: HTMLElement, onStateChange: StateCallback, museumData: MuseumData) {
     this.container = container;
     this.onStateChange = onStateChange;
+    this.museumData = museumData;
 
     // Renderer — use powerPreference to avoid GPU crashes
     this.renderer = new THREE.WebGLRenderer({
@@ -130,7 +132,7 @@ export class MuseumEngine {
     // Populate with artwork asynchronously
     if (!this.populatedRooms.has(id)) {
       this.populatedRooms.add(id);
-      populateRoom(group, config).catch(() => {
+      populateRoom(group, config, this.museumData).catch(() => {
         // Silent fail — room just stays empty
       });
     }

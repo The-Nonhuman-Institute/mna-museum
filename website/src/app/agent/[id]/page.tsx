@@ -170,12 +170,7 @@ export default async function AgentDetailPage({ params }: { params: { id: string
           )}
 
           {/* Critical responses for this originator's works */}
-          {(() => {
-            const originatorCriticalResponses: typeof allCriticalResponses = [];
-            // Need to fetch for originator page — get all CRs for this originator's canon works
-            // We already have allCriticalResponses only for non-originators, so fetch inline
-            return null; // Critical responses shown on individual work pages
-          })()}
+          {/* Critical responses shown on individual work pages */}
 
           {(agentInterviews.length > 0 || mentioningResearch.length > 0 || worksWithCriticism.length > 0 || agentDocuments.length > 0) && (
             <section className="mb-16">

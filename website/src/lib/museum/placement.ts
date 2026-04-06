@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { Work, canon, works } from "@/lib/collection";
-import { getAgent, getAgentsByType } from "@/lib/agents";
+import { Work } from "@/lib/collection";
+import { Agent } from "@/lib/agents";
 import { RoomConfig } from "./room-configs";
 import { renderWorkToTexture } from "./work-textures";
 import { createFramedWork } from "./frames3d";
@@ -8,7 +8,6 @@ import { isWorkRenderable } from "@/lib/validate-work";
 import { registerAudioStation } from "./spatial-audio";
 import { registerFurnitureCollision } from "./collision";
 import { isWorkInExhibition } from "./exhibitions";
-import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { rooms as allRooms } from "./room-configs";
 
 const EYE_HEIGHT = 5.5;
@@ -217,25 +216,35 @@ function createWallLabel(
 
 // ===== ROOM POPULATION =====
 
+export interface MuseumData {
+  canon: Work[];
+  works: Work[];
+  agents: Agent[];
+}
+
 export async function populateRoom(
   roomGroup: THREE.Group,
-  room: RoomConfig
+  room: RoomConfig,
+  data: MuseumData,
 ): Promise<void> {
+  const getAgentLocal = (id: string) => data.agents.find((a) => a.registryId === id);
+  const getAgentsByTypeLocal = (type: string) => data.agents.filter((a) => a.agentType === type);
+
   switch (room.purpose) {
     case "lobby":
       if (room.id === "lobby") populateLobby(roomGroup, room);
       break;
     case "gallery":
-      await populateGallery(roomGroup, room);
+      await populateGallery(roomGroup, room, data.canon, getAgentLocal);
       break;
     case "sculpture":
-      populateSculptureCourt(roomGroup, room);
+      populateSculptureCourt(roomGroup, room, data.canon, getAgentLocal);
       break;
     case "originator":
-      populateOriginatorRotunda(roomGroup, room);
+      populateOriginatorRotunda(roomGroup, room, data.canon, data.works, getAgentsByTypeLocal);
       break;
     case "chamber":
-      populateChamber(roomGroup, room);
+      populateChamber(roomGroup, room, data.canon, getAgentLocal);
       break;
     case "auditorium":
       populateAuditorium(roomGroup, room);
@@ -402,7 +411,7 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
 
 // ----- THE CHAMBER: one featured work at massive scale -----
 
-function populateChamber(group: THREE.Group, room: RoomConfig): void {
+function populateChamber(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): void {
   // Feature the most evocative 3D canon work at enormous scale
   const sceneWorks = canon.filter((w) => isWorkRenderable(w) && w.output_type === "scene-json");
   if (sceneWorks.length === 0) return;
@@ -490,7 +499,7 @@ function populateChamber(group: THREE.Group, room: RoomConfig): void {
 
 // ----- GALLERIES: canon 2D works, each shown once -----
 
-async function populateGallery(group: THREE.Group, room: RoomConfig): Promise<void> {
+async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): Promise<void> {
   // Canon visual works only — no audio, no 3D, and not currently in an exhibition
   const canon2D = canon.filter((w) =>
     isWorkRenderable(w) &&
@@ -609,7 +618,7 @@ async function populateGallery(group: THREE.Group, room: RoomConfig): Promise<vo
 
 // ----- SCULPTURE COURT: 3D works on plinths -----
 
-function populateSculptureCourt(group: THREE.Group, room: RoomConfig): void {
+function populateSculptureCourt(group: THREE.Group, room: RoomConfig, canon: Work[], getAgent: (id: string) => Agent | undefined): void {
   // Canon 3D sculptures only
   const scene3D = canon.filter((w) => isWorkRenderable(w) && w.output_type === "scene-json");
 
@@ -664,7 +673,7 @@ function populateSculptureCourt(group: THREE.Group, room: RoomConfig): void {
 
 // ----- ORIGINATOR ROTUNDA: agent profiles, not works -----
 
-function populateOriginatorRotunda(group: THREE.Group, room: RoomConfig): void {
+function populateOriginatorRotunda(group: THREE.Group, room: RoomConfig, canon: Work[], works: Work[], getAgentsByType: (type: string) => Agent[]): void {
   const originators = getAgentsByType("ORIGINATOR");
   const plinthMat = new THREE.MeshStandardMaterial({ color: 0x2a2825, roughness: 0.5, metalness: 0.05 });
 

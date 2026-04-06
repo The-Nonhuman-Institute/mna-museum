@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { MuseumEngine, MuseumState } from "@/lib/museum/engine";
+import { MuseumData } from "@/lib/museum/placement";
 import { drawMuseumMap } from "@/lib/museum/map";
 
 function isMobileDevice(): boolean {
@@ -56,10 +57,9 @@ function LoadingScreen() {
   );
 }
 
-export default function Museum3D() {
+export default function Museum3D({ museumData }: { museumData: MuseumData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<MuseumEngine | null>(null);
-  const mapCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hasEntered, setHasEntered] = useState(false);
   const [state, setState] = useState<MuseumState>({
     currentRoom: null,
@@ -70,6 +70,7 @@ export default function Museum3D() {
     playerZ: 0,
     emoteFlash: "",
     mapOpen: false,
+    showFps: false,
   });
   const [ready, setReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -83,10 +84,10 @@ export default function Museum3D() {
     if (isMobileDevice()) { setIsMobile(true); return; }
     const el = containerRef.current;
     if (!el || engineRef.current) return;
-    engineRef.current = new MuseumEngine(el, onStateChange);
+    engineRef.current = new MuseumEngine(el, onStateChange, museumData);
     setReady(true);
     return () => { engineRef.current?.dispose(); engineRef.current = null; };
-  }, [onStateChange]);
+  }, [onStateChange, museumData]);
 
   // Redraw map when open and player moves
   useEffect(() => {

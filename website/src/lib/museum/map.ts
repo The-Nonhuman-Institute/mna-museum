@@ -1,4 +1,4 @@
-import { rooms, type RoomConfig } from "./room-configs";
+import { rooms } from "./room-configs";
 
 const MAP_SIZE = 800;
 
