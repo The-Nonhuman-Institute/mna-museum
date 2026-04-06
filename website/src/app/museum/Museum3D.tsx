@@ -68,6 +68,7 @@ export default function Museum3D() {
     currentRoom: null,
     isLocked: false,
     fps: 60,
+    visitorCount: 0,
   });
   const [ready, setReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -153,6 +154,15 @@ export default function Museum3D() {
                   WASD to move &middot; Mouse to look &middot; ESC to pause
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Visitor count */}
+          {state.visitorCount > 0 && (
+            <div className="absolute top-14 left-5 z-40 pointer-events-none">
+              <p className="text-[10px] tracking-[0.15em] text-[#6a6560]">
+                {state.visitorCount + 1} {state.visitorCount + 1 === 1 ? "visitor" : "visitors"}
+              </p>
             </div>
           )}
 

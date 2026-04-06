@@ -10,11 +10,13 @@ import { populateRoom, rotatingSculptures } from "./placement";
 import { disposeAnimatedTextures } from "./animated-textures";
 import { updateSpatialAudio, disposeSpatialAudio } from "./spatial-audio";
 import { addArchitecturalDetail, disposeArchitectureMaterials } from "./architecture";
+import { initMultiplayer, updateAvatars, sendPosition, disposeMultiplayer } from "./multiplayer";
 
 export interface MuseumState {
   currentRoom: RoomConfig | null;
   isLocked: boolean;
   fps: number;
+  visitorCount: number;
 }
 
 export type StateCallback = (state: MuseumState) => void;
@@ -32,6 +34,7 @@ export class MuseumEngine {
   private fpsAccum = 0;
   private lastFps = 60;
   private disposed = false;
+  private visitorCount = 0;
   private loadedRooms = new Set<string>();
   private populatedRooms = new Set<string>();
 
@@ -77,6 +80,13 @@ export class MuseumEngine {
 
     // Lobby focal elements
     this.addLobbyElements();
+
+    // Multiplayer visitor presence
+    const partyHost = process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999";
+    initMultiplayer(this.scene, partyHost, (count) => {
+      this.visitorCount = count;
+      this.emitState();
+    });
 
     // Resize handler
     this.handleResize = this.handleResize.bind(this);
@@ -249,6 +259,10 @@ export class MuseumEngine {
     // Spatial audio — play/stop based on player proximity
     updateSpatialAudio(this.player.position);
 
+    // Multiplayer avatars
+    updateAvatars(dt);
+    sendPosition(this.player.position, this.player.currentYaw);
+
     this.renderer.render(this.scene, this.player.camera);
   };
 
@@ -257,6 +271,7 @@ export class MuseumEngine {
       currentRoom: this.lastRoom,
       isLocked: this.player.locked,
       fps: this.lastFps,
+      visitorCount: this.visitorCount,
     });
   }
 
@@ -278,6 +293,7 @@ export class MuseumEngine {
     disposeMaterials();
     disposeAnimatedTextures();
     disposeSpatialAudio();
+    disposeMultiplayer();
     disposeArchitectureMaterials();
 
     this.scene.traverse((obj) => {

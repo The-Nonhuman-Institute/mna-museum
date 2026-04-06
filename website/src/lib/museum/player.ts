@@ -24,6 +24,8 @@ export class PlayerController {
   // Callbacks
   onLockChange?: (locked: boolean) => void;
 
+  get currentYaw(): number { return this.yaw; }
+
   constructor(domElement: HTMLElement, aspect: number) {
     this.domElement = domElement;
     this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 500);
