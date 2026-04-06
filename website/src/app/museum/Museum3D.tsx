@@ -179,9 +179,7 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
           {!state.isLocked && (
             <div
               className="absolute inset-0 z-30 flex flex-col items-center justify-center cursor-pointer"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+              onClick={() => {
                 const canvas = containerRef.current?.querySelector("canvas");
                 if (canvas) (canvas as HTMLCanvasElement).requestPointerLock();
               }}
