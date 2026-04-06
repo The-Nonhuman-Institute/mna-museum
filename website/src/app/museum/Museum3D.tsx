@@ -109,7 +109,7 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     const container = containerRef.current;
     if (!container) return;
 
-    const handleClick = async (e: MouseEvent) => {
+    const handleClick = async () => {
       if (state.isLocked) return;
       const canvas = container.querySelector("canvas") as HTMLCanvasElement | null;
       if (!canvas) {
@@ -138,7 +138,6 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
           console.error("[museum] fallback also failed:", err2);
         }
       }
-      e; // suppress unused
     };
 
     container.addEventListener("click", handleClick);
