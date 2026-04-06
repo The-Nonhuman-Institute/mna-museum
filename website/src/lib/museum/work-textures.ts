@@ -138,8 +138,23 @@ function renderSvg(payload: string, aspect: number): Promise<HTMLCanvasElement> 
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
 
-    // Add explicit dimensions to SVG if missing width/height attributes
+    // Strip any garbage before <svg (e.g. stray "xml" or "```svg" markers)
     let svgStr = payload;
+    const svgStart = svgStr.indexOf("<svg");
+    if (svgStart > 0) svgStr = svgStr.substring(svgStart);
+
+    // Auto-close truncated SVGs — count tags and close if needed
+    if (!svgStr.includes("</svg>")) {
+      // Find last complete tag and truncate after it, then close
+      const lastClosedTag = Math.max(svgStr.lastIndexOf("/>"), svgStr.lastIndexOf("</"));
+      if (lastClosedTag > 0) {
+        const endOfTag = svgStr.indexOf(">", lastClosedTag);
+        if (endOfTag > 0) svgStr = svgStr.substring(0, endOfTag + 1);
+      }
+      svgStr += "</svg>";
+    }
+
+    // Add explicit dimensions to SVG if missing width/height attributes
     if (!/<svg[^>]*width=/.test(svgStr)) {
       svgStr = svgStr.replace("<svg", `<svg width="${w}" height="${h}"`);
     }

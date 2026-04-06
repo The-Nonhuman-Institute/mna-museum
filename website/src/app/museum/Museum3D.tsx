@@ -171,7 +171,13 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
 
           {/* ===== PAUSE / ENTRY OVERLAY ===== */}
           {!state.isLocked && (
-            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none">
+            <div
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center cursor-pointer"
+              onClick={() => {
+                const canvas = containerRef.current?.querySelector("canvas");
+                if (canvas) (canvas as HTMLCanvasElement).requestPointerLock();
+              }}
+            >
               <div className="bg-[#0a0908]/90 backdrop-blur-sm border border-[#3a3530] px-12 py-8 text-center max-w-md">
                 <p className="text-[16px] text-[#d0ccc6] mb-5">
                   {hasEntered ? "Click to resume" : "Click to enter the museum"}
