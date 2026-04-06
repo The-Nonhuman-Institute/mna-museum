@@ -95,32 +95,50 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Native click listener on the container — most reliable cross-browser
-  // pattern for requestPointerLock. React synthetic events can lose user
-  // gesture context in some browsers (Atlas, certain Arc configurations).
+  // Detect iframe/fenced frame context — pointer lock doesn't work there
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.self !== window.top) {
+      console.warn("[museum] page is in an iframe/fenced frame — pointer lock may be blocked");
+    }
+  }, []);
+
+  // Native click listener — calls requestPointerLock on the canvas
+  // directly inside the click handler to preserve the user gesture context.
   useEffect(() => {
     if (!ready) return;
     const container = containerRef.current;
     if (!container) return;
 
-    const handleClick = async () => {
+    const handleClick = async (e: MouseEvent) => {
       if (state.isLocked) return;
       const canvas = container.querySelector("canvas") as HTMLCanvasElement | null;
       if (!canvas) {
         console.error("[museum] no canvas found for pointer lock");
         return;
       }
+      // Verify canvas is in the same document as the click target
+      if (canvas.ownerDocument !== document) {
+        console.error("[museum] canvas in different document — pointer lock impossible");
+        return;
+      }
       console.log("[museum] click → requesting pointer lock");
       try {
-        // Modern promise-based API (Chrome 96+)
-        const result = (canvas.requestPointerLock as unknown as () => Promise<void> | undefined)();
+        canvas.focus();
+        const result = (canvas.requestPointerLock as unknown as (opts?: { unadjustedMovement?: boolean }) => Promise<void> | undefined)({ unadjustedMovement: false });
         if (result instanceof Promise) {
           await result;
           console.log("[museum] pointer lock granted");
         }
       } catch (err) {
         console.error("[museum] pointer lock denied:", err);
+        // Try fallback: legacy call without options
+        try {
+          (canvas.requestPointerLock as () => void)();
+        } catch (err2) {
+          console.error("[museum] fallback also failed:", err2);
+        }
       }
+      e; // suppress unused
     };
 
     container.addEventListener("click", handleClick);
