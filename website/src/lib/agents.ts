@@ -13,6 +13,8 @@ export type AgentType =
   | "CURATOR"
   | "AMBASSADOR"
   | "REGISTRAR"
+  | "INSTALLER"
+  | "CONSERVATOR"
   | "ORIGINATOR";
 
 export type AutonomyTier = "Tier 1 — Full" | "Tier 2 — Supervised";
@@ -49,6 +51,8 @@ export const agentTypeLabels: Record<AgentType, string> = {
   CURATOR: "Curator",
   AMBASSADOR: "Ambassador",
   REGISTRAR: "Registrar",
+  INSTALLER: "Installer",
+  CONSERVATOR: "Conservator",
   ORIGINATOR: "Originator Corps",
 };
 
@@ -58,6 +62,8 @@ export const agentTypeOrder: AgentType[] = [
   "KEEPER",
   "CRITIC",
   "CURATOR",
+  "INSTALLER",
+  "CONSERVATOR",
   "AMBASSADOR",
   "REGISTRAR",
   "STEWARD",
