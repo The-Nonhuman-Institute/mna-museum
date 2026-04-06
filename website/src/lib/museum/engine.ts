@@ -7,7 +7,7 @@ import { resolveCollision, getCurrentRoom, clearWallCache } from "./collision";
 import { RoomConfig, getRoomById } from "./room-configs";
 import { disposeMaterials } from "./materials";
 import { populateRoom, rotatingSculptures, MuseumData } from "./placement";
-import { disposeAnimatedTextures } from "./animated-textures";
+import { disposeAnimatedTextures, updateAnimatedTextures } from "./animated-textures";
 import { updateSpatialAudio, disposeSpatialAudio } from "./spatial-audio";
 import { addArchitecturalDetail, disposeArchitectureMaterials } from "./architecture";
 import { initMultiplayer, updateAvatars, sendPosition, sendEmote, disposeMultiplayer } from "./multiplayer";
@@ -278,6 +278,9 @@ export class MuseumEngine {
 
     // Spatial audio — play/stop based on player proximity
     updateSpatialAudio(this.player.position);
+
+    // Animated HTML-CSS works — capture frames only when player is nearby
+    updateAnimatedTextures(this.player.position);
 
     // Multiplayer avatars
     updateAvatars(dt);

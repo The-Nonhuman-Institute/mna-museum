@@ -3,6 +3,7 @@ import { Work } from "@/lib/collection";
 import { Agent } from "@/lib/agents";
 import { RoomConfig } from "./room-configs";
 import { renderWorkToTexture } from "./work-textures";
+import { registerAnimatedWorkPosition } from "./animated-textures";
 import { createFramedWork } from "./frames3d";
 import { isWorkRenderable } from "@/lib/validate-work";
 import { registerAudioStation } from "./spatial-audio";
@@ -559,6 +560,12 @@ async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work
     frame.position.set(slot.x, slot.y, slot.z);
     frame.rotation.y = slot.rotationY;
     group.add(frame);
+
+    // Register world position for animated textures (HTML-CSS works)
+    if (work.output_type === "html-css") {
+      const worldPos = new THREE.Vector3(slot.x + room.x, slot.y, slot.z + room.z);
+      registerAnimatedWorkPosition(texture, worldPos);
+    }
 
     const agent = getAgent(work.originator_id);
     const label = createWallLabel(
