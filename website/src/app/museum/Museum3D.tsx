@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { MuseumEngine, MuseumState } from "@/lib/museum/engine";
+import { drawMuseumMap } from "@/lib/museum/map";
 
 function isMobileDevice(): boolean {
   if (typeof window === "undefined") return false;
@@ -12,7 +13,6 @@ function isMobileDevice(): boolean {
   ) || (window.innerWidth < 768 && "ontouchstart" in window);
 }
 
-// === MOBILE FALLBACK ===
 function MobileFallback() {
   return (
     <div className="fixed inset-0 bg-[#0a0908] flex flex-col items-center justify-center px-8">
@@ -26,9 +26,6 @@ function MobileFallback() {
       <p className="text-[15px] text-[#b0a89e] text-center leading-relaxed mb-6 max-w-sm">
         The virtual museum experience requires a desktop browser with keyboard and mouse.
       </p>
-      <p className="text-[12px] text-[#6a6560] text-center mb-10 max-w-xs">
-        WASD movement and mouse look are essential to navigating the space.
-      </p>
       <Link
         href="/"
         className="text-[12px] uppercase tracking-[0.2em] px-8 py-3 border border-[#3a3530] text-[#8a8680] hover:text-[#d0ccc6] hover:border-[#6a6560] transition-colors"
@@ -39,7 +36,6 @@ function MobileFallback() {
   );
 }
 
-// === LOADING SCREEN ===
 function LoadingScreen() {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0908] z-50">
@@ -60,76 +56,100 @@ function LoadingScreen() {
   );
 }
 
-// === MAIN 3D EXPERIENCE ===
 export default function Museum3D() {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<MuseumEngine | null>(null);
+  const mapCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [hasEntered, setHasEntered] = useState(false);
   const [state, setState] = useState<MuseumState>({
     currentRoom: null,
     isLocked: false,
     fps: 60,
     visitorCount: 0,
+    playerX: 0,
+    playerZ: 0,
+    emoteFlash: "",
+    mapOpen: false,
   });
   const [ready, setReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   const onStateChange = useCallback((s: MuseumState) => {
     setState(s);
-  }, []);
+    if (s.isLocked && !hasEntered) setHasEntered(true);
+  }, [hasEntered]);
 
   useEffect(() => {
-    if (isMobileDevice()) {
-      setIsMobile(true);
-      return;
-    }
-
+    if (isMobileDevice()) { setIsMobile(true); return; }
     const el = containerRef.current;
     if (!el || engineRef.current) return;
-
     engineRef.current = new MuseumEngine(el, onStateChange);
     setReady(true);
-
-    return () => {
-      engineRef.current?.dispose();
-      engineRef.current = null;
-    };
+    return () => { engineRef.current?.dispose(); engineRef.current = null; };
   }, [onStateChange]);
+
+  // Redraw map when open and player moves
+  useEffect(() => {
+    if (!state.mapOpen) return;
+    const canvas = drawMuseumMap(state.playerX, state.playerZ);
+    const container = document.getElementById("map-overlay-canvas");
+    if (container) {
+      container.innerHTML = "";
+      canvas.style.maxWidth = "90vmin";
+      canvas.style.maxHeight = "90vmin";
+      canvas.style.width = "auto";
+      canvas.style.height = "auto";
+      container.appendChild(canvas);
+    }
+  }, [state.mapOpen, state.playerX, state.playerZ]);
 
   if (isMobile) return <MobileFallback />;
 
   const roomName = state.currentRoom?.name || "";
   const roomSubtitle = state.currentRoom?.subtitle || "";
+  const totalVisitors = state.visitorCount + 1;
 
   return (
     <div className="fixed inset-0 bg-[#0a0908]">
-      {/* Three.js canvas container */}
       <div ref={containerRef} className="w-full h-full" />
 
-      {/* Loading screen */}
       {!ready && <LoadingScreen />}
 
-      {/* HUD Overlay */}
       {ready && (
         <>
-          {/* Top bar */}
+          {/* ===== TOP BAR ===== */}
           <div className="absolute top-0 left-0 right-0 z-40 pointer-events-none">
-            <div className="px-5 md:px-8 h-12 flex items-center justify-between">
+            <div className="px-5 md:px-8 h-14 flex items-center justify-between">
+              {/* Left: Exit Museum */}
               <Link
                 href="/"
-                className="pointer-events-auto text-[11px] uppercase tracking-[0.15em] text-[#b0aaa5] hover:text-[#e0ddd8] transition-colors"
+                className="pointer-events-auto text-[12px] uppercase tracking-[0.15em] text-[#b0aaa5] hover:text-[#e0ddd8] transition-colors"
               >
                 Exit Museum
               </Link>
-              <Link
-                href="/agents"
-                className="pointer-events-auto text-[11px] uppercase tracking-[0.15em] text-[#b0aaa5] hover:text-[#e0ddd8] transition-colors"
-              >
-                Directory
-              </Link>
+
+              {/* Right: Visitor count + Map */}
+              <div className="flex items-center gap-5 pointer-events-auto">
+                {/* Visitor count pill */}
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#7BA393] shadow-[0_0_6px_#7BA393]" />
+                  <span className="text-[12px] tracking-[0.1em] text-[#c0bab5]">
+                    {totalVisitors} {totalVisitors === 1 ? "visitor" : "visitors"}
+                  </span>
+                </div>
+
+                {/* Map button */}
+                <button
+                  className="text-[12px] uppercase tracking-[0.15em] text-[#b0aaa5] hover:text-[#e0ddd8] transition-colors"
+                  onClick={() => engineRef.current && setState(prev => ({ ...prev, mapOpen: !prev.mapOpen }))}
+                >
+                  Map <span className="text-[10px] text-[#6a6560]">[M]</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Room name — bottom center */}
+          {/* ===== ROOM NAME — bottom center ===== */}
           {roomName && (
             <div className="absolute bottom-8 left-0 right-0 z-40 flex flex-col items-center pointer-events-none">
               <p className="text-[14px] md:text-[16px] uppercase tracking-[0.2em] text-[#d0ccc6]">
@@ -143,33 +163,61 @@ export default function Museum3D() {
             </div>
           )}
 
-          {/* Click to enter prompt */}
-          {!state.isLocked && (
-            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none">
-              <div className="bg-[#0a0908]/85 backdrop-blur-sm border border-[#3a3530] px-10 py-6 text-center">
-                <p className="text-[14px] text-[#d0ccc6] mb-3">
-                  Click to enter the museum
-                </p>
-                <p className="text-[10px] text-[#6a6560] tracking-wide">
-                  WASD to move &middot; Mouse to look &middot; ESC to pause
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Visitor count */}
-          {state.visitorCount > 0 && (
-            <div className="absolute top-14 left-5 z-40 pointer-events-none">
-              <p className="text-[10px] tracking-[0.15em] text-[#6a6560]">
-                {state.visitorCount + 1} {state.visitorCount + 1 === 1 ? "visitor" : "visitors"}
+          {/* ===== EMOTE FLASH — bottom left ===== */}
+          {state.emoteFlash && (
+            <div className="absolute bottom-20 left-8 z-40 pointer-events-none animate-pulse">
+              <p className="text-[14px] text-[#d0ccc6] tracking-[0.1em]">
+                ✦ {state.emoteFlash}
               </p>
             </div>
           )}
 
-          {/* FPS counter (dev only) */}
+          {/* ===== PAUSE / ENTRY OVERLAY ===== */}
+          {!state.isLocked && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none">
+              <div className="bg-[#0a0908]/90 backdrop-blur-sm border border-[#3a3530] px-12 py-8 text-center max-w-md">
+                <p className="text-[16px] text-[#d0ccc6] mb-5">
+                  {hasEntered ? "Click to resume" : "Click to enter the museum"}
+                </p>
+
+                {/* Controls */}
+                <div className="space-y-2 mb-5">
+                  <p className="text-[11px] text-[#8a8580] tracking-wide">
+                    WASD to move · Mouse to look · ESC to pause
+                  </p>
+                  <p className="text-[11px] text-[#8a8580] tracking-wide">
+                    M for map · 1-4 to emote
+                  </p>
+                </div>
+
+                {/* Emote legend */}
+                <div className="flex justify-center gap-6 text-[10px] text-[#6a6560] tracking-wide">
+                  <span>1 Wave</span>
+                  <span>2 Glow</span>
+                  <span>3 Orbit</span>
+                  <span>4 Pulse</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===== MAP OVERLAY ===== */}
+          {state.mapOpen && (
+            <div
+              className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0908]/80 backdrop-blur-sm cursor-pointer"
+              onClick={() => setState(prev => ({ ...prev, mapOpen: false }))}
+            >
+              <div id="map-overlay-canvas" className="pointer-events-none" />
+              <p className="absolute bottom-6 text-[11px] text-[#6a6560] tracking-wide">
+                Press M or click to close
+              </p>
+            </div>
+          )}
+
+          {/* ===== FPS (dev only) ===== */}
           {process.env.NODE_ENV === "development" && (
-            <div className="absolute top-14 right-5 z-40 pointer-events-none">
-              <p className="text-[10px] font-mono text-[#a0a0a0]">
+            <div className="absolute top-16 right-5 z-40 pointer-events-none">
+              <p className="text-[10px] font-mono text-[#555]">
                 {state.fps} fps
               </p>
             </div>

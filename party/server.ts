@@ -66,6 +66,14 @@ wss.on("connection", (ws) => {
         visitor.x = data.x;
         visitor.z = data.z;
         visitor.yaw = data.yaw;
+      } else if (data.type === "emote") {
+        // Relay emote to all other visitors
+        const emoteMsg = JSON.stringify({ type: "emote", id, emoteId: data.emoteId });
+        for (const v of visitors.values()) {
+          if (v.id !== id && v.ws.readyState === WebSocket.OPEN) {
+            v.ws.send(emoteMsg);
+          }
+        }
       }
     } catch {}
   });

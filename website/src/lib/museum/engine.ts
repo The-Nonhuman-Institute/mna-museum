@@ -10,13 +10,17 @@ import { populateRoom, rotatingSculptures } from "./placement";
 import { disposeAnimatedTextures } from "./animated-textures";
 import { updateSpatialAudio, disposeSpatialAudio } from "./spatial-audio";
 import { addArchitecturalDetail, disposeArchitectureMaterials } from "./architecture";
-import { initMultiplayer, updateAvatars, sendPosition, disposeMultiplayer } from "./multiplayer";
+import { initMultiplayer, updateAvatars, sendPosition, sendEmote, disposeMultiplayer } from "./multiplayer";
 
 export interface MuseumState {
   currentRoom: RoomConfig | null;
   isLocked: boolean;
   fps: number;
   visitorCount: number;
+  playerX: number;
+  playerZ: number;
+  emoteFlash: string;
+  mapOpen: boolean;
 }
 
 export type StateCallback = (state: MuseumState) => void;
@@ -35,6 +39,9 @@ export class MuseumEngine {
   private lastFps = 60;
   private disposed = false;
   private visitorCount = 0;
+  private emoteFlash = "";
+  private mapOpen = false;
+  private emoteFlashTimeout: ReturnType<typeof setTimeout> | null = null;
   private loadedRooms = new Set<string>();
   private populatedRooms = new Set<string>();
 
@@ -86,11 +93,20 @@ export class MuseumEngine {
     initMultiplayer(this.scene, partyHost, (count) => {
       this.visitorCount = count;
       this.emitState();
+    }, (name) => {
+      this.emoteFlash = name;
+      this.emitState();
+      if (this.emoteFlashTimeout) clearTimeout(this.emoteFlashTimeout);
+      this.emoteFlashTimeout = setTimeout(() => { this.emoteFlash = ""; this.emitState(); }, 1500);
     });
 
     // Resize handler
     this.handleResize = this.handleResize.bind(this);
     window.addEventListener("resize", this.handleResize);
+
+    // Key bindings for emotes (1-4) and map (M)
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    window.addEventListener("keydown", this.handleKeyDown);
 
     // Start
     this.clock.start();
@@ -272,7 +288,25 @@ export class MuseumEngine {
       isLocked: this.player.locked,
       fps: this.lastFps,
       visitorCount: this.visitorCount,
+      playerX: this.player.position.x,
+      playerZ: this.player.position.z,
+      emoteFlash: this.emoteFlash,
+      mapOpen: this.mapOpen,
     });
+  }
+
+  private handleKeyDown(e: KeyboardEvent): void {
+    if (e.key === "m" || e.key === "M") {
+      this.mapOpen = !this.mapOpen;
+      this.emitState();
+      return;
+    }
+    // Emotes only when pointer is locked (actively playing)
+    if (!this.player.locked) return;
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= 4) {
+      sendEmote(num);
+    }
   }
 
   private handleResize(): void {
@@ -286,6 +320,7 @@ export class MuseumEngine {
     this.disposed = true;
     cancelAnimationFrame(this.animationId);
     window.removeEventListener("resize", this.handleResize);
+    window.removeEventListener("keydown", this.handleKeyDown);
     this.player.detach();
     this.renderer.dispose();
     this.renderer.domElement.remove();
