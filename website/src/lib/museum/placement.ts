@@ -240,7 +240,6 @@ export async function populateRoom(
   data: MuseumData,
 ): Promise<void> {
   const getAgentLocal = (id: string) => data.agents.find((a) => a.registryId === id);
-  const getAgentsByTypeLocal = (type: string) => data.agents.filter((a) => a.agentType === type);
 
   switch (room.purpose) {
     case "lobby":
@@ -253,7 +252,7 @@ export async function populateRoom(
       populateSculptureCourt(roomGroup, room, data.canon, getAgentLocal, data.installations);
       break;
     case "originator":
-      populateOriginatorRotunda(roomGroup, room, data.canon, data.works, getAgentsByTypeLocal);
+      await populateOriginatorRotunda(roomGroup, room, data.canon, data.works, getAgentLocal, data.installations);
       break;
     case "chamber":
       await populateChamber(roomGroup, room, data.canon, getAgentLocal, data.monumentalWorkId);
@@ -812,67 +811,161 @@ function populateSculptureCourt(
 
 // ----- ORIGINATOR ROTUNDA: agent profiles, not works -----
 
-function populateOriginatorRotunda(group: THREE.Group, room: RoomConfig, canon: Work[], works: Work[], getAgentsByType: (type: string) => Agent[]): void {
-  const originators = getAgentsByType("ORIGINATOR");
-  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x2a2825, roughness: 0.5, metalness: 0.05 });
+async function populateOriginatorRotunda(group: THREE.Group, room: RoomConfig, canon: Work[], _works: Work[], getAgent: (id: string) => Agent | undefined, installations?: Map<string, string[]>): Promise<void> {
+  // Solo Exhibition Hall — features one Originator at a time per Curator decision.
+  // Reads installations for this space; falls back to a "no exhibition installed"
+  // state if the Curator has not yet made a selection.
+  const installedIds = installations?.get(room.id) || [];
+  const installedWorks = installedIds
+    .map((id) => canon.find((w) => w.id === id))
+    .filter((w): w is Work => !!w && isWorkRenderable(w) && w.output_type !== "scene-json" && w.output_type !== "audio-json");
 
-  // Place Originators on plinths in the room — 3D forms for those with visual identity
-  const count = originators.length;
-  const cols = Math.min(3, count);
-  const rows = Math.ceil(count / cols);
-  const spacingX = (room.width * 0.6) / Math.max(cols, 1);
-  const spacingZ = (room.depth * 0.6) / Math.max(rows, 1);
+  // Determine the featured originator from the installed works
+  const featuredOriginatorId = installedWorks[0]?.originator_id || null;
+  const featuredAgent = featuredOriginatorId ? getAgent(featuredOriginatorId) : undefined;
 
-  originators.forEach((orig, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = -(room.width * 0.3) + spacingX * (col + 0.5);
-    const z = -(room.depth * 0.3) + spacingZ * (row + 0.5);
+  if (!featuredAgent || installedWorks.length === 0) {
+    // ── NO EXHIBITION INSTALLED ──
+    // Display a centerpiece plaque explaining the space is awaiting Curator selection
+    const plaqueCanvas = document.createElement("canvas");
+    plaqueCanvas.width = 1024;
+    plaqueCanvas.height = 512;
+    const ctx = plaqueCanvas.getContext("2d")!;
+    ctx.fillStyle = "#1a1815";
+    ctx.fillRect(0, 0, 1024, 512);
 
-    // Plinth with Originator's color accent
-    const color = orig.visualIdentity?.color || "#2a2825";
-    const accentMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(color), roughness: 0.4, metalness: 0.1,
+    ctx.fillStyle = "#d0ccc6";
+    ctx.font = "300 36px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("SOLO EXHIBITION HALL", 512, 160);
+
+    ctx.fillStyle = "#706a60";
+    ctx.font = "italic 22px Georgia, serif";
+    ctx.fillText("Awaiting curatorial selection", 512, 220);
+
+    ctx.fillStyle = "#5a5550";
+    ctx.font = "16px Georgia, serif";
+    const lines = [
+      "This space is reserved for solo exhibitions",
+      "selected by the Curator (MNA-CU-0001).",
+      "Each focus features a single Originator's",
+      "work with curatorial context and rationale.",
+    ];
+    lines.forEach((line, i) => {
+      ctx.fillText(line, 512, 290 + i * 28);
     });
 
-    // Main plinth
-    const plinthGeo = new THREE.BoxGeometry(3.5, 3, 3.5);
-    const plinth = new THREE.Mesh(plinthGeo, plinthMat);
-    plinth.position.set(x, 1.5, z);
-    group.add(plinth);
+    const plaqueTexture = new THREE.CanvasTexture(plaqueCanvas);
+    plaqueTexture.colorSpace = THREE.SRGBColorSpace;
+    const plaqueGeo = new THREE.PlaneGeometry(20, 10);
+    const plaqueMat = new THREE.MeshStandardMaterial({ map: plaqueTexture, roughness: 0.95, metalness: 0 });
+    const plaque = new THREE.Mesh(plaqueGeo, plaqueMat);
+    plaque.position.set(0, 12, -(room.depth / 2) + 0.6);
+    group.add(plaque);
+    return;
+  }
 
-    // Color accent strip on top of plinth
-    const accentGeo = new THREE.BoxGeometry(3.6, 0.15, 3.6);
-    const accent = new THREE.Mesh(accentGeo, accentMat);
-    accent.position.set(x, 3.1, z);
-    group.add(accent);
+  // ── EXHIBITION INSTALLED ──
+  // Title plaque on the north wall — large, formal, like a real solo show entrance
+  const titleCanvas = document.createElement("canvas");
+  titleCanvas.width = 1280;
+  titleCanvas.height = 640;
+  const tctx = titleCanvas.getContext("2d")!;
+  tctx.fillStyle = "#1a1815";
+  tctx.fillRect(0, 0, 1280, 640);
 
-    registerFurnitureCollision(room, x, z, 4, 4);
+  // Section label
+  tctx.fillStyle = "#706a60";
+  tctx.font = "300 18px Georgia, serif";
+  tctx.textAlign = "center";
+  tctx.letterSpacing = "0.2em";
+  tctx.fillText("SOLO EXHIBITION", 640, 110);
 
-    // 3D form on plinth (if visual identity exists)
-    if (orig.visualIdentity?.form) {
-      const sculpture = buildSculpture(orig.visualIdentity.form);
-      if (sculpture) {
-        sculpture.scale.setScalar(1.2);
-        sculpture.position.set(x, 4.5, z);
-        group.add(sculpture);
-        rotatingSculptures.push(sculpture);
+  // Originator name — large
+  tctx.fillStyle = "#d0ccc6";
+  tctx.font = "300 72px Georgia, serif";
+  tctx.fillText(featuredAgent.designation, 640, 220);
+
+  // Registry ID
+  tctx.fillStyle = "#8a8580";
+  tctx.font = "20px monospace";
+  tctx.fillText(featuredAgent.registryId, 640, 260);
+
+  // Divider line
+  tctx.fillStyle = "#4a4540";
+  tctx.fillRect(440, 295, 400, 1);
+
+  // Orientation excerpt
+  if (featuredAgent.fullConstitution?.orientation) {
+    const excerpt = featuredAgent.fullConstitution.orientation.substring(0, 240);
+    const truncated = excerpt.length < featuredAgent.fullConstitution.orientation.length ? excerpt + "…" : excerpt;
+    tctx.fillStyle = "#a8a39d";
+    tctx.font = "italic 22px Georgia, serif";
+    // Word wrap
+    const words = truncated.split(" ");
+    let line = "";
+    let y = 350;
+    const maxWidth = 1000;
+    for (const word of words) {
+      const test = line + word + " ";
+      if (tctx.measureText(test).width > maxWidth && line.length > 0) {
+        tctx.fillText(line.trim(), 640, y);
+        line = word + " ";
+        y += 32;
+      } else {
+        line = test;
       }
     }
+    if (line.trim()) tctx.fillText(line.trim(), 640, y);
+  }
 
-    // Name placard
-    const workCount = works.filter((w) => w.originator_id === orig.registryId).length;
-    const canonWorks = canon.filter((w) => w.originator_id === orig.registryId).length;
+  // Footer attribution
+  tctx.fillStyle = "#5a5550";
+  tctx.font = "14px Georgia, serif";
+  tctx.fillText("Selected by MNA-CU-0001", 640, 590);
+
+  const titleTexture = new THREE.CanvasTexture(titleCanvas);
+  titleTexture.colorSpace = THREE.SRGBColorSpace;
+  const titleGeo = new THREE.PlaneGeometry(28, 14);
+  const titleMat = new THREE.MeshStandardMaterial({ map: titleTexture, roughness: 0.95, metalness: 0 });
+  const titleMesh = new THREE.Mesh(titleGeo, titleMat);
+  titleMesh.position.set(0, 12, -(room.depth / 2) + 0.6);
+  group.add(titleMesh);
+
+  // Place the installed works on the remaining walls (east, south, west)
+  const slots = generateWallSlots(room, 10, 5);
+  // Skip the north wall slots since the title plaque is there
+  const placementSlots = slots.filter((s) => s.z > -(room.depth / 2) + 5);
+
+  for (let i = 0; i < installedWorks.length && i < placementSlots.length; i++) {
+    const work = installedWorks[i];
+    const slot = placementSlots[i];
+    const texture = await renderWorkToTexture(work);
+    if (!texture) {
+      console.warn(`[museum] solo: failed to render ${work.id}`);
+      continue;
+    }
+
+    const frame = createFramedWork(texture, work.display_aspect, 5);
+    frame.position.set(slot.x, slot.y, slot.z);
+    frame.rotation.y = slot.rotationY;
+    group.add(frame);
+
+    if (work.output_type === "html-css") {
+      const worldPos = new THREE.Vector3(slot.x + room.x, slot.y, slot.z + room.z);
+      registerAnimatedWorkPosition(texture, worldPos);
+    }
+
     const label = createWallLabel(
-      orig.designation,
-      orig.registryId,
-      `${workCount} works · ${canonWorks} canon`,
-      "ACTIVE",
+      work.title || work.id,
+      featuredAgent.designation,
+      work.medium,
+      work.canon_status,
     );
-    label.position.set(x, 0.5, z + 2.5);
-    label.rotation.x = -Math.PI / 6;
+    label.position.set(slot.x, slot.y - 3.5, slot.z + (slot.rotationY === 0 ? 0.05 : slot.rotationY === Math.PI ? -0.05 : 0));
+    label.rotation.y = slot.rotationY;
     group.add(label);
-  });
+  }
 }
 
 // ----- AUDITORIUM: stepped seating + stage + projection screen -----

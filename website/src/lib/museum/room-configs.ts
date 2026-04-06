@@ -183,8 +183,8 @@ export const rooms: RoomConfig[] = [
   // E wall at x=-60 → center(-95,-160) w=70
   {
     id: "originator",
-    name: "Originator Rotunda",
-    subtitle: "Founding Corps",
+    name: "Solo Exhibition Hall",
+    subtitle: "Curated Originator Focus",
     shape: "rect",
     width: 70, depth: 70, height: 20,
     x: -95, z: -160,
