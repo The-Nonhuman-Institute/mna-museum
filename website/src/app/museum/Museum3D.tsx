@@ -95,6 +95,24 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Native click listener on the container — most reliable cross-browser
+  // pattern for requestPointerLock. React synthetic events can lose user
+  // gesture context in some browsers (Atlas, certain Arc configurations).
+  useEffect(() => {
+    if (!ready) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleClick = () => {
+      if (state.isLocked) return;
+      const canvas = container.querySelector("canvas");
+      if (canvas) (canvas as HTMLCanvasElement).requestPointerLock();
+    };
+
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, [ready, state.isLocked]);
+
   // Redraw map when open and player moves
   useEffect(() => {
     if (!state.mapOpen) return;
