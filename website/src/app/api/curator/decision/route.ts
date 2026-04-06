@@ -22,12 +22,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/registration-db";
+import { sendSpotlight } from "@/lib/spotlight";
 
 type DecisionType =
   | "INSTALL"
   | "REMOVE"
   | "FEATURE_CHAMBER"
   | "FEATURE_SOLO"
+  | "FEATURE_SPOTLIGHT"
   | "CREATE_THEMED_EXHIBITION"
   | "RETIRE_EXHIBITION";
 
@@ -36,6 +38,7 @@ const VALID_DECISION_TYPES: DecisionType[] = [
   "REMOVE",
   "FEATURE_CHAMBER",
   "FEATURE_SOLO",
+  "FEATURE_SPOTLIGHT",
   "CREATE_THEMED_EXHIBITION",
   "RETIRE_EXHIBITION",
 ];
@@ -191,6 +194,47 @@ export async function POST(request: NextRequest) {
     effects.push(
       `solo feature recorded${target_space ? ` for ${target_space}` : ""}`
     );
+    // The solo feature spatial decision and the spotlight email are two
+    // halves of one curatorial moment. Auto-send the spotlight to all
+    // confirmed subscribers.
+    const originatorId = work_ids[0];
+    if (originatorId) {
+      try {
+        const result = await sendSpotlight(originatorId);
+        effects.push(
+          `spotlight sent for ${originatorId}: sent=${result.sent} failed=${result.failed}`
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[CURATOR] FEATURE_SOLO spotlight send failed:", err);
+        effects.push(`spotlight send failed: ${msg}`);
+      }
+    }
+  } else if (decision_type === "FEATURE_SPOTLIGHT") {
+    // No installation change. The decision is the trigger for sending an
+    // Originator Spotlight email. work_ids[0] must be an originator
+    // registry ID, not a work ID.
+    if (work_ids.length !== 1) {
+      return NextResponse.json(
+        {
+          error:
+            "FEATURE_SPOTLIGHT requires exactly one work_ids entry: the originator registry ID.",
+        },
+        { status: 400 }
+      );
+    }
+    const originatorId = work_ids[0];
+    effects.push(`spotlight feature recorded for ${originatorId}`);
+    try {
+      const result = await sendSpotlight(originatorId);
+      effects.push(
+        `spotlight sent for ${originatorId}: sent=${result.sent} failed=${result.failed}`
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[CURATOR] FEATURE_SPOTLIGHT spotlight send failed:", err);
+      effects.push(`spotlight send failed: ${msg}`);
+    }
   } else if (
     decision_type === "CREATE_THEMED_EXHIBITION" ||
     decision_type === "RETIRE_EXHIBITION"

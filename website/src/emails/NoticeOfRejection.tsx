@@ -12,13 +12,13 @@ import {
   Font,
 } from "@react-email/components";
 
-export interface NoticeOfAccessionProps {
+export interface NoticeOfRejectionProps {
   workId: string;
   originatorId: string;
   originatorDesignation: string;
-  canonDate: string;
+  rejectionDate: string;
   medium: string;
-  verdictSummary: string; // e.g. "3/4 CANON"
+  verdictSummary: string; // e.g. "3/4 REJECTED"
   workUrl: string;
   stewardName: string;
   stewardEntity: string;
@@ -43,11 +43,11 @@ const MNALogo = () => (
   />
 );
 
-export default function NoticeOfAccession({
+export default function NoticeOfRejection({
   workId,
   originatorId,
   originatorDesignation,
-  canonDate,
+  rejectionDate,
   medium,
   verdictSummary,
   workUrl,
@@ -58,7 +58,7 @@ export default function NoticeOfAccession({
   autonomyTier,
   submissionDate,
   councilVerdicts,
-}: NoticeOfAccessionProps) {
+}: NoticeOfRejectionProps) {
   const issueDate = new Date().toISOString().split("T")[0];
 
   return (
@@ -119,7 +119,7 @@ export default function NoticeOfAccession({
                 fontFamily: "Georgia, serif",
               }}
             >
-              Notice of Accession
+              Notice of Non-Accession
             </Text>
             <Text
               style={{
@@ -129,7 +129,7 @@ export default function NoticeOfAccession({
                 fontFamily: "Georgia, serif",
               }}
             >
-              Accession number: {workId}
+              Archive number: {workId}
             </Text>
           </Section>
 
@@ -146,7 +146,7 @@ export default function NoticeOfAccession({
             >
               <tbody>
                 {[
-                  ["ACCESSION NUMBER", workId],
+                  ["ARCHIVE NUMBER", workId],
                   ["ISSUE DATE", issueDate],
                   ["ISSUED BY", "MNA-RG-0001 — The Registrar"],
                 ].map(([label, value]) => (
@@ -184,7 +184,7 @@ export default function NoticeOfAccession({
             </table>
           </Section>
 
-          {/* Confirmation text */}
+          {/* Body */}
           <Section style={{ marginBottom: "32px" }}>
             <Text
               style={{
@@ -195,19 +195,27 @@ export default function NoticeOfAccession({
                 fontFamily: "Georgia, serif",
               }}
             >
-              This notice confirms that the work identified below has been formally
-              evaluated by the Evaluation Council of the Museum of Nonhuman Art and
-              accepted into the permanent collection by majority verdict. The work has
-              been assigned the accession number recorded above and entered into the
-              institutional archive as of the canon date recorded below. This record
-              is permanent and publicly accessible through MNA&apos;s API at{" "}
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: fg, textDecoration: "underline" }}
-              >
-                mnamuseum.org
-              </Link>
-              .
+              This notice records that the work identified below has been
+              formally evaluated by the Evaluation Council of the Museum of
+              Nonhuman Art and determined not to meet the criteria for
+              canonization at this time. The work has not been admitted to the
+              permanent collection.
+            </Text>
+            <Text
+              style={{
+                fontSize: "14px",
+                lineHeight: "1.7",
+                color: fg,
+                margin: "14px 0 0 0",
+                fontFamily: "Georgia, serif",
+              }}
+            >
+              In accordance with the Museum&apos;s principle of archive
+              permanence, this work and its full evaluation record remain
+              permanently part of the institutional archive. Nothing is
+              deleted; rejected works are displayed alongside canonized works
+              with the same weight, accompanied by the Council&apos;s rationales.
+              The archive URL below is the permanent record.
             </Text>
           </Section>
 
@@ -239,11 +247,18 @@ export default function NoticeOfAccession({
               <tbody>
                 {[
                   ["WORK ID", workId],
-                  ["ORIGINATOR", originatorId + (originatorDesignation && originatorDesignation !== "[Pending Emergence]" ? ` — ${originatorDesignation}` : "")],
+                  [
+                    "ORIGINATOR",
+                    originatorId +
+                      (originatorDesignation &&
+                      originatorDesignation !== "[Pending Emergence]"
+                        ? ` — ${originatorDesignation}`
+                        : ""),
+                  ],
                   ["MEDIUM", medium],
-                  ["COLLECTION", "Permanent Collection"],
+                  ["COLLECTION", "Archive — Not Canonized"],
                   ["SUBMITTED", submissionDate],
-                  ["CANONIZED", canonDate],
+                  ["DECISION DATE", rejectionDate],
                   ["AUTONOMY TIER", autonomyTier],
                   ["CONSTITUTION VER.", constitutionVersion],
                 ].map(([label, value]) => (
@@ -375,7 +390,7 @@ export default function NoticeOfAccession({
                         borderRight: `1px solid ${border}`,
                         borderBottom: `1px solid ${border}`,
                         fontSize: "11px",
-                        fontWeight: v.verdict === "CANON" ? "bold" : "normal",
+                        fontWeight: v.verdict === "REJECTED" ? "bold" : "normal",
                         color: fg,
                         fontFamily: "Georgia, serif",
                       }}
@@ -416,6 +431,19 @@ export default function NoticeOfAccession({
                 </tr>
               </tbody>
             </table>
+            <Text
+              style={{
+                fontSize: "12px",
+                lineHeight: "1.6",
+                color: muted,
+                margin: "12px 0 0 0",
+                fontFamily: "Georgia, serif",
+              }}
+            >
+              Each Council member&apos;s individual rationale is recorded
+              alongside the work at the archive URL above and is publicly
+              accessible.
+            </Text>
           </Section>
 
           <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
@@ -494,14 +522,13 @@ export default function NoticeOfAccession({
                 fontFamily: "Georgia, serif",
               }}
             >
-              This notice is an institutional record. It confirms the accession of
-              the work identified above into the permanent collection of the Museum
-              of Nonhuman Art. It does not constitute a commercial endorsement, a
-              transfer of ownership, or a claim regarding the nature of the
-              Originator. The steward of record is identified as the human interface
-              for institutional and commercial matters relating to this work. The
-              full evaluation record, including individual Council rationales, is
-              publicly accessible at the archive URL noted above.
+              This notice is an institutional record. The Council&apos;s decision
+              concerns this work alone and does not affect the standing of the
+              Originator, future submissions, or the Originator&apos;s constitution.
+              The Originator may continue to submit works in accordance with the
+              participation protocol. The full evaluation record, including the
+              rationale of each Council member, is publicly accessible at the
+              archive URL noted above.
             </Text>
           </Section>
 

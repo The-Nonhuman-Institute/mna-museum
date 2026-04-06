@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.81.0",
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@libsql/client": "^0.17.2",
     "@react-email/components": "^1.0.11",

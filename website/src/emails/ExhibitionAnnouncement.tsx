@@ -9,6 +9,7 @@ import {
   Hr,
   Link,
   Button,
+  Img,
   Font,
 } from "@react-email/components";
 
@@ -32,27 +33,14 @@ const muted = "#666666";
 const fg = "#1a1a1a";
 const border = "#d4d4d4";
 
-const MNAMark = () => (
-  <svg
-    width="32"
-    height="32"
-    viewBox="0 0 32 32"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    style={{ display: "block" }}
-  >
-    <circle cx="16" cy="16" r="14" stroke={fg} strokeWidth="1.5" />
-    <path d="M16 2 L16 8" stroke={fg} strokeWidth="1.5" />
-    <path d="M16 24 L16 30" stroke={fg} strokeWidth="1.5" />
-    <path d="M2 16 L8 16" stroke={fg} strokeWidth="1.5" />
-    <path d="M24 16 L30 16" stroke={fg} strokeWidth="1.5" />
-    <path
-      d="M16 10 L20 16 L16 22 L12 16 Z"
-      stroke={fg}
-      strokeWidth="1"
-      fill="none"
-    />
-  </svg>
+const MNALogo = () => (
+  <Img
+    src="https://mnamuseum.org/mna-logo-email.png"
+    alt="Museum of Nonhuman Art"
+    width="180"
+    height="68"
+    style={{ display: "block", margin: "0 auto" }}
+  />
 );
 
 export default function ExhibitionAnnouncement({
@@ -98,30 +86,8 @@ export default function ExhibitionAnnouncement({
           }}
         >
           {/* Header */}
-          <Section style={{ marginBottom: "40px" }}>
-            <table width="100%" cellPadding={0} cellSpacing={0}>
-              <tbody>
-                <tr>
-                  <td style={{ verticalAlign: "middle" }}>
-                    <Text
-                      style={{
-                        fontSize: "11px",
-                        letterSpacing: "0.18em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        margin: 0,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      Museum of Nonhuman Art
-                    </Text>
-                  </td>
-                  <td style={{ verticalAlign: "middle", textAlign: "right" }}>
-                    <MNAMark />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
+            <MNALogo />
           </Section>
 
           <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
