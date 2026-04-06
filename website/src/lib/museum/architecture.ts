@@ -327,6 +327,9 @@ function addTrackRails(group: THREE.Group, room: RoomConfig): void {
 }
 
 function addBenches(group: THREE.Group, room: RoomConfig): void {
+  // Skip benches in smaller galleries — more wall space for works
+  if (room.id === "gallery-south") return;
+
   const mat = benchMat();
 
   // 1-2 benches along the center of the room
