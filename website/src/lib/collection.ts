@@ -104,7 +104,7 @@ async function buildWork(row: Record<string, unknown>): Promise<Work> {
     originator_id: row.originator_id as string,
     medium,
     output_payload: row.output_payload as string,
-    output_type: outputType === "text" && medium !== "text" ? medium : outputType,
+    output_type: outputType,
     display_aspect: (row.display_aspect as number) || 1.0,
     phase_at_submission: (row.phase_at_submission as string) || null,
     created_at: row.created_at as string,
