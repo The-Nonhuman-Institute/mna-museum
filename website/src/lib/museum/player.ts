@@ -34,7 +34,6 @@ export class PlayerController {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleKeyUp = this.handleKeyUp.bind(this);
-    this.handleClick = this.handleClick.bind(this);
     this.handleLockChange = this.handleLockChange.bind(this);
 
     this.attach();
@@ -44,24 +43,18 @@ export class PlayerController {
     document.addEventListener("mousemove", this.handleMouseMove);
     document.addEventListener("keydown", this.handleKeyDown);
     document.addEventListener("keyup", this.handleKeyUp);
-    this.domElement.addEventListener("click", this.handleClick);
     document.addEventListener("pointerlockchange", this.handleLockChange);
+    // Click handler removed — Museum3D.tsx now handles pointer lock requests
+    // via a single native listener to avoid duplicate calls.
   }
 
   detach(): void {
     document.removeEventListener("mousemove", this.handleMouseMove);
     document.removeEventListener("keydown", this.handleKeyDown);
     document.removeEventListener("keyup", this.handleKeyUp);
-    this.domElement.removeEventListener("click", this.handleClick);
     document.removeEventListener("pointerlockchange", this.handleLockChange);
     if (this.isLocked) {
       document.exitPointerLock();
-    }
-  }
-
-  private handleClick(): void {
-    if (!this.isLocked) {
-      this.domElement.requestPointerLock();
     }
   }
 
