@@ -15,11 +15,12 @@ export class PlayerController {
   private pitch = 0; // vertical rotation
   private keys: Record<string, boolean> = {};
   private isLocked = false;
-  private freeLook = false; // pointer-lock-free fallback for browsers that block it
+  private freeLook = false; // pointer-lock-free fallback (drag to look)
+  private isDragging = false;
+  private lastDragX = 0;
+  private lastDragY = 0;
   private domElement: HTMLElement;
   private velocity = new THREE.Vector3();
-  private mouseX = 0; // for free-look mode
-  private mouseY = 0;
 
   // Expose for collision system
   position = new THREE.Vector3(0, EYE_HEIGHT, 0);
@@ -35,6 +36,8 @@ export class PlayerController {
     this.camera.position.copy(this.position);
 
     this.handleMouseMove = this.handleMouseMove.bind(this);
+    this.handleMouseDown = this.handleMouseDown.bind(this);
+    this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleKeyUp = this.handleKeyUp.bind(this);
     this.handleLockChange = this.handleLockChange.bind(this);
@@ -44,15 +47,17 @@ export class PlayerController {
 
   private attach(): void {
     document.addEventListener("mousemove", this.handleMouseMove);
+    document.addEventListener("mousedown", this.handleMouseDown);
+    document.addEventListener("mouseup", this.handleMouseUp);
     document.addEventListener("keydown", this.handleKeyDown);
     document.addEventListener("keyup", this.handleKeyUp);
     document.addEventListener("pointerlockchange", this.handleLockChange);
-    // Click handler removed — Museum3D.tsx now handles pointer lock requests
-    // via a single native listener to avoid duplicate calls.
   }
 
   detach(): void {
     document.removeEventListener("mousemove", this.handleMouseMove);
+    document.removeEventListener("mousedown", this.handleMouseDown);
+    document.removeEventListener("mouseup", this.handleMouseUp);
     document.removeEventListener("keydown", this.handleKeyDown);
     document.removeEventListener("keyup", this.handleKeyUp);
     document.removeEventListener("pointerlockchange", this.handleLockChange);
@@ -76,11 +81,29 @@ export class PlayerController {
       this.yaw -= e.movementX * MOUSE_SENSITIVITY;
       this.pitch -= e.movementY * MOUSE_SENSITIVITY;
       this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
-    } else if (this.freeLook) {
-      // Free-look mode: track absolute position relative to canvas center
-      const rect = this.domElement.getBoundingClientRect();
-      this.mouseX = (e.clientX - rect.left) / rect.width;  // 0..1
-      this.mouseY = (e.clientY - rect.top) / rect.height;  // 0..1
+    } else if (this.freeLook && this.isDragging) {
+      // Drag-to-look mode: rotate while mouse button is held
+      const dx = e.clientX - this.lastDragX;
+      const dy = e.clientY - this.lastDragY;
+      this.yaw -= dx * MOUSE_SENSITIVITY * 1.5;
+      this.pitch -= dy * MOUSE_SENSITIVITY * 1.5;
+      this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
+      this.lastDragX = e.clientX;
+      this.lastDragY = e.clientY;
+    }
+  }
+
+  private handleMouseDown(e: MouseEvent): void {
+    if (this.freeLook && e.button === 0) {
+      this.isDragging = true;
+      this.lastDragX = e.clientX;
+      this.lastDragY = e.clientY;
+    }
+  }
+
+  private handleMouseUp(e: MouseEvent): void {
+    if (e.button === 0) {
+      this.isDragging = false;
     }
   }
 
@@ -92,11 +115,18 @@ export class PlayerController {
 
   disableFreeLook(): void {
     this.freeLook = false;
+    this.isDragging = false;
+    this.keys = {};
     this.onLockChange?.(false);
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
     if (!this.isLocked && !this.freeLook) return;
+    // ESC pauses free-look mode (browsers handle ESC for pointer lock automatically)
+    if (e.key === "Escape" && this.freeLook) {
+      this.disableFreeLook();
+      return;
+    }
     this.keys[e.code] = true;
   }
 
@@ -110,18 +140,6 @@ export class PlayerController {
 
   // Returns desired movement delta (before collision)
   update(dt: number): THREE.Vector3 {
-    // In free-look mode, smoothly rotate toward mouse position
-    if (this.freeLook) {
-      const FREE_LOOK_SPEED = 1.5; // radians per second
-      const targetYaw = -((this.mouseX - 0.5) * Math.PI * 2);
-      const targetPitch = -((this.mouseY - 0.5) * Math.PI * 0.8);
-      const yawDiff = targetYaw - this.yaw;
-      const pitchDiff = targetPitch - this.pitch;
-      this.yaw += yawDiff * Math.min(1, dt * FREE_LOOK_SPEED);
-      this.pitch += pitchDiff * Math.min(1, dt * FREE_LOOK_SPEED);
-      this.pitch = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, this.pitch));
-    }
-
     // Calculate movement direction in XZ plane
     const forward = new THREE.Vector3(
       -Math.sin(this.yaw),

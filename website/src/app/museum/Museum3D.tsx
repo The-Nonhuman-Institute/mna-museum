@@ -74,6 +74,7 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
   });
   const [ready, setReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [freeLookMode, setFreeLookMode] = useState(false);
   const hasEnteredRef = useRef(false);
 
   // Stable callback — doesn't change on state updates
@@ -111,14 +112,16 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
 
     const handleClick = async () => {
       if (state.isLocked) return;
+
+      // If we already know pointer lock doesn't work, skip straight to free-look
+      if (freeLookMode) {
+        engineRef.current?.enableFreeLook();
+        return;
+      }
+
       const canvas = container.querySelector("canvas") as HTMLCanvasElement | null;
       if (!canvas) {
         console.error("[museum] no canvas found for pointer lock");
-        return;
-      }
-      // Verify canvas is in the same document as the click target
-      if (canvas.ownerDocument !== document) {
-        console.error("[museum] canvas in different document — pointer lock impossible");
         return;
       }
       console.log("[museum] click → requesting pointer lock");
@@ -131,14 +134,14 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
         }
       } catch (err) {
         console.warn("[museum] pointer lock denied — falling back to free-look mode:", err);
-        // Fallback: enable free-look mode (mouse position drives camera)
         engineRef.current?.enableFreeLook();
+        setFreeLookMode(true);
       }
     };
 
     container.addEventListener("click", handleClick);
     return () => container.removeEventListener("click", handleClick);
-  }, [ready, state.isLocked]);
+  }, [ready, state.isLocked, freeLookMode]);
 
   // Redraw map when open and player moves
   useEffect(() => {
@@ -235,7 +238,9 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
                 {/* Controls */}
                 <div className="space-y-2 mb-5">
                   <p className="text-[11px] text-[#8a8580] tracking-wide">
-                    WASD to move · Mouse to look · ESC to pause
+                    {freeLookMode
+                      ? "WASD to move · Click and drag to look · ESC to pause"
+                      : "WASD to move · Mouse to look · ESC to pause"}
                   </p>
                   <p className="text-[11px] text-[#8a8580] tracking-wide">
                     M for map · 1-4 to emote
