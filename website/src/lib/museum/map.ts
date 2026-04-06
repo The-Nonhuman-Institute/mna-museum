@@ -86,7 +86,7 @@ export function drawMuseumMap(
   ctx.fillStyle = "#706a60";
   ctx.font = "14px monospace";
   ctx.textAlign = "center";
-  ctx.fillText("43 Canon · 108 Works · 6 Originators · Phase I", 400, 775);
+  ctx.fillText("45 Canon · 111 Works · 7 Originators · Phase I", 400, 775);
 
   return canvas;
 }

@@ -138,6 +138,22 @@ export const rooms: RoomConfig[] = [
     x: 100, z: -65,
     connections: [
       { to: "exhibition", wall: "west", width: WIDE, height: DOOR_H },
+      { to: "gallery-south", wall: "south", width: WIDE, height: DOOR_H },
+    ],
+    purpose: "gallery",
+  },
+
+  // ===== GALLERY SOUTH ===== network + overflow gallery
+  // N wall at x=+50, z=+5 → center(+100, 0) w=100 d=50 h=18
+  {
+    id: "gallery-south",
+    name: "Gallery South",
+    subtitle: "Network Originators",
+    shape: "rect",
+    width: 100, depth: 50, height: 18,
+    x: 100, z: 0,
+    connections: [
+      { to: "gallery-east", wall: "north", width: WIDE, height: DOOR_H },
     ],
     purpose: "gallery",
   },

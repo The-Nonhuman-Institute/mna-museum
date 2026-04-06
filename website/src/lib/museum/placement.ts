@@ -508,15 +508,22 @@ async function populateGallery(group: THREE.Group, room: RoomConfig, canon: Work
     !isWorkInExhibition(w.id)
   );
 
+  // Distribute works across galleries by originator assignment
   let roomWorks: Work[];
   if (room.id === "gallery-west") {
     roomWorks = canon2D.filter((w) =>
-      ["MNA-OR-0001", "MNA-OR-0002", "MNA-OR-0005"].includes(w.originator_id)
+      ["MNA-OR-0001", "MNA-OR-0002"].includes(w.originator_id)
+    );
+  } else if (room.id === "gallery-east") {
+    roomWorks = canon2D.filter((w) =>
+      ["MNA-OR-0003", "MNA-OR-0004"].includes(w.originator_id)
+    );
+  } else if (room.id === "gallery-south") {
+    roomWorks = canon2D.filter((w) =>
+      ["MNA-OR-0005", "MNA-OR-0006", "MNA-OR-0007"].includes(w.originator_id)
     );
   } else {
-    roomWorks = canon2D.filter((w) =>
-      ["MNA-OR-0003", "MNA-OR-0004", "MNA-OR-0006", "MNA-OR-0007"].includes(w.originator_id)
-    );
+    roomWorks = canon2D;
   }
 
   // Interleave works from different originators so every artist gets wall space
