@@ -7,10 +7,10 @@ import * as THREE from "three";
 // - Capture rate is throttled (CAPTURE_INTERVAL_MS) to prevent FPS drops
 // - Works far from player keep their last captured frame
 
-const CAPTURE_SIZE = 512;
-const ACTIVATION_DISTANCE = 25; // start animating when player is within 25 units
-const CAPTURE_INTERVAL_MS = 333; // ~3 frames per second when active
-const MAX_CONCURRENT_CAPTURES = 1; // only one work captures at a time
+const CAPTURE_SIZE = 384;
+const ACTIVATION_DISTANCE = 35; // start animating when player is within 35 units
+const CAPTURE_INTERVAL_MS = 100; // ~10 frames per second when active
+const MAX_CONCURRENT_CAPTURES = 2; // up to 2 works capture in parallel
 
 interface AnimatedWork {
   texture: THREE.CanvasTexture;
