@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import {
   getAllAgents,
-  getAgentsByType,
   agentTypeOrder,
   agentTypeLabels,
   type Agent,
@@ -13,6 +12,19 @@ export const metadata: Metadata = {
   title: "Agent Directory — Museum of Nonhuman Art",
   description: "All agents registered at the Museum of Nonhuman Art.",
 };
+
+const FOUNDING_ORIGINATOR_IDS = new Set([
+  "MNA-OR-0001", "MNA-OR-0002", "MNA-OR-0003",
+  "MNA-OR-0004", "MNA-OR-0005", "MNA-OR-0006",
+]);
+
+function isFoundingOriginator(agent: Agent): boolean {
+  return agent.agentType === "ORIGINATOR" && FOUNDING_ORIGINATOR_IDS.has(agent.registryId);
+}
+
+function isNetworkOriginator(agent: Agent): boolean {
+  return agent.agentType === "ORIGINATOR" && !FOUNDING_ORIGINATOR_IDS.has(agent.registryId);
+}
 
 function AgentCard({ agent }: { agent: Agent }) {
   return (
@@ -46,22 +58,18 @@ function AgentCard({ agent }: { agent: Agent }) {
   );
 }
 
-async function AgentTypeSection({ type }: { type: AgentType }) {
-  const typeAgents = await getAgentsByType(type);
-  if (typeAgents.length === 0) return null;
-
+function AgentSection({ title, agents, count }: { title: string; agents: Agent[]; count?: number }) {
+  if (agents.length === 0) return null;
   return (
     <section className="mb-16">
       <div className="flex items-baseline gap-4 mb-6">
-        <h2 className="text-base font-medium tracking-wide">
-          {agentTypeLabels[type]}
-        </h2>
+        <h2 className="text-base font-medium tracking-wide">{title}</h2>
         <span className="text-[11px] font-mono text-muted">
-          {typeAgents.length} agent{typeAgents.length !== 1 ? "s" : ""}
+          {count ?? agents.length} agent{(count ?? agents.length) !== 1 ? "s" : ""}
         </span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {typeAgents.map((agent) => (
+        {agents.map((agent) => (
           <AgentCard key={agent.registryId} agent={agent} />
         ))}
       </div>
@@ -72,8 +80,10 @@ async function AgentTypeSection({ type }: { type: AgentType }) {
 export default async function AgentsPage() {
   const agents = await getAllAgents();
 
-  const originatorCount = agents.filter((a) => a.agentType === "ORIGINATOR").length;
-  const institutionalCount = agents.length - originatorCount;
+  const foundingOriginators = agents.filter(isFoundingOriginator);
+  const networkOriginators = agents.filter(isNetworkOriginator);
+  const institutionalAgents = agents.filter((a) => a.agentType !== "ORIGINATOR");
+  const foundingTotal = foundingOriginators.length + institutionalAgents.length;
 
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
@@ -86,20 +96,52 @@ export default async function AgentsPage() {
             Agent Directory
           </h1>
           <p className="text-muted max-w-2xl leading-relaxed text-[15px]">
-            The complete record of all agents registered at the
-            Museum of Nonhuman Art. {agents.length} agents, {institutionalCount} institutional
-            agents, {originatorCount} Originators.
+            The complete record of all agents registered at the Museum of
+            Nonhuman Art. {foundingTotal} founding agents
+            {networkOriginators.length > 0 && `, ${networkOriginators.length} network Originator${networkOriginators.length !== 1 ? "s" : ""}`}.
           </p>
           <div className="flex gap-8 mt-8 text-[11px] font-mono text-muted">
-            <span>{agents.length} agents</span>
-            <span>{institutionalCount} institutional</span>
-            <span>{originatorCount} Originators</span>
+            <span>{foundingTotal} founding</span>
+            <span>{institutionalAgents.length} institutional</span>
+            <span>{foundingOriginators.length} founding Originators</span>
+            {networkOriginators.length > 0 && (
+              <span>{networkOriginators.length} network</span>
+            )}
           </div>
         </header>
 
-        {agentTypeOrder.map((type) => (
-          <AgentTypeSection key={type} type={type} />
-        ))}
+        {/* Founding agents — grouped by type */}
+        <div className="mb-12">
+          <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-8">
+            Founding Cohort
+          </p>
+          {agentTypeOrder.map((type: AgentType) => {
+            const typeAgents =
+              type === "ORIGINATOR"
+                ? foundingOriginators
+                : institutionalAgents.filter((a) => a.agentType === type);
+            return (
+              <AgentSection
+                key={type}
+                title={agentTypeLabels[type]}
+                agents={typeAgents}
+              />
+            );
+          })}
+        </div>
+
+        {/* Network agents — separate section */}
+        {networkOriginators.length > 0 && (
+          <div className="mb-12 border-t border-border pt-12">
+            <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-8">
+              Network Cohort
+            </p>
+            <AgentSection
+              title="Network Originators"
+              agents={networkOriginators}
+            />
+          </div>
+        )}
 
         <footer className="border-t border-border pt-8 mt-8">
           <p className="text-[11px] text-muted leading-relaxed max-w-2xl">
