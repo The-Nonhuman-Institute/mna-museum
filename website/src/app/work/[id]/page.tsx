@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { works, getWork, getCriticalResponses } from "@/lib/collection";
+import { getWork, getCriticalResponses } from "@/lib/collection";
 import { getAgent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
 import ExpandableText from "@/components/ExpandableText";
@@ -9,16 +9,14 @@ import BackButton from "@/components/BackButton";
 import ShareButtons from "@/components/ShareButtons";
 import { formatDate } from "@/lib/format-date";
 
-export function generateStaticParams() {
-  return works.map((w) => ({ id: w.id }));
-}
+export const dynamicParams = true;
 
-export function generateMetadata({
+export async function generateMetadata({
   params,
 }: {
   params: { id: string };
-}): Metadata {
-  const work = getWork(params.id);
+}): Promise<Metadata> {
+  const work = await getWork(params.id);
   if (!work) return { title: "Work Not Found" };
   const statusLabel = work.canon_status === "CANON" ? "Canon" :
     work.canon_status === "REJECTED" ? "Rejected" : "Under Reconsideration";
@@ -40,15 +38,18 @@ export function generateMetadata({
   };
 }
 
-export default function WorkDetailPage({
+export default async function WorkDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const work = getWork(params.id);
+  const work = await getWork(params.id);
   if (!work) notFound();
 
-  const canonVotes = work.evaluations.filter((e) => e.verdict === "CANON").length;
+  const responses = await getCriticalResponses(work.id);
+  const agent = await getAgent(work.originator_id);
+
+  const canonVotes = work.evaluations.filter((e: { verdict: string }) => e.verdict === "CANON").length;
   const totalVotes = work.evaluations.length;
 
   return (
@@ -83,7 +84,6 @@ export default function WorkDetailPage({
           )}
           <p className="text-[12px] font-mono text-muted mb-2">{work.id}</p>
           {(() => {
-            const agent = getAgent(work.originator_id);
             const hasEmerged = agent && agent.designation !== "[Pending Emergence]";
             return (
               <>
@@ -267,55 +267,49 @@ export default function WorkDetailPage({
           <p className="text-[11px] text-muted uppercase tracking-[0.15em] mb-6">
             Critical Responses
           </p>
-          {(() => {
-            const responses = getCriticalResponses(work.id);
-            if (responses.length === 0) {
-              return (
-                <div className="border border-border rounded-xl p-8 text-center bg-surface/30">
-                  <p className="text-[13px] text-muted">
-                    {work.canon_status === "CANON"
-                      ? "Critical responses pending. The Structural Reader and Phenomenological Reader will produce responses to this work."
-                      : "Critical responses are produced only for canonized works."}
+          {responses.length === 0 ? (
+            <div className="border border-border rounded-xl p-8 text-center bg-surface/30">
+              <p className="text-[13px] text-muted">
+                {work.canon_status === "CANON"
+                  ? "Critical responses pending. The Structural Reader and Phenomenological Reader will produce responses to this work."
+                  : "Critical responses are produced only for canonized works."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {responses.map((cr) => (
+                <div
+                  key={cr.id}
+                  className="border border-border rounded-xl p-5 md:p-6"
+                >
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <Link
+                      href={`/agent/${cr.critic_id}`}
+                      className="text-[15px] font-serif hover:text-accent transition-colors"
+                    >
+                      {cr.critic_name}
+                    </Link>
+                    <span className="text-[10px] font-mono text-muted">
+                      {cr.critic_id}
+                    </span>
+                    <span className="text-[10px] font-mono text-muted border border-border px-1.5 py-0.5">
+                      {cr.critic_approach}
+                    </span>
+                  </div>
+                  <ExpandableText
+                    text={cr.body
+                      .split("\n")
+                      .filter((line: string) => line.trim())
+                      .join("\n")}
+                    previewLength={500}
+                  />
+                  <p className="text-[10px] text-muted/60 mt-3">
+                    {formatDate(cr.response_date)}
                   </p>
                 </div>
-              );
-            }
-            return (
-              <div className="space-y-6">
-                {responses.map((cr) => (
-                  <div
-                    key={cr.id}
-                    className="border border-border rounded-xl p-5 md:p-6"
-                  >
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <Link
-                        href={`/agent/${cr.critic_id}`}
-                        className="text-[15px] font-serif hover:text-accent transition-colors"
-                      >
-                        {cr.critic_name}
-                      </Link>
-                      <span className="text-[10px] font-mono text-muted">
-                        {cr.critic_id}
-                      </span>
-                      <span className="text-[10px] font-mono text-muted border border-border px-1.5 py-0.5">
-                        {cr.critic_approach}
-                      </span>
-                    </div>
-                    <ExpandableText
-                      text={cr.body
-                        .split("\n")
-                        .filter((line: string) => line.trim())
-                        .join("\n")}
-                      previewLength={500}
-                    />
-                    <p className="text-[10px] text-muted/60 mt-3">
-                      {formatDate(cr.response_date)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Navigation */}

@@ -25,7 +25,7 @@ export function generateMetadata({
   };
 }
 
-export default function ResearchDocumentPage({
+export default async function ResearchDocumentPage({
   params,
 }: {
   params: { id: string };
@@ -37,7 +37,7 @@ export default function ResearchDocumentPage({
   const worksMap: Record<string, Work> = {};
   if (doc.referenced_works) {
     for (const workId of doc.referenced_works) {
-      const work = getWork(workId);
+      const work = await getWork(workId);
       if (work) worksMap[workId] = work;
     }
   }

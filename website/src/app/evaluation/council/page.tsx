@@ -16,8 +16,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function EvaluationCouncilPage() {
-  const evaluators = getAgentsByType("EVALUATOR");
+export default async function EvaluationCouncilPage() {
+  const evaluators = await getAgentsByType("EVALUATOR");
 
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">

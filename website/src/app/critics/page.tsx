@@ -16,8 +16,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function CriticsPage() {
-  const critics = getAgentsByType("CRITIC");
+export default async function CriticsPage() {
+  const critics = await getAgentsByType("CRITIC");
 
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">

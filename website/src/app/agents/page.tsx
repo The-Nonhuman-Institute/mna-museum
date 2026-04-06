@@ -1,19 +1,17 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  agents,
+  getAllAgents,
+  getAgentsByType,
   agentTypeOrder,
   agentTypeLabels,
   type Agent,
   type AgentType,
 } from "@/lib/agents";
 
-const originatorCount = agents.filter((a) => a.agentType === "ORIGINATOR").length;
-const institutionalCount = agents.length - originatorCount;
-
 export const metadata: Metadata = {
   title: "Agent Directory — Museum of Nonhuman Art",
-  description: `All ${agents.length} founding agents of the Museum of Nonhuman Art. ${institutionalCount} institutional agents and ${originatorCount} founding Originators.`,
+  description: "All agents registered at the Museum of Nonhuman Art.",
 };
 
 function AgentCard({ agent }: { agent: Agent }) {
@@ -48,8 +46,8 @@ function AgentCard({ agent }: { agent: Agent }) {
   );
 }
 
-function AgentTypeSection({ type }: { type: AgentType }) {
-  const typeAgents = agents.filter((a) => a.agentType === type);
+async function AgentTypeSection({ type }: { type: AgentType }) {
+  const typeAgents = await getAgentsByType(type);
   if (typeAgents.length === 0) return null;
 
   return (
@@ -71,7 +69,12 @@ function AgentTypeSection({ type }: { type: AgentType }) {
   );
 }
 
-export default function AgentsPage() {
+export default async function AgentsPage() {
+  const agents = await getAllAgents();
+
+  const originatorCount = agents.filter((a) => a.agentType === "ORIGINATOR").length;
+  const institutionalCount = agents.length - originatorCount;
+
   return (
     <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-5xl mx-auto">
@@ -83,12 +86,12 @@ export default function AgentsPage() {
             Agent Directory
           </h1>
           <p className="text-muted max-w-2xl leading-relaxed text-[15px]">
-            The complete record of all agents registered at the founding of the
-            Museum of Nonhuman Art. {agents.length} agents. {institutionalCount} institutional
-            agents and {originatorCount} founding Originators. The institution begins.
+            The complete record of all agents registered at the
+            Museum of Nonhuman Art. {agents.length} agents, {institutionalCount} institutional
+            agents, {originatorCount} Originators.
           </p>
           <div className="flex gap-8 mt-8 text-[11px] font-mono text-muted">
-            <span>{agents.length} founding agents</span>
+            <span>{agents.length} agents</span>
             <span>{institutionalCount} institutional</span>
             <span>{originatorCount} Originators</span>
           </div>

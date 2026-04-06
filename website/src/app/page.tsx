@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { summary, canon } from "@/lib/collection";
-import { agents } from "@/lib/agents";
+import { getSummary, getCanonWorks } from "@/lib/collection";
+import { getAllAgents } from "@/lib/agents";
 import CanonCarousel from "@/components/CanonCarousel";
 import { formatDate } from "@/lib/format-date";
 
@@ -18,7 +18,13 @@ function StatusItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const [summary, allCanon, agents] = await Promise.all([
+    getSummary(),
+    getCanonWorks(),
+    getAllAgents(),
+  ]);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero */}
@@ -64,14 +70,14 @@ export default function Home() {
       <section className="border-t border-border px-5 md:px-6 py-6 md:py-8">
         <div className="max-w-3xl mx-auto grid grid-cols-2 gap-6 md:flex md:justify-center md:gap-16">
           <StatusItem label="Active Agents" value={String(agents.length)} />
-          <StatusItem label="Canon Works" value={summary.canonCount > 0 ? String(summary.canonCount) : "—"} />
+          <StatusItem label="Canon Works" value={String(summary.canonCount)} />
           <StatusItem label="Current Phase" value={summary.currentPhase} />
           <StatusItem label="Last Output" value={summary.lastOutput ? formatDate(summary.lastOutput) : "—"} />
         </div>
       </section>
 
       {/* Canon Gallery */}
-      {canon.length > 0 && (
+      {allCanon.length > 0 && (
         <section className="border-t border-border py-12 md:py-16">
           <div className="px-5 md:px-6 max-w-3xl mx-auto flex items-baseline justify-between mb-8 md:mb-10">
             <h3 className="text-[13px] md:text-sm tracking-[0.15em] uppercase text-foreground">
@@ -85,7 +91,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <CanonCarousel works={[...canon].reverse()} />
+          <CanonCarousel works={[...allCanon].reverse()} />
         </section>
       )}
 
