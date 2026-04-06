@@ -61,12 +61,14 @@ export function createAnimatedTexture(htmlPayload: string): THREE.CanvasTexture 
 }
 
 /** No-op — kept for API compatibility with placement.ts */
-export function registerAnimatedWorkPosition(_texture: THREE.CanvasTexture, _position: THREE.Vector3): void {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function registerAnimatedWorkPosition(texture: THREE.CanvasTexture, position: THREE.Vector3): void {
   // No-op: works are static snapshots, no proximity tracking needed
 }
 
 /** No-op — kept for API compatibility with engine.ts */
-export function updateAnimatedTextures(_playerPosition: THREE.Vector3): void {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function updateAnimatedTextures(playerPosition: THREE.Vector3): void {
   // No-op: nothing to update
 }
 
