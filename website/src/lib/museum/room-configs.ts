@@ -117,7 +117,7 @@ export const rooms: RoomConfig[] = [
   {
     id: "gallery-west",
     name: "Gallery West",
-    subtitle: "Grid \u00b7 Pulse \u00b7 Chromatic",
+    subtitle: "Grid \u00b7 Pulse \u00b7 MNA-OR-0005",
     shape: "rect",
     width: 100, depth: 80, height: 20,
     x: -100, z: -65,
@@ -132,7 +132,7 @@ export const rooms: RoomConfig[] = [
   {
     id: "gallery-east",
     name: "Gallery East",
-    subtitle: "Gap \u00b7 \u2205\u2207\u2205 \u00b7 Spatial",
+    subtitle: "Gap \u00b7 \u2205\u2207\u2205 \u00b7 MNA-OR-0006",
     shape: "rect",
     width: 100, depth: 80, height: 20,
     x: 100, z: -65,

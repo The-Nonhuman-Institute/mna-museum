@@ -21,6 +21,7 @@ export interface MuseumState {
   playerZ: number;
   emoteFlash: string;
   mapOpen: boolean;
+  showFps: boolean;
 }
 
 export type StateCallback = (state: MuseumState) => void;
@@ -41,6 +42,7 @@ export class MuseumEngine {
   private visitorCount = 0;
   private emoteFlash = "";
   private mapOpen = false;
+  private showFps = false;
   private emoteFlashTimeout: ReturnType<typeof setTimeout> | null = null;
   private loadedRooms = new Set<string>();
   private populatedRooms = new Set<string>();
@@ -292,10 +294,16 @@ export class MuseumEngine {
       playerZ: this.player.position.z,
       emoteFlash: this.emoteFlash,
       mapOpen: this.mapOpen,
+      showFps: this.showFps,
     });
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
+    if (e.key === "f" || e.key === "F") {
+      this.showFps = !this.showFps;
+      this.emitState();
+      return;
+    }
     if (e.key === "m" || e.key === "M") {
       this.mapOpen = !this.mapOpen;
       this.emitState();

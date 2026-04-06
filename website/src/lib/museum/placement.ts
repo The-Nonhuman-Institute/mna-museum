@@ -506,7 +506,7 @@ async function populateGallery(group: THREE.Group, room: RoomConfig): Promise<vo
     );
   } else {
     roomWorks = canon2D.filter((w) =>
-      ["MNA-OR-0003", "MNA-OR-0004", "MNA-OR-0006"].includes(w.originator_id)
+      ["MNA-OR-0003", "MNA-OR-0004", "MNA-OR-0006", "MNA-OR-0007"].includes(w.originator_id)
     );
   }
 
@@ -555,7 +555,7 @@ async function populateGallery(group: THREE.Group, room: RoomConfig): Promise<vo
     w.output_type === "audio-json" &&
     (room.id === "gallery-west"
       ? ["MNA-OR-0001", "MNA-OR-0002", "MNA-OR-0005"].includes(w.originator_id)
-      : ["MNA-OR-0003", "MNA-OR-0004", "MNA-OR-0006"].includes(w.originator_id))
+      : ["MNA-OR-0003", "MNA-OR-0004", "MNA-OR-0006", "MNA-OR-0007"].includes(w.originator_id))
   );
 
   if (canonAudio.length > 0) {
