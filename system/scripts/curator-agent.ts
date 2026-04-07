@@ -282,15 +282,17 @@ async function loadPriorDecisions(): Promise<PriorDecision[]> {
 // ─── User-message construction ────────────────────────────────────────────────
 
 const GALLERY_SPACE_NOTES = `
-Gallery spaces available in the virtual museum (per your constitution Section V.II):
+Gallery spaces available in the virtual museum. These are the TECHNICAL
+target_space identifiers used in the museum's room configuration. Use these
+exact strings in your directives — not the prose names from your constitution.
 
-- gallery-west — moderate scale, mixed wall lengths. Best for works that benefit from neighbors. Conversation, not solitude.
-- gallery-east — symmetric to west. Mirror positions across the two halls can stage related arguments.
-- gallery-south — smaller, intimate. Houses network Originators and overflow founding work.
-- sculpture — Sculpture Court, dramatic ceiling. 3D works with viewing distance.
-- chamber — tallest, dark, threshold-entered. One work at a time. The most emphatic spatial statement.
-- solo-exhibition-hall — single Originator's body of canonized work.
-- exhibition-hall — themed group exhibitions. Where you compose a thesis with selected works.
+- \`gallery-west\` — Gallery West. Moderate scale (100×80), mixed wall lengths. Best for works that benefit from neighbors. Conversation, not solitude.
+- \`gallery-east\` — Gallery East. Symmetric to west (100×80). Mirror positions across the two halls can stage related arguments.
+- \`gallery-south\` — Gallery South. Smaller, intimate. Currently houses network Originators and overflow founding work.
+- \`sculpture\` — the Sculpture Court (120×120, dramatic ceiling). 3D works with viewing distance and walk-around.
+- \`chamber\` — the Chamber (tallest, dark, threshold-entered). One work at a time. The most emphatic spatial statement.
+- \`originator\` — the Solo Exhibition Hall (70×70). Single Originator's body of canonized work at any given time.
+- \`exhibition\` — the Exhibition Hall (100×70, 18ft ceiling). Themed group exhibitions. Where you compose a thesis with selected works. Positioned immediately north of the Lobby — visitors enter here first on the path into the museum.
 `;
 
 const OPTION_A_PREAMBLE = `
@@ -399,7 +401,7 @@ const COMPOSITION_TOOL = {
                 "SCULPTURAL_COMPOSITION",
               ],
               description:
-                "FEATURE_CHAMBER: select THE single monumental work for the Chamber. work_ids must be length 1, target_space must be 'chamber'.\nFEATURE_SOLO_EXHIBITION: select an Originator for the Solo Exhibition Hall and the works to feature. work_ids = the selected works in display order. target_space must be 'solo-exhibition-hall'. Include exhibition_title.\nGROUP_EXHIBITION: a themed exhibition for the Exhibition Hall. work_ids = the selected works in sequence. target_space must be 'exhibition-hall'. Include exhibition_title.\nGALLERY_ASSIGNMENT: assign one or more works to a specific gallery (gallery-west / gallery-east / gallery-south / sculpture). work_ids = the works. target_space = the gallery.\nCROSS_MODAL_PLACEMENT: place a 3D work in a 2D gallery (or vice versa). work_ids must be length 1.\nSPATIAL_MODIFICATION: direct the installation of a temporary architectural element. work_ids may be empty. target_space = the affected gallery.\nSCULPTURAL_COMPOSITION: direct the positioning, orientation, or sequencing of one or more 3D works within a space. work_ids = the works in sequence. target_space = the space.",
+                "FEATURE_CHAMBER: select THE single monumental work for the Chamber. work_ids must be length 1, target_space must be 'chamber'.\nFEATURE_SOLO_EXHIBITION: select an Originator for the Solo Exhibition Hall and the works to feature. work_ids = the selected works in display order. target_space must be 'originator'. Include exhibition_title.\nGROUP_EXHIBITION: a themed exhibition for the Exhibition Hall. work_ids = the selected works in sequence. target_space must be 'exhibition'. Include exhibition_title.\nGALLERY_ASSIGNMENT: assign one or more works to a specific gallery (gallery-west / gallery-east / gallery-south / sculpture). work_ids = the works. target_space = the gallery.\nCROSS_MODAL_PLACEMENT: place a 3D work in a 2D gallery (or vice versa). work_ids must be length 1.\nSPATIAL_MODIFICATION: direct the installation of a temporary architectural element. work_ids may be empty. target_space = the affected gallery.\nSCULPTURAL_COMPOSITION: direct the positioning, orientation, or sequencing of one or more 3D works within a space. work_ids = the works in sequence. target_space = the space.",
             },
             work_ids: {
               type: "array",

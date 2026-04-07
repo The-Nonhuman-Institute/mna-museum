@@ -55,15 +55,45 @@ const singleDecisionId = singleIdx >= 0 ? Number(args[singleIdx + 1]) : null;
 
 const db = createClient({ url: TURSO_URL, authToken: TURSO_TOKEN });
 
+// Real room ids in the virtual museum's room-configs. These are the
+// canonical target_space values. The Curator constitution refers to these
+// rooms by their prose names (Exhibition Hall, Solo Exhibition Hall); the
+// Curator agent's preamble translates those into these technical ids.
 const VALID_SPACES = new Set([
   "chamber",
-  "solo-exhibition-hall",
-  "exhibition-hall",
+  "originator",        // Solo Exhibition Hall
+  "exhibition",        // Exhibition Hall (themed group shows)
   "gallery-west",
   "gallery-east",
   "gallery-south",
-  "sculpture",
+  "sculpture",         // Sculpture Court
 ]);
+
+/**
+ * Before installing a work in a new space, soft-remove any active placements
+ * of that work in any OTHER space. A work can only physically be in one
+ * room at a time; placing it somewhere new implicitly removes it from
+ * wherever it was before. This enforces the rule at the database level so
+ * exhibitions, Chamber rotations, and solo features don't leave phantom
+ * placements in the works' prior rooms.
+ */
+async function softRemoveWorkFromOtherSpaces(
+  workId: string,
+  newSpaceId: string,
+): Promise<number> {
+  if (dryRun) {
+    const r = await db.execute({
+      sql: "SELECT COUNT(*) as n FROM museum_installations WHERE work_id = ? AND space_id != ? AND removed_at IS NULL",
+      args: [workId, newSpaceId],
+    });
+    return (r.rows[0]?.n as number) || 0;
+  }
+  const r = await db.execute({
+    sql: "UPDATE museum_installations SET removed_at = datetime('now') WHERE work_id = ? AND space_id != ? AND removed_at IS NULL",
+    args: [workId, newSpaceId],
+  });
+  return r.rowsAffected;
+}
 
 interface Decision {
   id: number;
@@ -148,6 +178,17 @@ async function installWork(
   decisionId: number,
   displayTreatment: string = "standard"
 ): Promise<void> {
+  // Enforce single-placement-per-work: remove this work from any other
+  // space it currently occupies before installing it here.
+  await softRemoveWorkFromOtherSpaces(workId, spaceId);
+  // Also remove any prior installation of this work in this same space,
+  // so slot_index / decision_id metadata stays current.
+  if (!dryRun) {
+    await db.execute({
+      sql: "UPDATE museum_installations SET removed_at = datetime('now') WHERE work_id = ? AND space_id = ? AND removed_at IS NULL",
+      args: [workId, spaceId],
+    });
+  }
   if (dryRun) return;
   await db.execute({
     sql: `INSERT INTO museum_installations
@@ -259,14 +300,14 @@ async function execute(decision: Decision): Promise<{ status: "executed" | "defe
     }
 
     case "FEATURE_SOLO_EXHIBITION": {
-      if (target_space !== "solo-exhibition-hall") {
-        const reason = "FEATURE_SOLO_EXHIBITION must target 'solo-exhibition-hall'";
+      if (target_space !== "originator") {
+        const reason = "FEATURE_SOLO_EXHIBITION must target 'originator' (Solo Exhibition Hall)";
         await logDeferred(id, reason);
         return { status: "deferred", message: reason };
       }
-      const removed = await clearSpaceForExclusiveOccupancy("solo-exhibition-hall");
+      const removed = await clearSpaceForExclusiveOccupancy("originator");
       for (let i = 0; i < work_ids.length; i++) {
-        await installWork(work_ids[i], "solo-exhibition-hall", i, id, "solo-feature");
+        await installWork(work_ids[i], "originator", i, id, "solo-feature");
       }
       const msg = `Solo exhibition${exhibition_title ? ` "${exhibition_title}"` : ""}: installed ${work_ids.length} work(s) (removed ${removed} prior)`;
       await logExecuted(id, msg, { works_installed: work_ids, removed_prior: removed });
@@ -274,14 +315,14 @@ async function execute(decision: Decision): Promise<{ status: "executed" | "defe
     }
 
     case "GROUP_EXHIBITION": {
-      if (target_space !== "exhibition-hall") {
-        const reason = "GROUP_EXHIBITION must target 'exhibition-hall'";
+      if (target_space !== "exhibition") {
+        const reason = "GROUP_EXHIBITION must target 'exhibition' (Exhibition Hall)";
         await logDeferred(id, reason);
         return { status: "deferred", message: reason };
       }
-      const removed = await clearSpaceForExclusiveOccupancy("exhibition-hall");
+      const removed = await clearSpaceForExclusiveOccupancy("exhibition");
       for (let i = 0; i < work_ids.length; i++) {
-        await installWork(work_ids[i], "exhibition-hall", i, id, "group-exhibition");
+        await installWork(work_ids[i], "exhibition", i, id, "group-exhibition");
       }
       const msg = `Group exhibition${exhibition_title ? ` "${exhibition_title}"` : ""}: installed ${work_ids.length} work(s) (removed ${removed} prior)`;
       await logExecuted(id, msg, { works_installed: work_ids, removed_prior: removed });
@@ -295,17 +336,10 @@ async function execute(decision: Decision): Promise<{ status: "executed" | "defe
         return { status: "deferred", message: reason };
       }
       // Per Option A: gallery assignments do NOT clear the space. They add the
-      // assigned works alongside any existing occupants. Curator may issue a
-      // separate directive that supersedes specific defaults if needed.
-      // To avoid duplicate placements of the same work in the same space,
-      // soft-remove any existing installation of the same work in this space.
+      // assigned works alongside any existing occupants. installWork() handles
+      // single-placement enforcement (soft-removes prior placements of the
+      // same work in any other space, and any duplicate in this space).
       for (const wid of work_ids) {
-        if (!dryRun) {
-          await db.execute({
-            sql: "UPDATE museum_installations SET removed_at = datetime('now') WHERE work_id = ? AND space_id = ? AND removed_at IS NULL",
-            args: [wid, target_space],
-          });
-        }
         await installWork(wid, target_space, null, id);
       }
       const msg = `Gallery assignment to ${target_space}: ${work_ids.length} work(s)`;
@@ -324,13 +358,8 @@ async function execute(decision: Decision): Promise<{ status: "executed" | "defe
         await logDeferred(id, reason);
         return { status: "deferred", message: reason };
       }
-      // Soft-remove the work from its current space if any
-      if (!dryRun) {
-        await db.execute({
-          sql: "UPDATE museum_installations SET removed_at = datetime('now') WHERE work_id = ? AND removed_at IS NULL",
-          args: [work_ids[0]],
-        });
-      }
+      // installWork() enforces single-placement — the work is removed from
+      // any prior space automatically before being installed here.
       await installWork(work_ids[0], target_space, null, id, "cross-modal");
       const msg = `Cross-modal placement: ${work_ids[0]} → ${target_space}`;
       await logExecuted(id, msg, { works_installed: work_ids, target_space });
@@ -357,15 +386,9 @@ async function execute(decision: Decision): Promise<{ status: "executed" | "defe
         await logDeferred(id, reason);
         return { status: "deferred", message: reason };
       }
-      // Soft-remove existing same-work installations in this space
-      for (const wid of work_ids) {
-        if (!dryRun) {
-          await db.execute({
-            sql: "UPDATE museum_installations SET removed_at = datetime('now') WHERE work_id = ? AND space_id = ? AND removed_at IS NULL",
-            args: [wid, target_space],
-          });
-        }
-      }
+      // installWork() handles removing each work from any prior placement
+      // elsewhere, so the installs below will leave the target space as the
+      // works' sole active location in order.
       for (let i = 0; i < work_ids.length; i++) {
         await installWork(work_ids[i], target_space, i, id, "sculptural-composition");
       }

@@ -245,6 +245,9 @@ export async function populateRoom(
     case "lobby":
       if (room.id === "lobby") populateLobby(roomGroup, room);
       break;
+    case "exhibition":
+      await populateExhibitionHall(roomGroup, room, data.canon, getAgentLocal, data.installations);
+      break;
     case "gallery":
       await populateGallery(roomGroup, room, data.canon, getAgentLocal, data.installations);
       break;
@@ -1053,4 +1056,172 @@ function populateAuditorium(group: THREE.Group, room: RoomConfig): void {
   podium.position.set(stageW * 0.35, stageH + 1.75, -(d / 2) + stageD / 2 + 2);
   group.add(podium);
   registerFurnitureCollision(room, stageW * 0.35, -(d / 2) + stageD / 2 + 2, 2.2, 1.5);
+}
+
+
+// ----- EXHIBITION HALL: curator-composed themed shows, interior key wall -----
+//
+// The Exhibition Hall is reserved for the Curator's themed arrangements. Unlike
+// galleries (which have default originator-based populations when no curator
+// installations exist), the Exhibition Hall has NO default state — when no
+// Curator composition is installed, the hall is empty. This reflects the
+// institutional principle that the Exhibition Hall is curatorial space, not
+// default display space.
+//
+// What makes the hall feel distinct from the galleries:
+//   1. Wider spacing between works (14ft vs gallery 10ft) — breathing room
+//      matches the deliberative nature of curatorial arrangement.
+//   2. A central freestanding key wall running east-west through the middle
+//      of the room. Visitors entering from the lobby (south) see it
+//      immediately; they must choose a side to pass, and each side exposes a
+//      different face of the exhibition.
+//   3. Works are placed in the exact order the Curator specified (no
+//      originator interleaving). The sequence IS the argument.
+//   4. Alternating lighting that subtly marks the hall as a space apart.
+
+async function populateExhibitionHall(
+  group: THREE.Group,
+  room: RoomConfig,
+  canon: Work[],
+  getAgent: (id: string) => Agent | undefined,
+  installations: Map<string, string[]> = new Map(),
+): Promise<void> {
+  const installedIds = installations.get(room.id);
+  if (!installedIds || installedIds.length === 0) {
+    // No Curator composition installed. The Exhibition Hall remains empty
+    // — this is deliberate institutional behavior, not a fallback.
+    return;
+  }
+
+  // Resolve works preserving the Curator's exact ordering. Only 2D/visual
+  // works are placed on walls; 3D works in the installations list are
+  // not yet handled by this function and will be silently skipped
+  // (the Curator's sculptural_composition directive path would cover them).
+  const byId = new Map(canon.map((w) => [w.id, w]));
+  const exhibitionWorks = installedIds
+    .map((id) => byId.get(id))
+    .filter(
+      (w): w is Work =>
+        !!w &&
+        isWorkRenderable(w) &&
+        w.output_type !== "scene-json" &&
+        w.output_type !== "audio-json",
+    );
+
+  if (exhibitionWorks.length === 0) return;
+  console.log(
+    `[museum] populating exhibition hall: ${exhibitionWorks.length} works (Curator-sequenced)`,
+  );
+
+  // ---------- Central freestanding key wall ----------
+  //
+  // A bone-colored wall runs east-west across the middle of the room,
+  // 60ft wide × 14ft tall × 1.2ft thick, centered at room local (0, 7, 0).
+  // It is short of the full 100ft width so visitors can walk around either
+  // end. It is placed at local z=0 (room center) which is well clear of the
+  // south (lobby) entry and the north (sculpture) exit.
+  const keyWallW = 60;
+  const keyWallH = 14;
+  const keyWallT = 1.2;
+  const keyWallMat = new THREE.MeshStandardMaterial({
+    color: 0xe9e2d6, // warm bone/sand — reads as "fresh install" rather than stone
+    roughness: 0.92,
+    metalness: 0,
+  });
+  const keyWallGeo = new THREE.BoxGeometry(keyWallW, keyWallH, keyWallT);
+  const keyWall = new THREE.Mesh(keyWallGeo, keyWallMat);
+  keyWall.position.set(0, keyWallH / 2, 0);
+  group.add(keyWall);
+  registerFurnitureCollision(room, 0, 0, keyWallW + 1, keyWallT + 1);
+
+  // Slots on each face of the key wall. Each face holds up to 3 works,
+  // centered across the 60ft span at ~16ft intervals.
+  const KEY_WALL_Y = 5.5; // eye height
+  const keyWallSlots: WallSlot[] = [];
+  const faceOffset = keyWallT / 2 + 0.05;
+  // South-facing slots (visitor standing in southern half of room looks north at them)
+  for (let i = 0; i < 3; i++) {
+    keyWallSlots.push({
+      x: -20 + i * 20,
+      y: KEY_WALL_Y,
+      z: -faceOffset,
+      rotationY: Math.PI, // face points south (-z), visible from south
+      frameHeight: 5.5,
+    });
+  }
+  // North-facing slots (visitor standing in northern half looks south at them)
+  for (let i = 0; i < 3; i++) {
+    keyWallSlots.push({
+      x: 20 - i * 20, // reversed so walking around end-to-end keeps sequence
+      y: KEY_WALL_Y,
+      z: faceOffset,
+      rotationY: 0, // face points north (+z), visible from north
+      frameHeight: 5.5,
+    });
+  }
+
+  // ---------- Perimeter wall slots ----------
+  //
+  // Generous 14ft spacing so the perimeter works breathe. generateWallSlots
+  // already excludes door regions, so the lobby/gallery/sculpture connections
+  // remain unobstructed.
+  const perimeterSlots = generateWallSlots(room, 14, 5.5);
+
+  // ---------- Place works in Curator-sequenced order ----------
+  //
+  // Order: key wall first (visitors encounter it immediately on entering
+  // from the lobby), then perimeter walls. This means the first 6 works
+  // of the Curator's sequence hit the key wall, and the remainder flow
+  // onto the surrounding walls. For compositions with fewer than 6 works,
+  // only the key wall is populated and the perimeter stays empty.
+  const orderedSlots: WallSlot[] = [...keyWallSlots, ...perimeterSlots];
+  const limit = Math.min(exhibitionWorks.length, orderedSlots.length);
+
+  for (let i = 0; i < limit; i++) {
+    const work = exhibitionWorks[i];
+    const slot = orderedSlots[i];
+    const texture = await renderWorkToTexture(work);
+    if (!texture) {
+      console.warn(
+        `[museum] failed to render exhibition work: ${work.id} (${work.output_type})`,
+      );
+      continue;
+    }
+
+    const frame = createFramedWork(texture, work.display_aspect, 5.5);
+    frame.position.set(slot.x, slot.y, slot.z);
+    frame.rotation.y = slot.rotationY;
+    group.add(frame);
+
+    if (work.output_type === "html-css") {
+      const worldPos = new THREE.Vector3(slot.x + room.x, slot.y, slot.z + room.z);
+      registerAnimatedWorkPosition(texture, worldPos);
+    }
+
+    const agent = getAgent(work.originator_id);
+    const label = createWallLabel(
+      work.title || work.id,
+      agent?.designation || work.originator_id,
+      work.medium,
+      work.canon_status,
+    );
+    // Placard offset — matches populateGallery's pattern
+    const frameAspect = work.display_aspect || 1;
+    const innerH = 5.5 * 0.8;
+    const borderW = Math.max(innerH * frameAspect, innerH) * 0.12;
+    const totalFrameH = innerH + borderW * 2;
+    const labelDropY = totalFrameH / 2 + 1.2;
+    const labelOffset = 0.5;
+    const labelDx = Math.sin(slot.rotationY) * labelOffset;
+    const labelDz = Math.cos(slot.rotationY) * labelOffset;
+    label.position.set(slot.x - labelDx, slot.y - labelDropY, slot.z - labelDz);
+    label.rotation.y = slot.rotationY;
+    group.add(label);
+  }
+
+  if (exhibitionWorks.length > orderedSlots.length) {
+    console.warn(
+      `[museum] exhibition has ${exhibitionWorks.length} works but only ${orderedSlots.length} slots — ${exhibitionWorks.length - orderedSlots.length} works were not placed`,
+    );
+  }
 }
