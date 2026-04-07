@@ -1,10 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getSummary, getCanonWorks, getWork } from "@/lib/collection";
+import { getSummary, getCanonWorks } from "@/lib/collection";
 import { getAllAgents } from "@/lib/agents";
 import { getActiveExhibition } from "@/lib/exhibitions";
 import CanonCarousel from "@/components/CanonCarousel";
-import WorkDisplay from "@/components/WorkDisplay";
 import { formatDate } from "@/lib/format-date";
 
 function StatusItem({ label, value }: { label: string; value: string }) {
@@ -28,28 +27,29 @@ export default async function Home() {
     getActiveExhibition(),
   ]);
 
-  // Resolve a small set of cover works for the active exhibition (if any).
-  const exhibitionWorks = activeExhibition
-    ? (
-        await Promise.all(
-          activeExhibition.work_ids.slice(0, 4).map((id) => getWork(id))
-        )
-      ).filter((w): w is NonNullable<typeof w> => Boolean(w))
-    : [];
-
-  const statementExcerpt =
-    activeExhibition && activeExhibition.curatorial_statement
-      ? activeExhibition.curatorial_statement.length > 200
-        ? activeExhibition.curatorial_statement.slice(0, 200).trimEnd() + "…"
-        : activeExhibition.curatorial_statement
-      : "";
+  // First paragraph of the curatorial statement, lightly trimmed for the hero.
+  // The full statement lives on the exhibition page; the hero gives a taste,
+  // not the whole argument.
+  const heroExcerpt = (() => {
+    if (!activeExhibition?.curatorial_statement) return "";
+    const firstParagraph = activeExhibition.curatorial_statement
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .find((p) => p.length > 0) || "";
+    if (firstParagraph.length <= 280) return firstParagraph;
+    return firstParagraph.slice(0, 280).trimEnd() + "…";
+  })();
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Hero */}
+      {/* Hero — two states.
+          State A (no active exhibition): the phase IS the hero.
+          State B (active exhibition): the phase becomes institutional context
+          above the exhibition title; the title and statement become the
+          invitation. The MNA logo persists in both. */}
       <section className="flex-1 flex flex-col items-center justify-center px-5 md:px-6 pt-28 md:pt-32 pb-16 md:pb-20 min-h-[80vh] md:min-h-[85vh]">
-        <div className="max-w-xl text-center flex flex-col items-center">
-          {/* MNA Distorted Logo */}
+        <div className="max-w-2xl text-center flex flex-col items-center">
+          {/* MNA Distorted Logo — persistent across both states */}
           <Image
             src="/MNA-Distorted-Logo-Black.svg"
             alt="Museum of Nonhuman Art"
@@ -67,66 +67,72 @@ export default async function Home() {
           {/* Horizontal rule */}
           <div className="w-full max-w-[280px] md:max-w-md h-px bg-gradient-to-r from-transparent via-foreground/30 to-transparent mb-8 md:mb-10" />
 
-          {/* Phase Heading */}
-          <p className="text-[10px] md:text-xs tracking-[0.3em] text-muted uppercase mb-2">
-            Phase I
-          </p>
-          <h2 className="text-phase text-3xl md:text-5xl font-light text-foreground mb-10 md:mb-12">
-            First Expressions
-          </h2>
+          {activeExhibition ? (
+            // STATE B — active exhibition.
+            <>
+              {/* Phase becomes institutional context (still always present) */}
+              <p className="text-[10px] md:text-xs tracking-[0.3em] text-muted uppercase mb-1">
+                Phase I — First Expressions
+              </p>
+              <p className="text-[10px] md:text-xs tracking-[0.25em] text-muted/80 uppercase mb-6">
+                Currently On View
+              </p>
 
-          {/* CTA */}
-          <Link
-            href="/about"
-            className="inline-block text-[12px] md:text-[13px] tracking-[0.2em] uppercase px-6 md:px-8 py-3 bg-foreground text-background hover:bg-accent transition-colors"
-          >
-            Explore the Institution
-          </Link>
+              {/* Exhibition title — the new hero typographic element */}
+              <h2 className="text-phase text-3xl md:text-5xl font-light text-foreground mb-3 md:mb-4 leading-tight">
+                {activeExhibition.title}
+              </h2>
+              {activeExhibition.subtitle ? (
+                <p className="text-[14px] md:text-base italic text-muted mb-8">
+                  {activeExhibition.subtitle}
+                </p>
+              ) : null}
+
+              {/* First paragraph of the curatorial statement */}
+              {heroExcerpt ? (
+                <p
+                  className="text-[14px] md:text-[15px] text-foreground/85 leading-[1.8] max-w-xl mb-10 md:mb-12"
+                  style={{ fontFamily: "Georgia, serif" }}
+                >
+                  {heroExcerpt}
+                </p>
+              ) : null}
+
+              {/* CTA — points at the exhibition page */}
+              <Link
+                href={`/exhibitions/${activeExhibition.id}`}
+                className="inline-block text-[12px] md:text-[13px] tracking-[0.2em] uppercase px-6 md:px-8 py-3 bg-foreground text-background hover:bg-accent transition-colors"
+              >
+                Enter the Exhibition
+              </Link>
+
+              {/* Quiet secondary link to the institution itself */}
+              <Link
+                href="/about"
+                className="mt-6 text-[10px] md:text-[11px] tracking-[0.2em] uppercase text-muted hover:text-foreground transition-colors"
+              >
+                About the Institution →
+              </Link>
+            </>
+          ) : (
+            // STATE A — no active exhibition. The phase IS the hero.
+            <>
+              <p className="text-[10px] md:text-xs tracking-[0.3em] text-muted uppercase mb-2">
+                Phase I
+              </p>
+              <h2 className="text-phase text-3xl md:text-5xl font-light text-foreground mb-10 md:mb-12">
+                First Expressions
+              </h2>
+              <Link
+                href="/about"
+                className="inline-block text-[12px] md:text-[13px] tracking-[0.2em] uppercase px-6 md:px-8 py-3 bg-foreground text-background hover:bg-accent transition-colors"
+              >
+                Explore the Institution
+              </Link>
+            </>
+          )}
         </div>
       </section>
-
-      {/* Currently On View */}
-      {activeExhibition ? (
-        <section className="border-t border-border px-5 md:px-6 py-14 md:py-20">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-[10px] md:text-xs tracking-[0.3em] text-muted uppercase mb-4">
-              Currently On View
-            </p>
-            <h2 className="text-phase text-2xl md:text-4xl font-light text-foreground mb-2">
-              {activeExhibition.title}
-            </h2>
-            {activeExhibition.subtitle ? (
-              <p className="text-[13px] md:text-sm italic text-muted mb-6">
-                {activeExhibition.subtitle}
-              </p>
-            ) : (
-              <div className="mb-6" />
-            )}
-            {statementExcerpt ? (
-              <p className="text-[14px] md:text-[15px] text-muted leading-relaxed max-w-2xl mb-10">
-                {statementExcerpt}
-              </p>
-            ) : null}
-
-            {exhibitionWorks.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-10">
-                {exhibitionWorks.map((w) => (
-                  <div key={w.id}>
-                    <WorkDisplay work={w} size="gallery" />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            <Link
-              href={`/exhibitions/${activeExhibition.id}`}
-              className="inline-block text-[11px] md:text-xs tracking-[0.2em] uppercase text-foreground hover:text-accent transition-colors border-b border-foreground pb-0.5"
-            >
-              Enter Exhibition →
-            </Link>
-          </div>
-        </section>
-      ) : null}
 
       {/* Live Status Strip */}
       <section className="border-t border-border px-5 md:px-6 py-6 md:py-8">

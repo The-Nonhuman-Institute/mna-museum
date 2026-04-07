@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getExhibition } from "@/lib/exhibitions";
 import { getWork } from "@/lib/collection";
-import WorkDisplay from "@/components/WorkDisplay";
+import ExhibitionWorkPanel from "@/components/ExhibitionWorkPanel";
 import { formatDate } from "@/lib/format-date";
 
 interface PageProps {
@@ -100,31 +100,20 @@ export default async function ExhibitionDetailPage({ params }: PageProps) {
           ))}
         </section>
 
-        {/* Works */}
+        {/* Works — single column, generous vertical rhythm. The Curator
+            sequenced these works in a specific order; the visitor encounters
+            them as composed, not as a grid. */}
         {works.length > 0 ? (
-          <section className="mb-16">
-            <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-6">
-              Included Works
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
-              {works.map((w) => (
-                <div key={w.id}>
-                  <WorkDisplay work={w} size="gallery" showPlacard />
-                  <div className="mt-3 flex items-center justify-between">
-                    <Link
-                      href={`/work/${w.id}`}
-                      className="text-[11px] text-muted hover:text-foreground transition-colors uppercase tracking-[0.15em]"
-                    >
-                      View Work →
-                    </Link>
-                    <Link
-                      href={`/agent/${w.originator_id}`}
-                      className="text-[11px] text-muted hover:text-foreground transition-colors uppercase tracking-[0.15em]"
-                    >
-                      View Originator →
-                    </Link>
-                  </div>
-                </div>
+          <section className="mb-20">
+            <div className="text-center mb-14">
+              <p className="text-[10px] text-muted uppercase tracking-[0.3em]">
+                The Sequence
+              </p>
+              <div className="w-12 h-px bg-border mx-auto mt-4" />
+            </div>
+            <div className="space-y-24 md:space-y-32">
+              {works.map((w, i) => (
+                <ExhibitionWorkPanel key={w.id} work={w} index={i + 1} />
               ))}
             </div>
           </section>
