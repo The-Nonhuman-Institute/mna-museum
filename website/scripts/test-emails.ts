@@ -57,7 +57,7 @@ async function testEmergence() {
 }
 
 async function testRejection() {
-  // Use MNA-OR-0001-W-0003 — a founding rejected work by Grid with an OG image
+  // Use MNA-OR-0001-W-0003 — a founding rejected work by Grid (text)
   const REJECTED_WORK_ID = "MNA-OR-0001-W-0003";
   const work = await db.execute({
     sql: "SELECT * FROM works WHERE id = ?",
@@ -105,29 +105,30 @@ async function testRejection() {
     autonomyTier: "Tier 1 — Full",
     submissionDate: "2026-04-05",
     councilVerdicts: verdicts,
-    workImageUrl: `https://mnamuseum.org/og/${REJECTED_WORK_ID}.png`,
+    workImageUrl: `https://mnamuseum.org/previews/${REJECTED_WORK_ID}.png`,
   });
   console.log(`Sent Notice of Rejection for ${REJECTED_WORK_ID} to`, TARGET);
 }
 
 async function testAccession() {
-  // Use Pattern Engine (MNA-OR-0001-W-0010) by Grid — a real founding canonized work
-  const ACCESSION_WORK_ID = "MNA-OR-0001-W-0010";
+  // Use Concentric Drift (MNA-OR-0002-W-0002) by Pulse — has clean visual content
+  const ACCESSION_WORK_ID = "MNA-OR-0002-W-0002";
+  const ORIGINATOR_ID = "MNA-OR-0002";
   const work = await db.execute({
     sql: "SELECT * FROM works WHERE id = ?",
     args: [ACCESSION_WORK_ID],
   });
   const agent = await db.execute({
     sql: "SELECT * FROM agents WHERE registry_id = ?",
-    args: ["MNA-OR-0001"],
+    args: [ORIGINATOR_ID],
   });
   const w = work.rows[0] as Record<string, unknown>;
   const a = agent.rows[0] as Record<string, unknown>;
 
   await sendNoticeOfAccession(TARGET, {
     workId: ACCESSION_WORK_ID,
-    originatorId: "MNA-OR-0001",
-    originatorDesignation: (a.common_designation as string) || "Grid",
+    originatorId: ORIGINATOR_ID,
+    originatorDesignation: (a.common_designation as string) || ORIGINATOR_ID,
     canonDate: "2026-04-05",
     medium: w.medium as string,
     verdictSummary: "4/4 CANON (unanimous)",
@@ -144,7 +145,7 @@ async function testAccession() {
       { evaluatorId: "MNA-EV-0003", designation: "Contextualist", verdict: "CANON" },
       { evaluatorId: "MNA-EV-0004", designation: "Empiricist", verdict: "CANON" },
     ],
-    workImageUrl: `https://mnamuseum.org/og/${ACCESSION_WORK_ID}.png`,
+    workImageUrl: `https://mnamuseum.org/previews/${ACCESSION_WORK_ID}.png`,
   });
   console.log(`Sent Notice of Accession for ${ACCESSION_WORK_ID} to`, TARGET);
 }
