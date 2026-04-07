@@ -31,11 +31,14 @@ export default function ExhibitionWorkPanel({ work, index }: ExhibitionWorkPanel
       {/* Framed work — same frame treatment as the rest of the site, but
           at the larger "detail" size so it reads at exhibition scale.
           Wrapped in a Link so the frame itself is clickable; the hover
-          affordance is a subtle opacity shift on the contained frame. */}
+          affordance is a subtle opacity shift on the contained frame.
+          On mobile we cap the link width so the frame doesn't fill the
+          entire viewport. MuseumFrame's internal maxWidth: 100% causes
+          the frame and its content to scale down proportionally. */}
       <Link
         href={`/work/${work.id}`}
         aria-label={`View ${work.title || work.id}`}
-        className="group inline-block transition-opacity hover:opacity-90"
+        className="group inline-block w-[280px] sm:w-auto transition-opacity hover:opacity-90"
       >
         <WorkDisplay work={work} size="detail" showPlacard={false} />
       </Link>
