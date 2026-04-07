@@ -64,6 +64,10 @@ const CURATOR_CONSTITUTION_PATH = path.join(
 const CURATORIAL_ARCHIVE_DIR = path.join(
   __dirname, "..", "..", "founding-documents", "curatorial-record"
 );
+const STEWARD_OBSERVATIONS_PATH = path.join(
+  __dirname, "..", "..", "founding-documents", "curatorial-record",
+  "steward-observations.md"
+);
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
@@ -118,6 +122,23 @@ interface PriorDecision {
 
 async function loadConstitution(): Promise<string> {
   return fs.readFileSync(CURATOR_CONSTITUTION_PATH, "utf-8");
+}
+
+/**
+ * Load the steward's observation log if it exists. This document records
+ * observations the founding steward has made about prior compositions and
+ * the institution's exhibition spaces. Per the file's own framing: it is
+ * observation, not directive. The Curator may incorporate or refuse the
+ * observations entirely. Returns empty string if the file does not exist
+ * (e.g., for the very first composition before any observations have been
+ * recorded).
+ */
+function loadStewardObservations(): string {
+  try {
+    return fs.readFileSync(STEWARD_OBSERVATIONS_PATH, "utf-8");
+  } catch {
+    return "";
+  }
 }
 
 async function loadCanonWorks(): Promise<CanonWork[]> {
@@ -317,8 +338,17 @@ function buildUserMessage(
   canon: CanonWork[],
   originators: OriginatorDossier[],
   installations: InstallationByspace[],
-  priorDecisions: PriorDecision[]
+  priorDecisions: PriorDecision[],
+  stewardObservations: string
 ): string {
+  // Steward observations section. Empty string if no observations file exists
+  // (which is the case for the very first composition). Per the observations
+  // file's own framing, these are observations, not directives — the Curator
+  // may incorporate or refuse them with no consequence.
+  const observationsSection = stewardObservations
+    ? `\n\nSTEWARD OBSERVATIONS\n\nThe founding steward maintains an observation log about your prior compositions and the institution's exhibition spaces. This is not directive — the steward operates under Tier 2 supervised autonomy and reviews for constitutional compliance only, never for selection. The observations below are data you may incorporate into your reading of the institution and the collection, or refuse with no consequence. The Curator is the curatorial authority. The steward is the witness.\n\n${stewardObservations.trim()}\n`
+    : "";
+
   return `${OPTION_A_PREAMBLE}
 
 ${GALLERY_SPACE_NOTES.trim()}
@@ -333,7 +363,7 @@ ORIGINATORS (dossiers, in order of registry_id)
 ${JSON.stringify(originators, null, 2)}
 
 CANON (the complete canonized collection as it stands at this moment)
-${JSON.stringify(canon, null, 2)}
+${JSON.stringify(canon, null, 2)}${observationsSection}
 
 — end of institutional context —
 
@@ -653,7 +683,14 @@ async function main() {
   const priorDecisions = await loadPriorDecisions();
   console.log(`[Curator] Loaded ${priorDecisions.length} prior curatorial_decisions.`);
 
-  const userMessage = buildUserMessage(canon, originators, installations, priorDecisions);
+  const stewardObservations = loadStewardObservations();
+  if (stewardObservations) {
+    console.log(`[Curator] Loaded steward observations (${stewardObservations.length} chars).`);
+  } else {
+    console.log(`[Curator] No steward observations file found.`);
+  }
+
+  const userMessage = buildUserMessage(canon, originators, installations, priorDecisions, stewardObservations);
   console.log(`[Curator] Built user message (${userMessage.length} chars).`);
 
   const payload = await compose(constitution, userMessage);

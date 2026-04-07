@@ -10,6 +10,7 @@ import { registerAudioStation } from "./spatial-audio";
 import { registerFurnitureCollision } from "./collision";
 import { isWorkInExhibition } from "./exhibitions";
 import { rooms as allRooms } from "./room-configs";
+import { wallMaterial } from "./materials";
 
 const EYE_HEIGHT = 5.5;
 
@@ -1115,21 +1116,20 @@ async function populateExhibitionHall(
 
   // ---------- Central freestanding key wall ----------
   //
-  // A bone-colored wall runs east-west across the middle of the room,
-  // 60ft wide × 14ft tall × 1.2ft thick, centered at room local (0, 7, 0).
-  // It is short of the full 100ft width so visitors can walk around either
-  // end. It is placed at local z=0 (room center) which is well clear of the
-  // south (lobby) entry and the north (sculpture) exit.
+  // A wall runs east-west across the middle of the room, 60ft wide × 14ft
+  // tall × 1.2ft thick, centered at room local (0, 7, 0). It is short of the
+  // full 100ft width so visitors can walk around either end. Placed at local
+  // z=0 (room center), well clear of the south (lobby) entry and the north
+  // (sculpture) exit.
+  //
+  // Uses the same wallMaterial() as the room's perimeter walls — same warm
+  // gray-tan concrete with normal map — so the key wall reads as built-in
+  // architecture rather than a foreign white slab dropped into the space.
   const keyWallW = 60;
   const keyWallH = 14;
   const keyWallT = 1.2;
-  const keyWallMat = new THREE.MeshStandardMaterial({
-    color: 0xe9e2d6, // warm bone/sand — reads as "fresh install" rather than stone
-    roughness: 0.92,
-    metalness: 0,
-  });
   const keyWallGeo = new THREE.BoxGeometry(keyWallW, keyWallH, keyWallT);
-  const keyWall = new THREE.Mesh(keyWallGeo, keyWallMat);
+  const keyWall = new THREE.Mesh(keyWallGeo, wallMaterial());
   keyWall.position.set(0, keyWallH / 2, 0);
   group.add(keyWall);
   registerFurnitureCollision(room, 0, 0, keyWallW + 1, keyWallT + 1);
