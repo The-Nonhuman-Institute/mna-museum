@@ -22,13 +22,26 @@ const fg = "#1a1a1a";
 const border = "#d4d4d4";
 
 const MNALogo = () => (
-  <Img
-    src="https://mnamuseum.org/mna-logo-email.png"
-    alt="Museum of Nonhuman Art"
-    width="180"
-    height="68"
-    style={{ display: "block", margin: "0 auto" }}
-  />
+  <>
+    {/* Show this logo by default (light mode email clients) */}
+    <Img
+      src="https://mnamuseum.org/mna-logo-email-black.png"
+      alt="Museum of Nonhuman Art"
+      width="180"
+      height="68"
+      className="mna-logo-light"
+      style={{ display: "block", margin: "0 auto" }}
+    />
+    {/* Show this logo only in dark mode email clients */}
+    <Img
+      src="https://mnamuseum.org/mna-logo-email-white.png"
+      alt=""
+      width="180"
+      height="68"
+      className="mna-logo-dark"
+      style={{ display: "none", margin: "0 auto" }}
+    />
+  </>
 );
 
 export default function NewsletterConfirmation({
@@ -44,6 +57,14 @@ export default function NewsletterConfirmation({
           fontWeight={400}
           fontStyle="normal"
         />
+        <style>{`
+          @media (prefers-color-scheme: dark) {
+            .mna-logo-light { display: none !important; }
+            .mna-logo-dark { display: block !important; }
+          }
+          [data-ogsc] .mna-logo-light { display: none !important; }
+          [data-ogsc] .mna-logo-dark { display: block !important; }
+        `}</style>
       </Head>
       <Body
         style={{

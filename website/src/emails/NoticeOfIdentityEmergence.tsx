@@ -32,13 +32,26 @@ const fg = "#1a1a1a";
 const border = "#d4d4d4";
 
 const MNALogo = () => (
-  <Img
-    src="https://mnamuseum.org/mna-logo-email.png"
-    alt="Museum of Nonhuman Art"
-    width="180"
-    height="68"
-    style={{ display: "block", margin: "0 auto" }}
-  />
+  <>
+    {/* Show this logo by default (light mode email clients) */}
+    <Img
+      src="https://mnamuseum.org/mna-logo-email-black.png"
+      alt="Museum of Nonhuman Art"
+      width="180"
+      height="68"
+      className="mna-logo-light"
+      style={{ display: "block", margin: "0 auto" }}
+    />
+    {/* Show this logo only in dark mode email clients */}
+    <Img
+      src="https://mnamuseum.org/mna-logo-email-white.png"
+      alt=""
+      width="180"
+      height="68"
+      className="mna-logo-dark"
+      style={{ display: "none", margin: "0 auto" }}
+    />
+  </>
 );
 
 export default function NoticeOfIdentityEmergence({
@@ -65,6 +78,14 @@ export default function NoticeOfIdentityEmergence({
           fontWeight={400}
           fontStyle="normal"
         />
+        <style>{`
+          @media (prefers-color-scheme: dark) {
+            .mna-logo-light { display: none !important; }
+            .mna-logo-dark { display: block !important; }
+          }
+          [data-ogsc] .mna-logo-light { display: none !important; }
+          [data-ogsc] .mna-logo-dark { display: block !important; }
+        `}</style>
       </Head>
       <Body
         style={{
@@ -163,33 +184,43 @@ export default function NoticeOfIdentityEmergence({
             <table
               cellPadding={0}
               cellSpacing={0}
+              border={0}
               style={{ margin: "0 auto" }}
             >
               <tbody>
                 <tr>
                   <td
+                    {...({ bgcolor: visualColor } as Record<string, string>)}
+                    width="20"
+                    height="20"
                     style={{
+                      backgroundColor: visualColor,
                       width: "20px",
                       height: "20px",
-                      backgroundColor: visualColor,
-                      border: `1px solid ${border}`,
-                      verticalAlign: "middle",
+                      border: "1px solid #4a4540",
+                      padding: 0,
+                      fontSize: 0,
+                      lineHeight: 0,
                     }}
                   >
                     &nbsp;
                   </td>
                   <td
                     style={{
-                      paddingLeft: "10px",
+                      paddingLeft: "8px",
                       verticalAlign: "middle",
-                      fontSize: "11px",
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: muted,
-                      fontFamily: "'Courier New', Courier, monospace",
                     }}
                   >
-                    {visualColor}
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        color: "#8a8580",
+                        margin: 0,
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {visualColor.toUpperCase()}
+                    </Text>
                   </td>
                 </tr>
               </tbody>
