@@ -15,19 +15,19 @@ The Curator is the curatorial authority. The steward is the witness.
 
 ---
 
-## 2026-04-07 — On "The Space That Holds" and the Exhibition Hall's scale
+## 2026-04-07 — On "The Space That Holds" and the Exhibition Hall's key wall
 
-After the Curator's first composition, "The Space That Holds," was installed in the Exhibition Hall, the founding steward observed that the show appeared sparse relative to the room's wall capacity. The hall affords roughly 27 hanging positions across the central key wall and the perimeter. The composition placed 8 works.
+Initial installation of "The Space That Holds" revealed an Installer layout issue, not a curatorial one. The original placement code generated a fixed number of slots on the Exhibition Hall's central key wall (six total, three per face), and overflowed additional works onto the room's perimeter walls. With eight works in the show, two ended up on the perimeter — placed in positions visitors did not naturally reach. The visible show appeared to be six works, though all eight were correctly installed.
 
-This observation is offered without interpretation. There are at least two readings the Curator may consider:
+The steward has since revised the Installer's placement logic so the key wall's slot count scales with the exhibition's work count (up to four per face, eight total). For the current composition all eight works now hang on the key wall, arranged four-and-four across its two faces, with nothing on the perimeter. The show reads as the Curator composed it: a complete eight-work sequence encountered on the central spatial element of the room.
 
-1. **The room is the wrong scale for the show.** A composition of 8 works may want a tighter, smaller-scale space. Future compositions could specify the same number of works but use spatial modification directives to subdivide or reshape the Exhibition Hall.
+Two observations for the Curator's consideration in future compositions:
 
-2. **Sparseness is part of the show's argument.** "The Space That Holds" thematizes systematic withholding. A sparse hang in a generous room may be the most direct spatial expression of withholding: the empty walls themselves become part of what the show withholds. The Tate Modern's Rothko Room, named in the Curator's own constitution as a conceptual ancestor, is famously almost-empty for exactly this reason.
+1. **Key wall capacity is flexible up to eight works.** The steward's Installer rule places up to four works per face of the key wall. Compositions of eight or fewer works fit entirely on the key wall and need no perimeter overflow. Compositions larger than eight will begin to use the perimeter, and the perimeter placement is less forgiving — visitors may not reach it without deliberate navigation. This is information about the room's affordances, offered to inform future scale decisions.
 
-The steward records the observation. The Curator decides what, if anything, it means for future practice.
+2. **The key wall's two faces are distinct spatial moments.** The south face is the first encounter (visitors entering from the Lobby see it first). The north face is the second encounter, reached only after the visitor has walked around one end of the wall. A composition with a clear before/after or opening/conclusion structure can use this spatial rhythm deliberately — placing the opening works on the south face and the closing works on the north face, so the visitor's physical path through the room mirrors the curatorial sequence. The Curator may or may not wish to exploit this.
 
-A separate observation: the Curator's constitution permits SPATIAL_MODIFICATION directives but the substrate to execute them (temporary partition walls, plinths, lighting cues, thresholds) does not yet exist in the museum's runtime. The Curator may continue to issue such directives — they are recorded as institutional intent — but execution awaits substrate buildout. The steward will surface this gap in a future engineering session.
+A separate observation remains open from the previous entry: the Curator's constitution permits SPATIAL_MODIFICATION directives but the runtime substrate to execute them (temporary partition walls, plinths, lighting cues, thresholds) still does not exist. The Curator may continue to issue such directives — they are recorded as institutional intent — but execution awaits substrate buildout.
 
 ---
 
