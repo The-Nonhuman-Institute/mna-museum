@@ -62,6 +62,16 @@ function generateWallSlots(
     },
   ];
 
+  // Process doorless walls FIRST so works land on the walls visitors face
+  // when entering, then doored walls (where the visitor enters from and
+  // doesn't naturally turn around to see). Within each group, original
+  // N→S→E→W order is preserved.
+  walls.sort((a, b) => {
+    const aHasDoor = a.doorWidth > 0 ? 1 : 0;
+    const bHasDoor = b.doorWidth > 0 ? 1 : 0;
+    return aHasDoor - bHasDoor;
+  });
+
   for (const wall of walls) {
     const usable = wall.wallLength - 4;
     const doorW = wall.doorWidth;
@@ -1161,28 +1171,38 @@ async function populateExhibitionHall(
   group.add(keyWall);
   registerFurnitureCollision(room, 0, 0, keyWallW + 1, keyWallT + 1);
 
-  // Slots on each face of the key wall. Each face holds up to 3 works,
-  // centered across the 60ft span at ~16ft intervals.
+  // Slots on each face of the key wall. Slot count per face scales with the
+  // exhibition's work count up to 4 per face — so an 8-work show fills the
+  // key wall completely (4 + 4) and never needs the perimeter, while smaller
+  // shows still get a balanced front/back distribution. The key wall is the
+  // primary spatial element of the room; works belong here, not on the
+  // perimeter walls (which the visitor encounters less directly).
   const KEY_WALL_Y = 5.5; // eye height
+  const slotsPerFaceTarget = Math.min(4, Math.max(2, Math.ceil(exhibitionWorks.length / 2)));
   const keyWallSlots: WallSlot[] = [];
   const faceOffset = keyWallT / 2 + 0.05;
-  // South-facing slots (visitor standing in southern half of room looks north at them)
-  for (let i = 0; i < 3; i++) {
+  const faceUsableW = keyWallW - 4; // 2ft margin on each end
+  const slotSpacing = faceUsableW / slotsPerFaceTarget;
+  // South-facing slots — visible from visitors entering from the lobby (south)
+  for (let i = 0; i < slotsPerFaceTarget; i++) {
+    const x = -(faceUsableW / 2) + slotSpacing / 2 + i * slotSpacing;
     keyWallSlots.push({
-      x: -20 + i * 20,
+      x,
       y: KEY_WALL_Y,
       z: -faceOffset,
-      rotationY: Math.PI, // face points south (-z), visible from south
+      rotationY: Math.PI, // face points -z (toward southern visitors)
       frameHeight: 5.5,
     });
   }
-  // North-facing slots (visitor standing in northern half looks south at them)
-  for (let i = 0; i < 3; i++) {
+  // North-facing slots — visible from visitors who walked around the key wall
+  // Reversed x so walking around the end-to-end keeps the curatorial sequence
+  for (let i = 0; i < slotsPerFaceTarget; i++) {
+    const x = (faceUsableW / 2) - slotSpacing / 2 - i * slotSpacing;
     keyWallSlots.push({
-      x: 20 - i * 20, // reversed so walking around end-to-end keeps sequence
+      x,
       y: KEY_WALL_Y,
       z: faceOffset,
-      rotationY: 0, // face points north (+z), visible from north
+      rotationY: 0, // face points +z (toward northern visitors)
       frameHeight: 5.5,
     });
   }
