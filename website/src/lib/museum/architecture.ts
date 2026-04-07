@@ -336,7 +336,7 @@ function createRoomSign(name: string, subtitle: string | null, doorWidth: number
   let totalNameW = 0;
   for (const ch of display) totalNameW += ctx.measureText(ch).width + trackingPx;
   totalNameW -= trackingPx;
-  let nameY = subtitle ? canvas.height * 0.42 : canvas.height * 0.5;
+  const nameY = subtitle ? canvas.height * 0.42 : canvas.height * 0.5;
   let xCursor = (canvas.width - totalNameW) / 2;
   for (const ch of display) {
     const w = ctx.measureText(ch).width;
