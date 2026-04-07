@@ -111,6 +111,34 @@ export async function getAllExhibitions(): Promise<Exhibition[]> {
   );
 }
 
+/**
+ * Return the active exhibitions that currently include a given work. A work
+ * may appear in multiple concurrent exhibitions, so this returns an array
+ * (usually zero or one element). Retired exhibitions are NOT included —
+ * this is for surfacing current institutional presence only.
+ *
+ * Implementation note: json_each is used so works are matched against the
+ * `work_ids` JSON array without parsing it in application code.
+ */
+export async function getActiveExhibitionsContainingWork(
+  workId: string
+): Promise<Exhibition[]> {
+  if (!(await hasExhibitionsTable())) return [];
+  const db = getDb();
+  const result = await db.execute({
+    sql: `SELECT e.id, e.title, e.subtitle, e.curatorial_statement, e.work_ids,
+                 e.status, e.opened_at, e.retired_at, e.curator_id, e.cover_work_id
+            FROM exhibitions e, json_each(e.work_ids) j
+           WHERE e.status = 'ACTIVE'
+             AND j.value = ?
+           ORDER BY e.opened_at DESC`,
+    args: [workId],
+  });
+  return result.rows.map((r) =>
+    rowToExhibition(r as unknown as Record<string, unknown>)
+  );
+}
+
 export async function getRetiredExhibitions(): Promise<Exhibition[]> {
   if (!(await hasExhibitionsTable())) return [];
   const db = getDb();

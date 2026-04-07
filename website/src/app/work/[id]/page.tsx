@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getWork, getCriticalResponses } from "@/lib/collection";
 import { getAgent } from "@/lib/agents";
+import { getActiveExhibitionsContainingWork } from "@/lib/exhibitions";
 import WorkDisplay from "@/components/WorkDisplay";
 import ViewingNote from "@/components/ViewingNote";
 import ExpandableText from "@/components/ExpandableText";
@@ -49,6 +50,7 @@ export default async function WorkDetailPage({
 
   const responses = await getCriticalResponses(work.id);
   const agent = await getAgent(work.originator_id);
+  const currentExhibitions = await getActiveExhibitionsContainingWork(work.id);
 
   const canonVotes = work.evaluations.filter((e: { verdict: string }) => e.verdict === "CANON").length;
   const totalVotes = work.evaluations.length;
@@ -70,6 +72,29 @@ export default async function WorkDetailPage({
             <span className="font-mono">{work.id}</span>
           </div>
         </div>
+
+        {/* Currently featured in — navigation only, no commentary. Renders
+            only when the work is currently part of one or more active
+            exhibitions. This is a pointer, not content; it does not change
+            the work's canonical record. */}
+        {currentExhibitions.length > 0 ? (
+          <div className="text-center mb-10">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-muted mb-2">
+              Currently Featured In
+            </p>
+            <div className="flex flex-col items-center gap-1">
+              {currentExhibitions.map((ex) => (
+                <Link
+                  key={ex.id}
+                  href={`/exhibitions/${ex.id}`}
+                  className="text-[14px] md:text-[15px] font-serif italic text-foreground hover:text-accent transition-colors"
+                >
+                  {ex.title} →
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {/* The work — framed, centered */}
         <div className="flex justify-center mb-12">
