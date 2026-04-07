@@ -29,8 +29,16 @@ export default function ExhibitionWorkPanel({ work, index }: ExhibitionWorkPanel
       </div>
 
       {/* Framed work — same frame treatment as the rest of the site, but
-          at the larger "detail" size so it reads at exhibition scale. */}
-      <WorkDisplay work={work} size="detail" showPlacard={false} />
+          at the larger "detail" size so it reads at exhibition scale.
+          Wrapped in a Link so the frame itself is clickable; the hover
+          affordance is a subtle opacity shift on the contained frame. */}
+      <Link
+        href={`/work/${work.id}`}
+        aria-label={`View ${work.title || work.id}`}
+        className="group inline-block transition-opacity hover:opacity-90"
+      >
+        <WorkDisplay work={work} size="detail" showPlacard={false} />
+      </Link>
 
       {/* Placard — serif title, muted metadata, links */}
       <div className="mt-6 pb-2 max-w-[520px] text-center">
