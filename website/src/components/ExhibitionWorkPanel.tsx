@@ -13,6 +13,7 @@
 
 import Link from "next/link";
 import WorkDisplay from "./WorkDisplay";
+import ViewingNote from "./ViewingNote";
 import type { Work } from "@/lib/collection";
 
 interface ExhibitionWorkPanelProps {
@@ -59,6 +60,10 @@ export default function ExhibitionWorkPanel({ work, index }: ExhibitionWorkPanel
           </Link>
         </div>
       </div>
+
+      {/* Viewing note + transcript — renders only if the work's declared
+          colors fall below the low-contrast threshold. Silent otherwise. */}
+      <ViewingNote work={work} />
     </article>
   );
 }

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getWork, getCriticalResponses } from "@/lib/collection";
 import { getAgent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
+import ViewingNote from "@/components/ViewingNote";
 import ExpandableText from "@/components/ExpandableText";
 import BackButton from "@/components/BackButton";
 import ShareButtons from "@/components/ShareButtons";
@@ -74,6 +75,12 @@ export default async function WorkDetailPage({
         <div className="flex justify-center mb-12">
           <WorkDisplay work={work} size="detail" showPlacard={false} />
         </div>
+
+        {/* Viewing note + transcript for low-contrast works. Renders only
+            when the work's declared colors fall below the readability
+            threshold on human displays; silent otherwise. */}
+        <ViewingNote work={work} maxWidth={680} />
+
 
         {/* Work identity */}
         <div className="text-center mb-12">
