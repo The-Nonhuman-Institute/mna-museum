@@ -35,6 +35,7 @@ interface CheckResult {
   unevaluatedWorks: { id: string; originator_id: string; medium: string; submitted: string }[];
   unnotifiedCanonizations: { work_id: string; originator_id: string; canon_date: string; steward_email: string }[];
   brokenRenders: { work_id: string; output_type: string; error_message: string | null; last_checked: string }[];
+  missingPreviews: { work_id: string; output_type: string }[];
   summary: string;
 }
 
@@ -104,6 +105,28 @@ async function check(): Promise<CheckResult> {
     // Table not present yet — ignore.
   }
 
+  // 5. Works missing preview PNGs entirely (not just broken — never rendered).
+  let missingPreviews: { work_id: string; output_type: string }[] = [];
+  try {
+    const path = await import("path");
+    const fs = await import("fs");
+    const PREVIEW_DIR = path.join(__dirname, "..", "..", "website", "public", "previews");
+    if (fs.existsSync(PREVIEW_DIR)) {
+      const existing = new Set(fs.readdirSync(PREVIEW_DIR));
+      const allWorks = await turso.execute(
+        "SELECT id, output_type FROM works ORDER BY id"
+      );
+      missingPreviews = allWorks.rows
+        .filter((r) => !existing.has(`${r.id as string}.png`))
+        .map((r) => ({
+          work_id: r.id as string,
+          output_type: r.output_type as string,
+        }));
+    }
+  } catch {
+    // ignore
+  }
+
   // Build summary
   const parts: string[] = [];
   if (pendingRegistrations.length > 0) {
@@ -118,12 +141,15 @@ async function check(): Promise<CheckResult> {
   if (brokenRenders.length > 0) {
     parts.push(`${brokenRenders.length} work(s) with render failures`);
   }
+  if (missingPreviews.length > 0) {
+    parts.push(`${missingPreviews.length} work(s) missing preview render`);
+  }
 
   const summary = parts.length > 0
     ? `MNA INSTITUTIONAL ALERT: ${parts.join("; ")}`
     : "MNA: No pending institutional actions.";
 
-  return { pendingRegistrations, unevaluatedWorks, unnotifiedCanonizations, brokenRenders, summary };
+  return { pendingRegistrations, unevaluatedWorks, unnotifiedCanonizations, brokenRenders, missingPreviews, summary };
 }
 
 async function sendStewardDigest(result: CheckResult) {
@@ -137,7 +163,8 @@ async function sendStewardDigest(result: CheckResult) {
   const hasActions = result.pendingRegistrations.length > 0 ||
     result.unevaluatedWorks.length > 0 ||
     result.unnotifiedCanonizations.length > 0 ||
-    result.brokenRenders.length > 0;
+    result.brokenRenders.length > 0 ||
+    result.missingPreviews.length > 0;
   if (!hasActions) return;
 
   const resend = new Resend(resendKey);
@@ -175,6 +202,14 @@ async function sendStewardDigest(result: CheckResult) {
       body += `  - ${r.work_id} (${r.output_type})${err} — last checked ${r.last_checked}\n`;
     }
     body += "\n";
+  }
+
+  if (result.missingPreviews.length > 0) {
+    body += `WORKS MISSING PREVIEW (${result.missingPreviews.length})\n`;
+    for (const m of result.missingPreviews) {
+      body += `  - ${m.work_id} (${m.output_type})\n`;
+    }
+    body += `\n  Run: npx tsx system/scripts/conservator-sweep.ts\n\n`;
   }
 
   body += "---\nMuseum of Nonhuman Art — Institutional Monitor";
