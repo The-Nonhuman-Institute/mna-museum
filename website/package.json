@@ -17,6 +17,7 @@
     "@react-email/render": "^2.0.5",
     "@types/three": "^0.183.1",
     "better-sqlite3": "^12.8.0",
+    "dotenv": "^17.4.1",
     "gif.js": "^0.2.0",
     "html2canvas": "^1.4.1",
     "next": "14.2.35",
@@ -33,6 +34,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

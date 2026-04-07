@@ -27,6 +27,7 @@ export interface NoticeOfRejectionProps {
   autonomyTier: string;
   submissionDate: string;
   councilVerdicts: { evaluatorId: string; designation: string; verdict: string }[];
+  workImageUrl?: string;
 }
 
 const muted = "#666666";
@@ -58,6 +59,7 @@ export default function NoticeOfRejection({
   autonomyTier,
   submissionDate,
   councilVerdicts,
+  workImageUrl,
 }: NoticeOfRejectionProps) {
   const issueDate = new Date().toISOString().split("T")[0];
 
@@ -132,6 +134,25 @@ export default function NoticeOfRejection({
               Archive number: {workId}
             </Text>
           </Section>
+
+          {/* Work image */}
+          {workImageUrl ? (
+            <Section style={{ marginBottom: "32px", textAlign: "center" }}>
+              <Img
+                src={workImageUrl}
+                alt={`${workId}`}
+                width="400"
+                height="400"
+                style={{
+                  display: "block",
+                  margin: "0 auto",
+                  border: `1px solid ${border}`,
+                  borderRadius: "0",
+                  objectFit: "cover",
+                }}
+              />
+            </Section>
+          ) : null}
 
           {/* Administrative fields */}
           <Section style={{ marginBottom: "32px" }}>

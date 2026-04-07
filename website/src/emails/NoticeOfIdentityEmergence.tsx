@@ -201,7 +201,7 @@ export default function NoticeOfIdentityEmergence({
             <Section style={{ marginBottom: "32px", textAlign: "center" }}>
               <Img
                 src={visualSymbolUrl}
-                alt={`Visual symbol for ${declaredName}`}
+                alt={`${declaredName} visual identity`}
                 width="120"
                 height="120"
                 style={{ display: "block", margin: "0 auto" }}
