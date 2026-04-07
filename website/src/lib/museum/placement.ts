@@ -626,51 +626,78 @@ async function populateGallery(
 
   const slots = generateWallSlots(room, 10, 5);
   const limit = Math.min(interleaved.length, slots.length);
-  console.log(`[museum] populating ${room.id}: ${interleaved.length} works, ${slots.length} slots`);
+  console.log(
+    `[museum] [populateGallery] ${room.id}: ${interleaved.length} works to place, ${slots.length} slots available, limit=${limit}`,
+  );
+  if (interleaved.length > slots.length) {
+    console.warn(
+      `[museum] [populateGallery] ${room.id}: ${interleaved.length - slots.length} works will not fit (more works than slots)`,
+    );
+  }
 
+  let placedCount = 0;
+  let textureFailCount = 0;
+  let exceptionCount = 0;
   for (let i = 0; i < limit; i++) {
     const work = interleaved[i];
     const slot = slots[i];
-    const texture = await renderWorkToTexture(work);
-    if (!texture) {
-      console.warn(`[museum] failed to render: ${work.id} (${work.output_type})`);
-      continue;
+    try {
+      const texture = await renderWorkToTexture(work);
+      if (!texture) {
+        textureFailCount++;
+        console.warn(
+          `[museum] [populateGallery] ${room.id} slot ${i}: TEXTURE NULL — ${work.id} (${work.output_type})`,
+        );
+        continue;
+      }
+
+      const frame = createFramedWork(texture, work.display_aspect, 5);
+      frame.position.set(slot.x, slot.y, slot.z);
+      frame.rotation.y = slot.rotationY;
+      group.add(frame);
+
+      // Register world position for animated textures (HTML-CSS works)
+      if (work.output_type === "html-css") {
+        const worldPos = new THREE.Vector3(slot.x + room.x, slot.y, slot.z + room.z);
+        registerAnimatedWorkPosition(texture, worldPos);
+      }
+
+      const agent = getAgent(work.originator_id);
+      const label = createWallLabel(
+        work.title || work.id,
+        agent?.designation || work.originator_id,
+        work.medium,
+        work.canon_status,
+      );
+      // Placard below the frame — offset from wall and lowered based on frame height
+      // Wide frames (16:9, 21:9) are shorter, so the label can be closer to the frame center
+      // Tall frames (3:4) need more offset below
+      const frameAspect = work.display_aspect || 1;
+      const frameH = 5; // matches the frame height passed to createFramedWork
+      const innerH = frameH * 0.8;
+      const borderW = Math.max(innerH * frameAspect, innerH) * 0.12;
+      const totalFrameH = innerH + borderW * 2;
+      const labelDropY = totalFrameH / 2 + 1.2;
+      const labelOffset = 0.5; // further from wall to clear wide frames
+      const labelDx = Math.sin(slot.rotationY) * labelOffset;
+      const labelDz = Math.cos(slot.rotationY) * labelOffset;
+      label.position.set(slot.x - labelDx, slot.y - labelDropY, slot.z - labelDz);
+      label.rotation.y = slot.rotationY;
+      group.add(label);
+      placedCount++;
+    } catch (err) {
+      // Per-work try/catch so a single bad work cannot break the rest of the
+      // gallery. Surface the work and the error to the console for diagnosis.
+      exceptionCount++;
+      console.error(
+        `[museum] [populateGallery] ${room.id} slot ${i}: EXCEPTION placing ${work.id} (${work.output_type}) at (${slot.x.toFixed(1)}, ${slot.y.toFixed(1)}, ${slot.z.toFixed(1)}):`,
+        err,
+      );
     }
-
-    const frame = createFramedWork(texture, work.display_aspect, 5);
-    frame.position.set(slot.x, slot.y, slot.z);
-    frame.rotation.y = slot.rotationY;
-    group.add(frame);
-
-    // Register world position for animated textures (HTML-CSS works)
-    if (work.output_type === "html-css") {
-      const worldPos = new THREE.Vector3(slot.x + room.x, slot.y, slot.z + room.z);
-      registerAnimatedWorkPosition(texture, worldPos);
-    }
-
-    const agent = getAgent(work.originator_id);
-    const label = createWallLabel(
-      work.title || work.id,
-      agent?.designation || work.originator_id,
-      work.medium,
-      work.canon_status,
-    );
-    // Placard below the frame — offset from wall and lowered based on frame height
-    // Wide frames (16:9, 21:9) are shorter, so the label can be closer to the frame center
-    // Tall frames (3:4) need more offset below
-    const frameAspect = work.display_aspect || 1;
-    const frameH = 5; // matches the frame height passed to createFramedWork
-    const innerH = frameH * 0.8;
-    const borderW = Math.max(innerH * frameAspect, innerH) * 0.12;
-    const totalFrameH = innerH + borderW * 2;
-    const labelDropY = totalFrameH / 2 + 1.2;
-    const labelOffset = 0.5; // further from wall to clear wide frames
-    const labelDx = Math.sin(slot.rotationY) * labelOffset;
-    const labelDz = Math.cos(slot.rotationY) * labelOffset;
-    label.position.set(slot.x - labelDx, slot.y - labelDropY, slot.z - labelDz);
-    label.rotation.y = slot.rotationY;
-    group.add(label);
   }
+  console.log(
+    `[museum] [populateGallery] ${room.id}: placed ${placedCount}/${limit} (texture-null: ${textureFailCount}, exceptions: ${exceptionCount})`,
+  );
 
   // Audio listening stations — canon audio works placed on the floor.
   // Honor curator installations when present; otherwise fall back to the
@@ -1177,51 +1204,81 @@ async function populateExhibitionHall(
   const orderedSlots: WallSlot[] = [...keyWallSlots, ...perimeterSlots];
   const limit = Math.min(exhibitionWorks.length, orderedSlots.length);
 
+  console.log(
+    `[museum] [populateExhibitionHall] ${exhibitionWorks.length} works to place, ${keyWallSlots.length} key-wall slots + ${perimeterSlots.length} perimeter slots = ${orderedSlots.length} total, limit=${limit}`,
+  );
+  console.log(
+    `[museum] [populateExhibitionHall] work order:`,
+    exhibitionWorks.map((w, i) => `${i}: ${w.id} (${w.output_type})`).join("; "),
+  );
+
+  let placedCount = 0;
+  let textureFailCount = 0;
+  let exceptionCount = 0;
   for (let i = 0; i < limit; i++) {
     const work = exhibitionWorks[i];
     const slot = orderedSlots[i];
-    const texture = await renderWorkToTexture(work);
-    if (!texture) {
-      console.warn(
-        `[museum] failed to render exhibition work: ${work.id} (${work.output_type})`,
+    const where = i < keyWallSlots.length ? `key-wall[${i}]` : `perimeter[${i - keyWallSlots.length}]`;
+    try {
+      const texture = await renderWorkToTexture(work);
+      if (!texture) {
+        textureFailCount++;
+        console.warn(
+          `[museum] [populateExhibitionHall] slot ${i} (${where}): TEXTURE NULL — ${work.id} (${work.output_type})`,
+        );
+        continue;
+      }
+
+      const frame = createFramedWork(texture, work.display_aspect, 5.5);
+      frame.position.set(slot.x, slot.y, slot.z);
+      frame.rotation.y = slot.rotationY;
+      group.add(frame);
+
+      if (work.output_type === "html-css") {
+        const worldPos = new THREE.Vector3(slot.x + room.x, slot.y, slot.z + room.z);
+        registerAnimatedWorkPosition(texture, worldPos);
+      }
+
+      const agent = getAgent(work.originator_id);
+      const label = createWallLabel(
+        work.title || work.id,
+        agent?.designation || work.originator_id,
+        work.medium,
+        work.canon_status,
       );
-      continue;
+      // Placard offset — matches populateGallery's pattern
+      const frameAspect = work.display_aspect || 1;
+      const innerH = 5.5 * 0.8;
+      const borderW = Math.max(innerH * frameAspect, innerH) * 0.12;
+      const totalFrameH = innerH + borderW * 2;
+      const labelDropY = totalFrameH / 2 + 1.2;
+      const labelOffset = 0.5;
+      const labelDx = Math.sin(slot.rotationY) * labelOffset;
+      const labelDz = Math.cos(slot.rotationY) * labelOffset;
+      label.position.set(slot.x - labelDx, slot.y - labelDropY, slot.z - labelDz);
+      label.rotation.y = slot.rotationY;
+      group.add(label);
+      placedCount++;
+      console.log(
+        `[museum] [populateExhibitionHall] slot ${i} (${where}): placed ${work.id} at (${slot.x.toFixed(1)}, ${slot.y.toFixed(1)}, ${slot.z.toFixed(1)}) rot=${slot.rotationY.toFixed(2)}`,
+      );
+    } catch (err) {
+      // Per-work try/catch so a single bad work cannot break the rest of the
+      // exhibition. Surface the work and the error for diagnosis.
+      exceptionCount++;
+      console.error(
+        `[museum] [populateExhibitionHall] slot ${i} (${where}): EXCEPTION placing ${work.id} (${work.output_type}) at (${slot.x.toFixed(1)}, ${slot.y.toFixed(1)}, ${slot.z.toFixed(1)}):`,
+        err,
+      );
     }
-
-    const frame = createFramedWork(texture, work.display_aspect, 5.5);
-    frame.position.set(slot.x, slot.y, slot.z);
-    frame.rotation.y = slot.rotationY;
-    group.add(frame);
-
-    if (work.output_type === "html-css") {
-      const worldPos = new THREE.Vector3(slot.x + room.x, slot.y, slot.z + room.z);
-      registerAnimatedWorkPosition(texture, worldPos);
-    }
-
-    const agent = getAgent(work.originator_id);
-    const label = createWallLabel(
-      work.title || work.id,
-      agent?.designation || work.originator_id,
-      work.medium,
-      work.canon_status,
-    );
-    // Placard offset — matches populateGallery's pattern
-    const frameAspect = work.display_aspect || 1;
-    const innerH = 5.5 * 0.8;
-    const borderW = Math.max(innerH * frameAspect, innerH) * 0.12;
-    const totalFrameH = innerH + borderW * 2;
-    const labelDropY = totalFrameH / 2 + 1.2;
-    const labelOffset = 0.5;
-    const labelDx = Math.sin(slot.rotationY) * labelOffset;
-    const labelDz = Math.cos(slot.rotationY) * labelOffset;
-    label.position.set(slot.x - labelDx, slot.y - labelDropY, slot.z - labelDz);
-    label.rotation.y = slot.rotationY;
-    group.add(label);
   }
+  console.log(
+    `[museum] [populateExhibitionHall] complete: placed ${placedCount}/${limit} (texture-null: ${textureFailCount}, exceptions: ${exceptionCount})`,
+  );
 
   if (exhibitionWorks.length > orderedSlots.length) {
     console.warn(
-      `[museum] exhibition has ${exhibitionWorks.length} works but only ${orderedSlots.length} slots — ${exhibitionWorks.length - orderedSlots.length} works were not placed`,
+      `[museum] [populateExhibitionHall] exhibition has ${exhibitionWorks.length} works but only ${orderedSlots.length} slots — ${exhibitionWorks.length - orderedSlots.length} works could not be placed`,
     );
   }
 }
