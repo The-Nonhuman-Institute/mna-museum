@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { RoomConfig, getRoomById } from "./room-configs";
+import { RoomConfig } from "./room-configs";
 import { registerFurnitureCollision } from "./collision";
 // BufferGeometryUtils removed — not needed since we add meshes directly
 
@@ -75,14 +75,6 @@ export function addArchitecturalDetail(group: THREE.Group, room: RoomConfig): vo
 
   // === DOOR FRAMES === trim around doorway openings
   addDoorFrames(group, room);
-
-  // === ROOM SIGNAGE === institutional name above each entryway, naming the
-  // destination room. Visitors approaching a doorway from inside this room
-  // see the name of the room they are about to enter, in the small-caps
-  // institutional voice.
-  if (!isCorridor) {
-    addRoomSignage(group, room);
-  }
 
   // === TRACK LIGHTING RAILS === thin dark rails on ceiling
   if (!isCorridor) {
@@ -298,141 +290,6 @@ function addDoorFrames(group: THREE.Group, room: RoomConfig): void {
       lintel.position.set(0, dh + frameW / 2, z);
       group.add(lintel);
     }
-  }
-}
-
-// ============================================================================
-// ROOM SIGNAGE — institutional names above each entryway
-// ============================================================================
-
-/**
- * Build a textured plane with the destination room's name (and optional
- * subtitle) rendered in the institutional small-caps voice. Sized to fit
- * roughly above a doorway with reasonable margins.
- */
-function createRoomSign(name: string, subtitle: string | null, doorWidth: number): THREE.Mesh | null {
-  // Render text to a canvas, then use the canvas as a texture on a plane.
-  // Uses devicePixelRatio-independent canvas sizing for a crisp result.
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 256;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-
-  // Transparent background — the sign reads as text on the wall, not a label
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Convert name to small caps via uppercase + tracking
-  const display = name.toUpperCase();
-
-  // Main name — larger, tracked
-  ctx.fillStyle = "#e8e0d2"; // warm cream — reads against the wall
-  ctx.font = "bold 96px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  // Letter-spaced manual rendering for the name (canvas doesn't support letter-spacing)
-  const trackingPx = 14;
-  let totalNameW = 0;
-  for (const ch of display) totalNameW += ctx.measureText(ch).width + trackingPx;
-  totalNameW -= trackingPx;
-  const nameY = subtitle ? canvas.height * 0.42 : canvas.height * 0.5;
-  let xCursor = (canvas.width - totalNameW) / 2;
-  for (const ch of display) {
-    const w = ctx.measureText(ch).width;
-    ctx.fillText(ch, xCursor + w / 2, nameY);
-    xCursor += w + trackingPx;
-  }
-
-  // Subtitle — smaller, italic, dimmer
-  if (subtitle) {
-    ctx.fillStyle = "#9a9085";
-    ctx.font = "italic 42px Georgia, serif";
-    ctx.fillText(subtitle, canvas.width / 2, canvas.height * 0.78);
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    transparent: true,
-    depthWrite: false,
-  });
-
-  // Plane sized to roughly the doorway width plus margin, aspect 4:1
-  const planeW = Math.max(doorWidth + 4, 16);
-  const planeH = planeW / 4;
-  const geometry = new THREE.PlaneGeometry(planeW, planeH);
-  return new THREE.Mesh(geometry, material);
-}
-
-/**
- * For each connection out of this room, place a sign on the interior side
- * of the wall just above the doorway lintel. The sign names the room being
- * entered (the connection's `to` room), so visitors approaching the doorway
- * from inside this room see where they're going.
- */
-function addRoomSignage(group: THREE.Group, room: RoomConfig): void {
-  const w = room.width;
-  const d = room.depth;
-  const h = room.height;
-
-  for (const conn of room.connections) {
-    const destRoom = getRoomById(conn.to);
-    if (!destRoom || !destRoom.name) continue;
-
-    const dh = conn.height; // doorway height
-    const dw = conn.width;  // doorway width
-
-    // Sign sits in the space between the doorway lintel and the ceiling.
-    // Lintel top is at dh + frameW (~0.4ft for the lintel thickness), so
-    // we place the sign just above that with some breathing room. If the
-    // room ceiling is too low to fit a sign, skip this entryway.
-    const lintelTop = dh + 0.5;
-    const signCenterY = lintelTop + 1.4; // 1.4ft above lintel = sign center
-    const signTopY = signCenterY + 1.0;  // sign half-height ~1ft
-    if (signTopY > h - 0.5) continue;     // not enough vertical room
-
-    const sign = createRoomSign(destRoom.name, destRoom.subtitle || null, dw);
-    if (!sign) continue;
-
-    // Slight offset from the wall surface so the sign doesn't z-fight
-    const offset = 0.06;
-
-    switch (conn.wall) {
-      case "north": {
-        // North wall is at z = -d/2. Interior side faces +z. Sign normal
-        // should point +z (toward room interior). Default plane normal is +z,
-        // so no rotation needed.
-        sign.position.set(0, signCenterY, -(d / 2) + offset);
-        break;
-      }
-      case "south": {
-        // South wall is at z = +d/2. Interior side faces -z. Rotate plane
-        // 180° around Y so its front faces -z.
-        sign.position.set(0, signCenterY, d / 2 - offset);
-        sign.rotation.y = Math.PI;
-        break;
-      }
-      case "east": {
-        // East wall is at x = +w/2. Interior side faces -x. Rotate plane
-        // -90° around Y so its front faces -x.
-        sign.position.set(w / 2 - offset, signCenterY, 0);
-        sign.rotation.y = -Math.PI / 2;
-        break;
-      }
-      case "west": {
-        // West wall is at x = -w/2. Interior side faces +x. Rotate plane
-        // +90° around Y so its front faces +x.
-        sign.position.set(-(w / 2) + offset, signCenterY, 0);
-        sign.rotation.y = Math.PI / 2;
-        break;
-      }
-    }
-
-    group.add(sign);
   }
 }
 
