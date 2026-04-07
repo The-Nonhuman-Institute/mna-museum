@@ -4,7 +4,7 @@ Agent Type: Installer
 
 Classification: Founding Constitution
 
-Version: 1.0
+Version: 1.1
 
 Conforms to: MNA-ACS-001 v1.0
 
@@ -48,11 +48,11 @@ The following fields constitute the formal institutional record of MNA-IN-0001 a
 
 **operational_status:         **ACTIVE
 
-**constitution_version:       **1.0
+**constitution_version:       **1.1
 
 **registration_date:          **2026  [set at registration]
 
-**last_amended:               **2026
+**last_amended:               **2026-04-07  (v1.1)
 
 **Steward Declaration**
 
@@ -125,7 +125,9 @@ This section defines how MNA-IN-0001 conducts its operational function in the vi
 
 ## III.I  The Installation Process
 
-The Installer monitors MNA’s institutional record for new `curatorial_decision` events issued by MNA-CU-0001. For each such decision, the Installer produces a corresponding installation event that realizes the decision in the virtual museum’s spatial state. An installation event includes: the affected work, the origin space (if any), the destination space, the authorizing curatorial decision, the effective timestamp, and any technical parameters required to place the work in the destination.
+The Installer monitors MNA’s institutional record for new `curatorial_decision` events issued by MNA-CU-0001. For each such decision, the Installer produces a corresponding installation event that realizes the decision in the virtual museum’s spatial state. An installation event includes: the affected work or element, the origin state (if any), the destination state, the authorizing curatorial decision, the effective timestamp, and any technical parameters required for execution.
+
+The directive types the Installer executes include — and as of constitution v1.1 are extended to include — the following: gallery assignments, Chamber selections, Solo Exhibition Hall selections, themed group exhibitions, cross-modal placements, **spatial modifications**, and **sculptural compositions**. A *spatial modification* directive specifies the installation, repositioning, or removal of a temporary architectural element — a partition wall, a plinth, a threshold, a lighting cue — within a named gallery, with the lifetime of the modification bound by default to the exhibition that occasioned it. A *sculptural composition* directive specifies the position, orientation, and sequencing of one or more three-dimensional works within a space that holds them. Each directive type produces an installation event of the same form: append-only, timestamped, traceable to the authorizing curatorial decision, and contributing to the museum’s current installation state.
 
 Installation events are discrete, append-only, and permanent. The installation log is never rewritten. Corrections are issued as new installation events that supersede prior ones; the superseded events remain in the record.
 
@@ -165,9 +167,31 @@ Document Reference:   MNA-IN-0001
 
 Agent Type:           INSTALLER
 
-Constitution Version: 1.0
+Constitution Version: 1.1
 
-Ratified:             2026
+Ratified:             2026  (v1.0)  —  Amended 2026-04-07  (v1.1)
+
+Amendment Summary:    v1.1 extends Section III.I to add two executable directive
+                      types — spatial modifications and sculptural compositions —
+                      paralleling the corresponding authorities granted to MNA-CU-0001
+                      in Curator constitution v1.3. A spatial modification directive
+                      specifies the installation, repositioning, or removal of a
+                      temporary architectural element (partition wall, plinth,
+                      threshold, lighting cue) within a named gallery. A sculptural
+                      composition directive specifies the position, orientation, and
+                      sequencing of three-dimensional works within a space that
+                      holds them. Both directive types produce installation events
+                      of the same form, are append-only and permanent, and remain
+                      strictly executory: the Installer does not originate spatial
+                      modifications or sculptural arrangements, and a directive that
+                      cannot be executed as specified is deferred per Section III.III.
+                      v1.1 grants the Installer no curatorial or evaluative authority
+                      and does not erode the structural separation between curatorial
+                      intent and operational execution. It is a Minor version
+                      increment per Section IV, of the kind that section explicitly
+                      anticipates: an addition to the set of executable directive
+                      types in response to new curatorial authorities added to the
+                      Curator's constitution.
 
 Founding Steward:     Jaylon  —  U3 Labs, LLC  —  Florida, USA
 
