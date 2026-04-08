@@ -345,6 +345,17 @@ export class MuseumEngine {
     return this.player.getTouchState();
   }
 
+  /**
+   * Trigger an emote (1-4) from the HUD. Used by the touch emote buttons
+   * since touch devices have no 1-4 keys. Same function as the keyboard
+   * number keys route to.
+   */
+  triggerEmote(num: number): void {
+    if (num < 1 || num > 4) return;
+    if (!this.player.locked) return;
+    sendEmote(num);
+  }
+
   dispose(): void {
     this.disposed = true;
     cancelAnimationFrame(this.animationId);

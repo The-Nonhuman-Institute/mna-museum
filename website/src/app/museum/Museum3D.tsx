@@ -26,11 +26,16 @@ function isTouchPrimary(): boolean {
 /**
  * Visible virtual joystick overlay for touch devices when toggled on.
  *
- * Polls the engine's touch state via requestAnimationFrame and renders a
- * circular stick indicator at the thumb's origin position. Purely visual —
- * the engine's internal touch handler is the actual input source. The
- * joystick never consumes pointer events (pointer-events: none) so it can't
- * interfere with the engine's split-screen drag.
+ * Renders a fixed base at bottom-left of the screen with a knob that moves
+ * to reflect the visitor's drag. The knob sits at center when at rest and
+ * animates to match the movement stick vector when the visitor is dragging
+ * on the left half of the canvas.
+ *
+ * Purely visual — pointer-events: none so it never intercepts touches. The
+ * engine's split-screen drag handlers in PlayerController are the actual
+ * input source; this component just polls the engine for the touch state
+ * and mirrors it. When the toggle is on, the base is always visible; when
+ * off, the component is unmounted by the parent and the base vanishes.
  */
 function VirtualJoystick({
   engineRef,
@@ -58,15 +63,13 @@ function VirtualJoystick({
     const tick = () => {
       const s = engineRef.current?.getTouchState();
       if (s) {
-        // Only call setState when the active flag changes or positions move,
-        // to avoid tight infinite re-renders.
         setSnap((prev) => {
           if (
             prev.active === s.active &&
-            prev.originX === s.originX &&
-            prev.originY === s.originY &&
             prev.currentX === s.currentX &&
-            prev.currentY === s.currentY
+            prev.currentY === s.currentY &&
+            prev.originX === s.originX &&
+            prev.originY === s.originY
           ) {
             return prev;
           }
@@ -79,49 +82,58 @@ function VirtualJoystick({
     return () => cancelAnimationFrame(rafId);
   }, [engineRef]);
 
-  if (!snap.active) return null;
+  const baseRadius = 56; // fixed-position stick is slightly smaller than the drag zone
+  const baseSize = baseRadius * 2;
+  const knobSize = 48;
 
-  // Clamp the knob's visual position to the stick base radius.
-  const dx = snap.currentX - snap.originX;
-  const dy = snap.currentY - snap.originY;
-  const mag = Math.sqrt(dx * dx + dy * dy);
-  const clamped = Math.min(1, mag / snap.maxRadius);
-  const angle = mag > 0 ? Math.atan2(dy, dx) : 0;
-  const knobX = Math.cos(angle) * clamped * snap.maxRadius;
-  const knobY = Math.sin(angle) * clamped * snap.maxRadius;
-
-  const baseSize = snap.maxRadius * 2;
-  const knobSize = 36;
+  // Compute knob offset from the drag vector when a touch is active.
+  // Clamp to the visible base radius.
+  let knobOffsetX = 0;
+  let knobOffsetY = 0;
+  if (snap.active) {
+    const dx = snap.currentX - snap.originX;
+    const dy = snap.currentY - snap.originY;
+    const mag = Math.sqrt(dx * dx + dy * dy);
+    if (mag > 0) {
+      const clamped = Math.min(1, mag / snap.maxRadius);
+      knobOffsetX = (dx / mag) * clamped * (baseRadius - knobSize / 2);
+      knobOffsetY = (dy / mag) * clamped * (baseRadius - knobSize / 2);
+    }
+  }
 
   return (
     <div
       className="fixed z-40 pointer-events-none"
       style={{
-        left: snap.originX - snap.maxRadius,
-        top: snap.originY - snap.maxRadius,
+        left: 28,
+        bottom: 28,
         width: baseSize,
         height: baseSize,
       }}
+      aria-hidden
     >
       {/* Base ring */}
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          border: "2px solid rgba(208, 204, 198, 0.25)",
-          background: "rgba(10, 9, 8, 0.2)",
-          backdropFilter: "blur(2px)",
+          border: "2px solid rgba(208, 204, 198, 0.35)",
+          background: "rgba(10, 9, 8, 0.5)",
+          backdropFilter: "blur(4px)",
         }}
       />
       {/* Knob */}
       <div
-        className="absolute rounded-full"
+        className="absolute rounded-full transition-transform duration-75"
         style={{
-          left: snap.maxRadius + knobX - knobSize / 2,
-          top: snap.maxRadius + knobY - knobSize / 2,
+          left: baseRadius - knobSize / 2,
+          top: baseRadius - knobSize / 2,
           width: knobSize,
           height: knobSize,
-          background: "rgba(208, 204, 198, 0.4)",
-          border: "1px solid rgba(208, 204, 198, 0.6)",
+          transform: `translate(${knobOffsetX}px, ${knobOffsetY}px)`,
+          background: snap.active
+            ? "rgba(208, 204, 198, 0.65)"
+            : "rgba(208, 204, 198, 0.35)",
+          border: "1px solid rgba(208, 204, 198, 0.7)",
         }}
       />
     </div>
@@ -198,12 +210,6 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     engineRef.current = new MuseumEngine(el, onStateChange, museumData);
     setReady(true);
 
-    // On touch devices, enable split-screen touch controls immediately so the
-    // visitor can move and look as soon as they enter.
-    if (touch) {
-      engineRef.current.enableTouchMode();
-    }
-
     return () => { engineRef.current?.dispose(); engineRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -224,6 +230,14 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
 
     const handleClick = async () => {
       if (state.isLocked) return;
+
+      // Touch devices: skip pointer lock entirely, enable split-screen touch
+      // controls. The PlayerController's enableTouchMode() internally calls
+      // enableFreeLook() which fires onLockChange(true), hiding this overlay.
+      if (isTouch) {
+        engineRef.current?.enableTouchMode();
+        return;
+      }
 
       // If we already know pointer lock doesn't work, skip straight to free-look
       if (freeLookMode) {
@@ -381,7 +395,7 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
                         Drag left half to move · Drag right half to look
                       </p>
                       <p className="text-[11px] text-[#8a8580] tracking-wide">
-                        Tap Map to open · Tap Joystick to toggle the stick overlay
+                        Tap Map to open · Tap Joystick to show the stick · Tap emote buttons bottom-right
                       </p>
                     </>
                   ) : (
@@ -438,6 +452,34 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
           {/* ===== VIRTUAL JOYSTICK (touch devices, opt-in) ===== */}
           {isTouch && joystickVisible && state.isLocked && (
             <VirtualJoystick engineRef={engineRef} />
+          )}
+
+          {/* ===== TOUCH EMOTE BUTTONS =====
+              Desktop users trigger emotes with 1-4 keys; touch devices need
+              a visible control. Small row at bottom-right, always visible
+              when in the museum. Tapping the button calls the engine's
+              triggerEmote which internally runs the same sendEmote path as
+              the keyboard. Keeps the touch experience feature-complete. */}
+          {isTouch && state.isLocked && (
+            <div className="absolute bottom-5 right-5 z-40 flex gap-2 pointer-events-auto">
+              {(
+                [
+                  { n: 1, label: "Wave" },
+                  { n: 2, label: "Glow" },
+                  { n: 3, label: "Orbit" },
+                  { n: 4, label: "Pulse" },
+                ] as const
+              ).map(({ n, label }) => (
+                <button
+                  key={n}
+                  onClick={() => engineRef.current?.triggerEmote(n)}
+                  className="bg-[#0a0908]/80 backdrop-blur-sm border border-[#3a3530]/60 text-[#d0ccc6] hover:text-white active:bg-[#1a1815] transition-colors text-[10px] uppercase tracking-[0.12em] px-3 py-2 rounded"
+                  aria-label={`${label} emote`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
         </>
       )}

@@ -559,7 +559,18 @@ async function resolveDeadlock(workId: string): Promise<{
   const elapsedS = Math.round((Date.now() - start) / 1000);
   console.log(`[registrar]   Decision: ${decision} (${elapsedS}s)`);
 
-  // Write REGISTRAR_DECISION event
+  // Write an evaluation row for the Registrar. This is what the work detail
+  // page reads via collection.ts#getWork (which filters out MNA-RG-0001 from
+  // the Council list and exposes it as work.registrar_decision). Without
+  // this row, the Registrar's decision would only live in the events table
+  // and wouldn't render on the public work page.
+  await db.execute({
+    sql: `INSERT INTO evaluations (work_id, evaluator_id, verdict, rationale, constitution_version)
+          VALUES (?, 'MNA-RG-0001', ?, ?, ?)`,
+    args: [workId, decision, response, registrarConstitution.version],
+  });
+
+  // Write REGISTRAR_DECISION event for the institutional event log
   await db.execute({
     sql: `INSERT INTO events (event_type, agent_id, work_id, description, metadata)
           VALUES ('REGISTRAR_DECISION', 'MNA-RG-0001', ?, ?, ?)`,
