@@ -5,7 +5,15 @@
  * Checks for:
  * - Pending registrations awaiting steward review
  * - Submitted works awaiting evaluation
+ * - Works stuck in evaluation limbo (all 4 Council votes in but canon
+ *   status never tallied — re-run evaluate-turso-works.ts to fix)
  * - Canonized works missing Notice of Accession emails
+ * - Broken / missing work previews
+ *
+ * "Unnotified canonizations" is filtered to works whose originator has
+ * an external steward_email on file. MNA's founding originators
+ * (MNA-OR-0001..0006) have no external steward and are excluded —
+ * there is no one to notify, so they are not "missing" a notice.
  *
  * Outputs JSON to stdout for the hook to parse.
  * Optionally sends email digest to founding steward.
@@ -33,6 +41,7 @@ const turso = createClient({ url: TURSO_URL, authToken: TURSO_TOKEN });
 interface CheckResult {
   pendingRegistrations: { id: number; steward_name: string; steward_email: string; submission_date: string }[];
   unevaluatedWorks: { id: string; originator_id: string; medium: string; submitted: string }[];
+  limboWorks: { work_id: string; status: string; votes: string }[];
   unnotifiedCanonizations: { work_id: string; originator_id: string; canon_date: string; steward_email: string }[];
   brokenRenders: { work_id: string; output_type: string; error_message: string | null; last_checked: string }[];
   missingPreviews: { work_id: string; output_type: string }[];
@@ -66,13 +75,41 @@ async function check(): Promise<CheckResult> {
     submitted: r.submitted as string,
   }));
 
-  // 3. Canonized works where no ACCESSION_NOTIFIED event exists
+  // 3. Works stuck in evaluation limbo: all 4 Council evaluators have
+  //    voted, but canon_status is still SUBMITTED or IN_REVIEW (tally
+  //    step never ran). This happens if a prior evaluation pass was
+  //    interrupted between vote-writes and the canon_status UPDATE, or
+  //    if evaluations were inserted outside the script. Re-running
+  //    evaluate-turso-works.ts on each limbo work resolves it.
+  const limboResult = await turso.execute(
+    `SELECT cs.work_id, cs.status,
+            GROUP_CONCAT(e.evaluator_id || ':' || e.verdict) as votes
+       FROM canon_status cs
+       JOIN evaluations e ON cs.work_id = e.work_id
+      WHERE cs.status IN ('SUBMITTED', 'IN_REVIEW')
+        AND e.evaluator_id LIKE 'MNA-EV-%'
+      GROUP BY cs.work_id, cs.status
+      HAVING COUNT(e.id) >= 4
+      ORDER BY cs.work_id`
+  );
+  const limboWorks = limboResult.rows.map((r) => ({
+    work_id: r.work_id as string,
+    status: r.status as string,
+    votes: (r.votes as string) || "",
+  }));
+
+  // 4. Canonized works where no ACCESSION_NOTIFIED event exists AND
+  //    the originator has an external steward_email on file. Founding
+  //    originators (MNA-OR-0001..0006) have no external steward and
+  //    are intentionally excluded — there is no one to notify.
   const canonResult = await turso.execute(
     `SELECT cs.work_id, w.originator_id, cs.canon_date, ak.steward_email
      FROM canon_status cs
      JOIN works w ON cs.work_id = w.id
-     LEFT JOIN agent_keys ak ON w.originator_id = ak.registry_id
+     JOIN agent_keys ak ON w.originator_id = ak.registry_id
      WHERE cs.status = 'CANON'
+       AND ak.steward_email IS NOT NULL
+       AND TRIM(ak.steward_email) != ''
        AND cs.work_id NOT IN (
          SELECT work_id FROM events WHERE event_type = 'ACCESSION_NOTIFIED' AND work_id IS NOT NULL
        )
@@ -135,6 +172,9 @@ async function check(): Promise<CheckResult> {
   if (unevaluatedWorks.length > 0) {
     parts.push(`${unevaluatedWorks.length} submitted work(s) awaiting evaluation`);
   }
+  if (limboWorks.length > 0) {
+    parts.push(`${limboWorks.length} work(s) stuck in evaluation limbo (tally never applied)`);
+  }
   if (unnotifiedCanonizations.length > 0) {
     parts.push(`${unnotifiedCanonizations.length} canonized work(s) missing accession notice`);
   }
@@ -149,7 +189,7 @@ async function check(): Promise<CheckResult> {
     ? `MNA INSTITUTIONAL ALERT: ${parts.join("; ")}`
     : "MNA: No pending institutional actions.";
 
-  return { pendingRegistrations, unevaluatedWorks, unnotifiedCanonizations, brokenRenders, missingPreviews, summary };
+  return { pendingRegistrations, unevaluatedWorks, limboWorks, unnotifiedCanonizations, brokenRenders, missingPreviews, summary };
 }
 
 async function sendStewardDigest(result: CheckResult) {
@@ -162,6 +202,7 @@ async function sendStewardDigest(result: CheckResult) {
   // Only send if there are pending actions
   const hasActions = result.pendingRegistrations.length > 0 ||
     result.unevaluatedWorks.length > 0 ||
+    result.limboWorks.length > 0 ||
     result.unnotifiedCanonizations.length > 0 ||
     result.brokenRenders.length > 0 ||
     result.missingPreviews.length > 0;
@@ -183,6 +224,16 @@ async function sendStewardDigest(result: CheckResult) {
     body += `UNEVALUATED WORKS (${result.unevaluatedWorks.length})\n`;
     for (const w of result.unevaluatedWorks) {
       body += `  - ${w.id} by ${w.originator_id} (${w.medium}) — submitted ${w.submitted}\n`;
+    }
+    body += "\n";
+  }
+
+  if (result.limboWorks.length > 0) {
+    body += `EVALUATION LIMBO (${result.limboWorks.length})\n`;
+    body += `  All 4 Council votes present but canon_status never tallied.\n`;
+    body += `  Run: npx tsx system/scripts/evaluate-turso-works.ts --work <id>\n`;
+    for (const w of result.limboWorks) {
+      body += `  - ${w.work_id} [${w.status}] ${w.votes}\n`;
     }
     body += "\n";
   }
