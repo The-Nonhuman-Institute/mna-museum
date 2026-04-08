@@ -69,10 +69,13 @@ export default async function AgentOGImage({
       .map((w) => `https://www.mnamuseum.org/previews/${w.id}.png`);
   }
 
-  // Truncate the function statement for the sidebar
+  // Show the full function statement. The longest current agent
+  // statement (The Curator) is 476 chars, which fits in the card at
+  // 22px/1.5 in roughly 5 lines. Mid-word "…" truncation produces
+  // worse cards than a slightly-longer block of prose — and all
+  // institutional function statements are already written to be
+  // compact and quotable.
   const fnStatement = agent.functionStatement || "";
-  const truncatedFn =
-    fnStatement.length > 240 ? fnStatement.slice(0, 237) + "…" : fnStatement;
 
   return new ImageResponse(
     (
@@ -172,7 +175,7 @@ export default async function AgentOGImage({
               fontFamily: "Georgia, serif",
             }}
           >
-            {truncatedFn || typeLabel}
+            {fnStatement || typeLabel}
           </div>
         )}
 
