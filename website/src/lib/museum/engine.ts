@@ -335,6 +335,16 @@ export class MuseumEngine {
     this.player.enableFreeLook();
   }
 
+  /** Enable split-screen touch controls (phones and tablets). */
+  enableTouchMode(): void {
+    this.player.enableTouchMode();
+  }
+
+  /** Snapshot of the movement touch state, for the HUD to render a visual joystick. */
+  getTouchState() {
+    return this.player.getTouchState();
+  }
+
   dispose(): void {
     this.disposed = true;
     cancelAnimationFrame(this.animationId);

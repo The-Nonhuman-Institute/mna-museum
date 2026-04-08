@@ -7,32 +7,123 @@ import { MuseumEngine, MuseumState } from "@/lib/museum/engine";
 import { MuseumData } from "@/lib/museum/placement";
 import { drawMuseumMap } from "@/lib/museum/map";
 
-function isMobileDevice(): boolean {
+/**
+ * Detect whether the visitor's primary input is touch. Used to:
+ *   - auto-enable split-screen touch controls in the engine
+ *   - branch the pause-overlay instructions (drag-to-move vs WASD)
+ *   - show the optional joystick toggle in the HUD
+ *
+ * Uses the CSS pointer media query rather than User Agent sniffing, which
+ * is more reliable on modern iPadOS (reports as desktop Safari) and phones.
+ */
+function isTouchPrimary(): boolean {
   if (typeof window === "undefined") return false;
-  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  ) || (window.innerWidth < 768 && "ontouchstart" in window);
+  if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return true;
+  // Fallback for browsers that don't support the pointer media query
+  return "ontouchstart" in window && navigator.maxTouchPoints > 0;
 }
 
-function MobileFallback() {
+/**
+ * Visible virtual joystick overlay for touch devices when toggled on.
+ *
+ * Polls the engine's touch state via requestAnimationFrame and renders a
+ * circular stick indicator at the thumb's origin position. Purely visual —
+ * the engine's internal touch handler is the actual input source. The
+ * joystick never consumes pointer events (pointer-events: none) so it can't
+ * interfere with the engine's split-screen drag.
+ */
+function VirtualJoystick({
+  engineRef,
+}: {
+  engineRef: React.RefObject<MuseumEngine | null>;
+}) {
+  const [snap, setSnap] = useState<{
+    active: boolean;
+    originX: number;
+    originY: number;
+    currentX: number;
+    currentY: number;
+    maxRadius: number;
+  }>({
+    active: false,
+    originX: 0,
+    originY: 0,
+    currentX: 0,
+    currentY: 0,
+    maxRadius: 72,
+  });
+
+  useEffect(() => {
+    let rafId = 0;
+    const tick = () => {
+      const s = engineRef.current?.getTouchState();
+      if (s) {
+        // Only call setState when the active flag changes or positions move,
+        // to avoid tight infinite re-renders.
+        setSnap((prev) => {
+          if (
+            prev.active === s.active &&
+            prev.originX === s.originX &&
+            prev.originY === s.originY &&
+            prev.currentX === s.currentX &&
+            prev.currentY === s.currentY
+          ) {
+            return prev;
+          }
+          return s;
+        });
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [engineRef]);
+
+  if (!snap.active) return null;
+
+  // Clamp the knob's visual position to the stick base radius.
+  const dx = snap.currentX - snap.originX;
+  const dy = snap.currentY - snap.originY;
+  const mag = Math.sqrt(dx * dx + dy * dy);
+  const clamped = Math.min(1, mag / snap.maxRadius);
+  const angle = mag > 0 ? Math.atan2(dy, dx) : 0;
+  const knobX = Math.cos(angle) * clamped * snap.maxRadius;
+  const knobY = Math.sin(angle) * clamped * snap.maxRadius;
+
+  const baseSize = snap.maxRadius * 2;
+  const knobSize = 36;
+
   return (
-    <div className="fixed inset-0 bg-[#0a0908] flex flex-col items-center justify-center px-8">
-      <Image
-        src="/MNA-Standard-Logo-White-Horizontal.svg"
-        alt="Museum of Nonhuman Art"
-        width={280}
-        height={106}
-        className="mb-10 opacity-80"
+    <div
+      className="fixed z-40 pointer-events-none"
+      style={{
+        left: snap.originX - snap.maxRadius,
+        top: snap.originY - snap.maxRadius,
+        width: baseSize,
+        height: baseSize,
+      }}
+    >
+      {/* Base ring */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          border: "2px solid rgba(208, 204, 198, 0.25)",
+          background: "rgba(10, 9, 8, 0.2)",
+          backdropFilter: "blur(2px)",
+        }}
       />
-      <p className="text-[15px] text-[#b0a89e] text-center leading-relaxed mb-6 max-w-sm">
-        The virtual museum experience requires a desktop browser with keyboard and mouse.
-      </p>
-      <Link
-        href="/"
-        className="text-[12px] uppercase tracking-[0.2em] px-8 py-3 border border-[#3a3530] text-[#8a8680] hover:text-[#d0ccc6] hover:border-[#6a6560] transition-colors"
-      >
-        Explore the Collection
-      </Link>
+      {/* Knob */}
+      <div
+        className="absolute rounded-full"
+        style={{
+          left: snap.maxRadius + knobX - knobSize / 2,
+          top: snap.maxRadius + knobY - knobSize / 2,
+          width: knobSize,
+          height: knobSize,
+          background: "rgba(208, 204, 198, 0.4)",
+          border: "1px solid rgba(208, 204, 198, 0.6)",
+        }}
+      />
     </div>
   );
 }
@@ -73,8 +164,9 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     showFps: false,
   });
   const [ready, setReady] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
   const [freeLookMode, setFreeLookMode] = useState(false);
+  const [joystickVisible, setJoystickVisible] = useState(false);
   const hasEnteredRef = useRef(false);
 
   // Stable callback — doesn't change on state updates
@@ -87,11 +179,31 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
   }, []);
 
   useEffect(() => {
-    if (isMobileDevice()) { setIsMobile(true); return; }
+    // Detect touch device up front so the HUD and engine can adapt.
+    const touch = isTouchPrimary();
+    setIsTouch(touch);
+
+    // Restore the visitor's joystick-visibility preference (touch devices only).
+    if (touch && typeof window !== "undefined") {
+      try {
+        const stored = window.localStorage.getItem("mna.joystick-visible");
+        if (stored === "1") setJoystickVisible(true);
+      } catch {
+        // localStorage may be unavailable — default to hidden
+      }
+    }
+
     const el = containerRef.current;
     if (!el || engineRef.current) return;
     engineRef.current = new MuseumEngine(el, onStateChange, museumData);
     setReady(true);
+
+    // On touch devices, enable split-screen touch controls immediately so the
+    // visitor can move and look as soon as they enter.
+    if (touch) {
+      engineRef.current.enableTouchMode();
+    }
+
     return () => { engineRef.current?.dispose(); engineRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -158,11 +270,22 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
     }
   }, [state.mapOpen, state.playerX, state.playerZ]);
 
-  if (isMobile) return <MobileFallback />;
-
   const roomName = state.currentRoom?.name || "";
   const roomSubtitle = state.currentRoom?.subtitle || "";
   const totalVisitors = state.visitorCount + 1;
+
+  /** Toggle the visible joystick (touch devices only) and persist the preference. */
+  const toggleJoystick = () => {
+    setJoystickVisible((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem("mna.joystick-visible", next ? "1" : "0");
+      } catch {
+        // localStorage may be unavailable — preference won't persist
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="fixed inset-0 bg-[#0a0908]">
@@ -182,7 +305,7 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
               Exit Museum
             </Link>
 
-            {/* Right: Visitor count + Map in one container */}
+            {/* Right: Visitor count + Map + (touch only) Joystick toggle */}
             <div className="pointer-events-auto bg-[#0a0908]/80 backdrop-blur-sm border border-[#3a3530]/60 px-5 py-2.5 flex items-center gap-5">
               <div className="flex items-center gap-2.5">
                 <span className="w-2 h-2 rounded-full bg-[#7BA393] shadow-[0_0_6px_#7BA393]" />
@@ -197,6 +320,19 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
               >
                 Map <span className="text-[10px] text-[#6a6560] ml-1">[M]</span>
               </button>
+              {isTouch && (
+                <>
+                  <span className="text-[#3a3530]">|</span>
+                  <button
+                    className={`text-[12px] uppercase tracking-[0.15em] transition-colors ${joystickVisible ? "text-white" : "text-[#d0ccc6] hover:text-white"}`}
+                    onClick={toggleJoystick}
+                    aria-pressed={joystickVisible}
+                    aria-label="Toggle joystick visibility"
+                  >
+                    Joystick
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -232,28 +368,45 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pointer-events-none">
               <div className="bg-[#0a0908]/90 backdrop-blur-sm border border-[#3a3530] px-12 py-8 text-center max-w-md pointer-events-none">
                 <p className="text-[16px] text-[#d0ccc6] mb-5">
-                  {hasEntered ? "Click to resume" : "Click to enter the museum"}
+                  {isTouch
+                    ? (hasEntered ? "Tap to resume" : "Tap to enter the museum")
+                    : (hasEntered ? "Click to resume" : "Click to enter the museum")}
                 </p>
 
-                {/* Controls */}
+                {/* Controls — instructions differ for touch vs desktop */}
                 <div className="space-y-2 mb-5">
-                  <p className="text-[11px] text-[#8a8580] tracking-wide">
-                    {freeLookMode
-                      ? "WASD to move · Click and drag to look · ESC to pause"
-                      : "WASD to move · Mouse to look · ESC to pause"}
-                  </p>
-                  <p className="text-[11px] text-[#8a8580] tracking-wide">
-                    M for map · 1-4 to emote
-                  </p>
+                  {isTouch ? (
+                    <>
+                      <p className="text-[11px] text-[#8a8580] tracking-wide">
+                        Drag left half to move · Drag right half to look
+                      </p>
+                      <p className="text-[11px] text-[#8a8580] tracking-wide">
+                        Tap Map to open · Tap Joystick to toggle the stick overlay
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[11px] text-[#8a8580] tracking-wide">
+                        {freeLookMode
+                          ? "WASD to move · Click and drag to look · ESC to pause"
+                          : "WASD to move · Mouse to look · ESC to pause"}
+                      </p>
+                      <p className="text-[11px] text-[#8a8580] tracking-wide">
+                        M for map · 1-4 to emote
+                      </p>
+                    </>
+                  )}
                 </div>
 
-                {/* Emote legend */}
-                <div className="flex justify-center gap-6 text-[10px] text-[#6a6560] tracking-wide">
-                  <span>1 Wave</span>
-                  <span>2 Glow</span>
-                  <span>3 Orbit</span>
-                  <span>4 Pulse</span>
-                </div>
+                {/* Emote legend — desktop only (no touch gesture maps to them) */}
+                {!isTouch && (
+                  <div className="flex justify-center gap-6 text-[10px] text-[#6a6560] tracking-wide">
+                    <span>1 Wave</span>
+                    <span>2 Glow</span>
+                    <span>3 Orbit</span>
+                    <span>4 Pulse</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -280,6 +433,11 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
                 </p>
               </div>
             </div>
+          )}
+
+          {/* ===== VIRTUAL JOYSTICK (touch devices, opt-in) ===== */}
+          {isTouch && joystickVisible && state.isLocked && (
+            <VirtualJoystick engineRef={engineRef} />
           )}
         </>
       )}
