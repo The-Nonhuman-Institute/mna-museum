@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * MNA Steward Terminal — global styles.
+ *
+ * The institutional small-caps label is the connective tissue to the public
+ * site at mnamuseum.org. Used for section headers, metadata labels, status
+ * indicators. Same voice, different palette.
+ */
+
+html, body {
+  background: #0e0c0a;
+  color: #e8e0d2;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Institutional small-caps label — used throughout the terminal for
+   section headers, metadata labels, and status indicators. Matches the
+   public site's convention of uppercase-tracking-0.25em muted text. */
+.label {
+  @apply text-xxs uppercase tracking-widest text-muted font-sans;
+}
+
+/* Data cells — mono-dominant, primary treatment for IDs, timestamps,
+   counts, hardware metrics. */
+.data {
+  @apply font-mono text-sm text-foreground;
+}
+
+.data-muted {
+  @apply font-mono text-xs text-muted;
+}
+
+/* Serif display — Cormorant Garamond for major headings. Reserved for
+   actual institutional moments (agent names, room titles, keeper voice),
+   not decorative use. */
+.display {
+  @apply font-serif text-foreground tracking-tightest;
+}
+
+/* Priority state rings — subtle outlines for status indicators. */
+.ring-active    { box-shadow: 0 0 0 1px rgba(123, 163, 147, 0.6); }
+.ring-attention { box-shadow: 0 0 0 1px rgba(201, 162, 109, 0.6); }
+.ring-error     { box-shadow: 0 0 0 1px rgba(154, 90, 74, 0.6); }
+
+/* Hide scrollbar chrome in the feed — scroll still works. */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { scrollbar-width: none; }

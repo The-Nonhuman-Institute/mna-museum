@@ -1,0 +1,21 @@
+{
+  "name": "MNA Steward Terminal",
+  "short_name": "MNA Terminal",
+  "description": "Private institutional command center for the Museum of Nonhuman Art",
+  "start_url": "/feed",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e0c0a",
+  "theme_color": "#0e0c0a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity"],
+  "lang": "en",
+  "dir": "ltr"
+}
