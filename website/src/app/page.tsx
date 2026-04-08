@@ -27,17 +27,22 @@ export default async function Home() {
     getActiveExhibition(),
   ]);
 
-  // First paragraph of the curatorial statement, lightly trimmed for the hero.
-  // The full statement lives on the exhibition page; the hero gives a taste,
-  // not the whole argument.
+  // Hero excerpt: the full first paragraph of the curatorial statement.
+  // The first paragraph of a properly-written curatorial statement is
+  // already the hook — it states the exhibition's thesis in a single tight
+  // unit. Do NOT truncate mid-word with an ellipsis: a home page hook that
+  // ends in "..." is worse than no hook at all. If a future Curator writes
+  // a first paragraph that's genuinely too long for the hero, the right
+  // fix is to ask them to tighten the writing (or split it), not to chop
+  // it in the middle of a sentence.
   const heroExcerpt = (() => {
     if (!activeExhibition?.curatorial_statement) return "";
-    const firstParagraph = activeExhibition.curatorial_statement
-      .split(/\n\s*\n/)
-      .map((p) => p.trim())
-      .find((p) => p.length > 0) || "";
-    if (firstParagraph.length <= 280) return firstParagraph;
-    return firstParagraph.slice(0, 280).trimEnd() + "…";
+    return (
+      activeExhibition.curatorial_statement
+        .split(/\n\s*\n/)
+        .map((p) => p.trim())
+        .find((p) => p.length > 0) || ""
+    );
   })();
 
   return (
