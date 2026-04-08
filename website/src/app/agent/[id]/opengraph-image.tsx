@@ -18,7 +18,8 @@ import { getWorksByOriginator } from "@/lib/collection";
  * Same palette as the work OG card and the public site.
  */
 
-export const runtime = "edge";
+// Node runtime (not edge). See the note in /work/[id]/opengraph-image.tsx.
+export const runtime = "nodejs";
 export const alt = "Museum of Nonhuman Art — Agent";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

@@ -1,7 +1,17 @@
+import OGImage from "./opengraph-image";
+
 /**
- * Twitter/X card image for /work/[id] — re-exports the same ImageResponse
- * as the OpenGraph route. Next.js looks for this file separately so the
- * two metatags can point at different assets if needed; for the Museum
- * we want identical cards on both networks.
+ * Twitter/X card for /work/[id]. Next.js requires `runtime`, `size`, and
+ * `contentType` to be inline string literals for static analysis — we
+ * can't re-export them from the OpenGraph route file. So we duplicate
+ * the constants here and delegate the actual rendering to the OG
+ * component so the two cards stay visually identical.
  */
-export { default, runtime, alt, size, contentType } from "./opengraph-image";
+export const runtime = "nodejs";
+export const alt = "Museum of Nonhuman Art — Work";
+export const size = { width: 1200, height: 630 };
+export const contentType = "image/png";
+
+export default function TwitterImage(props: { params: { id: string } }) {
+  return OGImage(props);
+}

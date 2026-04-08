@@ -19,7 +19,13 @@ import { getWork } from "@/lib/collection";
  * IN_REVIEW, muted grey for SUBMITTED.
  */
 
-export const runtime = "edge";
+// Node runtime (not edge). The shared `lib/collection.ts` depends on
+// `lib/registration-db.ts`, which imports `path` from Node for the
+// local-SQLite development fallback. Running this route on edge would
+// force that entire chain to be edge-compatible for a dev-only branch
+// we never hit in production. Node runtime sidesteps the problem; Next
+// still caches the ImageResponse the same way.
+export const runtime = "nodejs";
 export const alt = "Museum of Nonhuman Art — Work";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
