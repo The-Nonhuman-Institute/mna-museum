@@ -1,21 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME, verifySessionValue } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, verifySessionValue } from "@/lib/session";
 
 /**
- * MNA Steward Terminal — auth gate middleware.
+ * MNA Steward Terminal — auth gate proxy (Next.js 16.2+ convention).
  *
  * Every request that isn't a public asset or the login flow itself must
  * carry a valid signed session cookie. Unauthenticated requests to any
  * app route are redirected to /login. Unauthenticated requests to any
  * API route return 401 JSON (no redirect).
  *
- * Note: Next.js 16 introduces proxy.ts as the preferred pattern for
- * intercept/auth/rewrite logic. middleware.ts still works and will
- * continue to work — this project uses middleware.ts for maximum
- * portability across Next 13-16. Migration to proxy.ts is a one-line
- * rename when the codebase is ready.
+ * This file runs in Edge runtime by default, which forbids Node's
+ * `fs`, `path`, and `crypto` modules. Session verification uses Web
+ * Crypto (available in Edge) via `lib/session.ts`, which is why this
+ * file does NOT import from `lib/auth.ts` (that module uses bcryptjs
+ * + Node fs to read the password hash file and is Node-runtime only).
+ *
+ * Next.js 16.2 replaced the `middleware.ts` file convention with
+ * `proxy.ts` and renamed the expected export from `middleware` to
+ * `proxy`. The signature and semantics are identical — only the file
+ * name and export name changed.
  */
-export function middleware(request: NextRequest): NextResponse {
+export async function proxy(
+  request: NextRequest
+): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   // Paths that bypass auth — login flow, API login endpoint, PWA manifest,
@@ -31,9 +38,10 @@ export function middleware(request: NextRequest): NextResponse {
   if (pathname.startsWith("/_next/")) return NextResponse.next();
   if (pathname.startsWith("/icons/")) return NextResponse.next();
 
-  // Check for a valid session cookie.
+  // Check for a valid session cookie. verifySessionValue is async
+  // because Web Crypto's HMAC verify is async.
   const cookie = request.cookies.get(SESSION_COOKIE_NAME);
-  const sessionValid = verifySessionValue(cookie?.value);
+  const sessionValid = await verifySessionValue(cookie?.value);
 
   if (sessionValid) return NextResponse.next();
 

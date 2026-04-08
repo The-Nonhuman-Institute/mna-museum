@@ -6,14 +6,16 @@
  *   npm run hash-password
  *
  * Prompts for a password (input is hidden), hashes it with bcrypt at
- * cost factor 12, and prints the hash to stdout. Copy the hash into
- * terminal/.env as STEWARD_PASSWORD_HASH.
+ * cost factor 12, and writes the hash directly to data/steward.hash.
+ * No .env copy/paste required.
  *
  * This is a one-time setup tool. Run it once when installing the
- * terminal, and again only if you want to rotate the steward password.
+ * terminal, and again any time you want to rotate the steward password.
  */
 import bcrypt from "bcryptjs";
 import readline from "readline";
+import fs from "fs";
+import path from "path";
 
 function promptHidden(query: string): Promise<string> {
   return new Promise((resolve) => {
@@ -62,8 +64,16 @@ async function main() {
 
   const hash = await bcrypt.hash(password, 12);
 
-  console.log("\nHash generated. Copy the line below into terminal/.env:\n");
-  console.log(`STEWARD_PASSWORD_HASH='${hash}'`);
+  const dataDir = path.join(process.cwd(), "data");
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  const hashPath = path.join(dataDir, "steward.hash");
+  fs.writeFileSync(hashPath, hash, { mode: 0o600 });
+
+  console.log(`\n✓ Steward password hash written to ${hashPath}`);
+  console.log("  File permissions: 0600 (read/write for owner only)");
+  console.log("  The terminal will pick up the new hash on next request.");
   console.log("");
 }
 

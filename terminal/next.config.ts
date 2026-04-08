@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 /**
  * MNA Steward Terminal — Next.js 16 config.
@@ -8,6 +9,14 @@ import type { NextConfig } from "next";
  * server restarts without any additional wiring.
  */
 const nextConfig: NextConfig = {
+  // Explicitly tell Turbopack that this directory is the workspace root.
+  // The terminal lives in a sibling directory of a multi-app repo (website,
+  // system, terminal) and the project-root has its own package-lock.json
+  // for system/scripts/, which confuses Turbopack's root inference.
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
+
   // better-sqlite3 is a native module; keep it external to the server bundle
   // so the Node runtime loads it directly rather than through Turbopack.
   serverExternalPackages: ["better-sqlite3"],

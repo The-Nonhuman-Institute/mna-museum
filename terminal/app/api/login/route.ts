@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyPassword } from "@/lib/auth";
 import {
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_OPTIONS,
   createSessionValue,
-  verifyPassword,
-} from "@/lib/auth";
+} from "@/lib/session";
+
+// Force this route onto the Node runtime so `lib/auth.ts` can use
+// bcryptjs + fs to read the password hash file. The default Edge
+// runtime can't handle those imports.
+export const runtime = "nodejs";
 
 /**
  * POST /api/login
@@ -90,9 +95,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   redirectUrl.search = "";
   const response = NextResponse.redirect(redirectUrl, { status: 303 });
 
+  // createSessionValue is async (Web Crypto HMAC sign is async in Edge),
+  // so we await here even though this route runs in Node runtime —
+  // keeps the session-cookie API uniform across both runtimes.
+  const sessionValue = await createSessionValue();
   response.cookies.set(
     SESSION_COOKIE_NAME,
-    createSessionValue(),
+    sessionValue,
     SESSION_COOKIE_OPTIONS
   );
 
