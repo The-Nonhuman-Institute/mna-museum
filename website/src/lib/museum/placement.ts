@@ -1266,16 +1266,30 @@ async function populateExhibitionHall(
         work.medium,
         work.canon_status,
       );
-      // Placard offset — matches populateGallery's pattern
+      // Placard positioning — the existing populateGallery formula uses
+      // slot.z - cos(rot)*offset which works for perimeter walls (placing the
+      // label nearly flush with the wall). But for the Exhibition Hall's
+      // central key wall — which has TWO close-together faces at ±0.65 from
+      // room center — that same formula pushes labels INSIDE the wall
+      // geometry, which is why placards weren't showing in the Exhibition
+      // Hall. Fix: move the label OUTWARD (in the frame's face-normal
+      // direction) by a small offset so it sits just in front of the frame,
+      // clearly outside the wall surface. This works for both key wall and
+      // perimeter slots because the face normal always points "into the room
+      // from the frame" (away from the wall the frame hangs on).
       const frameAspect = work.display_aspect || 1;
       const innerH = 5.5 * 0.8;
       const borderW = Math.max(innerH * frameAspect, innerH) * 0.12;
       const totalFrameH = innerH + borderW * 2;
       const labelDropY = totalFrameH / 2 + 1.2;
-      const labelOffset = 0.5;
-      const labelDx = Math.sin(slot.rotationY) * labelOffset;
-      const labelDz = Math.cos(slot.rotationY) * labelOffset;
-      label.position.set(slot.x - labelDx, slot.y - labelDropY, slot.z - labelDz);
+      const labelOutward = 0.3;
+      const labelDx = Math.sin(slot.rotationY) * labelOutward;
+      const labelDz = Math.cos(slot.rotationY) * labelOutward;
+      label.position.set(
+        slot.x + labelDx,
+        slot.y - labelDropY,
+        slot.z + labelDz,
+      );
       label.rotation.y = slot.rotationY;
       group.add(label);
       placedCount++;
