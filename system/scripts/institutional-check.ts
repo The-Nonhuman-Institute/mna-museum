@@ -42,6 +42,7 @@ interface CheckResult {
   pendingRegistrations: { id: number; steward_name: string; steward_email: string; submission_date: string }[];
   unevaluatedWorks: { id: string; originator_id: string; medium: string; submitted: string }[];
   limboWorks: { work_id: string; status: string; votes: string }[];
+  renderMismatches: { work_id: string; medium: string; output_type: string; canon_status: string }[];
   unnotifiedCanonizations: { work_id: string; originator_id: string; canon_date: string; steward_email: string }[];
   brokenRenders: { work_id: string; output_type: string; error_message: string | null; last_checked: string }[];
   missingPreviews: { work_id: string; output_type: string }[];
@@ -96,6 +97,30 @@ async function check(): Promise<CheckResult> {
     work_id: r.work_id as string,
     status: r.status as string,
     votes: (r.votes as string) || "",
+  }));
+
+  // 3b. Render mismatches: works where the declared medium strictly
+  //     implies a specific output_type but the stored output_type is
+  //     different. These works render as raw source to humans because
+  //     WorkDisplay dispatches on output_type. The submit API now
+  //     rejects these at the door (layer 1), but older works or works
+  //     written outside the API still need to be caught here.
+  const mismatchResult = await turso.execute(`
+    SELECT w.id, w.medium, w.output_type, cs.status
+      FROM works w
+      LEFT JOIN canon_status cs ON cs.work_id = w.id
+     WHERE (w.medium = 'html-css' AND w.output_type != 'html-css')
+        OR (w.medium = 'svg' AND w.output_type != 'svg')
+        OR (w.medium = 'canvas-json' AND w.output_type != 'canvas-json')
+        OR (w.medium = 'audio-json' AND w.output_type != 'audio-json')
+        OR (w.medium = 'scene-json' AND w.output_type != 'scene-json')
+     ORDER BY w.id
+  `);
+  const renderMismatches = mismatchResult.rows.map((r) => ({
+    work_id: r.id as string,
+    medium: r.medium as string,
+    output_type: r.output_type as string,
+    canon_status: (r.status as string) || "UNKNOWN",
   }));
 
   // 4. Canonized works where no ACCESSION_NOTIFIED event exists AND
@@ -175,6 +200,9 @@ async function check(): Promise<CheckResult> {
   if (limboWorks.length > 0) {
     parts.push(`${limboWorks.length} work(s) stuck in evaluation limbo (tally never applied)`);
   }
+  if (renderMismatches.length > 0) {
+    parts.push(`${renderMismatches.length} work(s) with medium/output_type render mismatch`);
+  }
   if (unnotifiedCanonizations.length > 0) {
     parts.push(`${unnotifiedCanonizations.length} canonized work(s) missing accession notice`);
   }
@@ -189,7 +217,7 @@ async function check(): Promise<CheckResult> {
     ? `MNA INSTITUTIONAL ALERT: ${parts.join("; ")}`
     : "MNA: No pending institutional actions.";
 
-  return { pendingRegistrations, unevaluatedWorks, limboWorks, unnotifiedCanonizations, brokenRenders, missingPreviews, summary };
+  return { pendingRegistrations, unevaluatedWorks, limboWorks, renderMismatches, unnotifiedCanonizations, brokenRenders, missingPreviews, summary };
 }
 
 async function sendStewardDigest(result: CheckResult) {
@@ -203,6 +231,7 @@ async function sendStewardDigest(result: CheckResult) {
   const hasActions = result.pendingRegistrations.length > 0 ||
     result.unevaluatedWorks.length > 0 ||
     result.limboWorks.length > 0 ||
+    result.renderMismatches.length > 0 ||
     result.unnotifiedCanonizations.length > 0 ||
     result.brokenRenders.length > 0 ||
     result.missingPreviews.length > 0;
@@ -234,6 +263,18 @@ async function sendStewardDigest(result: CheckResult) {
     body += `  Run: npx tsx system/scripts/evaluate-turso-works.ts --work <id>\n`;
     for (const w of result.limboWorks) {
       body += `  - ${w.work_id} [${w.status}] ${w.votes}\n`;
+    }
+    body += "\n";
+  }
+
+  if (result.renderMismatches.length > 0) {
+    body += `RENDER MISMATCHES (${result.renderMismatches.length})\n`;
+    body += `  medium and output_type disagree — these works display as raw\n`;
+    body += `  source on the public page because the renderer dispatches on\n`;
+    body += `  output_type. Fix with an UPDATE on the works table and\n`;
+    body += `  re-run scripts/generate-work-previews.ts --work <id>.\n`;
+    for (const w of result.renderMismatches) {
+      body += `  - ${w.work_id} medium=${w.medium} output_type=${w.output_type} [${w.canon_status}]\n`;
     }
     body += "\n";
   }

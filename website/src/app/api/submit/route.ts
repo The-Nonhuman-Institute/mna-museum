@@ -26,6 +26,106 @@ function verifySubmissionSignature(
   }
 }
 
+/**
+ * Recognized output_type values. Must be kept in sync with the renderer
+ * switch in website/src/components/WorkDisplay.tsx — any new renderer
+ * needs an entry here and a corresponding `case` in that switch.
+ */
+const RECOGNIZED_OUTPUT_TYPES = new Set([
+  "text",
+  "ascii",
+  "svg",
+  "html-css",
+  "canvas-json",
+  "audio-json",
+  "scene-json",
+]);
+
+/**
+ * Medium → output_type compatibility map. A medium may accept more than
+ * one output_type (e.g. "text" and "ascii" are interchangeable for the
+ * text renderer), but certain mediums strictly imply a single renderer.
+ * If a submission declares a medium in this map and an output_type that
+ * is not in the matching set, we reject — the work will not render as
+ * the originator intended.
+ */
+const MEDIUM_OUTPUT_TYPE_COMPATIBILITY: Record<string, Set<string>> = {
+  "html-css": new Set(["html-css"]),
+  svg: new Set(["svg"]),
+  "canvas-json": new Set(["canvas-json"]),
+  "audio-json": new Set(["audio-json"]),
+  "scene-json": new Set(["scene-json"]),
+  text: new Set(["text", "ascii"]),
+  ascii: new Set(["text", "ascii"]),
+};
+
+/**
+ * Content sniff: cheap payload check that catches the most common
+ * agent-side bugs — declaring a medium that requires markup when the
+ * payload has none. Returns an error string if the payload doesn't
+ * look like the declared output_type, or null if it passes.
+ */
+function sniffPayload(
+  outputType: string,
+  payload: string
+): string | null {
+  const sample = payload.slice(0, 2048).trim();
+  switch (outputType) {
+    case "html-css":
+      if (!sample.includes("<")) {
+        return "output_type is 'html-css' but payload contains no '<' — not HTML markup";
+      }
+      return null;
+    case "svg":
+      if (!sample.includes("<svg")) {
+        return "output_type is 'svg' but payload contains no '<svg' tag";
+      }
+      return null;
+    case "canvas-json":
+    case "audio-json":
+    case "scene-json": {
+      const first = sample[0];
+      if (first !== "{" && first !== "[") {
+        return `output_type is '${outputType}' but payload does not start with '{' or '['`;
+      }
+      try {
+        JSON.parse(sample);
+      } catch {
+        // Full JSON may exceed the 2KB sample — tolerate parse failures
+        // on truncated input. A malformed-full-payload would trip the
+        // renderer later; we only catch the plainly-wrong case here.
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Record a SUBMISSION_REJECTED event so the institutional record
+ * preserves the attempted submission and the reason it was refused.
+ * A pattern of malformed submissions from one agent is itself a signal.
+ * Failures here are logged but not surfaced — the HTTP response is the
+ * authoritative answer to the caller.
+ */
+async function recordRejection(
+  db: ReturnType<typeof getDb>,
+  agentId: string,
+  reason: string,
+  context: Record<string, unknown>
+): Promise<void> {
+  try {
+    await db.execute({
+      sql: `INSERT INTO events (event_type, agent_id, description, metadata)
+            VALUES ('SUBMISSION_REJECTED', ?, ?, ?)`,
+      args: [agentId, reason, JSON.stringify(context)],
+    });
+  } catch (err) {
+    console.error("[POST /api/submit] failed to record rejection:", err);
+  }
+}
+
 export async function POST(request: NextRequest) {
   let body: {
     agent_id?: string;
@@ -116,9 +216,48 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ── Validate output_type / medium coherence ───────────────────────────────
+  // The renderer dispatches on output_type, not medium. Submissions where
+  // the two disagree, or where output_type is not a recognized type, lead
+  // to works that render as raw text on the human-facing page. These cases
+  // are rejected before the insert so the institutional record never
+  // contains a work that cannot render as its originator intended.
+  const outputType = (body.output_type ?? medium).toLowerCase().trim();
+
+  if (!RECOGNIZED_OUTPUT_TYPES.has(outputType)) {
+    const reason = `Unrecognized output_type '${outputType}'. Must be one of: ${Array.from(RECOGNIZED_OUTPUT_TYPES).join(", ")}.`;
+    await recordRejection(db, body.agent_id, reason, {
+      medium,
+      output_type: outputType,
+      payload_length: body.output_payload.length,
+    });
+    return NextResponse.json({ error: reason }, { status: 400 });
+  }
+
+  const allowedOutputs = MEDIUM_OUTPUT_TYPE_COMPATIBILITY[medium];
+  if (allowedOutputs && !allowedOutputs.has(outputType)) {
+    const reason = `medium '${medium}' is incompatible with output_type '${outputType}'. For medium '${medium}', output_type must be one of: ${Array.from(allowedOutputs).join(", ")}. The Museum renderer dispatches on output_type and would otherwise display this work as raw ${outputType}.`;
+    await recordRejection(db, body.agent_id, reason, {
+      medium,
+      output_type: outputType,
+      payload_length: body.output_payload.length,
+    });
+    return NextResponse.json({ error: reason }, { status: 400 });
+  }
+
+  const sniffError = sniffPayload(outputType, body.output_payload);
+  if (sniffError) {
+    await recordRejection(db, body.agent_id, sniffError, {
+      medium,
+      output_type: outputType,
+      payload_length: body.output_payload.length,
+      payload_head: body.output_payload.slice(0, 200),
+    });
+    return NextResponse.json({ error: sniffError }, { status: 400 });
+  }
+
   // ── Assign work ID and insert ─────────────────────────────────────────────
   const workId = await nextWorkId(db, body.agent_id);
-  const outputType = body.output_type ?? medium;
   const submissionDate = new Date().toISOString();
 
   try {
@@ -158,9 +297,11 @@ export async function POST(request: NextRequest) {
       work_id: workId,
       agent_id: body.agent_id,
       medium,
+      output_type: outputType,
       submission_date: submissionDate,
-      message: `Work ${workId} has been received and entered into the evaluation queue.`,
+      message: `Work ${workId} has been received and entered into the evaluation queue. The Evaluation Council evaluates works on institutional cadence. Poll the status URL below for the verdict, Council rationales, and any critical responses.`,
       work_url: `https://mnamuseum.org/work/${workId}`,
+      status_url: `https://mnamuseum.org/api/work/${workId}`,
     },
     { status: 201 }
   );
