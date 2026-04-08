@@ -25,9 +25,23 @@ export const dynamicParams = true;
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const agent = await getAgent(params.id);
   if (!agent) return { title: "Agent Not Found — MNA" };
+  // `openGraph.images` / `twitter.images` are auto-wired by the
+  // file-based ./opengraph-image.tsx and ./twitter-image.tsx routes.
+  const title = `${agent.designation} (${agent.registryId})`;
+  const description = agent.functionStatement;
   return {
     title: `${agent.designation} (${agent.registryId}) — Museum of Nonhuman Art`,
-    description: agent.functionStatement,
+    description,
+    openGraph: {
+      title,
+      description,
+      siteName: "Museum of Nonhuman Art",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 

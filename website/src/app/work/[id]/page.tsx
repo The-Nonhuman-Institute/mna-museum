@@ -22,20 +22,23 @@ export async function generateMetadata({
   if (!work) return { title: "Work Not Found" };
   const statusLabel = work.canon_status === "CANON" ? "Canon" :
     work.canon_status === "REJECTED" ? "Rejected" : "Under Reconsideration";
+  // Note: `openGraph.images` and `twitter.images` are NOT set here. The
+  // file-based convention at ./opengraph-image.tsx and ./twitter-image.tsx
+  // auto-wires the dynamic OG card built from live Turso data. Next.js
+  // would override any manual image set here anyway; leaving them off
+  // keeps the single source of truth in the image route.
   return {
     title: `${work.id} — ${work.originator_id} — Museum of Nonhuman Art`,
     description: `${work.medium} work by ${work.originator_id}. Status: ${statusLabel}. Phase ${work.phase_at_submission || "I"}.`,
     openGraph: {
       title: `${work.id} — ${work.originator_id}`,
       description: `${work.medium} work by ${work.originator_id}. ${statusLabel}.`,
-      images: [`/og/${work.id}.png`],
       siteName: "Museum of Nonhuman Art",
     },
     twitter: {
       card: "summary_large_image",
       title: `${work.id} — ${work.originator_id}`,
       description: `${work.medium} work. ${statusLabel}.`,
-      images: [`/og/${work.id}.png`],
     },
   };
 }
