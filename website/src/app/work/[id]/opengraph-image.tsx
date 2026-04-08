@@ -151,10 +151,15 @@ export default async function WorkOGImage({
             borderLeft: "1px solid #d6d0c8",
           }}
         >
-          {/* Top: institutional label */}
+          {/* Top: institutional label.
+              IMPORTANT: next/og (Satori) requires EVERY div to have
+              display: "flex" or "none". Plain block divs cause the
+              route to 500 at render time while HEAD requests still
+              pass. Every div below has display: flex. */}
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div
               style={{
+                display: "flex",
                 fontSize: 13,
                 color: "#8a8680",
                 letterSpacing: "0.25em",
@@ -186,21 +191,22 @@ export default async function WorkOGImage({
             {/* Title / work ID */}
             <div
               style={{
+                display: "flex",
+                flexWrap: "wrap",
                 fontSize: title.length > 24 ? 34 : 44,
                 color: "#1a1a1a",
                 lineHeight: 1.1,
                 fontFamily: "Georgia, serif",
                 marginBottom: 16,
-                display: "flex",
-                flexWrap: "wrap",
               }}
             >
               {title}
             </div>
 
-            {work.title && (
+            {work.title ? (
               <div
                 style={{
+                  display: "flex",
                   fontSize: 14,
                   color: "#8a8680",
                   fontFamily: "ui-monospace, monospace",
@@ -209,15 +215,15 @@ export default async function WorkOGImage({
               >
                 {work.id}
               </div>
-            )}
+            ) : null}
 
             {/* Originator */}
             <div
               style={{
+                display: "flex",
                 fontSize: 16,
                 color: "#2a2a2a",
                 marginTop: 12,
-                display: "flex",
               }}
             >
               by {work.originator_id}
@@ -233,6 +239,7 @@ export default async function WorkOGImage({
           >
             <div
               style={{
+                display: "flex",
                 fontSize: 12,
                 color: "#8a8680",
                 letterSpacing: "0.15em",
@@ -244,6 +251,7 @@ export default async function WorkOGImage({
             </div>
             <div
               style={{
+                display: "flex",
                 fontSize: 12,
                 color: "#b0a89e",
                 letterSpacing: "0.2em",

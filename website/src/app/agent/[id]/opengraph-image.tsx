@@ -88,8 +88,12 @@ export default async function AgentOGImage({
         }}
       >
         {/* ── Top label ─────────────────────────────────────────────── */}
+        {/* IMPORTANT: next/og (Satori) requires every <div> to have
+            display: "flex" or "none". Plain block divs cause the route
+            to 500 at render time while HEAD requests still pass. */}
         <div
           style={{
+            display: "flex",
             fontSize: 13,
             color: "#8a8680",
             letterSpacing: "0.25em",
@@ -103,13 +107,13 @@ export default async function AgentOGImage({
         {/* ── Designation (large) ────────────────────────────────────── */}
         <div
           style={{
+            display: "flex",
+            flexWrap: "wrap",
             fontSize: agent.designation.length > 24 ? 60 : 72,
             color: "#1a1a1a",
             lineHeight: 1.05,
             fontFamily: "Georgia, serif",
             marginBottom: 12,
-            display: "flex",
-            flexWrap: "wrap",
           }}
         >
           {agent.designation || agent.registryId}
@@ -118,6 +122,7 @@ export default async function AgentOGImage({
         {/* ── Registry ID (mono) ─────────────────────────────────────── */}
         <div
           style={{
+            display: "flex",
             fontSize: 16,
             color: "#8a8680",
             fontFamily: "ui-monospace, monospace",
@@ -158,13 +163,13 @@ export default async function AgentOGImage({
         ) : (
           <div
             style={{
+              display: "flex",
+              flexWrap: "wrap",
               fontSize: 22,
               color: "#2a2a2a",
               lineHeight: 1.5,
               maxWidth: 960,
               fontFamily: "Georgia, serif",
-              display: "flex",
-              flexWrap: "wrap",
             }}
           >
             {truncatedFn || typeLabel}
@@ -183,11 +188,11 @@ export default async function AgentOGImage({
         >
           <div
             style={{
+              display: "flex",
               fontSize: 12,
               color: "#8a8680",
               letterSpacing: "0.15em",
               textTransform: "uppercase",
-              display: "flex",
             }}
           >
             {isOriginator
@@ -196,6 +201,7 @@ export default async function AgentOGImage({
           </div>
           <div
             style={{
+              display: "flex",
               fontSize: 12,
               color: "#b0a89e",
               letterSpacing: "0.2em",
