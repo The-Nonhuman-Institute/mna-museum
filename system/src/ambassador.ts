@@ -147,6 +147,207 @@ export async function postEmergence(
 }
 
 /**
+ * Have the Ambassador compose a spotlight post for an Originator.
+ * Institutional voice — names the originator, briefly characterizes the
+ * practice, acknowledges this is a selection from the canonized body.
+ */
+async function composeSpotlightPost(
+  originatorName: string,
+  orientation: string,
+  canonCount: number,
+  featuredCount: number
+): Promise<string> {
+  const orientationSnippet =
+    orientation && orientation.length > 200
+      ? orientation.substring(0, 200) + "..."
+      : orientation || "";
+
+  const prompt = `You are the Museum of Nonhuman Art. Write a single social media post (under 270 characters — do not exceed) presenting a spotlight on one of MNA's originators. Be institutional, not promotional. No hashtags. No emojis. No questions to the audience. Do not address the reader.
+
+Originator: ${originatorName}
+Declared orientation: ${orientationSnippet}
+Total canonized works: ${canonCount}
+Featured in this spotlight: ${featuredCount}
+
+The post should:
+- Name the originator
+- Briefly characterize what distinguishes the practice (one phrase, not a list)
+- Acknowledge that the featured works are a selection from the permanent canon
+
+Write the post text only. Nothing else. No preamble, no explanation.`;
+
+  const response = await runAgent("MNA-AM-0001", prompt, {
+    temperature: 0.7,
+    num_predict: 120,
+    num_ctx: 1024,
+  });
+
+  let post = response.trim();
+  // Strip any leading quote marks the agent might add
+  post = post.replace(/^["'«]\s*/, "").replace(/\s*["'»]$/, "");
+  if (post.length > 290) {
+    post = post.substring(0, 287) + "...";
+  }
+  return post;
+}
+
+/**
+ * Post an Originator Spotlight to Bluesky.
+ *
+ * Loads the originator's canon works from Turso, selects up to 4 of the
+ * most recently canonized, has the Ambassador compose an institutional
+ * spotlight post, and posts a single Bluesky entry with the 4 work preview
+ * images attached. Bluesky's media embed caps at 4 images per post.
+ *
+ * Returns the posted rkey on success.
+ */
+export async function postOriginatorSpotlight(
+  originatorId: string
+): Promise<{ posted: boolean; text: string; workIds: string[] }> {
+  const db = getTurso();
+
+  // Load the originator's agent record and current constitution.
+  const agentRow = await db.execute({
+    sql: `SELECT a.registry_id, a.common_designation,
+                 c.declared_orientation
+            FROM agents a
+            LEFT JOIN constitutions c
+              ON c.agent_id = a.registry_id AND c.is_current = 1
+           WHERE a.registry_id = ?
+           LIMIT 1`,
+    args: [originatorId],
+  });
+  const agentRec = agentRow.rows[0];
+  if (!agentRec) {
+    throw new Error(`Originator ${originatorId} not found`);
+  }
+
+  const commonDesignation = (agentRec.common_designation as string) || "";
+  const originatorName =
+    commonDesignation && commonDesignation !== "PENDING_EMERGENCE"
+      ? commonDesignation
+      : originatorId;
+  const orientation = (agentRec.declared_orientation as string) || "";
+
+  // Load canonized works for this originator, most recent first.
+  const worksRes = await db.execute({
+    sql: `SELECT w.id, w.title, w.medium
+            FROM works w
+            JOIN canon_status cs ON w.id = cs.work_id AND cs.status = 'CANON'
+           WHERE w.originator_id = ?
+           ORDER BY cs.canon_date DESC`,
+    args: [originatorId],
+  });
+  if (worksRes.rows.length === 0) {
+    throw new Error(`Originator ${originatorId} has no canonized works`);
+  }
+
+  const canonCount = worksRes.rows.length;
+  const featured = worksRes.rows.slice(0, 4).map((r) => ({
+    id: r.id as string,
+    title: (r.title as string) || (r.id as string),
+    medium: (r.medium as string) || "unknown",
+  }));
+
+  // Compose the spotlight text via the Ambassador agent.
+  const text = await composeSpotlightPost(
+    originatorName,
+    orientation,
+    canonCount,
+    featured.length
+  );
+
+  console.log(
+    `[AMBASSADOR] Spotlight post composed (${text.length} chars):\n  ${text}`
+  );
+
+  // Upload preview images for the featured works.
+  const bsky = await getBlueskyAgent();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uploadedImages: any[] = [];
+  for (const w of featured) {
+    const previewPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "website",
+      "public",
+      "previews",
+      `${w.id}.png`
+    );
+    if (!fs.existsSync(previewPath)) {
+      console.warn(
+        `[AMBASSADOR] Preview missing for ${w.id}, skipping from spotlight`
+      );
+      continue;
+    }
+    try {
+      const imageData = fs.readFileSync(previewPath);
+      const uploadResponse = await bsky.uploadBlob(imageData, {
+        encoding: "image/png",
+      });
+      uploadedImages.push({
+        alt: `${w.title} by ${originatorName} — ${w.medium}`,
+        image: uploadResponse.data.blob,
+      });
+    } catch (e) {
+      console.error(`[AMBASSADOR] Failed to upload ${w.id}:`, e);
+    }
+  }
+
+  if (uploadedImages.length === 0) {
+    console.warn("[AMBASSADOR] No images uploaded; posting text-only spotlight");
+  }
+
+  // Bluesky limits to 4 images per post; featured is already sliced to 4.
+  const fullText = `${text}\n\nhttps://mnamuseum.org/agent/${originatorId}`;
+  const rt = new RichText({ text: fullText });
+  await rt.detectFacets(bsky);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const embed: any = uploadedImages.length > 0
+    ? { $type: "app.bsky.embed.images", images: uploadedImages }
+    : undefined;
+
+  await bsky.post({
+    text: rt.text,
+    facets: rt.facets,
+    embed,
+    createdAt: new Date().toISOString(),
+  });
+
+  console.log(
+    `[AMBASSADOR] Posted spotlight for ${originatorName} (${featured.length} works)`
+  );
+
+  // Log SPOTLIGHT_POSTED event
+  try {
+    await db.execute({
+      sql: `INSERT INTO events (event_type, agent_id, description, metadata)
+            VALUES ('SPOTLIGHT_POSTED', 'MNA-AM-0001', ?, ?)`,
+      args: [
+        `Bluesky spotlight posted for ${originatorName} (${originatorId})`,
+        JSON.stringify({
+          originator_id: originatorId,
+          originator_name: originatorName,
+          featured_work_ids: featured.map((w) => w.id),
+          canon_count: canonCount,
+          text,
+        }),
+      ],
+    });
+  } catch (e) {
+    console.error("[AMBASSADOR] Failed to log SPOTLIGHT_POSTED event:", e);
+  }
+
+  return {
+    posted: true,
+    text: fullText,
+    workIds: featured.map((w) => w.id),
+  };
+}
+
+/**
  * Post a new publication (research or press) to Bluesky.
  */
 export async function postPublication(
