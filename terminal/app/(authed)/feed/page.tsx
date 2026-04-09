@@ -69,8 +69,8 @@ function normalizeInstitutional(e: InstitutionalEvent): UnifiedFeedItem {
 export default async function FeedPage() {
   const [stats, localEvents, alerts, institutionalEvents] = await Promise.all([
     readCollectionStats(),
-    Promise.resolve(readRecentEvents(30)),
-    Promise.resolve(readPriorityAlerts(10)),
+    readRecentEvents(30),
+    readPriorityAlerts(10),
     readRecentInstitutionalEvents(30),
   ]);
 

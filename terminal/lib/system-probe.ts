@@ -2,7 +2,7 @@ import "server-only";
 import os from "node:os";
 import { execSync } from "node:child_process";
 import { statfsSync } from "node:fs";
-import { getDb } from "./db";
+import { getDb, ensureSchema } from "./db";
 
 /**
  * MNA Steward Terminal — hardware health probe.
@@ -124,20 +124,22 @@ function readTemperatureSafe(): number | null {
   }
 }
 
-/** Write a snapshot row to the local DB (used by a periodic sampler). */
-export function snapshotToDb(snapshot: HardwareSnapshot): void {
+/** Write a snapshot row to the terminal DB (used by a periodic sampler). */
+export async function snapshotToDb(snapshot: HardwareSnapshot): Promise<void> {
+  await ensureSchema();
   const db = getDb();
-  db.prepare(
-    `INSERT INTO hardware_snapshots
-       (cpu_load, memory_used_gb, memory_total_gb, disk_used_gb, disk_total_gb, network_mbps, temperature_c)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    snapshot.cpu_load,
-    snapshot.memory_used_gb,
-    snapshot.memory_total_gb,
-    snapshot.disk_used_gb,
-    snapshot.disk_total_gb,
-    snapshot.network_mbps,
-    snapshot.temperature_c
-  );
+  await db.execute({
+    sql: `INSERT INTO hardware_snapshots
+            (cpu_load, memory_used_gb, memory_total_gb, disk_used_gb, disk_total_gb, network_mbps, temperature_c)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      snapshot.cpu_load,
+      snapshot.memory_used_gb,
+      snapshot.memory_total_gb,
+      snapshot.disk_used_gb,
+      snapshot.disk_total_gb,
+      snapshot.network_mbps,
+      snapshot.temperature_c,
+    ],
+  });
 }

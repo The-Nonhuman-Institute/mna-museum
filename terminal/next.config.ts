@@ -17,12 +17,10 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
 
-  // better-sqlite3 is a native module; keep it external to the server bundle
-  // so the Node runtime loads it directly rather than through Turbopack.
-  serverExternalPackages: ["better-sqlite3"],
-
-  // The Terminal is a private internal tool served over Tailscale — no CDN
-  // image optimization, no remote images, minimal surface area.
+  // The Terminal is a private internal tool — no CDN image optimization,
+  // no remote images, minimal surface area. Used to be served over
+  // Tailscale only; now deployed to Vercel with an auth gate as an
+  // interim host until the Mac Studio arrives.
   images: { unoptimized: true },
 
   // Don't expose source maps in production builds of a private tool.

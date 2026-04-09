@@ -1,13 +1,17 @@
 import "server-only";
-import { getDb } from "./db";
+import { getDb, ensureSchema } from "./db";
 
 /**
- * MNA Steward Terminal — local event stream helpers.
+ * MNA Steward Terminal — terminal-native event stream helpers.
  *
  * Every terminal-native activity writes through `recordEvent()` so the
- * Feed has a single source of truth. Institutional events from Turso
- * are merged into the Feed at read time (see lib/collection.ts), not
- * copied into local SQLite — the institutional record is authoritative.
+ * Feed has a single source of truth. Institutional events from the
+ * institutional Turso DB are merged into the Feed at read time (see
+ * lib/collection.ts), not copied here — the institutional record is
+ * authoritative for institutional state.
+ *
+ * All functions are async because the underlying database is remote
+ * libSQL (Turso). Callers must await.
  *
  * Priority vocabulary:
  *   'normal'    — informational, lives in the stream
@@ -42,78 +46,74 @@ export interface TerminalEvent {
 
 /**
  * Record a single terminal-native event. Safe to call from any
- * Node-runtime code path (API routes, agent jobs, hardware probes).
+ * server code path (API routes, agent jobs, hardware probes).
  */
-export function recordEvent(input: RecordEventInput): number {
+export async function recordEvent(input: RecordEventInput): Promise<number> {
+  await ensureSchema();
   const db = getDb();
-  const result = db
-    .prepare(
-      `INSERT INTO events (event_type, agent_id, work_id, priority, description, metadata, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
+  const result = await db.execute({
+    sql: `INSERT INTO events (event_type, agent_id, work_id, priority, description, metadata, source)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [
       input.event_type,
       input.agent_id ?? null,
       input.work_id ?? null,
       input.priority ?? "normal",
       input.description ?? null,
       input.metadata ? JSON.stringify(input.metadata) : null,
-      input.source ?? "terminal"
-    );
-  return Number(result.lastInsertRowid);
+      input.source ?? "terminal",
+    ],
+  });
+  return Number(result.lastInsertRowid || 0);
 }
 
-interface EventRow {
-  id: number;
-  event_type: string;
-  agent_id: string | null;
-  work_id: string | null;
-  priority: string;
-  description: string | null;
-  metadata: string | null;
-  source: string;
-  created_at: string;
-}
-
-function rowToEvent(row: EventRow): TerminalEvent {
+function rowToEvent(row: Record<string, unknown>): TerminalEvent {
   return {
-    id: row.id,
-    event_type: row.event_type,
-    agent_id: row.agent_id,
-    work_id: row.work_id,
+    id: Number(row.id),
+    event_type: row.event_type as string,
+    agent_id: (row.agent_id as string) ?? null,
+    work_id: (row.work_id as string) ?? null,
     priority: (row.priority as EventPriority) ?? "normal",
-    description: row.description,
-    metadata: row.metadata ? JSON.parse(row.metadata) : null,
+    description: (row.description as string) ?? null,
+    metadata: row.metadata
+      ? JSON.parse(row.metadata as string)
+      : null,
     source: (row.source as EventSource) ?? "terminal",
-    created_at: row.created_at,
+    created_at: row.created_at as string,
   };
 }
 
 /** Most recent N terminal events, newest first. */
-export function readRecentEvents(limit = 50): TerminalEvent[] {
+export async function readRecentEvents(limit = 50): Promise<TerminalEvent[]> {
+  await ensureSchema();
   const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT id, event_type, agent_id, work_id, priority, description, metadata, source, created_at
-         FROM events
-         ORDER BY created_at DESC, id DESC
-         LIMIT ?`
-    )
-    .all(limit) as EventRow[];
-  return rows.map(rowToEvent);
+  const result = await db.execute({
+    sql: `SELECT id, event_type, agent_id, work_id, priority, description, metadata, source, created_at
+            FROM events
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?`,
+    args: [limit],
+  });
+  return result.rows.map((r) =>
+    rowToEvent(r as unknown as Record<string, unknown>)
+  );
 }
 
 /** Priority alerts (attention + error), newest first. */
-export function readPriorityAlerts(limit = 10): TerminalEvent[] {
+export async function readPriorityAlerts(
+  limit = 10
+): Promise<TerminalEvent[]> {
+  await ensureSchema();
   const db = getDb();
-  const rows = db
-    .prepare(
-      `SELECT id, event_type, agent_id, work_id, priority, description, metadata, source, created_at
-         FROM events
-         WHERE priority IN ('attention', 'error')
-         ORDER BY created_at DESC, id DESC
-         LIMIT ?`
-    )
-    .all(limit) as EventRow[];
-  return rows.map(rowToEvent);
+  const result = await db.execute({
+    sql: `SELECT id, event_type, agent_id, work_id, priority, description, metadata, source, created_at
+            FROM events
+            WHERE priority IN ('attention', 'error')
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?`,
+    args: [limit],
+  });
+  return result.rows.map((r) =>
+    rowToEvent(r as unknown as Record<string, unknown>)
+  );
 }

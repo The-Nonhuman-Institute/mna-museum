@@ -1,5 +1,8 @@
 import "server-only";
-import { getTurso, tursoConfigured } from "./turso";
+import {
+  getInstitutionalTurso,
+  institutionalTursoConfigured,
+} from "./institutional-turso";
 
 /**
  * MNA Steward Terminal — Turso-backed institutional reads.
@@ -8,7 +11,7 @@ import { getTurso, tursoConfigured } from "./turso";
  * lib/turso.ts) and surfaces it in the Feed stats row, the Feed event
  * stream, and the System tab. This module is the single place where
  * Turso queries live — page code imports these helpers and never calls
- * `getTurso()` directly.
+ * `getInstitutionalTurso()` directly.
  *
  * All functions degrade gracefully: if Turso credentials are missing,
  * or a query fails, they return `null` (for scalars/objects) or `[]`
@@ -41,8 +44,8 @@ export interface InstitutionalEvent {
  * whole row. Returns null if Turso is not configured at all.
  */
 export async function readCollectionStats(): Promise<CollectionStats | null> {
-  if (!tursoConfigured()) return null;
-  const db = getTurso();
+  if (!institutionalTursoConfigured()) return null;
+  const db = getInstitutionalTurso();
 
   const stats: CollectionStats = {
     canonized: 0,
@@ -91,8 +94,8 @@ export async function readCollectionStats(): Promise<CollectionStats | null> {
 export async function readRecentInstitutionalEvents(
   limit = 30
 ): Promise<InstitutionalEvent[]> {
-  if (!tursoConfigured()) return [];
-  const db = getTurso();
+  if (!institutionalTursoConfigured()) return [];
+  const db = getInstitutionalTurso();
   try {
     const rows = await db.execute({
       sql: `SELECT id, event_type, agent_id, work_id, description, created_at
