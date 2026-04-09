@@ -141,9 +141,30 @@ export async function POST(request: NextRequest) {
         tools_used: reply.tools_used,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error("[keeper/chat] keeperChatStreaming failed:", err);
-      sendSSE("error", { message });
+      // Extract maximum detail from the error. Anthropic SDK errors
+      // have extra properties (status, type, error body) that the
+      // generic .message alone doesn't include.
+      let errorDetail = "";
+      if (err instanceof Error) {
+        errorDetail = err.message;
+        const anyErr = err as Record<string, unknown>;
+        if (anyErr.status) errorDetail = `[HTTP ${anyErr.status}] ${errorDetail}`;
+        if (anyErr.error && typeof anyErr.error === "object") {
+          try {
+            errorDetail += ` | API response: ${JSON.stringify(anyErr.error)}`;
+          } catch { /* ignore stringify failures */ }
+        }
+        if (anyErr.headers && typeof anyErr.headers === "object") {
+          try {
+            const h = anyErr.headers as Record<string, string>;
+            if (h["x-request-id"]) errorDetail += ` | request-id: ${h["x-request-id"]}`;
+          } catch { /* ignore */ }
+        }
+      } else {
+        errorDetail = String(err);
+      }
+      console.error("[keeper/chat] keeperChatStreaming failed:", errorDetail);
+      sendSSE("error", { message: errorDetail });
     } finally {
       writer.close().catch(() => {});
     }
