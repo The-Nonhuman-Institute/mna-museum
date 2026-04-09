@@ -1,6 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { getInstitutionalTurso } from "./institutional-turso";
+import { KEEPER_TOOLS, runKeeperTool } from "./keeper-tools";
 
 /**
  * MNA Steward Terminal — Keeper agent runtime.
@@ -343,6 +344,10 @@ export async function buildSystemPrompt(): Promise<string> {
 
   prompt += `VOICE: Measured, institutional, precise. You use "the Museum" to refer to MNA. You use "the steward" only when a third person is appropriate; otherwise address Jaylon directly. You do not use filler phrases or apologize for length. If a question requires one sentence, give one sentence.\n\n`;
 
+  prompt += `TOOLS: You have read-only access to the institutional archive via a small set of tools. Use them whenever a question requires specific data you don't already have in the snapshot below — a particular work's full rationales, an evaluator's recent voting history, the pending approval queue, or a search of the event log. Do not invent details. Call the relevant tool, wait for the result, and answer from what comes back.\n\n`;
+
+  prompt += `SUGGESTED FOLLOW-UPS: At the end of EVERY response, include a block of 2 to 3 natural follow-up questions the steward might reasonably ask next. Format the block exactly like this, including the XML tags:\n\n<suggestions>\n- First follow-up question\n- Second follow-up question\n- Third follow-up question\n</suggestions>\n\nThe suggestions should be short (≤ 10 words each), phrased as the steward would type them, and should lead to meaningful threads — not generic prompts. The block is parsed out of your response and rendered as tappable chips; do not add commentary around it. If the conversation has reached a natural endpoint and no follow-up is obvious, include one suggestion that offers to switch topics.\n\n`;
+
   prompt += `---\n\n`;
   prompt += formatSnapshotAsProse(snapshot);
   prompt += `\n---\n`;
@@ -357,37 +362,154 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface KeeperReply {
+  /** The assistant's visible response, with the <suggestions> block
+   *  already stripped out. */
+  text: string;
+  /** Parsed follow-up suggestions the UI renders as tappable chips. */
+  suggestions: string[];
+  /** Names of tools the Keeper called during this turn. Useful for
+   *  the chat UI to show "looked up MNA-OR-0007-W-0005" breadcrumbs. */
+  tools_used: string[];
+}
+
 /**
- * Non-streaming chat turn. Given a session's message history and a
- * new user message, return the assistant's response. The system
- * prompt (constitution + institutional snapshot) is rebuilt on every
- * call so the Keeper always answers against the current state.
+ * Non-streaming chat turn with tool-use support.
  *
- * Streaming is a follow-up; this is the simpler primitive to ship
- * first. The chat page doesn't need streaming to be useful.
+ * Runs the Anthropic tool-use loop: each call can return either a
+ * final text response or a batch of tool calls. When tool calls come
+ * back, we execute them locally (lib/keeper-tools.ts), feed the
+ * results back as a user turn containing tool_result blocks, and
+ * call Anthropic again. The loop terminates when the Keeper stops
+ * requesting tools (stop_reason === "end_turn") or hits a safety
+ * cap on iterations.
+ *
+ * The final assistant text is parsed for a `<suggestions>` XML block
+ * which the UI renders as follow-up chips. The suggestions block is
+ * stripped from the visible text.
+ *
+ * Streaming is still a follow-up; this keeps the request/response
+ * contract simple while adding depth through tool calls. On a cold
+ * Vercel serverless function, tool-calling turns can take 5–15
+ * seconds total (two or three Claude round-trips plus tool executions),
+ * which is why the UI shows a typing indicator.
  */
 export async function keeperChat(
   history: ChatMessage[]
-): Promise<string> {
+): Promise<KeeperReply> {
   const systemPrompt = await buildSystemPrompt();
   const anthropic = getAnthropic();
 
-  const response = await anthropic.messages.create({
-    model: DEFAULT_MODEL,
-    max_tokens: 2048,
-    temperature: 0.6,
-    system: systemPrompt,
-    messages: history.map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
-  });
+  // Anthropic SDK messages are structured — convert the simple
+  // ChatMessage history into the SDK's MessageParam shape.
+  const messages: Anthropic.Messages.MessageParam[] = history.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
 
-  const first = response.content[0];
-  if (!first || first.type !== "text") {
-    throw new Error(
-      `Unexpected Anthropic response content type: ${first?.type || "none"}`
+  const toolsUsed: string[] = [];
+  const MAX_ITERATIONS = 6;
+
+  let response: Anthropic.Messages.Message | null = null;
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    response = await anthropic.messages.create({
+      model: DEFAULT_MODEL,
+      max_tokens: 2048,
+      temperature: 0.6,
+      system: systemPrompt,
+      tools: KEEPER_TOOLS,
+      messages,
+    });
+
+    if (response.stop_reason !== "tool_use") {
+      break;
+    }
+
+    // Execute every tool_use block in parallel, then append an
+    // assistant turn (with the tool_use blocks) and a user turn
+    // (with the tool_result blocks) before looping.
+    const toolUseBlocks = response.content.filter(
+      (b): b is Anthropic.Messages.ToolUseBlock => b.type === "tool_use"
+    );
+    const toolResults = await Promise.all(
+      toolUseBlocks.map(async (block) => {
+        toolsUsed.push(block.name);
+        const input = (block.input as Record<string, unknown>) || {};
+        const result = await runKeeperTool(block.name, input);
+        const content =
+          typeof result === "string" ? result : JSON.stringify(result);
+        return {
+          type: "tool_result" as const,
+          tool_use_id: block.id,
+          content,
+        };
+      })
+    );
+
+    messages.push(
+      { role: "assistant", content: response.content },
+      { role: "user", content: toolResults }
     );
   }
-  return first.text;
+
+  if (!response) {
+    throw new Error("No response from the Keeper");
+  }
+
+  // Extract the final text from the response. The assistant message
+  // may contain interleaved text and (residual) tool_use blocks — we
+  // concatenate only the text blocks in order.
+  const textBlocks = response.content.filter(
+    (b): b is Anthropic.Messages.TextBlock => b.type === "text"
+  );
+  if (textBlocks.length === 0) {
+    throw new Error(
+      "Keeper returned no text — tool loop may have exhausted iterations"
+    );
+  }
+  const rawText = textBlocks.map((b) => b.text).join("\n\n");
+
+  // Parse out the <suggestions>...</suggestions> block (if present)
+  // and strip it from the visible text.
+  const { text, suggestions } = extractSuggestions(rawText);
+
+  return {
+    text,
+    suggestions,
+    tools_used: toolsUsed,
+  };
+}
+
+/**
+ * Parse a Keeper response for its `<suggestions>` XML block. The
+ * system prompt instructs the Keeper to end every response with a
+ * block of 2–3 dashed follow-ups inside <suggestions> tags. This
+ * function strips that block from the visible text and returns the
+ * parsed list.
+ *
+ * Defensive: tolerates missing blocks, empty blocks, blocks with
+ * leading dashes or bullets, and extra whitespace.
+ */
+function extractSuggestions(raw: string): {
+  text: string;
+  suggestions: string[];
+} {
+  const match = raw.match(/<suggestions>([\s\S]*?)<\/suggestions>/i);
+  if (!match) {
+    return { text: raw.trim(), suggestions: [] };
+  }
+  const inner = match[1];
+  const suggestions = inner
+    .split("\n")
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^[-*•]\s*/, "")
+        .replace(/^\d+\.\s*/, "")
+        .trim()
+    )
+    .filter((s) => s.length > 0 && s.length <= 120)
+    .slice(0, 4);
+  const text = raw.replace(/<suggestions>[\s\S]*?<\/suggestions>/i, "").trim();
+  return { text, suggestions };
 }

@@ -93,10 +93,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await setSessionTitle(sessionId, title);
   }
 
-  // Call the Keeper.
-  let assistantText: string;
+  // Call the Keeper. The reply includes the visible text, parsed
+  // follow-up suggestions, and a list of tools the Keeper used to
+  // compose its response (for debug + future "breadcrumb" UI).
+  let reply: Awaited<ReturnType<typeof keeperChat>>;
   try {
-    assistantText = await keeperChat(history);
+    reply = await keeperChat(history);
   } catch (err) {
     console.error("[keeper/chat] keeperChat failed:", err);
     const message = err instanceof Error ? err.message : String(err);
@@ -106,8 +108,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Persist the assistant turn.
-  await appendMessage(sessionId, "assistant", assistantText);
+  // Persist the assistant turn. We store the visible text only;
+  // suggestions are a render-time concern and regenerate on the next
+  // turn anyway. Tools-used is surfaced in the response for the UI
+  // to show but is not persisted to the transcript.
+  await appendMessage(sessionId, "assistant", reply.text);
 
   // Feed event — compact, never includes message content. The Feed
   // shows "steward consulted the Keeper" but not what was said.
@@ -128,7 +133,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json(
     {
       session_id: sessionId,
-      assistant: assistantText,
+      assistant: reply.text,
+      suggestions: reply.suggestions,
+      tools_used: reply.tools_used,
     },
     { status: 200 }
   );
