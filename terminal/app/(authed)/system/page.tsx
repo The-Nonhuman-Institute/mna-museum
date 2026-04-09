@@ -219,7 +219,10 @@ export default async function SystemPage() {
       <div className="border border-border p-5">
         <p className="label mb-4">Agent Roster</p>
         {rosterError ? (
-          <p className="text-sm text-error leading-relaxed">
+          <p
+            className="text-sm text-error leading-relaxed break-all"
+            style={{ overflowWrap: "anywhere" }}
+          >
             Failed to read agent registry: {rosterError}
           </p>
         ) : agents.length === 0 ? (

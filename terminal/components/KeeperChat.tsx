@@ -202,7 +202,12 @@ export default function KeeperChat({
       {error && (
         <div className="mx-5 mb-2 border border-error p-3">
           <p className="label mb-1">Error</p>
-          <p className="text-xs text-error leading-relaxed">{error}</p>
+          <p
+            className="text-xs text-error leading-relaxed break-all"
+            style={{ overflowWrap: "anywhere" }}
+          >
+            {error}
+          </p>
         </div>
       )}
 

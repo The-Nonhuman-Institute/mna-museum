@@ -39,14 +39,15 @@ let _schemaReady: Promise<void> | null = null;
 
 export function getDb(): Client {
   if (_client) return _client;
-  // Trim both values — Vercel's env var UI (and some .env parsers)
-  // sometimes include trailing whitespace or newlines. The libSQL
-  // client concatenates the token into an HTTP Authorization header
-  // via `Bearer ${token}`, and a trailing newline makes the entire
-  // header value illegal per fetch() spec, producing the cryptic
-  // "is not a legal HTTP header value" error.
-  const url = process.env.TERMINAL_TURSO_DATABASE_URL?.trim();
-  const authToken = process.env.TERMINAL_TURSO_AUTH_TOKEN?.trim();
+  // Sanitize both values. libsql URLs and JWT auth tokens contain no
+  // whitespace at all, so any space/tab/newline/control character
+  // anywhere in the string is garbage injected by the env var UI and
+  // must be stripped — trim() is not enough because the corruption
+  // can happen mid-token. Dirty tokens produce the cryptic "Bearer
+  // ... is not a legal HTTP header value" error from the libSQL
+  // client when it builds the Authorization header.
+  const url = sanitizeEnvValue(process.env.TERMINAL_TURSO_DATABASE_URL);
+  const authToken = sanitizeEnvValue(process.env.TERMINAL_TURSO_AUTH_TOKEN);
   if (!url || !authToken) {
     throw new Error(
       "TERMINAL_TURSO_DATABASE_URL / TERMINAL_TURSO_AUTH_TOKEN are not set. " +
@@ -56,6 +57,16 @@ export function getDb(): Client {
   }
   _client = createClient({ url, authToken });
   return _client;
+}
+
+/**
+ * Strip any whitespace or ASCII control character from an env var
+ * value. Shared with lib/institutional-turso.ts — kept local here to
+ * avoid a tiny utility module for one function.
+ */
+function sanitizeEnvValue(raw: string | undefined): string | undefined {
+  if (!raw) return raw;
+  return raw.replace(/[\s\u0000-\u001F\u007F]/g, "");
 }
 
 /**

@@ -163,8 +163,8 @@ export default async function FeedPage() {
             <div key={i} className="mb-3 last:mb-0">
               <p className="data text-xs text-error mb-1">{e.label}</p>
               <p
-                className="text-xs text-foreground/70 leading-relaxed"
-                style={{ wordBreak: "break-word" }}
+                className="text-xs text-foreground/70 leading-relaxed break-all"
+                style={{ overflowWrap: "anywhere" }}
               >
                 {e.message}
               </p>
