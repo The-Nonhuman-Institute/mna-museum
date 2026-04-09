@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import TabBar from "@/components/TabBar";
 
 /**
  * Authed shell — every tab in the terminal renders inside this layout.
@@ -62,37 +63,9 @@ export default function AuthedLayout({
         {children}
       </main>
 
-      {/* Bottom tab bar — five destinations */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="grid grid-cols-5 h-14 text-xxs uppercase tracking-widest">
-          <TabLink href="/feed" label="Feed" />
-          <TabLink href="/keeper" label="Keeper" />
-          <TabLink href="/outreach" label="Outreach" />
-          <TabLink href="/exhibitions" label="Exhib." />
-          <TabLink href="/system" label="System" />
-        </div>
-      </nav>
+      {/* Bottom tab bar — five destinations, client component so it
+          can read the current pathname and highlight the active tab. */}
+      <TabBar />
     </div>
-  );
-}
-
-/**
- * Single tab bar entry. Active-state styling is handled at render time
- * by the page itself (via data-active attribute on the parent route) —
- * this stub renders each tab identically and lets the page override.
- * TODO in Phase 2: use usePathname() in a client component to mark
- * the active tab. For now, all five read the same.
- */
-function TabLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-center text-muted hover:text-foreground transition-colors"
-    >
-      {label}
-    </Link>
   );
 }
