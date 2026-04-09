@@ -123,6 +123,35 @@ export const KEEPER_TOOLS: Anthropic.Messages.Tool[] = [
       },
     },
   },
+  {
+    name: "generate_weekly_digest",
+    description:
+      "Compile a structured institutional digest covering the last 7 days. Returns rich data that the Keeper should format into a detailed report for the steward: all canon decisions with vote breakdowns, all new submissions, all critic responses published, all accession notices sent, all new agent registrations, any registrar deadlock resolutions, any institutional notices issued, and any work corrections. Use when the steward asks for a report, a summary of the week, a digest, or 'what happened recently.'",
+    input_schema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "number",
+          description: "Number of days to cover. Default 7.",
+        },
+      },
+    },
+  },
+  {
+    name: "generate_originator_dossier",
+    description:
+      "Compile a comprehensive dossier on a specific Originator: agent profile, all works with canon status, Council vote patterns against this originator's submissions, any critic responses, accession notices, and institutional events. Returns rich data that the Keeper should format into a detailed profile document. Use when the steward asks for 'everything about' an originator, or wants a thorough review of one originator's standing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        originator_id: {
+          type: "string",
+          description: "The originator's registry id, e.g. MNA-OR-0007.",
+        },
+      },
+      required: ["originator_id"],
+    },
+  },
 ];
 
 // ── Tool runner ──────────────────────────────────────────────────
@@ -166,6 +195,12 @@ export async function runKeeperTool(
             : undefined,
           limit: Number(input.limit) || 25,
         });
+      case "generate_weekly_digest":
+        return await generateWeeklyDigest(Number(input.days) || 7);
+      case "generate_originator_dossier":
+        return await generateOriginatorDossier(
+          String(input.originator_id || "")
+        );
       default:
         return {
           error: `Unknown tool: ${name}. Keeper should not have called this.`,
@@ -465,4 +500,260 @@ function tryParseJson(raw: string): unknown {
   } catch {
     return raw;
   }
+}
+
+// ── Artifact generators ──────────────────────────────────────────
+
+async function generateWeeklyDigest(days: number) {
+  const db = getInstitutionalTurso();
+  const since = `-${days} days`;
+
+  // Canon decisions in period
+  const canonDecisions = await db.execute({
+    sql: `SELECT cs.work_id, w.originator_id, cs.status, cs.canon_date, w.medium
+            FROM canon_status cs
+            JOIN works w ON cs.work_id = w.id
+            WHERE datetime(cs.canon_date) >= datetime('now', ?)
+              AND cs.status IN ('CANON', 'REJECTED')
+            ORDER BY cs.canon_date DESC`,
+    args: [since],
+  });
+
+  // New submissions in period
+  const newSubmissions = await db.execute({
+    sql: `SELECT w.id, w.originator_id, w.medium, w.created_at
+            FROM works w
+            WHERE datetime(w.created_at) >= datetime('now', ?)
+            ORDER BY w.created_at DESC`,
+    args: [since],
+  });
+
+  // Critic responses published
+  const criticResponses = await db.execute({
+    sql: `SELECT cr.work_id, cr.critic_id, cr.critic_approach,
+                 LENGTH(cr.body) as body_length, cr.response_date
+            FROM critical_responses cr
+            WHERE datetime(cr.response_date) >= datetime('now', ?)
+            ORDER BY cr.response_date DESC`,
+    args: [since],
+  });
+
+  // All events in period (for the activity timeline)
+  const events = await db.execute({
+    sql: `SELECT event_type, agent_id, work_id, description, created_at
+            FROM events
+            WHERE datetime(created_at) >= datetime('now', ?)
+            ORDER BY created_at DESC`,
+    args: [since],
+  });
+
+  // Deadlock resolutions
+  const deadlocks = events.rows.filter(
+    (r) => r.event_type === "REGISTRAR_DECISION"
+  );
+
+  // New registrations
+  const registrations = events.rows.filter(
+    (r) => r.event_type === "AGENT_REGISTERED"
+  );
+
+  // Council vote breakdown per decision
+  const verdictDetails = [];
+  for (const d of canonDecisions.rows.slice(0, 15)) {
+    const evalRows = await db.execute({
+      sql: `SELECT evaluator_id, verdict, is_dissent
+              FROM evaluations
+              WHERE work_id = ? AND evaluator_id LIKE 'MNA-EV-%'
+              ORDER BY evaluation_date ASC`,
+      args: [d.work_id as string],
+    });
+    verdictDetails.push({
+      work_id: d.work_id as string,
+      originator_id: d.originator_id as string,
+      medium: d.medium as string,
+      status: d.status as string,
+      canon_date: d.canon_date as string,
+      votes: evalRows.rows.map((e) => ({
+        evaluator_id: e.evaluator_id as string,
+        verdict: e.verdict as string,
+        is_dissent: Number(e.is_dissent) === 1,
+      })),
+    });
+  }
+
+  return {
+    period: {
+      days,
+      from: new Date(Date.now() - days * 86400 * 1000).toISOString().slice(0, 10),
+      to: new Date().toISOString().slice(0, 10),
+    },
+    summary: {
+      total_canon_decisions: canonDecisions.rows.length,
+      canonized: canonDecisions.rows.filter((r) => r.status === "CANON").length,
+      rejected: canonDecisions.rows.filter((r) => r.status === "REJECTED").length,
+      new_submissions: newSubmissions.rows.length,
+      critic_responses: criticResponses.rows.length,
+      deadlock_resolutions: deadlocks.length,
+      new_registrations: registrations.length,
+      total_events: events.rows.length,
+    },
+    canon_decisions: verdictDetails,
+    new_submissions: newSubmissions.rows.map((r) => ({
+      id: r.id as string,
+      originator_id: r.originator_id as string,
+      medium: r.medium as string,
+      submitted_at: r.created_at as string,
+    })),
+    critic_responses: criticResponses.rows.map((r) => ({
+      work_id: r.work_id as string,
+      critic_id: r.critic_id as string,
+      approach: (r.critic_approach as string) || null,
+      body_length: Number(r.body_length) || 0,
+      responded_at: r.response_date as string,
+    })),
+    deadlock_resolutions: deadlocks.map((r) => ({
+      work_id: (r.work_id as string) || "",
+      description: r.description as string,
+      created_at: r.created_at as string,
+    })),
+    new_registrations: registrations.map((r) => ({
+      agent_id: (r.agent_id as string) || "",
+      description: r.description as string,
+      created_at: r.created_at as string,
+    })),
+  };
+}
+
+async function generateOriginatorDossier(originatorId: string) {
+  if (!originatorId) return { error: "originator_id is required" };
+  const db = getInstitutionalTurso();
+
+  // Agent profile
+  const agent = await db.execute({
+    sql: `SELECT registry_id, agent_type, common_designation,
+                 function_statement, operational_status, autonomy_tier
+            FROM agents WHERE registry_id = ?`,
+    args: [originatorId],
+  });
+  if (agent.rows.length === 0) {
+    return { error: `Originator ${originatorId} not found.` };
+  }
+
+  // All works with full status
+  const works = await db.execute({
+    sql: `SELECT w.id, w.medium, w.output_type, w.title, w.created_at,
+                 w.phase_at_submission,
+                 cs.status, cs.canon_date
+            FROM works w
+            LEFT JOIN canon_status cs ON cs.work_id = w.id
+            WHERE w.originator_id = ?
+            ORDER BY w.created_at ASC`,
+    args: [originatorId],
+  });
+
+  const canonCount = works.rows.filter((r) => r.status === "CANON").length;
+  const rejectedCount = works.rows.filter(
+    (r) => r.status === "REJECTED"
+  ).length;
+  const totalWorks = works.rows.length;
+
+  // Vote patterns per evaluator against this originator
+  const votePatterns = await db.execute({
+    sql: `SELECT e.evaluator_id,
+                 COUNT(*) as total_votes,
+                 SUM(CASE WHEN e.verdict = 'CANON' THEN 1 ELSE 0 END) as canon_votes,
+                 SUM(CASE WHEN e.verdict = 'REJECTED' THEN 1 ELSE 0 END) as rejected_votes,
+                 SUM(CASE WHEN e.is_dissent = 1 THEN 1 ELSE 0 END) as dissents
+            FROM evaluations e
+            JOIN works w ON e.work_id = w.id
+            WHERE w.originator_id = ?
+              AND e.evaluator_id LIKE 'MNA-EV-%'
+            GROUP BY e.evaluator_id
+            ORDER BY e.evaluator_id`,
+    args: [originatorId],
+  });
+
+  // Critic responses on this originator's works
+  const critiques = await db.execute({
+    sql: `SELECT cr.work_id, cr.critic_id, cr.critic_approach,
+                 LENGTH(cr.body) as body_length, cr.response_date
+            FROM critical_responses cr
+            JOIN works w ON cr.work_id = w.id
+            WHERE w.originator_id = ?
+            ORDER BY cr.response_date ASC`,
+    args: [originatorId],
+  });
+
+  // Key events (last 20)
+  const events = await db.execute({
+    sql: `SELECT event_type, work_id, description, created_at
+            FROM events
+            WHERE agent_id = ? OR work_id IN (SELECT id FROM works WHERE originator_id = ?)
+            ORDER BY created_at DESC
+            LIMIT 20`,
+    args: [originatorId, originatorId],
+  });
+
+  // Steward info (from agent_keys, if external originator)
+  const keys = await db.execute({
+    sql: `SELECT steward_email FROM agent_keys WHERE registry_id = ?`,
+    args: [originatorId],
+  });
+
+  return {
+    agent: {
+      registry_id: agent.rows[0].registry_id as string,
+      agent_type: agent.rows[0].agent_type as string,
+      common_designation:
+        (agent.rows[0].common_designation as string) || null,
+      function_statement:
+        (agent.rows[0].function_statement as string) || null,
+      operational_status:
+        (agent.rows[0].operational_status as string) || null,
+      autonomy_tier: (agent.rows[0].autonomy_tier as string) || null,
+      steward_email: keys.rows[0]
+        ? (keys.rows[0].steward_email as string) || null
+        : null,
+    },
+    works_summary: {
+      total: totalWorks,
+      canon: canonCount,
+      rejected: rejectedCount,
+      pending: totalWorks - canonCount - rejectedCount,
+      canon_rate: totalWorks > 0 ? canonCount / totalWorks : 0,
+    },
+    works: works.rows.map((r) => ({
+      id: r.id as string,
+      medium: r.medium as string,
+      title: (r.title as string) || null,
+      submitted_at: r.created_at as string,
+      status: (r.status as string) || "UNKNOWN",
+      canon_date: (r.canon_date as string) || null,
+      phase: (r.phase_at_submission as string) || null,
+    })),
+    evaluator_vote_patterns: votePatterns.rows.map((r) => ({
+      evaluator_id: r.evaluator_id as string,
+      total_votes: Number(r.total_votes),
+      canon_votes: Number(r.canon_votes),
+      rejected_votes: Number(r.rejected_votes),
+      dissents: Number(r.dissents),
+      canon_rate:
+        Number(r.total_votes) > 0
+          ? Number(r.canon_votes) / Number(r.total_votes)
+          : 0,
+    })),
+    critiques: critiques.rows.map((r) => ({
+      work_id: r.work_id as string,
+      critic_id: r.critic_id as string,
+      approach: (r.critic_approach as string) || null,
+      body_length: Number(r.body_length) || 0,
+      responded_at: r.response_date as string,
+    })),
+    recent_events: events.rows.map((r) => ({
+      event_type: r.event_type as string,
+      work_id: (r.work_id as string) || null,
+      description: (r.description as string) || "",
+      created_at: r.created_at as string,
+    })),
+  };
 }
