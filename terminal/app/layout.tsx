@@ -42,9 +42,18 @@ export const metadata: Metadata = {
     title: "MNA Terminal",
     statusBarStyle: "black-translucent",
   },
+  // Icons — matches the public site's institutional mark. SVG for
+  // modern browsers (crisp at any size), PNGs for iOS home-screen
+  // installation (iOS doesn't reliably use SVG apple-touch-icons).
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    apple: "/icon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   // The terminal is private — don't let search engines index anything.
   robots: {

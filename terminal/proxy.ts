@@ -25,14 +25,22 @@ export async function proxy(
 ): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
-  // Paths that bypass auth — login flow, API login endpoint, PWA manifest,
-  // favicon, static assets, and Next.js internals.
+  // Paths that bypass auth — login flow, API login endpoint, PWA
+  // manifest, favicon and home-screen icons, Next.js internals.
+  // Icons must be publicly accessible so iOS can fetch them when the
+  // user runs "Add to Home Screen" (Safari fetches apple-touch-icon
+  // before the session cookie is known to the installer).
   const PUBLIC_PATHS = [
     "/login",
     "/api/login",
     "/manifest.json",
     "/favicon.svg",
+    "/favicon.ico",
     "/icon.svg",
+    "/apple-touch-icon.png",
+    "/apple-touch-icon-precomposed.png",
+    "/icon-192.png",
+    "/icon-512.png",
   ];
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (pathname.startsWith("/_next/")) return NextResponse.next();

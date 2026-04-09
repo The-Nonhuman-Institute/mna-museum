@@ -39,8 +39,14 @@ let _schemaReady: Promise<void> | null = null;
 
 export function getDb(): Client {
   if (_client) return _client;
-  const url = process.env.TERMINAL_TURSO_DATABASE_URL;
-  const authToken = process.env.TERMINAL_TURSO_AUTH_TOKEN;
+  // Trim both values — Vercel's env var UI (and some .env parsers)
+  // sometimes include trailing whitespace or newlines. The libSQL
+  // client concatenates the token into an HTTP Authorization header
+  // via `Bearer ${token}`, and a trailing newline makes the entire
+  // header value illegal per fetch() spec, producing the cryptic
+  // "is not a legal HTTP header value" error.
+  const url = process.env.TERMINAL_TURSO_DATABASE_URL?.trim();
+  const authToken = process.env.TERMINAL_TURSO_AUTH_TOKEN?.trim();
   if (!url || !authToken) {
     throw new Error(
       "TERMINAL_TURSO_DATABASE_URL / TERMINAL_TURSO_AUTH_TOKEN are not set. " +

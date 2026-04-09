@@ -25,8 +25,13 @@ let _client: Client | null = null;
 
 export function getInstitutionalTurso(): Client {
   if (_client) return _client;
-  const url = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  // Trim both values — Vercel's env var UI sometimes attaches
+  // trailing whitespace/newlines. The libSQL client builds an HTTP
+  // Authorization header via `Bearer ${token}`, and any invisible
+  // newline breaks that header with a "not a legal HTTP header value"
+  // error. See lib/db.ts for the same defensive trim on the other DB.
+  const url = process.env.TURSO_DATABASE_URL?.trim();
+  const authToken = process.env.TURSO_AUTH_TOKEN?.trim();
   if (!url || !authToken) {
     throw new Error(
       "TURSO_DATABASE_URL / TURSO_AUTH_TOKEN are not set in terminal/.env. " +
