@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       let errorDetail = "";
       if (err instanceof Error) {
         errorDetail = err.message;
-        const anyErr = err as Record<string, unknown>;
+        const anyErr = err as unknown as Record<string, unknown>;
         if (anyErr.status) errorDetail = `[HTTP ${anyErr.status}] ${errorDetail}`;
         if (anyErr.error && typeof anyErr.error === "object") {
           try {
