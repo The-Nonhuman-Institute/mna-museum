@@ -311,40 +311,45 @@ export default function KeeperChat({
       {/* ── Input ────────────────────────────────────────────────── */}
       <form
         onSubmit={handleSubmit}
-        className="border-t border-border px-5 py-3 flex items-end gap-2 bg-background"
+        className="border-t border-border px-5 py-3 bg-background"
       >
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              handleSubmit(e as unknown as FormEvent);
-            }
-          }}
-          placeholder="Ask the Keeper…"
-          rows={1}
-          className="flex-1 bg-surface border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:border-foreground/40 resize-none min-h-[36px] max-h-[120px]"
-          disabled={sending}
-        />
-        <div className="flex flex-col gap-1">
-          <button
-            type="submit"
-            disabled={sending || !input.trim()}
-            className="label px-3 py-2 border border-border hover:border-foreground/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {sending ? "…" : "Send"}
-          </button>
-          {messages.length > 0 && (
+        {/* New Session button — above the input row, only when there's
+            history. Visually separated so it can't be confused with Send. */}
+        {messages.length > 0 && (
+          <div className="flex justify-end mb-2">
             <button
               type="button"
               onClick={handleNewSession}
               disabled={sending}
               className="label text-[8px] text-muted hover:text-foreground transition-colors disabled:opacity-30"
             >
-              New
+              New conversation
             </button>
-          )}
+          </div>
+        )}
+        <div className="flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter sends on mobile (single-line feel); Shift+Enter adds newline
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e as unknown as FormEvent);
+              }
+            }}
+            placeholder="Ask the Keeper…"
+            rows={1}
+            className="flex-1 bg-surface border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:border-foreground/40 resize-none min-h-[36px] max-h-[120px]"
+            disabled={sending}
+          />
+          <button
+            type="submit"
+            disabled={sending || !input.trim()}
+            className="label px-4 py-2 bg-foreground text-background hover:bg-foreground/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+          >
+            {sending ? "…" : "Send"}
+          </button>
         </div>
       </form>
     </div>

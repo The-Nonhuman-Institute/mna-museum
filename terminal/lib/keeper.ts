@@ -26,10 +26,23 @@ import { KEEPER_TOOLS, runKeeperTool } from "./keeper-tools";
 
 // ── Anthropic client (lazy, cached) ──────────────────────────────
 
+/**
+ * Strip all whitespace and control characters from an env var value.
+ * Vercel's env var UI sometimes injects invisible characters mid-value
+ * when pasting long strings. For API keys and model names, any
+ * non-printable character breaks the HTTP Authorization header.
+ * Same sanitizer used in lib/db.ts and lib/institutional-turso.ts
+ * for Turso tokens.
+ */
+function sanitizeEnv(raw: string | undefined): string | undefined {
+  if (!raw) return raw;
+  return raw.replace(/[\s\u0000-\u001F\u007F]/g, "");
+}
+
 let _anthropic: Anthropic | null = null;
 function getAnthropic(): Anthropic {
   if (_anthropic) return _anthropic;
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  const key = sanitizeEnv(process.env.ANTHROPIC_API_KEY);
   if (!key) {
     throw new Error(
       "ANTHROPIC_API_KEY is not set in the terminal environment. " +
@@ -41,7 +54,7 @@ function getAnthropic(): Anthropic {
 }
 
 const DEFAULT_MODEL =
-  process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-4-20250514";
+  sanitizeEnv(process.env.ANTHROPIC_MODEL) || "claude-sonnet-4-20250514";
 
 // ── Constitution loading ─────────────────────────────────────────
 
