@@ -1,54 +1,79 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
 
 /**
  * GET /api/keeper/test
  *
- * Diagnostic endpoint that verifies the Anthropic API connection
- * works from this Vercel function. Makes a minimal single-message
- * call with no tools, no system prompt, and max_tokens=50. Returns
- * the raw result or the full error detail.
- *
- * Safe to hit directly from a browser tab. Auth-gated by the proxy
- * like everything else in the terminal.
+ * Bare-metal diagnostic. Makes a raw fetch to the Anthropic API
+ * with no SDK, no tools, no abstractions. Returns the exact HTTP
+ * status and response body so we can see what Anthropic actually
+ * says when called from a Vercel function.
  */
 export async function GET(): Promise<NextResponse> {
-  const key = process.env.ANTHROPIC_API_KEY?.replace(/[\s\u0000-\u001F\u007F]/g, "");
-  const model = process.env.ANTHROPIC_MODEL?.replace(/[\s\u0000-\u001F\u007F]/g, "") || "claude-sonnet-4-20250514";
+  // Sanitize the same way keeper.ts does
+  const rawKey = process.env.ANTHROPIC_API_KEY || "";
+  const key = rawKey.replace(/[\s\u0000-\u001F\u007F]/g, "");
+  const model =
+    (process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514").replace(
+      /[\s\u0000-\u001F\u007F]/g,
+      ""
+    );
+
+  const diagnostics: Record<string, unknown> = {
+    key_length_raw: rawKey.length,
+    key_length_sanitized: key.length,
+    key_prefix: key.slice(0, 15),
+    key_suffix: key.slice(-5),
+    key_chars_removed: rawKey.length - key.length,
+    model,
+  };
 
   if (!key) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY not set" }, { status: 500 });
+    return NextResponse.json(
+      { ...diagnostics, error: "ANTHROPIC_API_KEY is empty after sanitization" },
+      { status: 500 }
+    );
   }
 
+  // Raw fetch — no SDK, no abstractions
   try {
-    const anthropic = new Anthropic({ apiKey: key });
-    const response = await anthropic.messages.create({
-      model,
-      max_tokens: 50,
-      messages: [{ role: "user", content: "Reply with exactly: OK" }],
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 20,
+        messages: [{ role: "user", content: "Reply with exactly: OK" }],
+      }),
     });
 
-    const text = response.content[0]?.type === "text" ? response.content[0].text : "(no text)";
-
-    return NextResponse.json({
-      status: "ok",
-      model,
-      model_used: response.model,
-      reply: text,
-      usage: response.usage,
-    });
-  } catch (err) {
-    const detail: Record<string, unknown> = {
-      message: err instanceof Error ? err.message : String(err),
-    };
-    if (err instanceof Error) {
-      const anyErr = err as unknown as Record<string, unknown>;
-      if (anyErr.status) detail.http_status = anyErr.status;
-      if (anyErr.error) detail.api_error = anyErr.error;
-      if (anyErr.type) detail.error_type = anyErr.type;
+    const body = await res.text();
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      // not JSON
     }
-    return NextResponse.json({ error: detail }, { status: 500 });
+
+    diagnostics.anthropic_status = res.status;
+    diagnostics.anthropic_ok = res.ok;
+
+    if (res.ok) {
+      diagnostics.result = "SUCCESS";
+      diagnostics.response = parsed;
+    } else {
+      diagnostics.result = "FAILED";
+      diagnostics.response_body = parsed || body.slice(0, 500);
+    }
+  } catch (err) {
+    diagnostics.result = "FETCH_ERROR";
+    diagnostics.fetch_error = err instanceof Error ? err.message : String(err);
   }
+
+  return NextResponse.json(diagnostics);
 }
