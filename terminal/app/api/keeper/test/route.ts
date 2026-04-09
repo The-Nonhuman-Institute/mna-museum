@@ -44,7 +44,7 @@ export async function GET(): Promise<NextResponse> {
       message: err instanceof Error ? err.message : String(err),
     };
     if (err instanceof Error) {
-      const anyErr = err as Record<string, unknown>;
+      const anyErr = err as unknown as Record<string, unknown>;
       if (anyErr.status) detail.http_status = anyErr.status;
       if (anyErr.error) detail.api_error = anyErr.error;
       if (anyErr.type) detail.error_type = anyErr.type;
