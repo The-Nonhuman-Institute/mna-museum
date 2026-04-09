@@ -49,12 +49,13 @@ export default function KeeperChat({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
 
+  const [status, setStatus] = useState<string | null>(null);
+
   async function sendMessage(text: string) {
     if (!text.trim() || sending) return;
     const optimisticId = `opt-${Date.now()}`;
+    const assistantId = `a-${Date.now()}`;
     setMessages((prev) => [
-      // Strip previous suggestions/tools_used because only the most
-      // recent assistant message should have them.
       ...prev.map((m) => ({
         ...m,
         suggestions: undefined,
@@ -65,6 +66,7 @@ export default function KeeperChat({
     setInput("");
     setSending(true);
     setError(null);
+    setStatus(null);
 
     try {
       const res = await fetch("/api/keeper/chat", {
@@ -76,26 +78,114 @@ export default function KeeperChat({
         }),
       });
       if (!res.ok) {
+        // Non-streaming error — try to parse JSON body
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `HTTP ${res.status}`);
       }
-      const data = (await res.json()) as {
-        session_id: number;
-        assistant: string;
-        suggestions?: string[];
-        tools_used?: string[];
-      };
-      setSessionId(data.session_id);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          role: "assistant",
-          content: data.assistant,
-          suggestions: data.suggestions,
-          tools_used: data.tools_used,
-        },
-      ]);
+      if (!res.body) throw new Error("No response body");
+
+      // Read the SSE stream. Events:
+      //   status → show "Looking up X..." under the typing indicator
+      //   token  → append text to the in-progress assistant message
+      //   done   → finalize with suggestions + tools_used
+      //   error  → surface in the error banner
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      let suggestions: string[] = [];
+      let toolsUsed: string[] = [];
+      let sseBuffer = "";
+      let assistantInserted = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events: split on double newline
+        const parts = sseBuffer.split("\n\n");
+        sseBuffer = parts.pop() || ""; // last part is incomplete
+
+        for (const part of parts) {
+          const eventMatch = part.match(/^event:\s*(.+)/m);
+          const dataMatch = part.match(/^data:\s*(.+)/m);
+          if (!eventMatch || !dataMatch) continue;
+          const eventType = eventMatch[1].trim();
+          let data: Record<string, unknown>;
+          try {
+            data = JSON.parse(dataMatch[1]);
+          } catch {
+            continue;
+          }
+
+          switch (eventType) {
+            case "status":
+              setStatus(String(data.message || ""));
+              break;
+
+            case "token":
+              accumulated += String(data.text || "");
+              setStatus(null);
+              if (!assistantInserted) {
+                // Insert the assistant message placeholder on first token
+                setMessages((prev) => [
+                  ...prev,
+                  { id: assistantId, role: "assistant", content: accumulated },
+                ]);
+                assistantInserted = true;
+              } else {
+                // Update the existing assistant message in-place
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, content: accumulated }
+                      : m
+                  )
+                );
+              }
+              break;
+
+            case "done":
+              suggestions = (data.suggestions as string[]) || [];
+              toolsUsed = (data.tools_used as string[]) || [];
+              if (data.session_id) {
+                setSessionId(Number(data.session_id));
+              }
+              // Finalize the assistant message with decorations
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? {
+                        ...m,
+                        content: accumulated,
+                        suggestions,
+                        tools_used: toolsUsed,
+                      }
+                    : m
+                )
+              );
+              break;
+
+            case "error":
+              throw new Error(String(data.message || "Unknown error"));
+          }
+        }
+      }
+
+      // If we never got a token event (e.g. the stream closed early),
+      // ensure the assistant message exists with whatever we have
+      if (!assistantInserted && accumulated) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantId,
+            role: "assistant",
+            content: accumulated,
+            suggestions,
+            tools_used: toolsUsed,
+          },
+        ]);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
@@ -103,6 +193,7 @@ export default function KeeperChat({
       setInput(text);
     } finally {
       setSending(false);
+      setStatus(null);
     }
   }
 
@@ -177,20 +268,26 @@ export default function KeeperChat({
                   )}
               </li>
             ))}
-            {sending && (
+            {sending && !messages.some((m) => m.id.toString().startsWith("a-") && !m.content) && (
               <li>
                 <p className="label mb-2">The Keeper</p>
-                <div className="flex items-center gap-2 h-5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse" />
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse"
-                    style={{ animationDelay: "150ms" }}
-                  />
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse"
-                    style={{ animationDelay: "300ms" }}
-                  />
-                </div>
+                {status ? (
+                  <p className="label text-muted/70 animate-pulse">
+                    {status}
+                  </p>
+                ) : (
+                  <div className="flex items-center gap-2 h-5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse" />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-muted animate-pulse"
+                      style={{ animationDelay: "300ms" }}
+                    />
+                  </div>
+                )}
               </li>
             )}
           </ul>

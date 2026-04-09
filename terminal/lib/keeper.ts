@@ -394,14 +394,32 @@ export interface KeeperReply {
  * seconds total (two or three Claude round-trips plus tool executions),
  * which is why the UI shows a typing indicator.
  */
-export async function keeperChat(
-  history: ChatMessage[]
+/**
+ * Callback for streaming events to the client. The route handler
+ * wires this to the SSE writer so the client sees progress.
+ */
+export type StreamEvent =
+  | { type: "status"; message: string }
+  | { type: "token"; text: string }
+  | { type: "done"; suggestions: string[]; tools_used: string[] }
+  | { type: "error"; message: string };
+
+/**
+ * Streaming chat turn with tool-use support.
+ *
+ * Runs the tool loop non-streamed (sending "status" events for each
+ * tool call so the client shows "Looking up..."). The FINAL Claude
+ * call is streamed token-by-token via the `stream()` helper so the
+ * response appears word-by-word. Returns the full accumulated text
+ * for persistence.
+ */
+export async function keeperChatStreaming(
+  history: ChatMessage[],
+  emit: (event: StreamEvent) => void
 ): Promise<KeeperReply> {
   const systemPrompt = await buildSystemPrompt();
   const anthropic = getAnthropic();
 
-  // Anthropic SDK messages are structured — convert the simple
-  // ChatMessage history into the SDK's MessageParam shape.
   const messages: Anthropic.Messages.MessageParam[] = history.map((m) => ({
     role: m.role,
     content: m.content,
@@ -409,10 +427,19 @@ export async function keeperChat(
 
   const toolsUsed: string[] = [];
   const MAX_ITERATIONS = 6;
+  const TOOL_LABELS: Record<string, string> = {
+    read_work_detail: "Looking up work detail",
+    read_originator_activity: "Reading originator activity",
+    read_evaluator_voting_history: "Checking evaluator voting history",
+    read_pending_approvals: "Checking pending approvals",
+    search_institutional_events: "Searching event log",
+  };
 
-  let response: Anthropic.Messages.Message | null = null;
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
-    response = await anthropic.messages.create({
+  // ── Tool loop (non-streamed) ─────────────────────────────────────
+  for (let i = 0; i < MAX_ITERATIONS - 1; i++) {
+    emit({ type: "status", message: "Thinking..." });
+
+    const response = await anthropic.messages.create({
       model: DEFAULT_MODEL,
       max_tokens: 2048,
       temperature: 0.6,
@@ -422,15 +449,29 @@ export async function keeperChat(
     });
 
     if (response.stop_reason !== "tool_use") {
-      break;
+      // No tool calls — this IS the final response.
+      // Extract text and return immediately (no streaming needed for
+      // a non-tool response because it's already complete).
+      const rawText = response.content
+        .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("\n\n");
+      const { text, suggestions } = extractSuggestions(rawText);
+      // Emit the full text as one token event for consistency
+      emit({ type: "token", text });
+      emit({ type: "done", suggestions, tools_used: toolsUsed });
+      return { text, suggestions, tools_used: toolsUsed };
     }
 
-    // Execute every tool_use block in parallel, then append an
-    // assistant turn (with the tool_use blocks) and a user turn
-    // (with the tool_result blocks) before looping.
+    // Execute tool calls
     const toolUseBlocks = response.content.filter(
       (b): b is Anthropic.Messages.ToolUseBlock => b.type === "tool_use"
     );
+    for (const block of toolUseBlocks) {
+      const label = TOOL_LABELS[block.name] || block.name;
+      emit({ type: "status", message: `${label}...` });
+    }
+
     const toolResults = await Promise.all(
       toolUseBlocks.map(async (block) => {
         toolsUsed.push(block.name);
@@ -452,32 +493,53 @@ export async function keeperChat(
     );
   }
 
-  if (!response) {
-    throw new Error("No response from the Keeper");
+  // ── Final call (streamed) ────────────────────────────────────────
+  emit({ type: "status", message: "Composing response..." });
+
+  const stream = anthropic.messages.stream({
+    model: DEFAULT_MODEL,
+    max_tokens: 2048,
+    temperature: 0.6,
+    system: systemPrompt,
+    tools: KEEPER_TOOLS,
+    messages,
+  });
+
+  let accumulated = "";
+
+  stream.on("text", (text) => {
+    accumulated += text;
+    emit({ type: "token", text });
+  });
+
+  const finalMessage = await stream.finalMessage();
+
+  // If the streamed response ALSO called tools (shouldn't happen
+  // after MAX_ITERATIONS-1 non-streamed rounds, but defensive), fall
+  // back to the accumulated text so far.
+  if (finalMessage.stop_reason === "tool_use") {
+    // Extract whatever text was in the response
+    const textBlocks = finalMessage.content
+      .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text");
+    if (textBlocks.length > 0) {
+      accumulated = textBlocks.map((b) => b.text).join("\n\n");
+    }
   }
 
-  // Extract the final text from the response. The assistant message
-  // may contain interleaved text and (residual) tool_use blocks — we
-  // concatenate only the text blocks in order.
-  const textBlocks = response.content.filter(
-    (b): b is Anthropic.Messages.TextBlock => b.type === "text"
-  );
-  if (textBlocks.length === 0) {
-    throw new Error(
-      "Keeper returned no text — tool loop may have exhausted iterations"
-    );
-  }
-  const rawText = textBlocks.map((b) => b.text).join("\n\n");
+  const { text, suggestions } = extractSuggestions(accumulated);
+  emit({ type: "done", suggestions, tools_used: toolsUsed });
+  return { text, suggestions, tools_used: toolsUsed };
+}
 
-  // Parse out the <suggestions>...</suggestions> block (if present)
-  // and strip it from the visible text.
-  const { text, suggestions } = extractSuggestions(rawText);
-
-  return {
-    text,
-    suggestions,
-    tools_used: toolsUsed,
-  };
+/**
+ * Non-streaming fallback — same tool loop, returns the complete
+ * result in one shot with all events discarded. Used by tests or
+ * any code path that doesn't need SSE.
+ */
+export async function keeperChat(
+  history: ChatMessage[]
+): Promise<KeeperReply> {
+  return keeperChatStreaming(history, () => {});
 }
 
 /**

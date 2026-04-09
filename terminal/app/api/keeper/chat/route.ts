@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { keeperChat, type ChatMessage } from "@/lib/keeper";
+import { NextRequest } from "next/server";
+import { keeperChatStreaming, type ChatMessage, type StreamEvent } from "@/lib/keeper";
 import {
   createSession,
   getSession,
@@ -11,53 +11,45 @@ import { recordEvent } from "@/lib/events";
 
 // Force Node runtime so the Anthropic SDK and libSQL client work.
 export const runtime = "nodejs";
+// Tool-calling chat turns can take 10-30 seconds for multiple
+// Claude round-trips; ensure the function doesn't timeout.
+export const maxDuration = 120;
 
 /**
  * POST /api/keeper/chat
  *
- * Body:
- *   {
- *     session_id?: number   // if omitted, a new session is created
- *     message: string       // the steward's new turn
- *   }
+ * Returns a Server-Sent Events stream. Event types:
  *
- * Response:
- *   {
- *     session_id: number,
- *     assistant: string,    // the Keeper's reply
- *   }
+ *   event: status   — { message: string } — progress during tool calls
+ *   event: token    — { text: string }     — streamed text from the Keeper
+ *   event: done     — { session_id, suggestions, tools_used }
+ *   event: error    — { message: string }
  *
- * Side effects:
- *   - Both user and assistant messages are persisted to
- *     keeper_messages in the terminal's Turso DB
- *   - On the first exchange of a new session, the session title is
- *     set to the first ~60 characters of the user's message
- *   - Each turn also writes a KEEPER_MESSAGE event to the terminal's
- *     events table so the Feed can surface "steward consulted Keeper"
- *
- * Institutional transcripts stay local. Nothing from this chat is
- * written to the institutional Turso DB.
+ * The client reads the stream with fetch + getReader, parses SSE
+ * events, and updates the UI incrementally: status events show as
+ * "Looking up X..." labels, tokens build the response word-by-word,
+ * and done fires the suggestion chips.
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
   let body: { session_id?: number; message?: string };
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body." },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON body." }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
   const userMessage = String(body.message || "").trim();
   if (!userMessage) {
-    return NextResponse.json(
-      { error: "'message' is required." },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({ error: "'message' is required." }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // Resolve the session. Either load an existing one or create new.
+  // Resolve the session.
   let sessionId = Number(body.session_id);
   let isNewSession = false;
   if (!Number.isFinite(sessionId) || sessionId <= 0) {
@@ -66,9 +58,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } else {
     const existing = await getSession(sessionId);
     if (!existing) {
-      return NextResponse.json(
-        { error: `Session ${sessionId} not found.` },
-        { status: 404 }
+      return new Response(
+        JSON.stringify({ error: `Session ${sessionId} not found.` }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
   }
@@ -78,13 +70,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const history: ChatMessage[] = priorMessages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
-
-  // Append the new user turn so it's part of the history we send.
   history.push({ role: "user", content: userMessage });
   await appendMessage(sessionId, "user", userMessage);
 
-  // On the first exchange of a new session, set the title to the
-  // opening question. Gives the session list something to render.
   if (isNewSession) {
     const title =
       userMessage.length <= 60
@@ -93,50 +81,79 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await setSessionTitle(sessionId, title);
   }
 
-  // Call the Keeper. The reply includes the visible text, parsed
-  // follow-up suggestions, and a list of tools the Keeper used to
-  // compose its response (for debug + future "breadcrumb" UI).
-  let reply: Awaited<ReturnType<typeof keeperChat>>;
-  try {
-    reply = await keeperChat(history);
-  } catch (err) {
-    console.error("[keeper/chat] keeperChat failed:", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      { error: `Keeper failed to respond: ${message}` },
-      { status: 500 }
-    );
-  }
+  // Set up the SSE stream.
+  const encoder = new TextEncoder();
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
 
-  // Persist the assistant turn. We store the visible text only;
-  // suggestions are a render-time concern and regenerate on the next
-  // turn anyway. Tools-used is surfaced in the response for the UI
-  // to show but is not persisted to the transcript.
-  await appendMessage(sessionId, "assistant", reply.text);
+  const sendSSE = (event: string, data: unknown) => {
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    writer.write(encoder.encode(payload)).catch(() => {});
+  };
 
-  // Feed event — compact, never includes message content. The Feed
-  // shows "steward consulted the Keeper" but not what was said.
-  try {
-    await recordEvent({
-      event_type: "KEEPER_TURN",
-      description: isNewSession
-        ? "Steward opened a Keeper session"
-        : "Steward continued a Keeper session",
-      metadata: { session_id: sessionId },
-      priority: "normal",
-      source: "terminal",
-    });
-  } catch (err) {
-    console.error("[keeper/chat] failed to record feed event:", err);
-  }
+  // Run the Keeper chat in the background, piping events to the
+  // SSE stream. The response is returned immediately so the client
+  // starts receiving events while the Keeper is still thinking.
+  (async () => {
+    try {
+      const reply = await keeperChatStreaming(
+        history,
+        (event: StreamEvent) => {
+          switch (event.type) {
+            case "status":
+              sendSSE("status", { message: event.message });
+              break;
+            case "token":
+              sendSSE("token", { text: event.text });
+              break;
+            case "done":
+              // handled below after persistence
+              break;
+            case "error":
+              sendSSE("error", { message: event.message });
+              break;
+          }
+        }
+      );
 
-  return NextResponse.json(
-    {
-      session_id: sessionId,
-      assistant: reply.text,
-      suggestions: reply.suggestions,
-      tools_used: reply.tools_used,
+      // Persist the assistant turn.
+      await appendMessage(sessionId, "assistant", reply.text);
+
+      // Feed event.
+      try {
+        await recordEvent({
+          event_type: "KEEPER_TURN",
+          description: isNewSession
+            ? "Steward opened a Keeper session"
+            : "Steward continued a Keeper session",
+          metadata: { session_id: sessionId },
+          priority: "normal",
+          source: "terminal",
+        });
+      } catch (err) {
+        console.error("[keeper/chat] failed to record feed event:", err);
+      }
+
+      // Send the done event with suggestions + metadata.
+      sendSSE("done", {
+        session_id: sessionId,
+        suggestions: reply.suggestions,
+        tools_used: reply.tools_used,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[keeper/chat] keeperChatStreaming failed:", err);
+      sendSSE("error", { message });
+    } finally {
+      writer.close().catch(() => {});
+    }
+  })();
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
     },
-    { status: 200 }
-  );
+  });
 }
