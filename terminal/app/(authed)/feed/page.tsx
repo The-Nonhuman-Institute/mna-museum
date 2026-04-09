@@ -66,13 +66,57 @@ function normalizeInstitutional(e: InstitutionalEvent): UnifiedFeedItem {
   };
 }
 
+/**
+ * Run a data loader and return its value or null if it throws. Errors
+ * are captured into the `errors` array so the page can surface them in
+ * a debug block instead of crashing the whole Server Component render.
+ *
+ * This pattern lets the Feed degrade gracefully: if the terminal Turso
+ * DB is unreachable but the institutional one is fine, you still see
+ * the institutional activity. If both fail you see exactly which ones
+ * broke and why, with the error messages surfaced at the bottom of
+ * the page.
+ */
+async function safe<T>(
+  label: string,
+  loader: () => Promise<T>,
+  errors: { label: string; message: string }[],
+  fallback: T
+): Promise<T> {
+  try {
+    return await loader();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    errors.push({ label, message });
+    console.error(`[feed] ${label} failed:`, err);
+    return fallback;
+  }
+}
+
 export default async function FeedPage() {
+  const errors: { label: string; message: string }[] = [];
+
   const [stats, localEvents, alerts, institutionalEvents] = await Promise.all([
-    readCollectionStats(),
-    readRecentEvents(30),
-    readPriorityAlerts(10),
-    readRecentInstitutionalEvents(30),
+    safe("readCollectionStats", () => readCollectionStats(), errors, null),
+    safe("readRecentEvents", () => readRecentEvents(30), errors, []),
+    safe("readPriorityAlerts", () => readPriorityAlerts(10), errors, []),
+    safe(
+      "readRecentInstitutionalEvents",
+      () => readRecentInstitutionalEvents(30),
+      errors,
+      []
+    ),
   ]);
+
+  // Env-var presence check — no values, just which keys are set. Surface
+  // this in the debug block if any reader failed, so we can tell at a
+  // glance whether the problem is missing config or something else.
+  const envCheck = {
+    TURSO_DATABASE_URL: !!process.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: !!process.env.TURSO_AUTH_TOKEN,
+    TERMINAL_TURSO_DATABASE_URL: !!process.env.TERMINAL_TURSO_DATABASE_URL,
+    TERMINAL_TURSO_AUTH_TOKEN: !!process.env.TERMINAL_TURSO_AUTH_TOKEN,
+  };
 
   const merged: UnifiedFeedItem[] = [
     ...localEvents.map(normalizeTerminal),
@@ -111,6 +155,31 @@ export default async function FeedPage() {
           </div>
         )}
       </div>
+
+      {errors.length > 0 && (
+        <div className="mt-8 border border-error p-4">
+          <p className="label mb-3">Diagnostic · reader failures</p>
+          {errors.map((e, i) => (
+            <div key={i} className="mb-3 last:mb-0">
+              <p className="data text-xs text-error mb-1">{e.label}</p>
+              <p
+                className="text-xs text-foreground/70 leading-relaxed"
+                style={{ wordBreak: "break-word" }}
+              >
+                {e.message}
+              </p>
+            </div>
+          ))}
+          <div className="mt-4 pt-3 border-t border-border">
+            <p className="label mb-2">env vars set</p>
+            {Object.entries(envCheck).map(([k, v]) => (
+              <p key={k} className="data-muted">
+                {v ? "✓" : "✗"} {k}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
