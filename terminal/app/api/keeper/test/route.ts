@@ -1,79 +1,88 @@
 import { NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+import { KEEPER_TOOLS } from "@/lib/keeper-tools";
+import { buildSystemPrompt } from "@/lib/keeper";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
+
+function sanitize(raw: string | undefined): string {
+  return (raw || "").replace(/[\s\u0000-\u001F\u007F]/g, "");
+}
 
 /**
  * GET /api/keeper/test
  *
- * Bare-metal diagnostic. Makes a raw fetch to the Anthropic API
- * with no SDK, no tools, no abstractions. Returns the exact HTTP
- * status and response body so we can see what Anthropic actually
- * says when called from a Vercel function.
+ * Three-level diagnostic:
+ *   Level 1: basic call (no tools, no system prompt)
+ *   Level 2: call WITH tools (same schemas as Keeper)
+ *   Level 3: call WITH tools AND the real system prompt from Turso
+ *
+ * Returns which level passed/failed so we know if the issue is the
+ * API key, the tools, or the dynamic system prompt.
  */
 export async function GET(): Promise<NextResponse> {
-  // Sanitize the same way keeper.ts does
-  const rawKey = process.env.ANTHROPIC_API_KEY || "";
-  const key = rawKey.replace(/[\s\u0000-\u001F\u007F]/g, "");
-  const model =
-    (process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514").replace(
-      /[\s\u0000-\u001F\u007F]/g,
-      ""
-    );
-
-  const diagnostics: Record<string, unknown> = {
-    key_length_raw: rawKey.length,
-    key_length_sanitized: key.length,
-    key_prefix: key.slice(0, 15),
-    key_suffix: key.slice(-5),
-    key_chars_removed: rawKey.length - key.length,
-    model,
-  };
+  const key = sanitize(process.env.ANTHROPIC_API_KEY);
+  const model = sanitize(process.env.ANTHROPIC_MODEL) || "claude-sonnet-4-20250514";
 
   if (!key) {
-    return NextResponse.json(
-      { ...diagnostics, error: "ANTHROPIC_API_KEY is empty after sanitization" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "No API key" }, { status: 500 });
   }
 
-  // Raw fetch — no SDK, no abstractions
+  const anthropic = new Anthropic({ apiKey: key });
+  const results: Record<string, unknown> = { model };
+
+  // Level 1: basic
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 20,
-        messages: [{ role: "user", content: "Reply with exactly: OK" }],
-      }),
+    const r = await anthropic.messages.create({
+      model,
+      max_tokens: 20,
+      messages: [{ role: "user", content: "Reply: OK" }],
     });
-
-    const body = await res.text();
-    let parsed: unknown = null;
-    try {
-      parsed = JSON.parse(body);
-    } catch {
-      // not JSON
-    }
-
-    diagnostics.anthropic_status = res.status;
-    diagnostics.anthropic_ok = res.ok;
-
-    if (res.ok) {
-      diagnostics.result = "SUCCESS";
-      diagnostics.response = parsed;
-    } else {
-      diagnostics.result = "FAILED";
-      diagnostics.response_body = parsed || body.slice(0, 500);
-    }
-  } catch (err) {
-    diagnostics.result = "FETCH_ERROR";
-    diagnostics.fetch_error = err instanceof Error ? err.message : String(err);
+    results.level1_basic = "PASS";
+  } catch (e: unknown) {
+    const err = e as { message?: string; status?: number; error?: unknown };
+    results.level1_basic = "FAIL";
+    results.level1_error = { message: err.message, status: err.status, body: err.error };
+    return NextResponse.json(results);
   }
 
-  return NextResponse.json(diagnostics);
+  // Level 2: with tools
+  try {
+    const r = await anthropic.messages.create({
+      model,
+      max_tokens: 100,
+      tools: KEEPER_TOOLS,
+      messages: [{ role: "user", content: "What works exist?" }],
+    });
+    results.level2_tools = "PASS";
+    results.level2_stop_reason = r.stop_reason;
+  } catch (e: unknown) {
+    const err = e as { message?: string; status?: number; error?: unknown };
+    results.level2_tools = "FAIL";
+    results.level2_error = { message: err.message, status: err.status, body: err.error };
+    return NextResponse.json(results);
+  }
+
+  // Level 3: with tools + real system prompt
+  try {
+    const systemPrompt = await buildSystemPrompt();
+    results.system_prompt_length = systemPrompt.length;
+
+    const r = await anthropic.messages.create({
+      model,
+      max_tokens: 100,
+      system: systemPrompt,
+      tools: KEEPER_TOOLS,
+      messages: [{ role: "user", content: "What is the current state?" }],
+    });
+    results.level3_full = "PASS";
+    results.level3_stop_reason = r.stop_reason;
+  } catch (e: unknown) {
+    const err = e as { message?: string; status?: number; error?: unknown };
+    results.level3_full = "FAIL";
+    results.level3_error = { message: err.message, status: err.status, body: err.error };
+  }
+
+  return NextResponse.json(results);
 }
