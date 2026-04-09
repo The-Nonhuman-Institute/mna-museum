@@ -1,37 +1,61 @@
+import {
+  listRecentSessions,
+  listMessages,
+  type KeeperMessage,
+} from "@/lib/keeper-sessions";
+import KeeperChat from "@/components/KeeperChat";
+
 /**
- * KEEPER — direct chat with the Keeper agent.
+ * KEEPER — direct chat with MNA-KP-0001.
  *
- * Phase 3 build. The Keeper is the steward's institutional collaborator.
- * It has read access to the institutional record (Turso + terminal DB)
- * and responds via streaming Claude API calls (or local Llama on Mac
- * Studio when MODEL_PROVIDER=ollama).
+ * The page itself is a server component that loads the most recent
+ * session (if any) along with its messages, then hands everything to
+ * the KeeperChat client component which handles input, sending,
+ * rendering, and state.
  *
- * Full implementation will include:
- *   - Streaming responses via Server-Sent Events or WebSocket
- *   - Conversation history persisted to keeper_sessions / keeper_messages
- *   - The Keeper's constitution loaded as system prompt
- *   - Typing indicator during generation
- *   - Session list (previous conversations browsable)
+ * On first visit (no sessions yet) we start fresh — the first
+ * message the steward sends creates a new session on the server.
+ *
+ * Per the session-scoped architecture: chat transcripts live in the
+ * terminal's own Turso DB (keeper_sessions / keeper_messages), never
+ * in the institutional record. Only compact KEEPER_TURN events land
+ * in the Feed so the steward can see "I had a conversation" without
+ * the content being surfaced publicly.
  */
-export default function KeeperPage() {
+export const dynamic = "force-dynamic";
+
+export default async function KeeperPage() {
+  // Load the most recent session and any messages in it so the chat
+  // resumes where the steward left off instead of starting from
+  // scratch on every visit.
+  let initialSessionId: number | null = null;
+  let initialMessages: KeeperMessage[] = [];
+  try {
+    const recent = await listRecentSessions(1);
+    if (recent.length > 0) {
+      initialSessionId = recent[0].id;
+      initialMessages = await listMessages(initialSessionId);
+    }
+  } catch (err) {
+    console.error("[keeper page] failed to load initial session:", err);
+  }
+
   return (
-    <section className="px-5 py-6">
-      <div className="mb-8">
+    <section className="flex flex-col h-full">
+      <div className="px-5 pt-6 pb-4 border-b border-border">
         <p className="label mb-2">MNA-KP-0001</p>
         <h1 className="display text-3xl">The Keeper</h1>
       </div>
-
-      <div className="border border-border p-5">
-        <p className="label mb-3">Phase 3</p>
-        <p className="text-sm text-foreground/80 leading-relaxed">
-          Direct chat with the Keeper agent. Streaming responses via the
-          model provider abstraction in lib/llm.ts — Anthropic now, Ollama
-          when Mac Studio arrives. The Keeper reads the institutional
-          record and speaks in its own voice as the steward&rsquo;s
-          institutional collaborator.
-        </p>
-        <p className="label mt-5">Not yet implemented</p>
-      </div>
+      <KeeperChat
+        initialSessionId={initialSessionId}
+        initialMessages={initialMessages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          }))}
+      />
     </section>
   );
 }
