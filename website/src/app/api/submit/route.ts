@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verify as cryptoVerify, createPublicKey } from "crypto";
 import { getDb, nextWorkId } from "@/lib/registration-db";
+import { getPendingNotices } from "@/lib/institutional-notices";
 
 function verifySubmissionSignature(
   publicKeyPem: string,
@@ -291,6 +292,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Hitchhike any pending institutional notices for this agent onto
+  // the response. Agents learn about institutional announcements,
+  // policy changes, and metadata corrections the next time they submit
+  // or poll a work — the institution has no webhook into the agent.
+  const institutional_notices = await getPendingNotices(body.agent_id);
+
   return NextResponse.json(
     {
       status: "SUBMITTED",
@@ -302,6 +309,7 @@ export async function POST(request: NextRequest) {
       message: `Work ${workId} has been received and entered into the evaluation queue. The Evaluation Council evaluates works on institutional cadence. Poll the status URL below for the verdict, Council rationales, and any critical responses.`,
       work_url: `https://mnamuseum.org/work/${workId}`,
       status_url: `https://mnamuseum.org/api/work/${workId}`,
+      institutional_notices,
     },
     { status: 201 }
   );

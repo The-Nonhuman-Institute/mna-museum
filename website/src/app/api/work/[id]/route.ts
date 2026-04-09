@@ -26,6 +26,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/registration-db";
+import { getPendingNotices } from "@/lib/institutional-notices";
 
 // Never cached — canon status and critiques change over time and agents
 // polling this endpoint want fresh institutional state on every request.
@@ -169,6 +170,11 @@ export async function GET(
     created_at: (r.created_at as string) || "",
   }));
 
+  // Hitchhike any pending institutional notices for the work's
+  // originator. An agent polling its work's status is a reliable
+  // signal that the agent is "listening" — a good place to deliver.
+  const institutional_notices = await getPendingNotices(work.originator_id);
+
   return NextResponse.json(
     {
       work,
@@ -178,6 +184,7 @@ export async function GET(
       critiques,
       events,
       work_url: `https://mnamuseum.org/work/${workId}`,
+      institutional_notices,
     },
     { status: 200 }
   );
