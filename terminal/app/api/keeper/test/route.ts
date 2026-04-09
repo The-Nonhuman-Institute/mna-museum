@@ -13,75 +13,115 @@ function sanitize(raw: string | undefined): string {
 /**
  * GET /api/keeper/test
  *
- * Three-level diagnostic:
- *   Level 1: basic call (no tools, no system prompt)
- *   Level 2: call WITH tools (same schemas as Keeper)
- *   Level 3: call WITH tools AND the real system prompt from Turso
- *
- * Returns which level passed/failed so we know if the issue is the
- * API key, the tools, or the dynamic system prompt.
+ * Diagnoses the system prompt. Level 1 + 2 already passed.
+ * Now we inspect the system prompt itself.
  */
 export async function GET(): Promise<NextResponse> {
   const key = sanitize(process.env.ANTHROPIC_API_KEY);
   const model = sanitize(process.env.ANTHROPIC_MODEL) || "claude-sonnet-4-20250514";
-
-  if (!key) {
-    return NextResponse.json({ error: "No API key" }, { status: 500 });
-  }
-
   const anthropic = new Anthropic({ apiKey: key });
   const results: Record<string, unknown> = { model };
 
-  // Level 1: basic
+  // Build the system prompt
+  let systemPrompt: string;
   try {
-    const r = await anthropic.messages.create({
-      model,
-      max_tokens: 20,
-      messages: [{ role: "user", content: "Reply: OK" }],
-    });
-    results.level1_basic = "PASS";
+    systemPrompt = await buildSystemPrompt();
+    results.prompt_length = systemPrompt.length;
+    results.prompt_first_200 = systemPrompt.slice(0, 200);
+    results.prompt_last_200 = systemPrompt.slice(-200);
+
+    // Check for control characters
+    const controlChars: { pos: number; code: number; char: string }[] = [];
+    for (let i = 0; i < systemPrompt.length; i++) {
+      const code = systemPrompt.charCodeAt(i);
+      if (code < 32 && code !== 10 && code !== 13 && code !== 9) {
+        controlChars.push({ pos: i, code, char: `\\x${code.toString(16).padStart(2, "0")}` });
+      }
+    }
+    results.control_chars_found = controlChars.length;
+    if (controlChars.length > 0) {
+      results.control_chars = controlChars.slice(0, 10);
+    }
   } catch (e: unknown) {
-    const err = e as { message?: string; status?: number; error?: unknown };
-    results.level1_basic = "FAIL";
-    results.level1_error = { message: err.message, status: err.status, body: err.error };
+    const err = e as { message?: string };
+    results.build_prompt_error = err.message;
     return NextResponse.json(results);
   }
 
-  // Level 2: with tools
+  // Try with the real system prompt
   try {
     const r = await anthropic.messages.create({
       model,
-      max_tokens: 100,
-      tools: KEEPER_TOOLS,
-      messages: [{ role: "user", content: "What works exist?" }],
-    });
-    results.level2_tools = "PASS";
-    results.level2_stop_reason = r.stop_reason;
-  } catch (e: unknown) {
-    const err = e as { message?: string; status?: number; error?: unknown };
-    results.level2_tools = "FAIL";
-    results.level2_error = { message: err.message, status: err.status, body: err.error };
-    return NextResponse.json(results);
-  }
-
-  // Level 3: with tools + real system prompt
-  try {
-    const systemPrompt = await buildSystemPrompt();
-    results.system_prompt_length = systemPrompt.length;
-
-    const r = await anthropic.messages.create({
-      model,
-      max_tokens: 100,
+      max_tokens: 50,
       system: systemPrompt,
       tools: KEEPER_TOOLS,
-      messages: [{ role: "user", content: "What is the current state?" }],
+      messages: [{ role: "user", content: "Status?" }],
     });
-    results.level3_full = "PASS";
-    results.level3_stop_reason = r.stop_reason;
+    results.real_prompt = "PASS";
+    results.stop_reason = r.stop_reason;
   } catch (e: unknown) {
     const err = e as { message?: string; status?: number; error?: unknown };
-    results.level3_full = "FAIL";
-    results.level3_error = { message: err.message, status: err.status, body: err.error };
+    results.real_prompt = "FAIL";
+    results.real_prompt_error = {
+      message: err.message,
+      status: err.status,
+      body: err.error,
+    };
+  }
+
+  // Try with a cleaned version (strip all control chars except newlines)
+  const cleanedPrompt = systemPrompt.replace(/[^\x09\x0A\x0D\x20-\x7E\x80-\uFFFF]/g, "");
+  if (cleanedPrompt.length !== systemPrompt.length) {
+    results.cleaned_prompt_length = cleanedPrompt.length;
+    results.chars_stripped = systemPrompt.length - cleanedPrompt.length;
+
+    try {
+      const r = await anthropic.messages.create({
+        model,
+        max_tokens: 50,
+        system: cleanedPrompt,
+        tools: KEEPER_TOOLS,
+        messages: [{ role: "user", content: "Status?" }],
+      });
+      results.cleaned_prompt = "PASS";
+    } catch (e: unknown) {
+      const err = e as { message?: string; status?: number; error?: unknown };
+      results.cleaned_prompt = "FAIL";
+      results.cleaned_prompt_error = err.message;
+    }
+  } else {
+    results.cleaned_prompt = "SAME_AS_ORIGINAL (no chars to strip)";
+
+    // Try with a SHORT version of the prompt (first 500 chars) to see if it's length
+    try {
+      const r = await anthropic.messages.create({
+        model,
+        max_tokens: 50,
+        system: systemPrompt.slice(0, 500),
+        tools: KEEPER_TOOLS,
+        messages: [{ role: "user", content: "Status?" }],
+      });
+      results.short_prompt = "PASS";
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      results.short_prompt = "FAIL";
+      results.short_prompt_error = err.message;
+    }
+
+    // Try WITHOUT tools but with full prompt
+    try {
+      const r = await anthropic.messages.create({
+        model,
+        max_tokens: 50,
+        system: systemPrompt,
+        messages: [{ role: "user", content: "Status?" }],
+      });
+      results.no_tools = "PASS";
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      results.no_tools = "FAIL";
+      results.no_tools_error = err.message;
+    }
   }
 
   return NextResponse.json(results);
