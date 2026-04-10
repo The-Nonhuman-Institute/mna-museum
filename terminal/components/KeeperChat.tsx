@@ -445,6 +445,7 @@ function prettyTool(name: string): string {
     execute_send_accession_notice: "accession notice",
     execute_trigger_evaluation: "evaluation check",
     execute_trigger_critics: "critics check",
+    execute_museum_update: "museum update",
     execute_issue_notice: "institutional notice",
   };
   return map[name] || name.replace(/_/g, " ");

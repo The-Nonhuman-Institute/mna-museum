@@ -3,6 +3,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { getInstitutionalTurso } from "./institutional-turso";
 import { evaluateWork } from "./evaluator";
 import { critiqueWork } from "./critic";
+import { updateMuseum } from "./museum-pipeline";
 
 /**
  * MNA Steward Terminal — Keeper action tools.
@@ -80,6 +81,15 @@ export const KEEPER_ACTION_TOOLS: Anthropic.Messages.Tool[] = [
     },
   },
   {
+    name: "execute_museum_update",
+    description:
+      "Run the museum pipeline: find canonized works not yet placed in the virtual museum, have the Curator decide their gallery placement, then have the Installer execute the placement. This is a full Curator → Installer chain. ONLY call after steward confirmation. The Curator's decisions are real institutional acts recorded in curatorial_decisions.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
     name: "execute_issue_notice",
     description:
       "Issue an institutional notice to a specific agent. The notice appears in the agent's next /api/submit or /api/work/{id} response. Used for communicating corrections, policy changes, or institutional announcements to external originators. ONLY call after steward confirmation.",
@@ -118,6 +128,8 @@ export async function runKeeperAction(
         return await triggerEvaluation(String(input.work_id || ""));
       case "execute_trigger_critics":
         return await triggerCritics(String(input.work_id || ""));
+      case "execute_museum_update":
+        return await runMuseumUpdate();
       case "execute_issue_notice":
         return await issueNotice(
           String(input.agent_id || ""),
@@ -277,6 +289,26 @@ async function triggerCritics(workId: string) {
     responses: result.responses,
     elapsed_seconds: result.elapsed_seconds,
     message: `Both Critics have responded to ${workId}. ${result.responses.map((r) => `${r.critic_id} (${r.approach}): ${r.body_length} chars`).join(", ")}. Completed in ${result.elapsed_seconds}s.`,
+  };
+}
+
+async function runMuseumUpdate() {
+  const result = await updateMuseum();
+
+  if (result.unplaced_works.length === 0) {
+    return {
+      status: "NO_ACTION_NEEDED",
+      message: "All canonized works are already placed in the virtual museum. No update needed.",
+    };
+  }
+
+  return {
+    status: "MUSEUM_UPDATED",
+    unplaced_works_found: result.unplaced_works.length,
+    curator_decisions: result.curator_decisions,
+    installations: result.installations,
+    elapsed_seconds: result.elapsed_seconds,
+    message: `Museum updated: ${result.installations.length} work(s) placed by the Curator and installed. ${result.curator_decisions.map((d) => `${d.work_id} → ${d.space} (${d.treatment})`).join(", ")}. Completed in ${result.elapsed_seconds}s.`,
   };
 }
 
