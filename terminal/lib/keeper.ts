@@ -446,6 +446,12 @@ export async function keeperChatStreaming(
     read_evaluator_voting_history: "Checking evaluator voting history",
     read_pending_approvals: "Checking pending approvals",
     search_institutional_events: "Searching event log",
+    generate_weekly_digest: "Compiling weekly digest",
+    generate_originator_dossier: "Building originator dossier",
+    execute_send_accession_notice: "Preparing accession notice",
+    execute_trigger_evaluation: "Checking evaluation prerequisites",
+    execute_trigger_critics: "Checking critic prerequisites",
+    execute_issue_notice: "Issuing institutional notice",
   };
 
   // ── Tool loop (non-streamed) ─────────────────────────────────────

@@ -2,6 +2,10 @@ import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getInstitutionalTurso } from "./institutional-turso";
 import { getDb, ensureSchema } from "./db";
+import {
+  KEEPER_ACTION_TOOLS,
+  runKeeperAction,
+} from "./keeper-actions";
 
 /**
  * MNA Steward Terminal — Keeper read tools.
@@ -152,6 +156,8 @@ export const KEEPER_TOOLS: Anthropic.Messages.Tool[] = [
       required: ["originator_id"],
     },
   },
+  // ── Action tools (require steward confirmation) ──────────────────
+  ...KEEPER_ACTION_TOOLS,
 ];
 
 // ── Tool runner ──────────────────────────────────────────────────
@@ -162,11 +168,20 @@ export const KEEPER_TOOLS: Anthropic.Messages.Tool[] = [
  * message. Errors are caught and returned as `{error: string}` so the
  * Keeper can see what went wrong and answer appropriately instead of
  * breaking the chat.
+ *
+ * Action tools (execute_*) are handled by keeper-actions.ts which
+ * validates prerequisites and either performs the action or returns
+ * instructions for running it via system scripts.
  */
 export async function runKeeperTool(
   name: string,
   input: Record<string, unknown>
 ): Promise<unknown> {
+  // Action tools route to the action runner
+  if (name.startsWith("execute_")) {
+    return runKeeperAction(name, input);
+  }
+
   try {
     switch (name) {
       case "read_work_detail":

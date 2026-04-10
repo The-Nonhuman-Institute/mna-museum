@@ -506,6 +506,12 @@ function prettyTool(name: string): string {
     read_evaluator_voting_history: "evaluator votes",
     read_pending_approvals: "pending approvals",
     search_institutional_events: "event log",
+    generate_weekly_digest: "weekly digest",
+    generate_originator_dossier: "originator dossier",
+    execute_send_accession_notice: "accession notice",
+    execute_trigger_evaluation: "evaluation check",
+    execute_trigger_critics: "critics check",
+    execute_issue_notice: "institutional notice",
   };
   return map[name] || name.replace(/_/g, " ");
 }
