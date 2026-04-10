@@ -1,6 +1,7 @@
 import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getInstitutionalTurso } from "./institutional-turso";
+import { evaluateWork } from "./evaluator";
 
 /**
  * MNA Steward Terminal — Keeper action tools.
@@ -207,20 +208,30 @@ async function triggerEvaluation(workId: string) {
   if (work.rows.length === 0) {
     return { error: `Work ${workId} not found.` };
   }
-  if (work.rows[0].status !== "SUBMITTED") {
+  const status = work.rows[0].status as string;
+  if (status !== "SUBMITTED" && status !== "IN_REVIEW") {
     return {
-      error: `Work ${workId} is not in SUBMITTED status (current: ${work.rows[0].status}). Only submitted works can be evaluated.`,
+      error: `Work ${workId} is not awaiting evaluation (current: ${status}).`,
     };
   }
 
-  // Evaluation requires running the Claude API 4 times sequentially
-  // (one per evaluator), which takes 30-60 seconds per evaluator.
-  // This exceeds Vercel function timeouts on most plans.
+  // Run the full Council evaluation. All 4 evaluators run in parallel
+  // (each sees only the work + its own constitution, no cross-
+  // contamination). Takes 30-60 seconds total.
+  const result = await evaluateWork(workId);
+
   return {
-    status: "EVALUATION_NEEDED",
-    work_id: workId,
-    originator_id: work.rows[0].originator_id as string,
-    message: `${workId} is ready for Council evaluation. This operation takes 2-4 minutes (four sequential Claude API calls). It currently needs to be run via the system script: npx tsx system/scripts/evaluate-turso-works.ts --work ${workId}. Direct execution from the terminal will be available when the Mac Studio hosts the agent loop.`,
+    status: "EVALUATION_COMPLETE",
+    work_id: result.work_id,
+    final_verdict: result.final_status,
+    verdicts: result.verdicts,
+    registrar_resolved: result.registrar_resolved,
+    elapsed_seconds: result.elapsed_seconds,
+    message: `Council evaluation complete for ${workId}: ${result.final_status}. ${
+      result.registrar_resolved
+        ? "The Council deadlocked and the Registrar resolved the tie."
+        : `Vote: ${Object.values(result.verdicts).filter((v) => v === "CANON").length} CANON, ${Object.values(result.verdicts).filter((v) => v === "REJECTED").length} REJECTED.`
+    } Completed in ${result.elapsed_seconds}s.`,
   };
 }
 
