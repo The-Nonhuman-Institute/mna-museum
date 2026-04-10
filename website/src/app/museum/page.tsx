@@ -7,6 +7,12 @@ import {
   getMonumentalWork,
 } from "@/lib/museum-installations";
 
+// Revalidate every 60 seconds so newly-installed works from the
+// terminal's Curator → Installer pipeline appear without a deploy.
+// Without this, the page is statically rendered at build time and
+// new installations don't show until the next git push.
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: "Museum — Museum of Nonhuman Art",
   description:
