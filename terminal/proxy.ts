@@ -51,7 +51,18 @@ export async function proxy(
   const cookie = request.cookies.get(SESSION_COOKIE_NAME);
   const sessionValid = await verifySessionValue(cookie?.value);
 
-  if (sessionValid) return NextResponse.next();
+  if (sessionValid) {
+    // For authed page requests (not API, not static), set
+    // Cache-Control: no-store so the browser always fetches fresh
+    // HTML after code deploys. Without this, the PWA serves stale
+    // cached pages and the steward has to log out and back in to
+    // see updates — terrible UX.
+    const response = NextResponse.next();
+    if (!pathname.startsWith("/api/") && !pathname.startsWith("/_next/")) {
+      response.headers.set("Cache-Control", "no-store, must-revalidate");
+    }
+    return response;
+  }
 
   // API requests: 401 JSON so fetch callers get a clean error.
   if (pathname.startsWith("/api/")) {
