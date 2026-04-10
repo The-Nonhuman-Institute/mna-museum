@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import TabBar from "@/components/TabBar";
+import PushNotificationManager from "@/components/PushNotificationManager";
 
 /**
  * Authed shell — every tab in the terminal renders inside this layout.
@@ -57,6 +58,10 @@ export default function AuthedLayout({
           </button>
         </form>
       </header>
+
+      {/* Push notification prompt — shows once until the steward
+          enables or dismisses. Disappears permanently after subscribe. */}
+      <PushNotificationManager />
 
       {/* Main content — fills between header and tab bar */}
       <main className="flex-1 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+68px)]">

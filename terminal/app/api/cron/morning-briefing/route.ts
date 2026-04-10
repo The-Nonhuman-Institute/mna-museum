@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { keeperChat, type ChatMessage } from "@/lib/keeper";
 import { recordEvent } from "@/lib/events";
+import { sendPush } from "@/lib/push";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -53,10 +54,20 @@ export async function GET(request: Request): Promise<NextResponse> {
       },
     });
 
+    // Push notification to the steward's phone
+    const firstLine = reply.text.split("\n").find((l) => l.trim()) || "New briefing ready";
+    const pushResult = await sendPush({
+      title: "MNA Morning Briefing",
+      body: firstLine.slice(0, 120),
+      tag: "morning-briefing",
+      url: "/feed",
+    });
+
     return NextResponse.json({
       status: "ok",
       briefing_length: reply.text.length,
       tools_used: reply.tools_used,
+      push: pushResult,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

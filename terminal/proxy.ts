@@ -41,6 +41,7 @@ export async function proxy(
     "/apple-touch-icon-precomposed.png",
     "/icon-192.png",
     "/icon-512.png",
+    "/sw.js",
   ];
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (pathname.startsWith("/_next/")) return NextResponse.next();
