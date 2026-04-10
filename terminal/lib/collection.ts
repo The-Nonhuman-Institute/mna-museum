@@ -159,6 +159,62 @@ export async function readPendingWorks(): Promise<PendingWork[]> {
   }));
 }
 
+export interface Exhibition {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  curatorial_statement: string | null;
+  work_ids: string[];
+  status: string;
+  opened_at: string | null;
+  retired_at: string | null;
+  curator_id: string | null;
+  cover_work_id: string | null;
+}
+
+/**
+ * All exhibitions from the institutional DB, sorted: active first,
+ * then retired by most-recently-retired.
+ */
+export async function readExhibitions(): Promise<Exhibition[]> {
+  if (!institutionalTursoConfigured()) return [];
+  const db = getInstitutionalTurso();
+
+  // Guard: exhibitions table may not exist on older DBs
+  try {
+    const rows = await db.execute(
+      `SELECT id, title, subtitle, curatorial_statement, work_ids,
+              status, opened_at, retired_at, curator_id, cover_work_id
+         FROM exhibitions
+         ORDER BY
+           CASE status WHEN 'ACTIVE' THEN 0 WHEN 'PLANNED' THEN 1 ELSE 2 END,
+           opened_at DESC`
+    );
+    return rows.rows.map((r) => {
+      let workIds: string[] = [];
+      try {
+        const parsed = JSON.parse((r.work_ids as string) || "[]");
+        workIds = Array.isArray(parsed) ? parsed.map(String) : [];
+      } catch { /* ignore */ }
+      return {
+        id: Number(r.id),
+        title: (r.title as string) || "Untitled",
+        subtitle: (r.subtitle as string) || null,
+        curatorial_statement: (r.curatorial_statement as string) || null,
+        work_ids: workIds,
+        status: (r.status as string) || "UNKNOWN",
+        opened_at: (r.opened_at as string) || null,
+        retired_at: (r.retired_at as string) || null,
+        curator_id: (r.curator_id as string) || null,
+        cover_work_id: (r.cover_work_id as string) || null,
+      };
+    });
+  } catch (err) {
+    console.error("[collection] exhibitions read failed:", err);
+    return [];
+  }
+}
+
 /**
  * Full institutional agent registry. The authoritative source for
  * "who exists at MNA right now." Includes founding agents and any
