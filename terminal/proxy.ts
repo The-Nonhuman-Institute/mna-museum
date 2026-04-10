@@ -42,6 +42,8 @@ export async function proxy(
     "/icon-192.png",
     "/icon-512.png",
     "/sw.js",
+    "/MNA-Standard-Logo-Black-Horizontal.svg",
+    "/MNA-Icon-Black.svg",
   ];
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (pathname.startsWith("/_next/")) return NextResponse.next();
