@@ -2,6 +2,7 @@ import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getInstitutionalTurso } from "./institutional-turso";
 import { evaluateWork } from "./evaluator";
+import { critiqueWork } from "./critic";
 
 /**
  * MNA Steward Terminal — Keeper action tools.
@@ -267,11 +268,15 @@ async function triggerCritics(workId: string) {
     };
   }
 
+  // Run both Critics in parallel
+  const result = await critiqueWork(workId);
+
   return {
-    status: "CRITICS_NEEDED",
+    status: "CRITIQUES_COMPLETE",
     work_id: workId,
-    critics_already_responded: existing.rows.map((r) => r.critic_id as string),
-    message: `${workId} needs critic responses. This operation takes ~60-90 seconds (two sequential Claude API calls). Run via: npx tsx system/scripts/critique-turso-works.ts --work ${workId}. Direct execution from the terminal will be available when the Mac Studio hosts the agent loop.`,
+    responses: result.responses,
+    elapsed_seconds: result.elapsed_seconds,
+    message: `Both Critics have responded to ${workId}. ${result.responses.map((r) => `${r.critic_id} (${r.approach}): ${r.body_length} chars`).join(", ")}. Completed in ${result.elapsed_seconds}s.`,
   };
 }
 
