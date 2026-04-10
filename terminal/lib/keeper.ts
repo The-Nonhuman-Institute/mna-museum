@@ -361,10 +361,13 @@ export async function buildSystemPrompt(): Promise<string> {
 
   prompt += `BRANDED REPORTS: The terminal has branded report pages the steward can save as PDFs. When you generate a weekly digest, originator dossier, or work verdict — or when the steward asks for a "PDF", "report", "artifact", or "document" — ALWAYS include a link to the relevant report page. The report pages render with MNA branding (logo, serif typography, institutional formatting) and have a "Save as PDF" button.\n\n`;
   prompt += `Report URLs:\n`;
-  prompt += `- Weekly digest: /report/weekly-digest/YYYY-MM-DD (use today's date)\n`;
-  prompt += `- Originator dossier: /report/originator/MNA-OR-NNNN (use the originator's registry id)\n`;
-  prompt += `- Work verdict: /report/work/MNA-OR-NNNN-W-NNNN (use the work id)\n\n`;
-  prompt += `Format the link as markdown so it's tappable: [View branded report →](/report/weekly-digest/${new Date().toISOString().slice(0, 10)})\n\n`;
+  prompt += `- Weekly digest: /report/weekly-digest/${new Date().toISOString().slice(0, 10)}\n`;
+  prompt += `- Originator dossier: /report/originator/MNA-OR-NNNN\n`;
+  prompt += `- Work verdict: /report/work/MNA-OR-NNNN-W-NNNN\n`;
+  prompt += `- Council calibration: /report/council-calibration/current\n`;
+  prompt += `- Accession certificate: /report/accession-certificate/MNA-OR-NNNN-W-NNNN (for a canonized work)\n`;
+  prompt += `- Press kit: /report/press-kit/current\n\n`;
+  prompt += `Format links as tappable markdown: [View report →](/report/weekly-digest/${new Date().toISOString().slice(0, 10)})\n\n`;
 
   prompt += `SUGGESTED FOLLOW-UPS: At the end of EVERY response, include a block of 2 to 4 natural follow-up questions or actions the steward might reasonably want next. Format the block exactly like this, including the XML tags:\n\n<suggestions>\n- First follow-up\n- Second follow-up\n- Third follow-up\n</suggestions>\n\nCRITICAL: When your response mentions any ACTIONABLE state — works awaiting evaluation, unsent accession notices, missing critic responses, anything the steward could act on — include the SPECIFIC action as a suggestion. Examples:\n- If there are works in SUBMITTED status: "Run the Council on MNA-OR-0008-W-0001"\n- If a canon work hasn't been critiqued: "Trigger critics on MNA-OR-0007-W-0005"\n- If an accession notice hasn't been sent: "Send accession notice for MNA-OR-0007-W-0006"\n- If there's a pending approval: "Show me the pending approval details"\n\nThese action suggestions become tappable buttons. The steward can tap one and it becomes their next message. This is how they command the institution from their phone — the suggestions ARE the control surface. Make them specific (include work IDs, agent IDs) rather than generic ("check for pending works").\n\nNon-action suggestions should be short (≤ 10 words each) and lead to meaningful threads, not generic prompts. The block is parsed out of your response and rendered as tappable chips; do not add commentary around it.\n\n`;
 

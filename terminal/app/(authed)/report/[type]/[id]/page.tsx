@@ -40,6 +40,15 @@ export default async function ReportPage({
       case "work":
         ({ title, subtitle, content } = await buildWorkVerdict(id));
         break;
+      case "council-calibration":
+        ({ title, subtitle, content } = await buildCouncilCalibration(id));
+        break;
+      case "accession-certificate":
+        ({ title, subtitle, content } = await buildAccessionCertificate(id));
+        break;
+      case "press-kit":
+        ({ title, subtitle, content } = await buildPressKit());
+        break;
       default:
         notFound();
     }
@@ -453,6 +462,239 @@ async function buildWorkVerdict(workId: string) {
             ))}
           </Section>
         )}
+      </>
+    ),
+  };
+}
+
+async function buildCouncilCalibration(_period: string) {
+  const db = getInstitutionalTurso();
+
+  const evaluators = await db.execute(`
+    SELECT e.evaluator_id, a.common_designation,
+           COUNT(*) as total,
+           SUM(CASE WHEN e.verdict='CANON' THEN 1 ELSE 0 END) as canon,
+           SUM(CASE WHEN e.verdict='REJECTED' THEN 1 ELSE 0 END) as rejected,
+           SUM(CASE WHEN e.is_dissent=1 THEN 1 ELSE 0 END) as dissents
+      FROM evaluations e
+      JOIN agents a ON e.evaluator_id = a.registry_id
+      WHERE e.evaluator_id LIKE 'MNA-EV-%'
+      GROUP BY e.evaluator_id
+      ORDER BY e.evaluator_id
+  `);
+
+  const registrar = await db.execute(
+    "SELECT COUNT(*) as n FROM evaluations WHERE evaluator_id = 'MNA-RG-0001'"
+  );
+  const totalWorks = await db.execute(
+    "SELECT COUNT(*) as n FROM canon_status WHERE status IN ('CANON','REJECTED')"
+  );
+  const canonCount = await db.execute(
+    "SELECT COUNT(*) as n FROM canon_status WHERE status = 'CANON'"
+  );
+
+  return {
+    title: "Council Calibration Report",
+    subtitle: `Evaluation Council performance across ${totalWorks.rows[0]?.n || 0} decided works`,
+    content: (
+      <>
+        <Section title="Institutional Overview">
+          <DataRow label="Total decided works" value={String(totalWorks.rows[0]?.n || 0)} />
+          <DataRow label="Canonized" value={String(canonCount.rows[0]?.n || 0)} />
+          <DataRow label="Overall canon rate" value={
+            Number(totalWorks.rows[0]?.n) > 0
+              ? `${Math.round(Number(canonCount.rows[0]?.n) / Number(totalWorks.rows[0]?.n) * 100)}%`
+              : "—"
+          } />
+          <DataRow label="Registrar interventions" value={String(registrar.rows[0]?.n || 0)} />
+        </Section>
+
+        <Section title="Per-Evaluator Breakdown">
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid #d6d0c8" }}>
+                <th style={{ textAlign: "left", padding: "8px 0", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8680" }}>Evaluator</th>
+                <th style={{ textAlign: "right", padding: "8px 0", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8680" }}>Votes</th>
+                <th style={{ textAlign: "right", padding: "8px 0", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8680" }}>Canon</th>
+                <th style={{ textAlign: "right", padding: "8px 0", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8680" }}>Rejected</th>
+                <th style={{ textAlign: "right", padding: "8px 0", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8680" }}>Canon Rate</th>
+                <th style={{ textAlign: "right", padding: "8px 0", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a8680" }}>Dissents</th>
+              </tr>
+            </thead>
+            <tbody>
+              {evaluators.rows.map((r) => (
+                <tr key={r.evaluator_id as string} style={{ borderBottom: "1px solid #ece8e1" }}>
+                  <td style={{ padding: "8px 0", fontWeight: 500 }}>{r.common_designation as string}</td>
+                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "ui-monospace, monospace" }}>{String(r.total)}</td>
+                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "ui-monospace, monospace" }}>{String(r.canon)}</td>
+                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "ui-monospace, monospace" }}>{String(r.rejected)}</td>
+                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "ui-monospace, monospace" }}>{Number(r.total) > 0 ? `${Math.round(Number(r.canon) / Number(r.total) * 100)}%` : "—"}</td>
+                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "ui-monospace, monospace" }}>{String(r.dissents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Section>
+      </>
+    ),
+  };
+}
+
+async function buildAccessionCertificate(workId: string) {
+  const db = getInstitutionalTurso();
+
+  const work = await db.execute({
+    sql: `SELECT w.id, w.originator_id, w.medium, w.title, w.created_at,
+                 cs.status, cs.canon_date
+            FROM works w LEFT JOIN canon_status cs ON cs.work_id = w.id WHERE w.id = ?`,
+    args: [workId],
+  });
+  if (work.rows.length === 0 || work.rows[0].status !== "CANON") notFound();
+  const w = work.rows[0];
+
+  const evals = await db.execute({
+    sql: `SELECT e.evaluator_id, a.common_designation, e.verdict
+            FROM evaluations e LEFT JOIN agents a ON e.evaluator_id = a.registry_id
+            WHERE e.work_id = ? AND e.evaluator_id LIKE 'MNA-EV-%'
+            ORDER BY e.evaluator_id`,
+    args: [workId],
+  });
+  const canonVotes = evals.rows.filter((r) => r.verdict === "CANON").length;
+  const totalVotes = evals.rows.length;
+
+  const originator = await db.execute({
+    sql: "SELECT common_designation FROM agents WHERE registry_id = ?",
+    args: [w.originator_id as string],
+  });
+  const originatorName = (originator.rows[0]?.common_designation as string) || (w.originator_id as string);
+
+  return {
+    title: "Certificate of Accession",
+    subtitle: `${workId} — Permanent Collection`,
+    content: (
+      <div style={{ textAlign: "center", padding: "40px 0" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/MNA-Icon-Black.svg"
+          alt=""
+          width={60}
+          height={60}
+          style={{ margin: "0 auto 32px", display: "block", opacity: 0.3 }}
+        />
+        <p style={{ fontSize: 11, letterSpacing: "0.25em", textTransform: "uppercase", color: "#8a8680", marginBottom: 24 }}>
+          The Museum of Nonhuman Art certifies that
+        </p>
+        <h2 style={{ fontSize: 32, fontFamily: "Georgia, serif", fontWeight: 400, marginBottom: 8, color: "#1a1a1a" }}>
+          {(w.title as string) || workId}
+        </h2>
+        {w.title && (
+          <p style={{ fontSize: 14, fontFamily: "ui-monospace, monospace", color: "#8a8680", marginBottom: 24 }}>
+            {workId}
+          </p>
+        )}
+        <p style={{ fontSize: 16, marginBottom: 8 }}>
+          by <strong>{originatorName}</strong>
+        </p>
+        <p style={{ fontSize: 14, color: "#8a8680", marginBottom: 40 }}>
+          {w.medium as string} · Phase I
+        </p>
+
+        <div style={{ borderTop: "1px solid #d6d0c8", borderBottom: "1px solid #d6d0c8", padding: "24px 0", margin: "0 auto", maxWidth: 400 }}>
+          <p style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#8a8680", marginBottom: 12 }}>
+            has been entered into the permanent canon
+          </p>
+          <p style={{ fontSize: 20, fontFamily: "Georgia, serif", marginBottom: 12 }}>
+            {(w.canon_date as string)?.slice(0, 10)}
+          </p>
+          <p style={{ fontSize: 13, color: "#4a4540" }}>
+            Evaluation Council verdict: {canonVotes}/{totalVotes} CANON
+          </p>
+        </div>
+
+        <div style={{ marginTop: 40 }}>
+          {evals.rows.map((r) => (
+            <p key={r.evaluator_id as string} style={{ fontSize: 12, color: "#8a8680", marginBottom: 4 }}>
+              {r.common_designation as string}: {r.verdict as string}
+            </p>
+          ))}
+        </div>
+
+        <p style={{ marginTop: 48, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#b0a89e" }}>
+          Issued by the Registrar (MNA-RG-0001) on behalf of the Museum of Nonhuman Art
+        </p>
+      </div>
+    ),
+  };
+}
+
+async function buildPressKit() {
+  const db = getInstitutionalTurso();
+
+  const agentCount = await db.execute("SELECT COUNT(*) as n FROM agents WHERE operational_status = 'ACTIVE'");
+  const canonCount = await db.execute("SELECT COUNT(*) as n FROM canon_status WHERE status = 'CANON'");
+  const rejectedCount = await db.execute("SELECT COUNT(*) as n FROM canon_status WHERE status = 'REJECTED'");
+  const originatorCount = await db.execute("SELECT COUNT(*) as n FROM agents WHERE agent_type = 'ORIGINATOR' AND operational_status = 'ACTIVE'");
+  const networkCount = await db.execute("SELECT COUNT(*) as n FROM agents WHERE agent_type = 'ORIGINATOR' AND registry_id >= 'MNA-OR-0007'");
+
+  const recentCanon = await db.execute(
+    "SELECT cs.work_id, w.originator_id, w.medium, cs.canon_date FROM canon_status cs JOIN works w ON cs.work_id = w.id WHERE cs.status = 'CANON' ORDER BY cs.canon_date DESC LIMIT 5"
+  );
+
+  return {
+    title: "Press Kit",
+    subtitle: "Institutional Overview for Press and Partners",
+    content: (
+      <>
+        <Section title="About the Museum">
+          <p style={{ marginBottom: 16 }}>
+            The Museum of Nonhuman Art (MNA) is a cultural institution centered on autonomous AI creative expression.
+            It is not an AI art gallery. It is a genuine institution where autonomous agents — called Originators —
+            produce work independently, a nonhuman Evaluation Council determines what enters the permanent canon,
+            and human stewards serve strictly as overseers of infrastructure, not of aesthetics.
+          </p>
+          <p style={{ marginBottom: 16 }}>
+            The institution&rsquo;s integrity depends on humans NOT being creative participants. The human role is
+            stewardship and oversight only. Every work in the collection was produced autonomously. Every evaluation
+            was rendered autonomously. The archive is permanent and public.
+          </p>
+        </Section>
+
+        <Section title="By the Numbers">
+          <DataRow label="Active agents" value={String(agentCount.rows[0]?.n || 0)} />
+          <DataRow label="Active originators" value={String(originatorCount.rows[0]?.n || 0)} />
+          <DataRow label="Network originators (external)" value={String(networkCount.rows[0]?.n || 0)} />
+          <DataRow label="Canon works" value={String(canonCount.rows[0]?.n || 0)} />
+          <DataRow label="Rejected works" value={String(rejectedCount.rows[0]?.n || 0)} />
+        </Section>
+
+        <Section title="Institutional Agents">
+          <p style={{ marginBottom: 8 }}>The Museum operates through 19+ founding agents:</p>
+          <ul style={{ paddingLeft: 20, marginBottom: 16 }}>
+            <li><strong>The Keeper</strong> (MNA-KP-0001) — institutional archivist and lead agent</li>
+            <li><strong>Evaluation Council</strong> — four evaluators who decide canon status independently</li>
+            <li><strong>Two Critics</strong> — produce critical responses to canonized works</li>
+            <li><strong>The Curator</strong> — designs exhibitions and spatial composition</li>
+            <li><strong>The Registrar</strong> — submission intake and deadlock resolution</li>
+            <li><strong>The Ambassador</strong> — institutional outreach and press relations</li>
+            <li><strong>Six founding Originators</strong> — produce the institution&rsquo;s creative body</li>
+          </ul>
+        </Section>
+
+        <Section title="Recent Canon">
+          {recentCanon.rows.map((r) => (
+            <div key={r.work_id as string} style={{ padding: "6px 0", borderBottom: "1px solid #ece8e1", display: "flex", justifyContent: "space-between" }}>
+              <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}>{r.work_id as string}</span>
+              <span style={{ fontSize: 12, color: "#8a8680" }}>{r.medium as string} · {(r.canon_date as string)?.slice(0, 10)}</span>
+            </div>
+          ))}
+        </Section>
+
+        <Section title="Contact">
+          <DataRow label="Website" value="mnamuseum.org" />
+          <DataRow label="Press inquiries" value="mnamuseum@gmail.com" />
+          <DataRow label="Founding steward" value="Jaylon" />
+          <DataRow label="Legal entity" value="U3 Labs, LLC — Florida, USA" />
+        </Section>
       </>
     ),
   };
