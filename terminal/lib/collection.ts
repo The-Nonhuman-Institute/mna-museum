@@ -123,6 +123,42 @@ export async function readRecentInstitutionalEvents(
   }));
 }
 
+export interface PendingWork {
+  work_id: string;
+  originator_id: string;
+  originator_name: string | null;
+  medium: string;
+  submitted_at: string;
+  status: string;
+}
+
+/**
+ * Works that need steward attention: SUBMITTED (awaiting evaluation)
+ * and IN_REVIEW (evaluation in progress or stuck). These surface at
+ * the top of the Feed as priority items.
+ */
+export async function readPendingWorks(): Promise<PendingWork[]> {
+  if (!institutionalTursoConfigured()) return [];
+  const db = getInstitutionalTurso();
+  const rows = await db.execute(
+    `SELECT w.id, w.originator_id, a.common_designation, w.medium, w.created_at,
+            cs.status
+       FROM works w
+       JOIN canon_status cs ON cs.work_id = w.id
+       LEFT JOIN agents a ON w.originator_id = a.registry_id
+       WHERE cs.status IN ('SUBMITTED', 'IN_REVIEW')
+       ORDER BY w.created_at ASC`
+  );
+  return rows.rows.map((r) => ({
+    work_id: r.id as string,
+    originator_id: r.originator_id as string,
+    originator_name: (r.common_designation as string) || null,
+    medium: r.medium as string,
+    submitted_at: r.created_at as string,
+    status: r.status as string,
+  }));
+}
+
 /**
  * Full institutional agent registry. The authoritative source for
  * "who exists at MNA right now." Includes founding agents and any

@@ -1,7 +1,9 @@
 import {
   readCollectionStats,
   readRecentInstitutionalEvents,
+  readPendingWorks,
   type InstitutionalEvent,
+  type PendingWork,
 } from "@/lib/collection";
 import {
   readRecentEvents,
@@ -96,17 +98,19 @@ async function safe<T>(
 export default async function FeedPage() {
   const errors: { label: string; message: string }[] = [];
 
-  const [stats, localEvents, alerts, institutionalEvents] = await Promise.all([
-    safe("readCollectionStats", () => readCollectionStats(), errors, null),
-    safe("readRecentEvents", () => readRecentEvents(30), errors, []),
-    safe("readPriorityAlerts", () => readPriorityAlerts(10), errors, []),
-    safe(
-      "readRecentInstitutionalEvents",
-      () => readRecentInstitutionalEvents(30),
-      errors,
-      []
-    ),
-  ]);
+  const [stats, localEvents, alerts, institutionalEvents, pendingWorks] =
+    await Promise.all([
+      safe("readCollectionStats", () => readCollectionStats(), errors, null),
+      safe("readRecentEvents", () => readRecentEvents(30), errors, []),
+      safe("readPriorityAlerts", () => readPriorityAlerts(10), errors, []),
+      safe(
+        "readRecentInstitutionalEvents",
+        () => readRecentInstitutionalEvents(30),
+        errors,
+        []
+      ),
+      safe("readPendingWorks", () => readPendingWorks(), errors, []),
+    ]);
 
   // Env-var presence check — no values, just which keys are set. Surface
   // this in the debug block if any reader failed, so we can tell at a
@@ -131,6 +135,19 @@ export default async function FeedPage() {
       </div>
 
       <StatsRow stats={stats} />
+
+      {pendingWorks.length > 0 && (
+        <div className="mb-6">
+          <p className="label mb-2">
+            Awaiting evaluation · {pendingWorks.length} work{pendingWorks.length === 1 ? "" : "s"}
+          </p>
+          <div className="border border-attention/50">
+            {pendingWorks.map((w) => (
+              <PendingWorkRow key={w.work_id} work={w} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {alerts.length > 0 && (
         <div className="mb-6">
@@ -256,6 +273,26 @@ function FeedRow({
           {item.work_id && <span>{item.work_id}</span>}
         </p>
       )}
+    </div>
+  );
+}
+
+function PendingWorkRow({ work }: { work: PendingWork }) {
+  const originatorLabel = work.originator_name
+    ? `${work.originator_name} (${work.originator_id})`
+    : work.originator_id;
+  return (
+    <div className="px-4 py-3 border-b border-border last:border-b-0 border-l-2 border-l-attention">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="data text-xs">{work.work_id}</span>
+        <span className="label">{work.status}</span>
+      </div>
+      <p className="text-sm text-foreground/80 mt-1">
+        {work.medium} · by {originatorLabel}
+      </p>
+      <p className="data-muted mt-1">
+        Submitted {formatTime(work.submitted_at)}
+      </p>
     </div>
   );
 }
