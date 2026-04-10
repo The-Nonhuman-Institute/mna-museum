@@ -4,5 +4,15 @@
   "buildCommand": "next build",
   "devCommand": "next dev -p 3100",
   "installCommand": "npm install",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/cron/morning-briefing",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-digest",
+      "schedule": "0 12 * * 1"
+    }
+  ]
 }
