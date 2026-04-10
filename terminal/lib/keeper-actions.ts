@@ -4,6 +4,7 @@ import { getInstitutionalTurso } from "./institutional-turso";
 import { evaluateWork } from "./evaluator";
 import { critiqueWork } from "./critic";
 import { updateMuseum } from "./museum-pipeline";
+import { sendAccessionNotice as sendAccession } from "./send-accession";
 
 /**
  * MNA Steward Terminal — Keeper action tools.
@@ -149,61 +150,23 @@ export async function runKeeperAction(
 
 async function sendAccessionNotice(workId: string) {
   if (!workId) return { error: "work_id is required" };
-  const db = getInstitutionalTurso();
 
-  // Verify the work exists and is canonized
-  const work = await db.execute({
-    sql: `SELECT w.id, w.originator_id, w.medium, w.title,
-                 cs.status, cs.canon_date
-            FROM works w
-            JOIN canon_status cs ON cs.work_id = w.id
-            WHERE w.id = ?`,
-    args: [workId],
-  });
-  if (work.rows.length === 0) {
-    return { error: `Work ${workId} not found.` };
-  }
-  if (work.rows[0].status !== "CANON") {
+  const result = await sendAccession(workId);
+
+  if (!result.sent) {
     return {
-      error: `Work ${workId} is not canonized (status: ${work.rows[0].status}). Only canon works receive accession notices.`,
+      status: "NOT_SENT",
+      error: result.error,
+      message: result.error,
     };
   }
 
-  // Check if already notified
-  const existing = await db.execute({
-    sql: `SELECT 1 FROM events WHERE event_type = 'ACCESSION_NOTIFIED' AND work_id = ?`,
-    args: [workId],
-  });
-  if (existing.rows.length > 0) {
-    return {
-      already_sent: true,
-      message: `An accession notice for ${workId} was already sent. Sending a duplicate is not recommended.`,
-    };
-  }
-
-  // Get steward email
-  const keys = await db.execute({
-    sql: `SELECT steward_email FROM agent_keys WHERE registry_id = ?`,
-    args: [work.rows[0].originator_id as string],
-  });
-  const email = keys.rows[0]?.steward_email as string;
-  if (!email) {
-    return {
-      error: `No steward email found for ${work.rows[0].originator_id}. This is a founding originator without an external steward — accession notices are only sent to external stewards.`,
-    };
-  }
-
-  // For now, return the action details without actually sending.
-  // The actual send requires Resend which lives in the website package.
-  // TODO: move the send logic into a shared module or call the website's
-  // send-accession-notices script via a different mechanism.
   return {
-    status: "READY_TO_SEND",
+    status: "SENT",
     work_id: workId,
-    originator_id: work.rows[0].originator_id as string,
-    steward_email: email,
-    canon_date: work.rows[0].canon_date as string,
-    message: `Accession notice for ${workId} would be sent to ${email}. Note: direct email sending from the terminal is not yet wired — this action currently validates the prerequisites but does not send. Use the system script send-accession-notices.ts for now.`,
+    resend_id: result.resend_id,
+    to: result.to,
+    message: `Notice of Accession for ${workId} sent to ${result.to}. Resend id: ${result.resend_id}.`,
   };
 }
 

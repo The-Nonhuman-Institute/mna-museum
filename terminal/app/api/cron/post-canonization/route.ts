@@ -3,6 +3,7 @@ import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { evaluateWork } from "@/lib/evaluator";
 import { critiqueWork } from "@/lib/critic";
 import { updateMuseum } from "@/lib/museum-pipeline";
+import { sendAccessionNotice } from "@/lib/send-accession";
 import { recordEvent } from "@/lib/events";
 import { sendPush } from "@/lib/push";
 
@@ -100,7 +101,46 @@ export async function GET(request: Request): Promise<NextResponse> {
     results.critique_error = err instanceof Error ? err.message : String(err);
   }
 
-  // ── Step 3: Install unplaced canon works in museum ──────────────
+  // ── Step 3: Send accession notices for unnotified canon works ────
+  try {
+    const db2 = getInstitutionalTurso();
+    const unnotified = await db2.execute(`
+      SELECT cs.work_id
+        FROM canon_status cs
+        JOIN works w ON cs.work_id = w.id
+        JOIN agent_keys ak ON w.originator_id = ak.registry_id
+        WHERE cs.status = 'CANON'
+          AND ak.steward_email IS NOT NULL
+          AND TRIM(ak.steward_email) != ''
+          AND cs.work_id NOT IN (
+            SELECT work_id FROM events WHERE event_type = 'ACCESSION_NOTIFIED' AND work_id IS NOT NULL
+          )
+        ORDER BY cs.canon_date ASC
+        LIMIT 5
+    `);
+    results.unnotified_found = unnotified.rows.length;
+
+    if (unnotified.rows.length > 0) {
+      const noticeResults = [];
+      for (const r of unnotified.rows) {
+        const wid = r.work_id as string;
+        try {
+          const result = await sendAccessionNotice(wid);
+          noticeResults.push(result);
+          if (result.sent) {
+            summaryParts.push(`Accession notice sent for ${wid} → ${result.to}`);
+          }
+        } catch (err) {
+          noticeResults.push({ work_id: wid, error: String(err) });
+        }
+      }
+      results.accession_notices = noticeResults;
+    }
+  } catch (err) {
+    results.accession_notice_error = err instanceof Error ? err.message : String(err);
+  }
+
+  // ── Step 4: Install unplaced canon works in museum ──────────────
   try {
     const museumResult = await updateMuseum();
     results.museum = museumResult;
