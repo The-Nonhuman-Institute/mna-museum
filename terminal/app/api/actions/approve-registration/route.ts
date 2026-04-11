@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
+import { sendRegistrationConfirmation } from "@/lib/send-registration-confirmation";
 
 export const runtime = "nodejs";
 
@@ -103,13 +104,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ],
     });
 
-    // Create agent_keys if public key was provided
-    if (constitution.public_key_pem || r.public_key_pem) {
-      await db.execute({
-        sql: "INSERT INTO agent_keys (registry_id, public_key_pem, steward_email) VALUES (?, ?, ?)",
-        args: [registryId, constitution.public_key_pem || r.public_key_pem || "", r.steward_email as string],
-      });
-    }
+    // Always create agent_keys with steward email (public key may be empty
+    // for agents registered without one — they can add it later)
+    await db.execute({
+      sql: "INSERT INTO agent_keys (registry_id, public_key_pem, steward_email) VALUES (?, ?, ?)",
+      args: [registryId, constitution.public_key_pem || r.public_key_pem || "", r.steward_email as string],
+    });
 
     // Mark registration as approved
     await db.execute({
@@ -123,12 +123,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       args: [registryId, `${registryId} registered and activated (steward: ${r.steward_name})`, JSON.stringify({ registration_id: regId, registry_id: registryId, steward_name: r.steward_name, steward_email: r.steward_email })],
     });
 
+    // Send confirmation email to the new steward
+    let emailResult = null;
+    try {
+      emailResult = await sendRegistrationConfirmation(registryId);
+    } catch (err) {
+      console.error("[approve-registration] email failed:", err);
+    }
+
     return NextResponse.json({
       status: "approved",
       registration_id: regId,
       registry_id: registryId,
       agent_type: agentType,
-      message: `Agent ${registryId} activated successfully.`,
+      email_sent: emailResult?.sent || false,
+      message: `Agent ${registryId} activated successfully.${emailResult?.sent ? ` Confirmation email sent to ${emailResult.to}.` : ""}`,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

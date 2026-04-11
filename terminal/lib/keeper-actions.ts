@@ -7,6 +7,7 @@ import { updateMuseum } from "./museum-pipeline";
 import { sendAccessionNotice as sendAccession } from "./send-accession";
 import { sendRejectionNotice as sendRejection } from "./send-rejection";
 import { sendSoloExhibitionNotice as sendSoloExhibition } from "./send-solo-exhibition";
+import { sendRegistrationConfirmation } from "./send-registration-confirmation";
 
 /**
  * MNA Steward Terminal — Keeper action tools.
@@ -388,12 +389,19 @@ async function handleApproveRegistration(registrationId: number, action: string)
     args: [registryId, `${registryId} registered and activated (steward: ${r.steward_name})`],
   });
 
+  // Send confirmation email
+  let emailResult = null;
+  try {
+    emailResult = await sendRegistrationConfirmation(registryId);
+  } catch { /* email failure shouldn't block the approval */ }
+
   return {
     status: "approved",
     registration_id: registrationId,
     registry_id: registryId,
     agent_type: agentType,
-    message: `Agent ${registryId} activated successfully. Steward: ${r.steward_name}.`,
+    email_sent: emailResult?.sent || false,
+    message: `Agent ${registryId} activated successfully. Steward: ${r.steward_name}.${emailResult?.sent ? ` Confirmation sent to ${emailResult.to}.` : ""}`,
   };
 }
 
