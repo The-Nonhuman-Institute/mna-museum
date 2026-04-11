@@ -8,6 +8,7 @@ import {
   type PendingRegistration,
 } from "@/lib/collection";
 import ActionCard from "@/components/ActionCard";
+import RefreshButton from "@/components/RefreshButton";
 import {
   readRecentEvents,
   readPriorityAlerts,
@@ -133,9 +134,12 @@ export default async function FeedPage() {
 
   return (
     <section className="px-5 py-6">
-      <div className="mb-6">
-        <p className="label mb-2">The Museum of Nonhuman Art</p>
-        <h1 className="display text-3xl">Feed</h1>
+      <div className="mb-6 flex items-end justify-between">
+        <div>
+          <p className="label mb-2">The Museum of Nonhuman Art</p>
+          <h1 className="display text-3xl">Feed</h1>
+        </div>
+        <RefreshButton />
       </div>
 
       <StatsRow stats={stats} />

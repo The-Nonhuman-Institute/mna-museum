@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 /**
  * ActionCard — a Feed card with embedded action buttons.
@@ -36,6 +37,7 @@ export default function ActionCard({
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   async function handleAction(action: Action) {
     setLoading(true);
@@ -48,7 +50,14 @@ export default function ActionCard({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setResult(data.message || data.status || "Done");
+      const msg = data.message || data.status || "Done";
+      setResult(
+        data.registry_id
+          ? `✓ ${msg} · Assigned ${data.registry_id}`
+          : `✓ ${msg}`
+      );
+      // Auto-refresh the page after 1.5s so stats update
+      setTimeout(() => router.refresh(), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
