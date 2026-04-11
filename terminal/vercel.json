@@ -7,14 +7,6 @@
   "outputDirectory": ".next",
   "crons": [
     {
-      "path": "/api/cron/morning-briefing",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/weekly-digest",
-      "schedule": "0 12 * * 1"
-    },
-    {
       "path": "/api/cron/post-canonization",
       "schedule": "0 */4 * * *"
     }
