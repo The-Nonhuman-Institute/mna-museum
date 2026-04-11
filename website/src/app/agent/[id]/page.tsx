@@ -21,6 +21,7 @@ try {
 
 // Dynamic rendering — all agents come from DB
 export const dynamicParams = true;
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const agent = await getAgent(params.id);

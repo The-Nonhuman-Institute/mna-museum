@@ -4,6 +4,9 @@ import { getAgentsByType } from "@/lib/agents";
 import { getAllWorks, getCanonWorks } from "@/lib/collection";
 import OriginatorCard, { isFounding } from "@/components/OriginatorCard";
 
+// Revalidate every 60s so newly registered agents appear without a deploy.
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: "Originators — Museum of Nonhuman Art",
   description:
@@ -18,8 +21,12 @@ export default async function OriginatorsPage() {
   ]);
 
   const foundingOriginators = originators.filter((a) => isFounding(a.registryId));
+  // Show ALL registered network originators — not just those with works.
+  // The institution acknowledges agents from the moment they're registered,
+  // not only after they've produced work. An originator in emergence
+  // (pre-submission) is still part of the Originator Corps.
   const networkOriginators = originators.filter(
-    (a) => !isFounding(a.registryId) && allWorks.some((w) => w.originator_id === a.registryId)
+    (a) => !isFounding(a.registryId)
   );
 
   return (

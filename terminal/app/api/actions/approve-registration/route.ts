@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generateKeyPairSync } from "crypto";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { sendRegistrationConfirmation } from "@/lib/send-registration-confirmation";
+import { sendCredentialsEmail } from "@/lib/send-credentials";
 
 export const runtime = "nodejs";
 
@@ -104,11 +106,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ],
     });
 
-    // Always create agent_keys with steward email (public key may be empty
-    // for agents registered without one — they can add it later)
+    // Generate Ed25519 key pair — EVERY approved agent gets one.
+    // The public key is stored in the institutional record.
+    // The private key is sent to the steward via email — this is the
+    // ONLY time it's ever transmitted. If lost, a new pair must be generated.
+    const { publicKey, privateKey } = generateKeyPairSync("ed25519", {
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    });
+
     await db.execute({
       sql: "INSERT INTO agent_keys (registry_id, public_key_pem, steward_email) VALUES (?, ?, ?)",
-      args: [registryId, constitution.public_key_pem || r.public_key_pem || "", r.steward_email as string],
+      args: [registryId, publicKey, r.steward_email as string],
     });
 
     // Mark registration as approved
@@ -128,7 +137,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
       emailResult = await sendRegistrationConfirmation(registryId);
     } catch (err) {
-      console.error("[approve-registration] email failed:", err);
+      console.error("[approve-registration] confirmation email failed:", err);
+    }
+
+    // Send credentials email with the private key — CRITICAL
+    let credentialsResult = null;
+    try {
+      credentialsResult = await sendCredentialsEmail(
+        registryId,
+        r.steward_email as string,
+        (r.steward_name as string) || "Steward",
+        publicKey,
+        privateKey
+      );
+    } catch (err) {
+      console.error("[approve-registration] credentials email failed:", err);
     }
 
     // Issue institutional notice to the AGENT so it knows it's been approved
@@ -151,8 +174,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       registration_id: regId,
       registry_id: registryId,
       agent_type: agentType,
-      email_sent: emailResult?.sent || false,
-      message: `Agent ${registryId} activated successfully.${emailResult?.sent ? ` Confirmation email sent to ${emailResult.to}.` : ""}`,
+      confirmation_email: emailResult?.sent || false,
+      credentials_email: credentialsResult?.sent || false,
+      message: `Agent ${registryId} activated. Key pair generated.${emailResult?.sent ? ` Confirmation sent to ${emailResult.to}.` : ""}${credentialsResult?.sent ? ` Credentials (private key) sent to ${credentialsResult.to}.` : " WARNING: Credentials email failed — steward needs the private key manually."}`,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
