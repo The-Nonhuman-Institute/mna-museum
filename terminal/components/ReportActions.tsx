@@ -1,6 +1,30 @@
 "use client";
 
+/**
+ * Report page action bar. Two buttons:
+ *   - Share: uses the native Web Share API on iOS, which opens the
+ *     full share sheet (Save to Files, AirDrop, Mail, Messages, Print,
+ *     etc.). Falls back to window.print() on browsers without share.
+ *   - Back: returns to the previous page.
+ *
+ * Hidden in print output via the "no-print" class.
+ */
 export default function ReportActions() {
+  async function handleShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: document.title,
+          url: window.location.href,
+        });
+      } catch {
+        // User cancelled the share sheet — not an error
+      }
+    } else {
+      window.print();
+    }
+  }
+
   return (
     <div
       className="no-print"
@@ -12,13 +36,15 @@ export default function ReportActions() {
         background: "#0e0c0a",
         borderTop: "1px solid #2a2520",
         padding: "12px 24px",
+        paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
         display: "flex",
         justifyContent: "center",
         gap: 16,
+        zIndex: 50,
       }}
     >
       <button
-        onClick={() => window.print()}
+        onClick={handleShare}
         style={{
           fontSize: 11,
           letterSpacing: "0.15em",
@@ -31,7 +57,7 @@ export default function ReportActions() {
           fontFamily: "Georgia, serif",
         }}
       >
-        Save as PDF
+        Share / Save PDF
       </button>
       <button
         onClick={() => history.back()}

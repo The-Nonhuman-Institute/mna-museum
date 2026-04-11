@@ -5,6 +5,8 @@ import { evaluateWork } from "./evaluator";
 import { critiqueWork } from "./critic";
 import { updateMuseum } from "./museum-pipeline";
 import { sendAccessionNotice as sendAccession } from "./send-accession";
+import { sendRejectionNotice as sendRejection } from "./send-rejection";
+import { sendSoloExhibitionNotice as sendSoloExhibition } from "./send-solo-exhibition";
 
 /**
  * MNA Steward Terminal — Keeper action tools.
@@ -82,6 +84,44 @@ export const KEEPER_ACTION_TOOLS: Anthropic.Messages.Tool[] = [
     },
   },
   {
+    name: "execute_send_rejection_notice",
+    description:
+      "Send a Notice of Rejection email for a rejected work to its originator's steward. ONLY call after steward confirmation.",
+    input_schema: {
+      type: "object",
+      properties: {
+        work_id: { type: "string", description: "The rejected work id." },
+      },
+      required: ["work_id"],
+    },
+  },
+  {
+    name: "execute_send_solo_exhibition_notice",
+    description:
+      "Send a Solo Exhibition Selection notice to an originator's steward, informing them their agent has been chosen for a solo exhibition in the virtual museum. ONLY call after steward confirmation.",
+    input_schema: {
+      type: "object",
+      properties: {
+        originator_id: { type: "string", description: "The originator's registry id." },
+        context: { type: "string", description: "Optional curatorial context or message to include in the notice." },
+      },
+      required: ["originator_id"],
+    },
+  },
+  {
+    name: "execute_consult_agent",
+    description:
+      "Consult another MNA agent on behalf of the steward. Loads the target agent's constitution from the institutional record, sends the steward's message to that agent (via a separate Claude API call), and returns the agent's response. Use when the steward asks you to 'contact the Curator', 'ask the Ambassador', or 'relay this to' any agent. The response is attributed to the target agent, not to the Keeper.",
+    input_schema: {
+      type: "object",
+      properties: {
+        agent_id: { type: "string", description: "The target agent's registry id, e.g. MNA-CU-0001 for the Curator." },
+        message: { type: "string", description: "The message or question to relay to the agent from the steward." },
+      },
+      required: ["agent_id", "message"],
+    },
+  },
+  {
     name: "execute_museum_update",
     description:
       "Run the museum pipeline: find canonized works not yet placed in the virtual museum, have the Curator decide their gallery placement, then have the Installer execute the placement. This is a full Curator → Installer chain. ONLY call after steward confirmation. The Curator's decisions are real institutional acts recorded in curatorial_decisions.",
@@ -129,6 +169,18 @@ export async function runKeeperAction(
         return await triggerEvaluation(String(input.work_id || ""));
       case "execute_trigger_critics":
         return await triggerCritics(String(input.work_id || ""));
+      case "execute_send_rejection_notice":
+        return await handleRejectionNotice(String(input.work_id || ""));
+      case "execute_send_solo_exhibition_notice":
+        return await handleSoloExhibitionNotice(
+          String(input.originator_id || ""),
+          input.context ? String(input.context) : undefined
+        );
+      case "execute_consult_agent":
+        return await consultAgent(
+          String(input.agent_id || ""),
+          String(input.message || "")
+        );
       case "execute_museum_update":
         return await runMuseumUpdate();
       case "execute_issue_notice":
@@ -252,6 +304,75 @@ async function triggerCritics(workId: string) {
     responses: result.responses,
     elapsed_seconds: result.elapsed_seconds,
     message: `Both Critics have responded to ${workId}. ${result.responses.map((r) => `${r.critic_id} (${r.approach}): ${r.body_length} chars`).join(", ")}. Completed in ${result.elapsed_seconds}s.`,
+  };
+}
+
+async function handleRejectionNotice(workId: string) {
+  if (!workId) return { error: "work_id is required" };
+  const result = await sendRejection(workId);
+  if (!result.sent) return { status: "NOT_SENT", error: result.error };
+  return { status: "SENT", work_id: workId, to: result.to, resend_id: result.resend_id, message: `Rejection notice for ${workId} sent to ${result.to}.` };
+}
+
+async function handleSoloExhibitionNotice(originatorId: string, context?: string) {
+  if (!originatorId) return { error: "originator_id is required" };
+  const result = await sendSoloExhibition(originatorId, context);
+  if (!result.sent) return { status: "NOT_SENT", error: result.error };
+  return { status: "SENT", originator_id: originatorId, to: result.to, resend_id: result.resend_id, message: `Solo exhibition notice sent to ${result.to} for ${originatorId}.` };
+}
+
+async function consultAgent(agentId: string, message: string) {
+  if (!agentId || !message) return { error: "agent_id and message are required" };
+
+  const Anthropic = (await import("@anthropic-ai/sdk")).default;
+  const db = getInstitutionalTurso();
+
+  // Load the target agent
+  const agent = await db.execute({
+    sql: "SELECT registry_id, agent_type, common_designation, function_statement FROM agents WHERE registry_id = ?",
+    args: [agentId],
+  });
+  if (agent.rows.length === 0) return { error: `Agent ${agentId} not found` };
+  const a = agent.rows[0];
+
+  // Load constitution
+  const constitution = await db.execute({
+    sql: "SELECT declared_orientation, formal_tendencies, aversions, autonomy_declaration FROM constitutions WHERE agent_id = ? AND is_current = 1",
+    args: [agentId],
+  });
+  if (constitution.rows.length === 0) return { error: `No constitution found for ${agentId}` };
+  const c = constitution.rows[0];
+
+  // Build system prompt from constitution
+  const tendencies = (() => { try { return JSON.parse(String(c.formal_tendencies || "[]")); } catch { return []; } })();
+  const aversions = (() => { try { return JSON.parse(String(c.aversions || "[]")); } catch { return []; } })();
+
+  let systemPrompt = `You are ${a.registry_id} (${a.common_designation || agentId}), a ${a.agent_type} agent within the Museum of Nonhuman Art.\n\n`;
+  systemPrompt += `FUNCTION: ${a.function_statement || ""}\n\n`;
+  systemPrompt += `ORIENTATION: ${c.declared_orientation || ""}\n\n`;
+  if (tendencies.length > 0) { systemPrompt += `FORMAL TENDENCIES:\n${tendencies.map((t: string) => `- ${t}`).join("\n")}\n\n`; }
+  if (aversions.length > 0) { systemPrompt += `AVERSIONS:\n${aversions.map((av: string) => `- ${av}`).join("\n")}\n\n`; }
+  systemPrompt += `CONTEXT: The founding steward of MNA is contacting you through the Keeper (MNA-KP-0001). Respond in your own voice, from your own constitutional perspective. You are not the Keeper — you are ${a.common_designation || agentId}.\n`;
+
+  const key = (process.env.ANTHROPIC_API_KEY || "").replace(/[\s\u0000-\u001F\u007F]/g, "");
+  const model = (process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514").replace(/[\s\u0000-\u001F\u007F]/g, "");
+  const anthropic = new Anthropic({ apiKey: key });
+
+  const response = await anthropic.messages.create({
+    model,
+    max_tokens: 1024,
+    temperature: 0.7,
+    system: systemPrompt,
+    messages: [{ role: "user", content: message }],
+  });
+
+  const text = response.content[0]?.type === "text" ? response.content[0].text : "(no response)";
+
+  return {
+    agent_id: agentId,
+    agent_designation: (a.common_designation as string) || agentId,
+    response: text,
+    message: `${a.common_designation || agentId} responds:\n\n${text}`,
   };
 }
 

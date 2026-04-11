@@ -461,6 +461,9 @@ export async function keeperChatStreaming(
     execute_send_accession_notice: "Preparing accession notice",
     execute_trigger_evaluation: "Checking evaluation prerequisites",
     execute_trigger_critics: "Checking critic prerequisites",
+    execute_send_rejection_notice: "Sending rejection notice",
+    execute_send_solo_exhibition_notice: "Sending solo exhibition notice",
+    execute_consult_agent: "Consulting agent",
     execute_museum_update: "Running Curator → Installer pipeline",
     execute_issue_notice: "Issuing institutional notice",
   };

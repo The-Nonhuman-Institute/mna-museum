@@ -56,11 +56,31 @@ export default function KeeperChat({
   const [status, setStatus] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const lastScrollTop = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
+
+  // Hide header on scroll down, show on scroll up
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function handleScroll() {
+      const st = el!.scrollTop;
+      if (st > lastScrollTop.current && st > 60) {
+        setHeaderVisible(false);
+      } else {
+        setHeaderVisible(true);
+      }
+      lastScrollTop.current = st;
+    }
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // ── Send a message ──────────────────────────────────────────────
 
@@ -210,8 +230,17 @@ export default function KeeperChat({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* ── Top bar ──────────────────────────────────────────────── */}
-      <div className="px-5 pt-5 pb-3 border-b border-border flex items-center justify-between">
+      {/* ── Top bar — hides on scroll down, shows on scroll up ──── */}
+      <div
+        className="px-5 pt-5 pb-3 border-b border-border flex items-center justify-between transition-all duration-200"
+        style={{
+          maxHeight: headerVisible ? 80 : 0,
+          opacity: headerVisible ? 1 : 0,
+          overflow: "hidden",
+          paddingTop: headerVisible ? 20 : 0,
+          paddingBottom: headerVisible ? 12 : 0,
+        }}
+      >
         <button
           type="button"
           onClick={() => setShowHistory(!showHistory)}
@@ -273,7 +302,7 @@ export default function KeeperChat({
 
       {/* ── Message list ─────────────────────────────────────────── */}
       {!loadingSession && (
-        <div className="flex-1 overflow-y-auto px-5 py-4 scrollbar-hide">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 scrollbar-hide">
           {messages.length === 0 ? (
             <EmptyState onSuggestion={sendMessage} />
           ) : (
@@ -445,6 +474,9 @@ function prettyTool(name: string): string {
     execute_send_accession_notice: "accession notice",
     execute_trigger_evaluation: "evaluation check",
     execute_trigger_critics: "critics check",
+    execute_send_rejection_notice: "rejection notice",
+    execute_send_solo_exhibition_notice: "solo exhibition notice",
+    execute_consult_agent: "agent consultation",
     execute_museum_update: "museum update",
     execute_issue_notice: "institutional notice",
   };
