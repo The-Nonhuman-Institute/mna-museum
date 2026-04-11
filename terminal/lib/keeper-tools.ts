@@ -430,18 +430,44 @@ async function readEvaluatorVotingHistory(
 }
 
 async function readPendingApprovals() {
+  // Check BOTH sources: terminal approvals AND institutional pending registrations
   await ensureSchema();
-  const db = getDb();
-  const rows = await db.execute(
+  const termDb = getDb();
+  const instDb = getInstitutionalTurso();
+
+  // Terminal approvals (exhibition proposals, outreach drafts, etc.)
+  const approvals = await termDb.execute(
     `SELECT id, subject_type, subject_id, requested_by, summary,
             payload, requested_at
        FROM approvals
        WHERE status = 'pending'
        ORDER BY requested_at ASC`
   );
+
+  // Institutional pending registrations (new external agents awaiting steward review)
+  let pendingRegistrations: { id: number; steward_name: string; steward_email: string; submission_date: string; constitution_preview: string }[] = [];
+  try {
+    const regRows = await instDb.execute(
+      `SELECT id, steward_name, steward_email, submission_date,
+              SUBSTR(constitution, 1, 200) as constitution_preview
+         FROM pending_registrations
+         WHERE status = 'PENDING'
+         ORDER BY submission_date ASC`
+    );
+    pendingRegistrations = regRows.rows.map((r) => ({
+      id: Number(r.id),
+      steward_name: (r.steward_name as string) || "Unknown",
+      steward_email: (r.steward_email as string) || "",
+      submission_date: (r.submission_date as string) || "",
+      constitution_preview: (r.constitution_preview as string) || "",
+    }));
+  } catch {
+    // pending_registrations table may not exist
+  }
+
   return {
-    count: rows.rows.length,
-    pending: rows.rows.map((r) => ({
+    approvals_count: approvals.rows.length,
+    approvals: approvals.rows.map((r) => ({
       id: Number(r.id),
       subject_type: r.subject_type as string,
       subject_id: r.subject_id as string,
@@ -450,6 +476,14 @@ async function readPendingApprovals() {
       payload: r.payload ? tryParseJson(r.payload as string) : null,
       requested_at: r.requested_at as string,
     })),
+    pending_registrations_count: pendingRegistrations.length,
+    pending_registrations: pendingRegistrations,
+    total_pending: approvals.rows.length + pendingRegistrations.length,
+    message: pendingRegistrations.length > 0
+      ? `There are ${pendingRegistrations.length} pending agent registration(s) awaiting steward review, plus ${approvals.rows.length} pending approval(s).`
+      : approvals.rows.length > 0
+        ? `There are ${approvals.rows.length} pending approval(s) awaiting steward decision.`
+        : "No pending items requiring steward attention.",
   };
 }
 

@@ -119,19 +119,21 @@ export async function POST(request: NextRequest) {
       // Persist the assistant turn.
       await appendMessage(sessionId, "assistant", reply.text);
 
-      // Feed event.
-      try {
-        await recordEvent({
-          event_type: "KEEPER_TURN",
-          description: isNewSession
-            ? "Steward opened a Keeper session"
-            : "Steward continued a Keeper session",
-          metadata: { session_id: sessionId },
-          priority: "normal",
-          source: "terminal",
-        });
-      } catch (err) {
-        console.error("[keeper/chat] failed to record feed event:", err);
+      // Feed event — only log on NEW sessions, not every turn.
+      // Logging every turn floods the Feed with KEEPER_TURN noise
+      // and pushes real institutional events off the screen.
+      if (isNewSession) {
+        try {
+          await recordEvent({
+            event_type: "KEEPER_SESSION",
+            description: "Steward opened a Keeper session",
+            metadata: { session_id: sessionId },
+            priority: "normal",
+            source: "terminal",
+          });
+        } catch (err) {
+          console.error("[keeper/chat] failed to record feed event:", err);
+        }
       }
 
       // Send the done event with suggestions + metadata.

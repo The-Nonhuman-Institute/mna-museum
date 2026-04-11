@@ -232,13 +232,10 @@ export default function KeeperChat({
     <div className="flex-1 flex flex-col min-h-0">
       {/* ── Top bar — hides on scroll down, shows on scroll up ──── */}
       <div
-        className="px-5 pt-5 pb-3 border-b border-border flex items-center justify-between transition-all duration-200"
+        className="px-5 py-3 border-b border-border flex items-center justify-between transition-transform duration-200"
         style={{
-          maxHeight: headerVisible ? 80 : 0,
-          opacity: headerVisible ? 1 : 0,
-          overflow: "hidden",
-          paddingTop: headerVisible ? 20 : 0,
-          paddingBottom: headerVisible ? 12 : 0,
+          transform: headerVisible ? "translateY(0)" : "translateY(-100%)",
+          marginBottom: headerVisible ? 0 : -56,
         }}
       >
         <button
