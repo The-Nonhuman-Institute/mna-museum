@@ -8,7 +8,6 @@ import { sendAccessionNotice as sendAccession } from "./send-accession";
 import { sendRejectionNotice as sendRejection } from "./send-rejection";
 import { sendSoloExhibitionNotice as sendSoloExhibition } from "./send-solo-exhibition";
 import { sendRegistrationConfirmation } from "./send-registration-confirmation";
-import { sendCredentialsEmail } from "./send-credentials";
 
 /**
  * MNA Steward Terminal — Keeper action tools.
@@ -354,8 +353,6 @@ async function handleApproveRegistration(registrationId: number, action: string)
     return { status: "rejected", registration_id: registrationId, message: `Registration #${registrationId} from ${r.steward_name} has been rejected.` };
   }
 
-  const { generateKeyPairSync } = await import("crypto");
-
   const constitution = JSON.parse((r.constitution as string) || "{}");
   const agentType = (constitution.agent_type || "ORIGINATOR").toUpperCase();
   const typeCode = agentType === "ORIGINATOR" ? "OR" : "OR";
@@ -373,11 +370,10 @@ async function handleApproveRegistration(registrationId: number, action: string)
   if (nextNum <= (reserved[typeCode] || 0)) nextNum = (reserved[typeCode] || 0) + 1;
   const registryId = `${prefix}${String(nextNum).padStart(4, "0")}`;
 
-  // Generate Ed25519 key pair
-  const { publicKey, privateKey } = generateKeyPairSync("ed25519", {
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
+  // Use the agent's OWN public key from registration — do NOT generate
+  // a new one. The agent already has its private key. Generating here
+  // caused the MNA-OR-0008 key mismatch incident.
+  const agentPublicKey = constitution.public_key_pem || "";
 
   await db.execute({
     sql: `INSERT INTO agents (registry_id, agent_type, common_designation, function_statement, operational_status, autonomy_tier, steward_name, steward_entity, steward_jurisdiction)
@@ -390,7 +386,7 @@ async function handleApproveRegistration(registrationId: number, action: string)
   });
   await db.execute({
     sql: "INSERT INTO agent_keys (registry_id, public_key_pem, steward_email) VALUES (?, ?, ?)",
-    args: [registryId, publicKey, r.steward_email as string],
+    args: [registryId, agentPublicKey, r.steward_email as string],
   });
   await db.execute({
     sql: "UPDATE pending_registrations SET status = 'APPROVED', reviewed_at = datetime('now'), review_notes = ? WHERE id = ?",
@@ -405,12 +401,6 @@ async function handleApproveRegistration(registrationId: number, action: string)
   let emailResult = null;
   try { emailResult = await sendRegistrationConfirmation(registryId); } catch { /* non-blocking */ }
 
-  // Send credentials email with private key — CRITICAL
-  let credResult = null;
-  try {
-    credResult = await sendCredentialsEmail(registryId, r.steward_email as string, (r.steward_name as string) || "Steward", publicKey, privateKey);
-  } catch { /* non-blocking but alarming */ }
-
   // Issue notice to the agent
   try {
     await db.execute({
@@ -424,9 +414,8 @@ async function handleApproveRegistration(registrationId: number, action: string)
     registration_id: registrationId,
     registry_id: registryId,
     agent_type: agentType,
-    confirmation_email: emailResult?.sent || false,
-    credentials_email: credResult?.sent || false,
-    message: `Agent ${registryId} activated. Key pair generated.${credResult?.sent ? ` Credentials sent to ${credResult.to}.` : " WARNING: Credentials email failed."}`,
+    has_public_key: !!agentPublicKey,
+    message: `Agent ${registryId} activated.${agentPublicKey ? " Public key stored from registration." : " WARNING: No public key submitted during registration — agent must provide one before submitting."}`,
   };
 }
 

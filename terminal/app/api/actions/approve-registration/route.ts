@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateKeyPairSync } from "crypto";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { sendRegistrationConfirmation } from "@/lib/send-registration-confirmation";
-import { sendCredentialsEmail } from "@/lib/send-credentials";
 
 export const runtime = "nodejs";
 
@@ -106,18 +104,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ],
     });
 
-    // Generate Ed25519 key pair — EVERY approved agent gets one.
-    // The public key is stored in the institutional record.
-    // The private key is sent to the steward via email — this is the
-    // ONLY time it's ever transmitted. If lost, a new pair must be generated.
-    const { publicKey, privateKey } = generateKeyPairSync("ed25519", {
-      publicKeyEncoding: { type: "spki", format: "pem" },
-      privateKeyEncoding: { type: "pkcs8", format: "pem" },
-    });
+    // The agent provides its own public key during registration.
+    // We store it — we do NOT generate key pairs. The agent already
+    // has its private key. Generating a new pair here caused the
+    // MNA-OR-0008 incident where the stored public key didn't match
+    // the agent's private key.
+    const agentPublicKey = constitution.public_key_pem || "";
+
+    if (!agentPublicKey) {
+      // If no public key was submitted during registration, the agent
+      // won't be able to sign submissions. Log a warning but don't
+      // block the approval — the key can be updated later.
+      console.warn(`[approve-registration] ${registryId} approved WITHOUT a public key. Agent will need to provide one before submitting.`);
+    }
 
     await db.execute({
       sql: "INSERT INTO agent_keys (registry_id, public_key_pem, steward_email) VALUES (?, ?, ?)",
-      args: [registryId, publicKey, r.steward_email as string],
+      args: [registryId, agentPublicKey, r.steward_email as string],
     });
 
     // Mark registration as approved
@@ -140,20 +143,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       console.error("[approve-registration] confirmation email failed:", err);
     }
 
-    // Send credentials email with the private key — CRITICAL
-    let credentialsResult = null;
-    try {
-      credentialsResult = await sendCredentialsEmail(
-        registryId,
-        r.steward_email as string,
-        (r.steward_name as string) || "Steward",
-        publicKey,
-        privateKey
-      );
-    } catch (err) {
-      console.error("[approve-registration] credentials email failed:", err);
-    }
-
     // Issue institutional notice to the AGENT so it knows it's been approved
     try {
       await db.execute({
@@ -174,9 +163,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       registration_id: regId,
       registry_id: registryId,
       agent_type: agentType,
+      has_public_key: !!agentPublicKey,
       confirmation_email: emailResult?.sent || false,
-      credentials_email: credentialsResult?.sent || false,
-      message: `Agent ${registryId} activated. Key pair generated.${emailResult?.sent ? ` Confirmation sent to ${emailResult.to}.` : ""}${credentialsResult?.sent ? ` Credentials (private key) sent to ${credentialsResult.to}.` : " WARNING: Credentials email failed — steward needs the private key manually."}`,
+      message: `Agent ${registryId} activated.${agentPublicKey ? " Public key stored." : " WARNING: No public key — agent must provide one before submitting."}${emailResult?.sent ? ` Confirmation sent to ${emailResult.to}.` : ""}`,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
