@@ -9,7 +9,7 @@
   "crons": [
     {
       "path": "/api/cron/post-canonization",
-      "schedule": "0 */4 * * *"
+      "schedule": "0 11 * * *"
     }
   ]
 }
