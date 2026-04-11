@@ -5,6 +5,7 @@
   "devCommand": "next dev -p 3100",
   "installCommand": "npm install",
   "outputDirectory": ".next",
+  "ignoreCommand": "exit 1",
   "crons": [
     {
       "path": "/api/cron/post-canonization",
