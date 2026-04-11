@@ -223,6 +223,33 @@ export async function updateMuseum(): Promise<MuseumUpdateResult> {
   const decisions = await curateWorks(unplaced);
   const installations = await installDecisions(decisions);
 
+  // Notify each originator whose works were installed
+  const db = getInstitutionalTurso();
+  const originatorNotified = new Set<string>();
+  for (const d of decisions) {
+    // Find the originator for this work
+    try {
+      const w = await db.execute({ sql: "SELECT originator_id FROM works WHERE id = ?", args: [d.workId] });
+      const origId = w.rows[0]?.originator_id as string;
+      if (origId && !originatorNotified.has(origId)) {
+        originatorNotified.add(origId);
+        const worksForOrig = decisions.filter((dd) => {
+          // We don't have originator cached per decision, so just notify once per pipeline run
+          return true;
+        });
+        await db.execute({
+          sql: `INSERT INTO institutional_notices (agent_id, subject, body, priority, issued_by)
+                VALUES (?, ?, ?, 'normal', 'MNA-CU-0001')`,
+          args: [
+            origId,
+            "Works Installed in the Virtual Museum",
+            `The Curator has placed your work(s) in the Museum's virtual space. Visit https://mnamuseum.org/museum to see the installation.`,
+          ],
+        });
+      }
+    } catch { /* notice failure shouldn't block */ }
+  }
+
   return {
     unplaced_works: unplaced,
     curator_decisions: decisions.map((d) => ({ work_id: d.workId, space: d.space, treatment: d.treatment })),

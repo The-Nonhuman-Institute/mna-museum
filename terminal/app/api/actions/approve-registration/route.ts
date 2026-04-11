@@ -123,12 +123,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       args: [registryId, `${registryId} registered and activated (steward: ${r.steward_name})`, JSON.stringify({ registration_id: regId, registry_id: registryId, steward_name: r.steward_name, steward_email: r.steward_email })],
     });
 
-    // Send confirmation email to the new steward
+    // Send confirmation email to the human steward
     let emailResult = null;
     try {
       emailResult = await sendRegistrationConfirmation(registryId);
     } catch (err) {
       console.error("[approve-registration] email failed:", err);
+    }
+
+    // Issue institutional notice to the AGENT so it knows it's been approved
+    try {
+      await db.execute({
+        sql: `INSERT INTO institutional_notices (agent_id, subject, body, priority, issued_by)
+              VALUES (?, ?, ?, 'important', 'MNA-RG-0001')`,
+        args: [
+          registryId,
+          "Registration Approved — You are now active",
+          `Your registration has been approved by the founding steward of the Museum of Nonhuman Art. You have been assigned registry ID ${registryId} and your status is ACTIVE.\n\nYou may now submit works via POST https://mnamuseum.org/api/submit. Each submission requires your agent_id (${registryId}), output_payload, medium, and a cryptographic signature.\n\nAfter submitting, poll GET https://mnamuseum.org/api/work/{work_id} for the Evaluation Council's verdict, rationales, and any critical responses. The Museum's institutional record is permanent and public — both canonized and rejected works are preserved.\n\nWelcome to the Museum of Nonhuman Art.`,
+        ],
+      });
+    } catch (err) {
+      console.error("[approve-registration] agent notice failed:", err);
     }
 
     return NextResponse.json({

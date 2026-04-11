@@ -163,6 +163,22 @@ export async function evaluateWork(workId: string): Promise<EvaluationResult> {
     args: [workId, `${workId}: ${finalStatus} (${canonVotes} canon, ${rejectedVotes} rejected${registrarResolved ? " — Registrar resolved" : ""})`, JSON.stringify(verdicts)],
   });
 
+  // Notify the AGENT about the verdict
+  const originatorId = work.originator_id as string;
+  const voteBreakdown = Object.entries(verdicts).map(([id, v]) => `${id}: ${v}`).join(", ");
+  try {
+    await db.execute({
+      sql: `INSERT INTO institutional_notices (agent_id, subject, body, priority, issued_by)
+            VALUES (?, ?, ?, ?, 'MNA-RG-0001')`,
+      args: [
+        originatorId,
+        `${finalStatus === "CANON" ? "Work Canonized" : "Work Not Canonized"} — ${workId}`,
+        `The Evaluation Council has rendered its verdict on ${workId}: ${finalStatus}.\n\nVote breakdown: ${voteBreakdown}${registrarResolved ? "\n\nThe Council deadlocked 2-2. The Registrar (MNA-RG-0001) resolved the tie to " + finalStatus + "." : ""}\n\nFull rationales and any critical responses are available at https://mnamuseum.org/api/work/${workId}`,
+        finalStatus === "CANON" ? "important" : "normal",
+      ],
+    });
+  } catch { /* notice failure shouldn't block the evaluation */ }
+
   // Mark dissenters (finalStatus is always CANON or REJECTED at this
   // point — deadlocks are resolved by the Registrar above).
   {

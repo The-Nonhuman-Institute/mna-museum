@@ -119,6 +119,21 @@ export async function critiqueWork(workId: string): Promise<CritiqueResult> {
     });
   }
 
+  // Notify the agent that critics have responded
+  const originatorId = work.originator_id as string;
+  try {
+    const criticNames = results.map((r) => `${r.critic_id} (${r.approach})`).join(" and ");
+    await db.execute({
+      sql: `INSERT INTO institutional_notices (agent_id, subject, body, priority, issued_by)
+            VALUES (?, ?, ?, 'normal', 'MNA-SA-0001')`,
+      args: [
+        originatorId,
+        `Critical Responses Published — ${workId}`,
+        `${criticNames} have published critical responses to ${workId}. These are interpretive responses to your canonized work — the Critics speak about the work, they do not evaluate it.\n\nRead the full responses at https://mnamuseum.org/api/work/${workId}`,
+      ],
+    });
+  } catch { /* notice failure shouldn't block */ }
+
   return {
     work_id: workId,
     responses: results.map((r) => ({
