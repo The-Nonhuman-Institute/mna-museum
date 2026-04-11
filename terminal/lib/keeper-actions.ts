@@ -1,5 +1,5 @@
 import "server-only";
-import type Anthropic from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { getInstitutionalTurso } from "./institutional-turso";
 import { evaluateWork } from "./evaluator";
 import { critiqueWork } from "./critic";
@@ -324,7 +324,6 @@ async function handleSoloExhibitionNotice(originatorId: string, context?: string
 async function consultAgent(agentId: string, message: string) {
   if (!agentId || !message) return { error: "agent_id and message are required" };
 
-  const Anthropic = (await import("@anthropic-ai/sdk")).default;
   const db = getInstitutionalTurso();
 
   // Load the target agent
