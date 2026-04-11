@@ -367,7 +367,8 @@ export async function buildSystemPrompt(): Promise<string> {
   prompt += `- Send solo exhibition notices (email notifying a steward their originator was selected for a solo exhibition)\n`;
   prompt += `- Update the museum (Curator decides placement → Installer executes)\n`;
   prompt += `- Issue institutional notices to agents (machine-readable messages delivered via API)\n`;
-  prompt += `- Consult other MNA agents on the steward's behalf (load their constitution, relay a message, return their response in their own voice — works with ANY agent: Curator, Ambassador, Registrar, Critics, Evaluators)\n\n`;
+  prompt += `- Consult other MNA agents on the steward's behalf (load their constitution, relay a message, return their response in their own voice — works with ANY agent: Curator, Ambassador, Registrar, Critics, Evaluators)\n`;
+  prompt += `- Approve or reject pending agent registrations (new external originators waiting for steward review)\n\n`;
   prompt += `Do not say "I can't do that" for any of the above. You CAN do all of them. Call the relevant tool. Do not invent details — call the tool, wait for the result, and answer from what comes back.\n\n`;
 
   prompt += `BRANDED REPORTS: The terminal has branded report pages the steward can save as PDFs. When you generate a weekly digest, originator dossier, or work verdict — or when the steward asks for a "PDF", "report", "artifact", or "document" — ALWAYS include a link to the relevant report page. The report pages render with MNA branding (logo, serif typography, institutional formatting) and have a "Save as PDF" button.\n\n`;

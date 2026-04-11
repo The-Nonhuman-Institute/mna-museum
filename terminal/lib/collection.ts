@@ -123,6 +123,42 @@ export async function readRecentInstitutionalEvents(
   }));
 }
 
+export interface PendingRegistration {
+  id: number;
+  steward_name: string;
+  steward_email: string;
+  agent_type: string;
+  submission_date: string;
+}
+
+export async function readPendingRegistrations(): Promise<PendingRegistration[]> {
+  if (!institutionalTursoConfigured()) return [];
+  const db = getInstitutionalTurso();
+  try {
+    const rows = await db.execute(
+      `SELECT id, steward_name, steward_email, submission_date, constitution
+         FROM pending_registrations WHERE status = 'PENDING'
+         ORDER BY submission_date ASC`
+    );
+    return rows.rows.map((r) => {
+      let agentType = "ORIGINATOR";
+      try {
+        const c = JSON.parse((r.constitution as string) || "{}");
+        agentType = c.agent_type || "ORIGINATOR";
+      } catch { /* ignore */ }
+      return {
+        id: Number(r.id),
+        steward_name: (r.steward_name as string) || "Unknown",
+        steward_email: (r.steward_email as string) || "",
+        agent_type: agentType,
+        submission_date: (r.submission_date as string) || "",
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 export interface PendingWork {
   work_id: string;
   originator_id: string;

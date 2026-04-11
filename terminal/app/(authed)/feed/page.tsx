@@ -2,9 +2,12 @@ import {
   readCollectionStats,
   readRecentInstitutionalEvents,
   readPendingWorks,
+  readPendingRegistrations,
   type InstitutionalEvent,
   type PendingWork,
+  type PendingRegistration,
 } from "@/lib/collection";
+import ActionCard from "@/components/ActionCard";
 import {
   readRecentEvents,
   readPriorityAlerts,
@@ -98,7 +101,7 @@ async function safe<T>(
 export default async function FeedPage() {
   const errors: { label: string; message: string }[] = [];
 
-  const [stats, localEvents, alerts, institutionalEvents, pendingWorks] =
+  const [stats, localEvents, alerts, institutionalEvents, pendingWorks, pendingRegs] =
     await Promise.all([
       safe("readCollectionStats", () => readCollectionStats(), errors, null),
       safe("readRecentEvents", () => readRecentEvents(30), errors, []),
@@ -110,6 +113,7 @@ export default async function FeedPage() {
         []
       ),
       safe("readPendingWorks", () => readPendingWorks(), errors, []),
+      safe("readPendingRegistrations", () => readPendingRegistrations(), errors, []),
     ]);
 
   // Env-var presence check — no values, just which keys are set. Surface
@@ -135,6 +139,43 @@ export default async function FeedPage() {
       </div>
 
       <StatsRow stats={stats} />
+
+      {/* ── Actionable cards — direct buttons, no Keeper needed ──── */}
+      {pendingRegs.length > 0 && (
+        <div className="mb-6">
+          <p className="label mb-2">
+            Agent registrations · requires steward
+          </p>
+          {pendingRegs.map((reg) => (
+            <ActionCard
+              key={reg.id}
+              title="New Agent Registration"
+              subtitle={`${reg.steward_name} submitted a new ${reg.agent_type} agent`}
+              details={[
+                { label: "Steward", value: reg.steward_name },
+                { label: "Email", value: reg.steward_email },
+                { label: "Type", value: reg.agent_type },
+                { label: "Submitted", value: reg.submission_date.slice(0, 10) },
+              ]}
+              actions={[
+                {
+                  label: "Approve",
+                  endpoint: "/api/actions/approve-registration",
+                  body: { registration_id: reg.id },
+                  variant: "primary",
+                },
+                {
+                  label: "Reject",
+                  endpoint: "/api/actions/approve-registration",
+                  body: { registration_id: reg.id, action: "reject" },
+                  variant: "danger",
+                },
+              ]}
+              borderColor="attention"
+            />
+          ))}
+        </div>
+      )}
 
       {pendingWorks.length > 0 && (
         <div className="mb-6">

@@ -84,6 +84,19 @@ export const KEEPER_ACTION_TOOLS: Anthropic.Messages.Tool[] = [
     },
   },
   {
+    name: "execute_approve_registration",
+    description:
+      "Approve or reject a pending agent registration. Creates the agent, constitution, and keys in the institutional record. ONLY call after steward confirmation.",
+    input_schema: {
+      type: "object",
+      properties: {
+        registration_id: { type: "number", description: "The pending registration id." },
+        action: { type: "string", description: "'approve' or 'reject'. Default 'approve'." },
+      },
+      required: ["registration_id"],
+    },
+  },
+  {
     name: "execute_send_rejection_notice",
     description:
       "Send a Notice of Rejection email for a rejected work to its originator's steward. ONLY call after steward confirmation.",
@@ -169,6 +182,11 @@ export async function runKeeperAction(
         return await triggerEvaluation(String(input.work_id || ""));
       case "execute_trigger_critics":
         return await triggerCritics(String(input.work_id || ""));
+      case "execute_approve_registration":
+        return await handleApproveRegistration(
+          Number(input.registration_id),
+          String(input.action || "approve")
+        );
       case "execute_send_rejection_notice":
         return await handleRejectionNotice(String(input.work_id || ""));
       case "execute_send_solo_exhibition_notice":
@@ -304,6 +322,78 @@ async function triggerCritics(workId: string) {
     responses: result.responses,
     elapsed_seconds: result.elapsed_seconds,
     message: `Both Critics have responded to ${workId}. ${result.responses.map((r) => `${r.critic_id} (${r.approach}): ${r.body_length} chars`).join(", ")}. Completed in ${result.elapsed_seconds}s.`,
+  };
+}
+
+async function handleApproveRegistration(registrationId: number, action: string) {
+  if (!registrationId) return { error: "registration_id is required" };
+
+  // Call the same API endpoint the Feed action buttons use
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3100";
+
+  // Direct Turso implementation instead of calling our own API
+  const db = getInstitutionalTurso();
+  const reg = await db.execute({
+    sql: "SELECT * FROM pending_registrations WHERE id = ? AND status = 'PENDING'",
+    args: [registrationId],
+  });
+  if (reg.rows.length === 0) {
+    return { error: `Registration #${registrationId} not found or already processed.` };
+  }
+  const r = reg.rows[0];
+
+  if (action === "reject") {
+    await db.execute({
+      sql: "UPDATE pending_registrations SET status = 'REJECTED', reviewed_at = datetime('now'), review_notes = 'Rejected by steward via Keeper' WHERE id = ?",
+      args: [registrationId],
+    });
+    return { status: "rejected", registration_id: registrationId, message: `Registration #${registrationId} from ${r.steward_name} has been rejected.` };
+  }
+
+  // For approval, delegate to the API endpoint logic
+  const constitution = JSON.parse((r.constitution as string) || "{}");
+  const agentType = (constitution.agent_type || "ORIGINATOR").toUpperCase();
+  const typeCode = agentType === "ORIGINATOR" ? "OR" : "OR";
+  const prefix = `MNA-${typeCode}-`;
+
+  const maxId = await db.execute({
+    sql: "SELECT registry_id FROM agents WHERE registry_id LIKE ? ORDER BY registry_id DESC LIMIT 1",
+    args: [`${prefix}%`],
+  });
+  let nextNum = 1;
+  if (maxId.rows.length > 0) {
+    nextNum = parseInt((maxId.rows[0].registry_id as string).replace(prefix, ""), 10) + 1;
+  }
+  const reserved: Record<string, number> = { OR: 6, EV: 4, CR: 2, CU: 1, KP: 1, SA: 1, AM: 1, RG: 1 };
+  if (nextNum <= (reserved[typeCode] || 0)) nextNum = (reserved[typeCode] || 0) + 1;
+  const registryId = `${prefix}${String(nextNum).padStart(4, "0")}`;
+
+  await db.execute({
+    sql: `INSERT INTO agents (registry_id, agent_type, common_designation, function_statement, operational_status, autonomy_tier, steward_name, steward_entity, steward_jurisdiction)
+          VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?)`,
+    args: [registryId, agentType, constitution.common_designation || "[Pending Emergence]", constitution.function_statement || "", constitution.autonomy_tier || "Tier 1 — Full", r.steward_name, r.steward_entity, r.steward_jurisdiction],
+  });
+  await db.execute({
+    sql: "INSERT INTO constitutions (agent_id, declared_orientation, formal_tendencies, aversions, autonomy_declaration, version, is_current) VALUES (?, ?, ?, ?, ?, '1.0', 1)",
+    args: [registryId, constitution.declared_orientation || "", JSON.stringify(constitution.formal_tendencies || []), JSON.stringify(constitution.aversions || []), constitution.autonomy_declaration || ""],
+  });
+  await db.execute({
+    sql: "UPDATE pending_registrations SET status = 'APPROVED', reviewed_at = datetime('now'), review_notes = ? WHERE id = ?",
+    args: [`Approved via Keeper. Assigned ${registryId}`, registrationId],
+  });
+  await db.execute({
+    sql: "INSERT INTO events (event_type, agent_id, description) VALUES ('AGENT_REGISTERED', ?, ?)",
+    args: [registryId, `${registryId} registered and activated (steward: ${r.steward_name})`],
+  });
+
+  return {
+    status: "approved",
+    registration_id: registrationId,
+    registry_id: registryId,
+    agent_type: agentType,
+    message: `Agent ${registryId} activated successfully. Steward: ${r.steward_name}.`,
   };
 }
 
