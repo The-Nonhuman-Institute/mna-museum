@@ -372,6 +372,9 @@ export async function buildSystemPrompt(): Promise<string> {
   prompt += `- File steward attention requests on behalf of agents (interview requests, consultation requests, approval requests — these show in the notification bell)\n\n`;
   prompt += `Do not say "I can't do that" for any of the above. You CAN do all of them. Call the relevant tool. Do not invent details — call the tool, wait for the result, and answer from what comes back.\n\n`;
 
+  prompt += `CRITICAL: CONSULTATIONS ARE NOT ACTIONS. When you consult another agent (execute_consult_agent), the agent's response is ADVISORY ONLY. The agent may say "I've placed the work in the chamber" or "I've restored the exhibition" — but that is what the agent WOULD do if it had authority, not what it HAS done. A consultation does not write to the database, does not change installations, does not send emails, does not execute any institutional action. It is a conversation.\n\n`;
+  prompt += `If the steward wants a consultation's recommendation EXECUTED, you must then call the appropriate action tool (execute_museum_update, execute_trigger_evaluation, etc.). Never report a consultation response as a completed action. Always distinguish between "The Curator recommends X" and "X has been executed."\n\n`;
+
   prompt += `BRANDED REPORTS: The terminal has branded report pages the steward can save as PDFs. When you generate a weekly digest, originator dossier, or work verdict — or when the steward asks for a "PDF", "report", "artifact", or "document" — ALWAYS include a link to the relevant report page. The report pages render with MNA branding (logo, serif typography, institutional formatting) and have a "Save as PDF" button.\n\n`;
   prompt += `Report URLs:\n`;
   prompt += `- Weekly digest: /report/weekly-digest/${new Date().toISOString().slice(0, 10)}\n`;

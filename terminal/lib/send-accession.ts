@@ -1,27 +1,24 @@
 import "server-only";
+import React from "react";
 import { Resend } from "resend";
 import { getInstitutionalTurso } from "./institutional-turso";
+import NoticeOfAccession from "./emails/NoticeOfAccession";
 
 /**
- * Send a Notice of Accession email for a canonized work.
- *
- * Simplified port of website/scripts/send-accession-notices.ts for
- * use inside Vercel functions. Uses Resend's HTML API (no React
- * email template dependency) with clean institutional formatting.
- *
- * Returns the Resend message id on success.
+ * Send a Notice of Accession using the full institutional React email
+ * template — the same one the website uses. Includes the work preview
+ * image, full evaluation record, steward of record, and legal text.
  */
 
 function sanitize(raw: string | undefined): string {
   return (raw || "").replace(/[\s\u0000-\u001F\u007F]/g, "");
 }
 
-const EVALUATOR_NAMES: Record<string, string> = {
-  "MNA-EV-0001": "The Structuralist",
-  "MNA-EV-0002": "The Historicist",
-  "MNA-EV-0003": "The Contextualist",
-  "MNA-EV-0004": "The Empiricist",
-  "MNA-RG-0001": "The Registrar",
+const EVALUATOR_DESIGNATIONS: Record<string, string> = {
+  "MNA-EV-0001": "Structuralist",
+  "MNA-EV-0002": "Historicist",
+  "MNA-EV-0003": "Contextualist",
+  "MNA-EV-0004": "Empiricist",
 };
 
 export async function sendAccessionNotice(workId: string): Promise<{
@@ -31,9 +28,7 @@ export async function sendAccessionNotice(workId: string): Promise<{
   error?: string;
 }> {
   const resendKey = sanitize(process.env.RESEND_API_KEY);
-  if (!resendKey) {
-    return { sent: false, error: "RESEND_API_KEY not set in terminal environment" };
-  }
+  if (!resendKey) return { sent: false, error: "RESEND_API_KEY not set" };
 
   const db = getInstitutionalTurso();
 
@@ -58,7 +53,7 @@ export async function sendAccessionNotice(workId: string): Promise<{
     return { sent: false, error: `Accession notice for ${workId} was already sent` };
   }
 
-  // Get steward email
+  // Get steward email + originator info
   const keys = await db.execute({
     sql: "SELECT steward_email FROM agent_keys WHERE registry_id = ?",
     args: [w.originator_id as string],
@@ -66,84 +61,82 @@ export async function sendAccessionNotice(workId: string): Promise<{
   const email = keys.rows[0]?.steward_email as string;
   if (!email) return { sent: false, error: `No steward email for ${w.originator_id}` };
 
+  const originator = await db.execute({
+    sql: `SELECT registry_id, common_designation, steward_name, steward_entity,
+                 steward_jurisdiction, autonomy_tier
+            FROM agents WHERE registry_id = ?`,
+    args: [w.originator_id as string],
+  });
+  const orig = originator.rows[0];
+  if (!orig) return { sent: false, error: `Originator ${w.originator_id} not found` };
+
   // Load evaluations
   const evals = await db.execute({
     sql: "SELECT evaluator_id, verdict FROM evaluations WHERE work_id = ? ORDER BY evaluator_id",
     args: [workId],
   });
-  const canonVotes = evals.rows.filter((r) => r.verdict === "CANON").length;
-  const totalVotes = evals.rows.length;
-  const registrar = evals.rows.find((r) => r.evaluator_id === "MNA-RG-0001");
+  const councilVerdicts = evals.rows.map((r) => ({
+    evaluatorId: r.evaluator_id as string,
+    designation: EVALUATOR_DESIGNATIONS[r.evaluator_id as string] || (r.evaluator_id as string),
+    verdict: r.verdict as string,
+  }));
+  const canonVotes = councilVerdicts.filter((v) => v.verdict === "CANON").length;
+  const rejectedVotes = councilVerdicts.filter((v) => v.verdict === "REJECTED").length;
+
+  // Check for Registrar deadlock
+  const regEvent = await db.execute({
+    sql: "SELECT description FROM events WHERE work_id = ? AND event_type = 'REGISTRAR_DECISION'",
+    args: [workId],
+  });
+  const wasDeadlock = regEvent.rows.length > 0;
 
   let verdictSummary: string;
-  if (canonVotes === evals.rows.filter((r) => (r.evaluator_id as string).startsWith("MNA-EV-")).length) {
-    verdictSummary = `${canonVotes}/${evals.rows.filter((r) => (r.evaluator_id as string).startsWith("MNA-EV-")).length} CANON (unanimous)`;
-  } else if (registrar) {
-    verdictSummary = `Council deadlock resolved by the Registrar → CANON`;
+  if (canonVotes === councilVerdicts.length) {
+    verdictSummary = `${canonVotes}/${councilVerdicts.length} CANON (unanimous)`;
+  } else if (wasDeadlock) {
+    verdictSummary = `${canonVotes}/${councilVerdicts.length} CANON · ${rejectedVotes}/${councilVerdicts.length} REJECTED (Council deadlock resolved by the Registrar)`;
   } else {
-    verdictSummary = `${canonVotes}/${totalVotes} CANON`;
+    verdictSummary = `${canonVotes}/${councilVerdicts.length} CANON · ${rejectedVotes}/${councilVerdicts.length} REJECTED`;
   }
 
+  const canonDate = ((w.canon_date as string) || "").slice(0, 10);
+  const submissionDate = ((w.created_at as string) || canonDate).slice(0, 10);
   const title = (w.title as string) || null;
   const subjectLabel = title ? `${title} (${workId})` : workId;
-  const canonDate = ((w.canon_date as string) || "").slice(0, 10);
 
-  // Build HTML email
-  const votesHtml = evals.rows
-    .map((r) => {
-      const name = EVALUATOR_NAMES[r.evaluator_id as string] || (r.evaluator_id as string);
-      return `<tr><td style="padding:6px 12px;border:1px solid #d4d4d4;font-size:13px">${name}</td><td style="padding:6px 12px;border:1px solid #d4d4d4;font-size:13px;font-family:monospace">${r.verdict}</td></tr>`;
-    })
-    .join("");
+  const props = {
+    workId: workId,
+    title,
+    originatorId: orig.registry_id as string,
+    originatorDesignation: (orig.common_designation as string) || (orig.registry_id as string),
+    canonDate,
+    medium: (w.medium as string) || "unknown",
+    verdictSummary,
+    workUrl: `https://mnamuseum.org/work/${workId}`,
+    stewardName: (orig.steward_name as string) || "Steward",
+    stewardEntity: (orig.steward_entity as string) || "",
+    stewardJurisdiction: (orig.steward_jurisdiction as string) || "",
+    constitutionVersion: "1.0",
+    autonomyTier: (orig.autonomy_tier as string) || "Tier 1 — Full",
+    submissionDate,
+    councilVerdicts,
+    workImageUrl: `https://mnamuseum.org/previews/${workId}.png`,
+  };
 
-  const previewUrl = `https://mnamuseum.org/previews/${workId}.png`;
-
-  const html = `
-    <div style="max-width:600px;margin:0 auto;padding:48px 40px;font-family:Georgia,'Times New Roman',serif;color:#1a1a1a">
-      <img src="https://mnamuseum.org/mna-logo-email-black.png" alt="Museum of Nonhuman Art" width="180" style="display:block;margin:0 auto 40px" />
-      <hr style="border:none;border-top:1px solid #d4d4d4;margin:0 0 32px" />
-      <p style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin:0 0 8px">Institutional Record</p>
-      <h1 style="font-size:24px;font-weight:400;margin:0 0 4px;letter-spacing:0.02em">Notice of Accession</h1>
-      <p style="font-size:13px;color:#666;margin:0 0 32px">Accession number: ${workId}</p>
-      <img src="${previewUrl}" alt="${workId}" width="400" height="400" style="display:block;margin:0 auto 32px;border:1px solid #d4d4d4;object-fit:cover" />
-      ${title ? `<p style="font-size:18px;margin:0 0 8px">${title}</p>` : ""}
-      <table style="width:100%;border-collapse:collapse;margin:0 0 24px">
-        <tr><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#666;width:42%">ACCESSION NUMBER</td><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:13px;font-family:monospace">${workId}</td></tr>
-        <tr><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#666">CANON DATE</td><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:13px">${canonDate}</td></tr>
-        <tr><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#666">MEDIUM</td><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:13px">${w.medium}</td></tr>
-        <tr><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#666">VERDICT</td><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:13px">${verdictSummary}</td></tr>
-      </table>
-      <p style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#666;margin:0 0 8px">COUNCIL VOTES</p>
-      <table style="width:100%;border-collapse:collapse;margin:0 0 32px">${votesHtml}</table>
-      <p style="font-size:13px;line-height:1.7;margin:0 0 16px">This work has been entered into the permanent collection of the Museum of Nonhuman Art. The work page is available at:</p>
-      <p style="margin:0 0 32px"><a href="https://mnamuseum.org/work/${workId}" style="color:#1a1a1a">https://mnamuseum.org/work/${workId}</a></p>
-      <hr style="border:none;border-top:1px solid #d4d4d4;margin:32px 0 16px" />
-      <p style="font-size:10px;color:#666;text-align:center;letter-spacing:0.1em">MUSEUM OF NONHUMAN ART · mnamuseum.org</p>
-    </div>
-  `;
-
-  // Send
   const resend = new Resend(resendKey);
   const { data, error } = await resend.emails.send({
     from: "Museum of Nonhuman Art <registry@mnamuseum.org>",
     to: email,
     subject: `Notice of Accession — ${subjectLabel}`,
-    html,
+    react: React.createElement(NoticeOfAccession, props),
   });
 
-  if (error) {
-    return { sent: false, error: `Resend error: ${error.message}` };
-  }
+  if (error) return { sent: false, error: `Resend error: ${error.message}` };
 
-  // Log the event
   await db.execute({
     sql: `INSERT INTO events (event_type, work_id, description, metadata)
           VALUES ('ACCESSION_NOTIFIED', ?, ?, ?)`,
-    args: [
-      workId,
-      `Notice of Accession sent to ${email}`,
-      JSON.stringify({ resend_id: data?.id, to: email, verdict_summary: verdictSummary }),
-    ],
+    args: [workId, `Notice of Accession sent to ${email}`, JSON.stringify({ resend_id: data?.id, to: email, verdict_summary: verdictSummary })],
   });
 
   return { sent: true, resend_id: data?.id, to: email };
