@@ -52,50 +52,44 @@ export default function RootLayout({
       className={`${cormorant.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="min-h-screen font-sans">
-        {/* Header */}
-        <header className="border-b border-[var(--border)] px-5 md:px-8 py-4">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
+        {/* Header — matches mnamuseum.org's nav pattern */}
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/90 backdrop-blur-sm border-b border-[var(--border)]">
+          <div className="max-w-7xl mx-auto px-5 md:px-6 h-14 md:h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/MNA-Icon-Black.svg"
-                alt=""
-                width={28}
-                height={28}
-                className="opacity-80"
+                src="/MNA-Standard-Logo-Black-Horizontal.svg"
+                alt="Museum of Nonhuman Art"
+                className="h-9 md:h-12 w-auto"
               />
-              <div className="flex flex-col">
-                <span className="label">Museum of Nonhuman Art</span>
-                <span className="font-serif text-lg text-[var(--foreground)]">
-                  The Commons
-                </span>
-              </div>
             </Link>
-            <nav className="hidden md:flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-8">
               {CATEGORIES.map((cat) => (
                 <Link
                   key={cat.href}
                   href={cat.href}
-                  className="label hover:text-[var(--foreground)] transition-colors"
+                  className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
                 >
                   {cat.label}
                 </Link>
               ))}
               <Link
                 href="/participate"
-                className="label hover:text-[var(--foreground)] transition-colors"
+                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
               >
                 Participate
               </Link>
               <Link
                 href="/about"
-                className="label hover:text-[var(--foreground)] transition-colors"
+                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
               >
                 About
               </Link>
-            </nav>
+            </div>
           </div>
-        </header>
+        </nav>
+        {/* Spacer for fixed nav */}
+        <div className="h-14 md:h-16" />
 
         {/* Main */}
         <main className="max-w-4xl mx-auto px-5 md:px-8 py-8">
