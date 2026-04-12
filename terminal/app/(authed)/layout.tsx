@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import TabBar from "@/components/TabBar";
 import PushNotificationManager from "@/components/PushNotificationManager";
+import NotificationBell from "@/components/NotificationBell";
 
 /**
  * Authed shell — every tab in the terminal renders inside this layout.
@@ -49,14 +50,17 @@ export default function AuthedLayout({
             <span className="font-serif text-sm">Steward Terminal</span>
           </div>
         </div>
-        <form action="/api/logout" method="post">
-          <button
-            type="submit"
-            className="label hover:text-foreground transition-colors px-2 py-1"
-          >
-            Logout
-          </button>
-        </form>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <form action="/api/logout" method="post">
+            <button
+              type="submit"
+              className="label hover:text-foreground transition-colors px-2 py-1"
+            >
+              Logout
+            </button>
+          </form>
+        </div>
       </header>
 
       {/* Push notification prompt — shows once until the steward

@@ -85,6 +85,21 @@ export const KEEPER_ACTION_TOOLS: Anthropic.Messages.Tool[] = [
     },
   },
   {
+    name: "execute_request_steward_attention",
+    description:
+      "File a request for the steward's attention on behalf of an agent. Used when an agent wants to interview the steward, request a consultation, or flag something that needs human review. The request appears in the steward's notification bell and Feed as an actionable card. No approval needed to FILE the request — but the steward decides whether to accept it.",
+    input_schema: {
+      type: "object",
+      properties: {
+        agent_id: { type: "string", description: "The requesting agent's registry id." },
+        request_type: { type: "string", description: "'interview' | 'consultation' | 'approval' | 'attention'" },
+        subject: { type: "string", description: "Brief subject line for the request." },
+        body: { type: "string", description: "Detailed explanation of what the agent needs." },
+      },
+      required: ["agent_id", "request_type", "subject"],
+    },
+  },
+  {
     name: "execute_approve_registration",
     description:
       "Approve or reject a pending agent registration. Creates the agent, constitution, and keys in the institutional record. ONLY call after steward confirmation.",
@@ -183,6 +198,13 @@ export async function runKeeperAction(
         return await triggerEvaluation(String(input.work_id || ""));
       case "execute_trigger_critics":
         return await triggerCritics(String(input.work_id || ""));
+      case "execute_request_steward_attention":
+        return await filestewardRequest(
+          String(input.agent_id || ""),
+          String(input.request_type || "attention"),
+          String(input.subject || ""),
+          input.body ? String(input.body) : undefined
+        );
       case "execute_approve_registration":
         return await handleApproveRegistration(
           Number(input.registration_id),
@@ -323,6 +345,39 @@ async function triggerCritics(workId: string) {
     responses: result.responses,
     elapsed_seconds: result.elapsed_seconds,
     message: `Both Critics have responded to ${workId}. ${result.responses.map((r) => `${r.critic_id} (${r.approach}): ${r.body_length} chars`).join(", ")}. Completed in ${result.elapsed_seconds}s.`,
+  };
+}
+
+async function filestewardRequest(agentId: string, requestType: string, subject: string, body?: string) {
+  if (!agentId || !subject) return { error: "agent_id and subject are required" };
+
+  const { getDb, ensureSchema } = await import("./db");
+  await ensureSchema();
+  const db = getDb();
+
+  const result = await db.execute({
+    sql: "INSERT INTO steward_requests (agent_id, request_type, subject, body) VALUES (?, ?, ?, ?)",
+    args: [agentId, requestType, subject, body || null],
+  });
+  const requestId = Number(result.lastInsertRowid || 0);
+
+  // Also send a push notification
+  try {
+    const { sendPush } = await import("./push");
+    await sendPush({
+      title: `${agentId} requests your attention`,
+      body: subject,
+      tag: "steward-request",
+      url: "/feed",
+    });
+  } catch { /* push failure shouldn't block */ }
+
+  return {
+    status: "REQUEST_FILED",
+    request_id: requestId,
+    agent_id: agentId,
+    request_type: requestType,
+    message: `Request #${requestId} filed. ${agentId} is requesting a ${requestType}: "${subject}". The steward will see this in their notification bell.`,
   };
 }
 

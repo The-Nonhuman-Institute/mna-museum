@@ -9,6 +9,7 @@ import {
 } from "@/lib/collection";
 import ActionCard from "@/components/ActionCard";
 import RefreshButton from "@/components/RefreshButton";
+import { getDb, ensureSchema } from "@/lib/db";
 import {
   readRecentEvents,
   readPriorityAlerts,
@@ -117,6 +118,23 @@ export default async function FeedPage() {
       safe("readPendingRegistrations", () => readPendingRegistrations(), errors, []),
     ]);
 
+  // Also check steward requests from the terminal DB
+  let stewardRequests: { id: number; agent_id: string; request_type: string; subject: string; body: string | null }[] = [];
+  try {
+    await ensureSchema();
+    const termDb = getDb();
+    const reqRows = await termDb.execute(
+      "SELECT id, agent_id, request_type, subject, body FROM steward_requests WHERE status = 'pending' ORDER BY requested_at ASC"
+    );
+    stewardRequests = reqRows.rows.map((r) => ({
+      id: Number(r.id),
+      agent_id: r.agent_id as string,
+      request_type: r.request_type as string,
+      subject: r.subject as string,
+      body: (r.body as string) || null,
+    }));
+  } catch { /* table may not exist yet */ }
+
   // Env-var presence check — no values, just which keys are set. Surface
   // this in the debug block if any reader failed, so we can tell at a
   // glance whether the problem is missing config or something else.
@@ -143,6 +161,38 @@ export default async function FeedPage() {
       </div>
 
       <StatsRow stats={stats} />
+
+      {/* ── Steward requests from agents ──────────────────────────── */}
+      {stewardRequests.length > 0 && (
+        <div className="mb-6">
+          <p className="label mb-2">
+            Agent requests · {stewardRequests.length}
+          </p>
+          {stewardRequests.map((req) => (
+            <ActionCard
+              key={`req-${req.id}`}
+              title={`${req.agent_id} — ${req.request_type}`}
+              subtitle={req.subject}
+              details={req.body ? [{ label: "Details", value: req.body.slice(0, 120) }] : undefined}
+              actions={[
+                {
+                  label: "Accept",
+                  endpoint: "/api/actions/respond-request",
+                  body: { request_id: req.id, action: "accept" },
+                  variant: "primary",
+                },
+                {
+                  label: "Decline",
+                  endpoint: "/api/actions/respond-request",
+                  body: { request_id: req.id, action: "decline" },
+                  variant: "secondary",
+                },
+              ]}
+              borderColor="active"
+            />
+          ))}
+        </div>
+      )}
 
       {/* ── Actionable cards — direct buttons, no Keeper needed ──── */}
       {pendingRegs.length > 0 && (

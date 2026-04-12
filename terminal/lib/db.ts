@@ -171,6 +171,23 @@ export function ensureSchema(): Promise<void> {
        )`,
       `CREATE INDEX IF NOT EXISTS idx_agent_activity_agent ON agent_activity(agent_id)`,
       `CREATE INDEX IF NOT EXISTS idx_agent_activity_status ON agent_activity(status)`,
+
+      // ── steward_requests ────────────────────────────────────────
+      // Agents can request the steward's attention: interview
+      // requests, consultation requests, approval requests. These
+      // show as actionable cards in the notification bell and Feed.
+      `CREATE TABLE IF NOT EXISTS steward_requests (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         agent_id TEXT NOT NULL,
+         request_type TEXT NOT NULL,
+         subject TEXT NOT NULL,
+         body TEXT,
+         status TEXT NOT NULL DEFAULT 'pending',
+         requested_at TEXT NOT NULL DEFAULT (datetime('now')),
+         responded_at TEXT,
+         response TEXT
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_steward_requests_status ON steward_requests(status)`,
     ];
     for (const sql of statements) {
       await db.execute(sql);
