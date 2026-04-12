@@ -87,6 +87,25 @@ export async function GET(): Promise<NextResponse> {
     }
   } catch { /* silent */ }
 
+  // Pending governance documents
+  if (institutionalTursoConfigured()) {
+    try {
+      const db = getInstitutionalTurso();
+      const govDocs = await db.execute(
+        "SELECT id, title FROM governance_documents WHERE status = 'pending'"
+      );
+      for (const r of govDocs.rows) {
+        items.push({
+          id: `gov-${r.id}`,
+          type: "Governance",
+          title: `${r.id} — ${r.title}`,
+          subtitle: "Awaiting ratification",
+          action_url: `/governance/${r.id}`,
+        });
+      }
+    } catch { /* table may not exist */ }
+  }
+
   // Pending approvals
   try {
     await ensureSchema();
