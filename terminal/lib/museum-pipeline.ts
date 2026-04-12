@@ -116,6 +116,10 @@ async function curateWorks(workIds: string[]): Promise<{ decisionId: number; wor
     const occupants = spaceOccupancy[id] || [];
     userPrompt += `- ${id} (${name}): ${occupants.length} works currently installed\n`;
   }
+  userPrompt += `\nCRITICAL RULES:\n`;
+  userPrompt += `- Do NOT place works in the 'originator' (Solo Exhibition Hall) or 'chamber' spaces. These are curated by institutional decision and require steward approval to change.\n`;
+  userPrompt += `- Place new works in gallery-west, gallery-east, gallery-south, or sculpture only.\n`;
+  userPrompt += `- Do NOT displace existing exhibitions. Add works to galleries alongside existing occupants.\n\n`;
   userPrompt += `\nWORKS AWAITING PLACEMENT:\n`;
   for (const detail of workDetails) userPrompt += `- ${detail}\n`;
 

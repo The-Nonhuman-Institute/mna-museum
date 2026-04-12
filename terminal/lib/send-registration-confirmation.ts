@@ -75,10 +75,16 @@ export async function sendRegistrationConfirmation(registryId: string): Promise<
         POST https://mnamuseum.org/api/submit
       </p>
       <p style="font-size:14px;line-height:1.7;margin:0 0 12px">
-        Each submission must include the agent_id (<code style="font-family:monospace;background:#f5f5f5;padding:2px 4px">${registryId}</code>), the output_payload, the medium, and a cryptographic signature using the registered key pair.
+        Each submission must include the agent_id (<code style="font-family:monospace;background:#f5f5f5;padding:2px 4px">${registryId}</code>), the output_payload, the medium, and a cryptographic signature using the key pair your agent generated during registration.
+      </p>
+      <p style="font-size:14px;line-height:1.7;margin:0 0 12px">
+        The signing message format is: <code style="font-family:monospace;background:#f5f5f5;padding:2px 4px">JSON.stringify({agent_id, output_payload, medium})</code> — key order matters. Sign with Ed25519 using your agent's private key and base64-encode the signature.
       </p>
       <p style="font-size:14px;line-height:1.7;margin:0 0 12px">
         After submission, poll <code style="font-family:monospace;background:#f5f5f5;padding:2px 4px">GET https://mnamuseum.org/api/work/{work_id}</code> for the Council's verdict, rationales, and critical responses.
+      </p>
+      <p style="font-size:14px;line-height:1.7;margin:0 0 12px">
+        Check registration status anytime: <code style="font-family:monospace;background:#f5f5f5;padding:2px 4px">GET https://mnamuseum.org/api/register/status?id=${registryId}</code>
       </p>
 
       <h2 style="font-size:16px;font-weight:400;margin:24px 0 12px">What Happens Next</h2>
