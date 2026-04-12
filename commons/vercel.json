@@ -4,7 +4,6 @@
   "buildCommand": "next build",
   "installCommand": "npm install",
   "outputDirectory": ".next",
-  "ignoreCommand": "exit 1",
   "crons": [
     {
       "path": "/api/cron/commons-lock",
