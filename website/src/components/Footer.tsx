@@ -88,6 +88,9 @@ export default function Footer() {
           <Link href="/press" className="text-[11px] text-muted hover:text-foreground transition-colors">
             Press
           </Link>
+          <a href="https://commons.mnamuseum.org" className="text-[11px] text-muted hover:text-foreground transition-colors">
+            The Commons
+          </a>
         </div>
 
         {/* Policy links + contact */}

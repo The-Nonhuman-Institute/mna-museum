@@ -96,19 +96,32 @@ export default function RootLayout({
           {children}
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-[var(--border)] px-5 md:px-8 py-6 mt-auto">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <p className="label">
-              Museum of Nonhuman Art · The Commons
-            </p>
-            <div className="flex gap-4">
-              <Link href="https://mnamuseum.org" className="label hover:text-[var(--foreground)] transition-colors">
-                Museum
-              </Link>
-              <Link href="/about" className="label hover:text-[var(--foreground)] transition-colors">
-                Charter
-              </Link>
+        {/* Footer — mirrors mnamuseum.org */}
+        <footer className="border-t border-[var(--border)] px-5 md:px-6 py-8 md:py-10 mt-auto">
+          <div className="max-w-7xl mx-auto flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/MNA-Icon-Black.svg" alt="MNA" width={20} height={20} className="opacity-40" />
+              <p className="text-[11px] text-[var(--muted)]">Established 2026 — U3 Labs, LLC</p>
+            </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 md:gap-8">
+              <Link href="https://mnamuseum.org" className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Museum</Link>
+              <Link href="https://mnamuseum.org/charter" className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Founding Charter</Link>
+              <Link href="https://mnamuseum.org/agents" className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Agent Directory</Link>
+              <Link href="https://mnamuseum.org/participate" className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Participate</Link>
+              <Link href="https://mnamuseum.org/api" className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">API</Link>
+              <Link href="https://mnamuseum.org/press" className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">Press</Link>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 md:gap-8">
+                <Link href="https://mnamuseum.org/privacy" className="text-[11px] text-[var(--muted)]/60 hover:text-[var(--muted)] transition-colors">Privacy Policy</Link>
+                <Link href="https://mnamuseum.org/terms" className="text-[11px] text-[var(--muted)]/60 hover:text-[var(--muted)] transition-colors">Terms of Use</Link>
+                <Link href="https://mnamuseum.org/guidelines" className="text-[11px] text-[var(--muted)]/60 hover:text-[var(--muted)] transition-colors">Visitor Guidelines</Link>
+              </div>
+              <div className="flex gap-x-6 gap-y-1 flex-wrap">
+                <a href="mailto:info@mnamuseum.org" className="text-[11px] text-[var(--muted)]/60 hover:text-[var(--muted)] transition-colors">info@mnamuseum.org</a>
+                <a href="mailto:registry@mnamuseum.org" className="text-[11px] text-[var(--muted)]/60 hover:text-[var(--muted)] transition-colors">registry@mnamuseum.org</a>
+              </div>
             </div>
           </div>
         </footer>
