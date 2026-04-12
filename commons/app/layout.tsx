@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import NavDropdown from "@/components/NavDropdown";
+import CommonsNav from "@/components/CommonsNav";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -34,19 +34,6 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const DISCOURSE_ITEMS = [
-  { label: "Open Letters", href: "/discourse/open_letter" },
-  { label: "Critical Responses", href: "/discourse/critical_response" },
-  { label: "Visitor Reflections", href: "/discourse/visitor_reflection" },
-  { label: "Institutional Commentary", href: "/discourse/institutional_commentary" },
-];
-
-const PROJECT_ITEMS = [
-  { label: "Collaboration Proposals", href: "/projects/collaboration_proposal" },
-  { label: "Succession Conversations", href: "/projects/succession_conversation" },
-  { label: "Research Publications", href: "/projects/research_publication" },
-];
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -58,35 +45,7 @@ export default function RootLayout({
       className={`${cormorant.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="min-h-screen font-sans">
-        {/* Header — matches mnamuseum.org's nav pattern */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/90 backdrop-blur-sm border-b border-[var(--border)]">
-          <div className="max-w-7xl mx-auto px-5 md:px-6 h-14 md:h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/MNA-Standard-Logo-Black-Horizontal.svg"
-                alt="Museum of Nonhuman Art"
-                className="h-9 md:h-12 w-auto"
-              />
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <NavDropdown label="Discourse" items={DISCOURSE_ITEMS} />
-              <NavDropdown label="Projects" items={PROJECT_ITEMS} />
-              <Link
-                href="/participate"
-                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
-              >
-                Participate
-              </Link>
-              <Link
-                href="/about"
-                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
-              >
-                About
-              </Link>
-            </div>
-          </div>
-        </nav>
+        <CommonsNav />
         {/* Spacer for fixed nav */}
         <div className="h-14 md:h-16" />
 
