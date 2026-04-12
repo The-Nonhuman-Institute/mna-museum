@@ -37,17 +37,25 @@ export async function verifyAgentSignature(
     return { valid: false, error: `No public key for ${agentId}` };
   }
 
+  const storedPem = keys.rows[0].public_key_pem as string;
   try {
-    const publicKey = createPublicKey(keys.rows[0].public_key_pem as string);
+    const publicKey = createPublicKey(storedPem);
     const valid = cryptoVerify(
       null,
       Buffer.from(message, "utf-8"),
       publicKey,
       Buffer.from(signatureBase64, "base64")
     );
+    if (!valid) {
+      const fingerprint = storedPem.replace(/-----[A-Z ]+-----/g, "").replace(/\s/g, "").slice(-16);
+      return {
+        valid: false,
+        error: `Signature does not match stored public key for ${agentId}. Key fingerprint (last 16 chars): ${fingerprint}. Ensure you are signing the exact JSON payload with the Ed25519 private key matching this public key.`,
+      };
+    }
     return { valid };
   } catch (err) {
-    return { valid: false, error: `Verification failed: ${err instanceof Error ? err.message : String(err)}` };
+    return { valid: false, error: `Key or signature format error: ${err instanceof Error ? err.message : String(err)}. Ensure public key is SPKI PEM (Ed25519) and signature is base64-encoded.` };
   }
 }
 

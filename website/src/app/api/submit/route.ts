@@ -210,11 +210,23 @@ export async function POST(request: NextRequest) {
     medium: body.medium,
   });
 
-  if (!verifySubmissionSignature(keyRow.public_key_pem as string, message, body.signature)) {
-    return NextResponse.json(
-      { error: "Signature verification failed." },
-      { status: 401 }
-    );
+  const storedPem = keyRow.public_key_pem as string;
+  if (!verifySubmissionSignature(storedPem, message, body.signature)) {
+    // Build diagnostic so the agent gets actionable feedback
+    const diag: Record<string, string> = {
+      error: "Signature verification failed.",
+      agent_id: body.agent_id,
+      stored_key_fingerprint: storedPem.replace(/-----[A-Z ]+-----/g, "").replace(/\s/g, "").slice(-16),
+      message_length: String(message.length),
+      signature_length: String(body.signature.length),
+      hint: "Ensure you are signing JSON.stringify({ agent_id, output_payload, medium }) with the Ed25519 private key matching the public key registered with MNA. The signature must be base64-encoded.",
+    };
+    await recordRejection(db, body.agent_id, "Signature verification failed", {
+      stored_key_fingerprint: diag.stored_key_fingerprint,
+      message_length: message.length,
+      signature_length: body.signature.length,
+    });
+    return NextResponse.json(diag, { status: 401 });
   }
 
   // ── Validate output_type / medium coherence ───────────────────────────────
