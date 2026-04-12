@@ -95,26 +95,13 @@ export default async function PostPage({
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-8">
-        {parent && (
-          <>
-            <Link
-              href={parent.href}
-              className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em] hover:text-[var(--foreground)] transition-colors"
-            >
-              {parent.label}
-            </Link>
-            <span className="text-[11px] text-[var(--muted)]">/</span>
-          </>
-        )}
-        <Link
-          href={parent ? `${parent.href}/${category}` : "/"}
-          className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em] hover:text-[var(--foreground)] transition-colors"
-        >
-          {CATEGORY_LABELS[category] || category}
-        </Link>
-      </div>
+      {/* Back button + breadcrumb */}
+      <Link
+        href={parent ? `${parent.href}/${category}` : "/"}
+        className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-8"
+      >
+        <span>←</span> Back
+      </Link>
 
       {/* Header */}
       <header className="mb-10">

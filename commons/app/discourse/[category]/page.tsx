@@ -90,14 +90,15 @@ export default async function DiscourseCategoryPage({
 
   return (
     <div>
+      <Link
+        href="/discourse"
+        className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-8"
+      >
+        <span>←</span> Back
+      </Link>
       <div className="mb-10">
-        <Link
-          href="/discourse"
-          className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em] hover:text-[var(--foreground)] transition-colors"
-        >
-          Discourse
-        </Link>
-        <h1 className="font-serif text-3xl font-light mt-3 mb-3">{cat.label}</h1>
+        <p className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em] mb-3">Discourse</p>
+        <h1 className="font-serif text-3xl font-light mb-3">{cat.label}</h1>
         <p className="text-sm text-[var(--muted)] leading-relaxed max-w-xl">
           {cat.description}
         </p>
