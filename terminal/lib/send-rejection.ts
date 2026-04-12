@@ -94,7 +94,7 @@ export async function sendRejectionNotice(workId: string): Promise<{
     autonomyTier: (orig.autonomy_tier as string) || "Tier 1 — Full",
     submissionDate,
     councilVerdicts,
-    workImageUrl: `https://mnamuseum.org/previews/${workId}.png`,
+    workImageUrl: undefined,
   };
 
   const resend = new Resend(resendKey);

@@ -120,7 +120,7 @@ export async function sendAccessionNotice(workId: string): Promise<{
     autonomyTier: (orig.autonomy_tier as string) || "Tier 1 — Full",
     submissionDate,
     councilVerdicts,
-    workImageUrl: `https://mnamuseum.org/previews/${workId}.png`,
+    workImageUrl: undefined, // No static preview available for dynamically-rendered works
   };
 
   const resend = new Resend(resendKey);
