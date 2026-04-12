@@ -284,7 +284,7 @@ export default async function FeedPage() {
                     variant: "danger",
                   },
                 ]}
-                borderColor="normal"
+                borderColor="active"
               />
             );
           })}
