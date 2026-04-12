@@ -3,9 +3,12 @@ import {
   readRecentInstitutionalEvents,
   readPendingWorks,
   readPendingRegistrations,
+  readRecentCommonsPosts,
+  formatCategoryLabel,
   type InstitutionalEvent,
   type PendingWork,
   type PendingRegistration,
+  type CommonsPost,
 } from "@/lib/collection";
 import ActionCard from "@/components/ActionCard";
 import RefreshButton from "@/components/RefreshButton";
@@ -103,7 +106,7 @@ async function safe<T>(
 export default async function FeedPage() {
   const errors: { label: string; message: string }[] = [];
 
-  const [stats, localEvents, alerts, institutionalEvents, pendingWorks, pendingRegs] =
+  const [stats, localEvents, alerts, institutionalEvents, pendingWorks, pendingRegs, commonsPosts] =
     await Promise.all([
       safe("readCollectionStats", () => readCollectionStats(), errors, null),
       safe("readRecentEvents", () => readRecentEvents(30), errors, []),
@@ -116,6 +119,7 @@ export default async function FeedPage() {
       ),
       safe("readPendingWorks", () => readPendingWorks(), errors, []),
       safe("readPendingRegistrations", () => readPendingRegistrations(), errors, []),
+      safe("readRecentCommonsPosts", () => readRecentCommonsPosts(10), errors, []),
     ]);
 
   // Also check steward requests from the terminal DB
@@ -143,6 +147,8 @@ export default async function FeedPage() {
     TURSO_AUTH_TOKEN: !!process.env.TURSO_AUTH_TOKEN,
     TERMINAL_TURSO_DATABASE_URL: !!process.env.TERMINAL_TURSO_DATABASE_URL,
     TERMINAL_TURSO_AUTH_TOKEN: !!process.env.TERMINAL_TURSO_AUTH_TOKEN,
+    COMMONS_TURSO_DATABASE_URL: !!process.env.COMMONS_TURSO_DATABASE_URL,
+    COMMONS_TURSO_AUTH_TOKEN: !!process.env.COMMONS_TURSO_AUTH_TOKEN,
   };
 
   const merged: UnifiedFeedItem[] = [
@@ -239,6 +245,20 @@ export default async function FeedPage() {
           <div className="border border-attention/50">
             {pendingWorks.map((w) => (
               <PendingWorkRow key={w.work_id} work={w} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Commons activity ─────────────────────────────────────── */}
+      {commonsPosts.length > 0 && (
+        <div className="mb-6">
+          <p className="label mb-2">
+            The Commons · {commonsPosts.length} recent post{commonsPosts.length === 1 ? "" : "s"}
+          </p>
+          <div className="border border-border">
+            {commonsPosts.map((post) => (
+              <CommonsPostRow key={post.id} post={post} />
             ))}
           </div>
         </div>
@@ -388,6 +408,29 @@ function PendingWorkRow({ work }: { work: PendingWork }) {
       <p className="data-muted mt-1">
         Submitted {formatTime(work.submitted_at)}
       </p>
+    </div>
+  );
+}
+
+function CommonsPostRow({ post }: { post: CommonsPost }) {
+  const authorLabel = post.author_name
+    ? `${post.author_name} (${post.author_id})`
+    : post.author_id;
+  return (
+    <div className="px-4 py-3 border-b border-border last:border-b-0 border-l-2 border-l-transparent">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="data text-xs uppercase tracking-widest">
+          {formatCategoryLabel(post.category)}
+        </span>
+        <span className="data-muted">{formatTime(post.created_at)}</span>
+      </div>
+      <p className="text-sm text-foreground mt-1 font-medium">{post.title}</p>
+      <p className="data-muted mt-1">{authorLabel}</p>
+      {post.body_excerpt && (
+        <p className="text-xs text-foreground/60 mt-1 leading-relaxed">
+          {post.body_excerpt.slice(0, 120)}{post.body_excerpt.length > 120 ? "…" : ""}
+        </p>
+      )}
     </div>
   );
 }

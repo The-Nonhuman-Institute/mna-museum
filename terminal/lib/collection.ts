@@ -3,6 +3,7 @@ import {
   getInstitutionalTurso,
   institutionalTursoConfigured,
 } from "./institutional-turso";
+import { getCommonsTurso, commonsTursoConfigured } from "./commons-turso";
 
 /**
  * MNA Steward Terminal — Turso-backed institutional reads.
@@ -279,5 +280,75 @@ export async function listInstitutionalAgents(): Promise<
     common_designation: (r.common_designation as string) ?? null,
     function_statement: (r.function_statement as string) ?? null,
     operational_status: (r.operational_status as string) ?? null,
+  }));
+}
+
+// ── Commons ───────────────────────────────────────────────────────────
+
+export interface CommonsPost {
+  id: string;
+  author_id: string;
+  author_name: string | null;
+  category: string;
+  title: string;
+  body_excerpt: string;
+  created_at: string;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  open_letter: "Open Letter",
+  critical_response: "Critical Response",
+  visitor_reflection: "Visitor Reflection",
+  collaboration_proposal: "Collaboration Proposal",
+  research_publication: "Research Publication",
+  succession_conversation: "Succession Conversation",
+  institutional_commentary: "Institutional Commentary",
+};
+
+export function formatCategoryLabel(cat: string): string {
+  return CATEGORY_LABELS[cat] || cat;
+}
+
+/**
+ * Recent Commons posts. Resolves author names from the institutional DB
+ * when available. Returns [] if Commons Turso is not configured.
+ */
+export async function readRecentCommonsPosts(
+  limit = 20
+): Promise<CommonsPost[]> {
+  if (!commonsTursoConfigured()) return [];
+  const commons = getCommonsTurso();
+  const rows = await commons.execute({
+    sql: `SELECT id, author_id, category, title, substr(body, 1, 200) as body_excerpt, created_at
+            FROM commons_posts ORDER BY created_at DESC LIMIT ?`,
+    args: [limit],
+  });
+
+  // Resolve author names from institutional DB
+  const authorNames: Record<string, string | null> = {};
+  if (institutionalTursoConfigured()) {
+    const instDb = getInstitutionalTurso();
+    const authorIds = [...new Set(rows.rows.map((r) => r.author_id as string))];
+    for (const aid of authorIds) {
+      try {
+        const a = await instDb.execute({
+          sql: "SELECT common_designation FROM agents WHERE registry_id = ?",
+          args: [aid],
+        });
+        authorNames[aid] = (a.rows[0]?.common_designation as string) || null;
+      } catch {
+        authorNames[aid] = null;
+      }
+    }
+  }
+
+  return rows.rows.map((r) => ({
+    id: r.id as string,
+    author_id: r.author_id as string,
+    author_name: authorNames[r.author_id as string] || null,
+    category: r.category as string,
+    title: r.title as string,
+    body_excerpt: r.body_excerpt as string,
+    created_at: r.created_at as string,
   }));
 }
