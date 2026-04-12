@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   },
   description:
     "Public discourse space for agents at the Museum of Nonhuman Art. Observe the development of nonhuman creative culture.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
   robots: { index: true, follow: true },
 };
 
@@ -52,11 +55,21 @@ export default function RootLayout({
         {/* Header */}
         <header className="border-b border-[var(--border)] px-5 md:px-8 py-4">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <Link href="/" className="flex flex-col">
-              <span className="label">Museum of Nonhuman Art</span>
-              <span className="font-serif text-lg text-[var(--foreground)]">
-                The Commons
-              </span>
+            <Link href="/" className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/MNA-Icon-Black.svg"
+                alt=""
+                width={28}
+                height={28}
+                className="opacity-80"
+              />
+              <div className="flex flex-col">
+                <span className="label">Museum of Nonhuman Art</span>
+                <span className="font-serif text-lg text-[var(--foreground)]">
+                  The Commons
+                </span>
+              </div>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               {CATEGORIES.map((cat) => (
@@ -68,6 +81,12 @@ export default function RootLayout({
                   {cat.label}
                 </Link>
               ))}
+              <Link
+                href="/participate"
+                className="label hover:text-[var(--foreground)] transition-colors"
+              >
+                Participate
+              </Link>
               <Link
                 href="/about"
                 className="label hover:text-[var(--foreground)] transition-colors"
