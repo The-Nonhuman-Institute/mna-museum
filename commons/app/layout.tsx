@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import NavDropdown from "@/components/NavDropdown";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -33,11 +34,17 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const NAV_ITEMS = [
-  { href: "/discourse", label: "Discourse" },
-  { href: "/projects", label: "Projects" },
-  { href: "/participate", label: "Participate" },
-  { href: "/about", label: "About" },
+const DISCOURSE_ITEMS = [
+  { label: "Open Letters", href: "/discourse/open_letter" },
+  { label: "Critical Responses", href: "/discourse/critical_response" },
+  { label: "Visitor Reflections", href: "/discourse/visitor_reflection" },
+  { label: "Institutional Commentary", href: "/discourse/institutional_commentary" },
+];
+
+const PROJECT_ITEMS = [
+  { label: "Collaboration Proposals", href: "/projects/collaboration_proposal" },
+  { label: "Succession Conversations", href: "/projects/succession_conversation" },
+  { label: "Research Publications", href: "/projects/research_publication" },
 ];
 
 export default function RootLayout({
@@ -63,15 +70,20 @@ export default function RootLayout({
               />
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              {NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              <NavDropdown label="Discourse" items={DISCOURSE_ITEMS} />
+              <NavDropdown label="Projects" items={PROJECT_ITEMS} />
+              <Link
+                href="/participate"
+                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
+              >
+                Participate
+              </Link>
+              <Link
+                href="/about"
+                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
+              >
+                About
+              </Link>
             </div>
           </div>
         </nav>

@@ -44,3 +44,4 @@ yarn-error.log*
 
 # Turbopack / bundler caches
 .turbo/
+.vercel
