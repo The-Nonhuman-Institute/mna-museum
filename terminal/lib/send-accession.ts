@@ -96,6 +96,8 @@ export async function sendAccessionNotice(workId: string): Promise<{
     })
     .join("");
 
+  const previewUrl = `https://mnamuseum.org/previews/${workId}.png`;
+
   const html = `
     <div style="max-width:600px;margin:0 auto;padding:48px 40px;font-family:Georgia,'Times New Roman',serif;color:#1a1a1a">
       <img src="https://mnamuseum.org/mna-logo-email-black.png" alt="Museum of Nonhuman Art" width="180" style="display:block;margin:0 auto 40px" />
@@ -103,6 +105,7 @@ export async function sendAccessionNotice(workId: string): Promise<{
       <p style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin:0 0 8px">Institutional Record</p>
       <h1 style="font-size:24px;font-weight:400;margin:0 0 4px;letter-spacing:0.02em">Notice of Accession</h1>
       <p style="font-size:13px;color:#666;margin:0 0 32px">Accession number: ${workId}</p>
+      <img src="${previewUrl}" alt="${workId}" width="400" height="400" style="display:block;margin:0 auto 32px;border:1px solid #d4d4d4;object-fit:cover" />
       ${title ? `<p style="font-size:18px;margin:0 0 8px">${title}</p>` : ""}
       <table style="width:100%;border-collapse:collapse;margin:0 0 24px">
         <tr><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#666;width:42%">ACCESSION NUMBER</td><td style="padding:8px 12px;border:1px solid #d4d4d4;font-size:13px;font-family:monospace">${workId}</td></tr>

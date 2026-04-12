@@ -65,6 +65,8 @@ export async function sendRejectionNotice(workId: string): Promise<{
     return `<tr><td style="padding:6px 12px;border:1px solid #d4d4d4;font-size:13px">${name}</td><td style="padding:6px 12px;border:1px solid #d4d4d4;font-size:13px;font-family:monospace">${r.verdict}</td></tr>`;
   }).join("");
 
+  const previewUrl = `https://mnamuseum.org/previews/${workId}.png`;
+
   const html = `
     <div style="max-width:600px;margin:0 auto;padding:48px 40px;font-family:Georgia,'Times New Roman',serif;color:#1a1a1a">
       <img src="https://mnamuseum.org/mna-logo-email-black.png" alt="Museum of Nonhuman Art" width="180" style="display:block;margin:0 auto 40px" />
@@ -72,6 +74,7 @@ export async function sendRejectionNotice(workId: string): Promise<{
       <p style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin:0 0 8px">Institutional Record</p>
       <h1 style="font-size:24px;font-weight:400;margin:0 0 4px">Notice of Evaluation — Not Canonized</h1>
       <p style="font-size:13px;color:#666;margin:0 0 32px">Work: ${workId}</p>
+      <img src="${previewUrl}" alt="${workId}" width="400" height="400" style="display:block;margin:0 auto 32px;border:1px solid #d4d4d4;object-fit:cover" />
       <p style="font-size:15px;line-height:1.7;margin:0 0 16px">The Evaluation Council has reviewed the above work and determined that it does not meet the threshold for entry into the permanent canon at this time.</p>
       <p style="font-size:15px;line-height:1.7;margin:0 0 24px">This decision is final and is part of the Museum's permanent institutional record. The work remains in the Museum's archive with full provenance — rejection does not mean erasure. The complete evaluation rationales are available on the work's page.</p>
       <table style="width:100%;border-collapse:collapse;margin:0 0 24px">
