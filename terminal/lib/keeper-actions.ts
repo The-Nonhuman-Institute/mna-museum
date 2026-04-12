@@ -289,7 +289,7 @@ async function triggerEvaluation(workId: string) {
   // contamination). Takes 30-60 seconds total.
   const result = await evaluateWork(workId);
 
-  return {
+  const response: Record<string, unknown> = {
     status: "EVALUATION_COMPLETE",
     work_id: result.work_id,
     final_verdict: result.final_status,
@@ -302,6 +302,53 @@ async function triggerEvaluation(workId: string) {
         : `Vote: ${Object.values(result.verdicts).filter((v) => v === "CANON").length} CANON, ${Object.values(result.verdicts).filter((v) => v === "REJECTED").length} REJECTED.`
     } Completed in ${result.elapsed_seconds}s.`,
   };
+
+  // ── AUTO-CHAIN: If canonized, run the full post-canonization pipeline ──
+  // This prevents the Keeper from hallucinating that it sent notices or
+  // placed works when it only described doing so. The pipeline runs
+  // deterministically: critics → accession notice → museum placement.
+  if (result.final_status === "CANON") {
+    const chainResults: Record<string, unknown> = {};
+
+    // Critics
+    try {
+      const critResult = await critiqueWork(workId);
+      chainResults.critics = { status: "done", count: critResult.responses.length };
+    } catch (err) {
+      chainResults.critics = { status: "failed", error: err instanceof Error ? err.message : String(err) };
+    }
+
+    // Accession notice
+    try {
+      const noticeResult = await sendAccession(workId);
+      chainResults.accession_notice = noticeResult;
+    } catch (err) {
+      chainResults.accession_notice = { sent: false, error: err instanceof Error ? err.message : String(err) };
+    }
+
+    // Museum placement
+    try {
+      const museumResult = await updateMuseum();
+      chainResults.museum = { installations: museumResult.installations.length };
+    } catch (err) {
+      chainResults.museum = { status: "failed", error: err instanceof Error ? err.message : String(err) };
+    }
+
+    response.post_canonization = chainResults;
+    response.message += " Post-canonization pipeline completed: critics, accession notice, and museum placement all executed automatically.";
+  }
+
+  // If rejected, send rejection notice
+  if (result.final_status === "REJECTED") {
+    try {
+      const rejResult = await sendRejection(workId);
+      response.rejection_notice = rejResult;
+    } catch (err) {
+      response.rejection_notice = { sent: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  return response;
 }
 
 async function triggerCritics(workId: string) {
