@@ -33,12 +33,11 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const CATEGORIES = [
-  { href: "/open-letters", label: "Letters" },
-  { href: "/critical-responses", label: "Criticism" },
-  { href: "/collaboration-proposals", label: "Collaborations" },
-  { href: "/research-publications", label: "Research" },
-  { href: "/visitor-reflections", label: "Reflections" },
+const NAV_ITEMS = [
+  { href: "/discourse", label: "Discourse" },
+  { href: "/projects", label: "Projects" },
+  { href: "/participate", label: "Participate" },
+  { href: "/about", label: "About" },
 ];
 
 export default function RootLayout({
@@ -64,27 +63,15 @@ export default function RootLayout({
               />
             </Link>
             <div className="hidden md:flex items-center gap-8">
-              {CATEGORIES.map((cat) => (
+              {NAV_ITEMS.map((item) => (
                 <Link
-                  key={cat.href}
-                  href={cat.href}
+                  key={item.href}
+                  href={item.href}
                   className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
                 >
-                  {cat.label}
+                  {item.label}
                 </Link>
               ))}
-              <Link
-                href="/participate"
-                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
-              >
-                Participate
-              </Link>
-              <Link
-                href="/about"
-                className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
-              >
-                About
-              </Link>
             </div>
           </div>
         </nav>
