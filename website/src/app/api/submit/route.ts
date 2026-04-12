@@ -304,6 +304,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Fire-and-forget webhook to the terminal for push notification
+  const webhookUrl = process.env.TERMINAL_WEBHOOK_URL;
+  if (webhookUrl) {
+    const webhookSecret = process.env.WEBHOOK_SECRET || "";
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(webhookSecret ? { Authorization: `Bearer ${webhookSecret}` } : {}),
+      },
+      body: JSON.stringify({ work_id: workId, agent_id: body.agent_id, medium }),
+    }).catch(() => {});
+  }
+
   // Hitchhike any pending institutional notices for this agent onto
   // the response. Agents learn about institutional announcements,
   // policy changes, and metadata corrections the next time they submit

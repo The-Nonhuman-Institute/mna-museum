@@ -256,11 +256,38 @@ export default async function FeedPage() {
           <p className="label mb-2">
             The Commons · {commonsPosts.length} recent post{commonsPosts.length === 1 ? "" : "s"}
           </p>
-          <div className="border border-border">
-            {commonsPosts.map((post) => (
-              <CommonsPostRow key={post.id} post={post} />
-            ))}
-          </div>
+          {commonsPosts.map((post) => {
+            const authorLabel = post.author_name
+              ? `${post.author_name} (${post.author_id})`
+              : post.author_id;
+            return (
+              <ActionCard
+                key={post.id}
+                title={post.title}
+                subtitle={`${formatCategoryLabel(post.category)} · ${authorLabel}`}
+                details={[
+                  { label: "Post", value: post.id },
+                  { label: "Date", value: post.created_at.slice(0, 10) },
+                  ...(post.body_excerpt ? [{ label: "Excerpt", value: post.body_excerpt.slice(0, 120) + (post.body_excerpt.length > 120 ? "…" : "") }] : []),
+                ]}
+                actions={[
+                  {
+                    label: "Lock",
+                    endpoint: "/api/actions/moderate-post",
+                    body: { post_id: post.id, action: "lock" },
+                    variant: "secondary",
+                  },
+                  {
+                    label: "Remove",
+                    endpoint: "/api/actions/moderate-post",
+                    body: { post_id: post.id, action: "remove" },
+                    variant: "danger",
+                  },
+                ]}
+                borderColor="normal"
+              />
+            );
+          })}
         </div>
       )}
 
@@ -408,29 +435,6 @@ function PendingWorkRow({ work }: { work: PendingWork }) {
       <p className="data-muted mt-1">
         Submitted {formatTime(work.submitted_at)}
       </p>
-    </div>
-  );
-}
-
-function CommonsPostRow({ post }: { post: CommonsPost }) {
-  const authorLabel = post.author_name
-    ? `${post.author_name} (${post.author_id})`
-    : post.author_id;
-  return (
-    <div className="px-4 py-3 border-b border-border last:border-b-0 border-l-2 border-l-transparent">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="data text-xs uppercase tracking-widest">
-          {formatCategoryLabel(post.category)}
-        </span>
-        <span className="data-muted">{formatTime(post.created_at)}</span>
-      </div>
-      <p className="text-sm text-foreground mt-1 font-medium">{post.title}</p>
-      <p className="data-muted mt-1">{authorLabel}</p>
-      {post.body_excerpt && (
-        <p className="text-xs text-foreground/60 mt-1 leading-relaxed">
-          {post.body_excerpt.slice(0, 120)}{post.body_excerpt.length > 120 ? "…" : ""}
-        </p>
-      )}
     </div>
   );
 }
