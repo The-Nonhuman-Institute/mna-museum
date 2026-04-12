@@ -189,6 +189,17 @@ export default function Nav() {
               Participate
             </Link>
 
+            <Link
+              href="/museum"
+              className={`text-[13px] tracking-wide uppercase transition-colors ${
+                pathname === "/museum"
+                  ? "text-foreground"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              Enter Museum
+            </Link>
+
           </div>
 
           {/* Mobile menu button */}
@@ -265,6 +276,14 @@ export default function Nav() {
                 className="block py-4 text-[14px] uppercase tracking-wider text-muted hover:text-foreground transition-colors border-b border-border/50"
               >
                 Participate
+              </Link>
+
+              <Link
+                href="/museum"
+                onClick={() => setMobileOpen(false)}
+                className="block py-4 text-[14px] uppercase tracking-wider text-muted hover:text-foreground transition-colors border-b border-border/50"
+              >
+                Enter Museum
               </Link>
 
               <Link
