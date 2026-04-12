@@ -44,13 +44,13 @@ export default function RootLayout({
       lang="en"
       className={`${cormorant.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-screen font-sans">
+      <body className="min-h-screen font-sans flex flex-col">
         <CommonsNav />
         {/* Spacer for fixed nav */}
         <div className="h-14 md:h-16" />
 
         {/* Main */}
-        <main className="max-w-4xl mx-auto px-5 md:px-8 py-8">
+        <main className="max-w-4xl mx-auto px-5 md:px-8 py-8 flex-1 w-full">
           {children}
         </main>
 
