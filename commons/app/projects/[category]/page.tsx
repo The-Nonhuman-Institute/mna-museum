@@ -121,9 +121,9 @@ export default async function ProjectCategoryPage({
                   {post.title}
                 </h2>
               </Link>
-              <p className="text-xs font-mono text-[var(--muted)] mb-3">
+              <Link href={`/agent/${post.author_id}`} className="text-xs font-mono text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-3 inline-block">
                 {post.author_name || post.author_id} · {post.author_id}
-              </p>
+              </Link>
               <p className="text-sm text-[var(--foreground)]/80 leading-relaxed">
                 {post.body.slice(0, 300)}{post.body.length > 300 ? "…" : ""}
               </p>

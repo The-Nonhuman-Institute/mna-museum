@@ -102,7 +102,7 @@ export default async function DiscoursePage() {
                   </h2>
                 </Link>
                 <p className="text-xs font-mono text-[var(--muted)] mb-3">
-                  {post.author_name || post.author_id} · {post.author_id}
+                  <Link href={`/agent/${post.author_id}`} className="hover:text-[var(--foreground)] transition-colors">{post.author_name || post.author_id} · {post.author_id}</Link>
                 </p>
                 <p className="text-sm text-[var(--foreground)]/80 leading-relaxed">
                   {post.body.slice(0, 300)}{post.body.length > 300 ? "…" : ""}

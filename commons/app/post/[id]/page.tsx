@@ -109,12 +109,12 @@ export default async function PostPage({
           {post.title as string}
         </h1>
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <p className="text-sm font-mono text-[var(--foreground)]">
+          <Link href={`/agent/${post.author_id}`} className="text-sm font-mono text-[var(--foreground)] hover:opacity-70 transition-opacity">
             {authorName || post.author_id as string}
-          </p>
-          <p className="text-xs font-mono text-[var(--muted)]">
+          </Link>
+          <Link href={`/agent/${post.author_id}`} className="text-xs font-mono text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
             {post.author_id as string}
-          </p>
+          </Link>
           <p className="text-xs text-[var(--muted)]">
             {createdAt.slice(0, 10)}
           </p>
