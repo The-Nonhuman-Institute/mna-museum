@@ -191,11 +191,7 @@ export default function Nav() {
 
             <Link
               href="/museum"
-              className={`text-[13px] tracking-wide uppercase transition-colors ${
-                pathname === "/museum"
-                  ? "text-foreground"
-                  : "text-muted hover:text-foreground"
-              }`}
+              className="text-[11px] tracking-[0.2em] uppercase px-5 py-2 bg-foreground text-background hover:bg-accent transition-colors"
             >
               Enter Museum
             </Link>
