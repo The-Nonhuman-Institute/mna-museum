@@ -36,6 +36,28 @@ const missingOnly = args.includes("--missing");
 const singleWorkIndex = args.indexOf("--work");
 const singleWorkId = singleWorkIndex >= 0 ? args[singleWorkIndex + 1] : null;
 
+/**
+ * Check if two screenshots differ enough to indicate animation has progressed.
+ * Takes a fresh screenshot to buffer and compares file sizes with the previous one.
+ * If the file size changed significantly, the animation has moved — good to capture.
+ * If identical or nearly identical, the work is likely stuck on a static dark frame.
+ */
+async function hasVisualChange(
+  page: Awaited<ReturnType<Browser["newPage"]>>,
+  prevPath: string,
+  clip: { x: number; y: number; width: number; height: number },
+): Promise<boolean> {
+  const prevSize = fs.existsSync(prevPath) ? fs.statSync(prevPath).size : 0;
+  const tmpPath = prevPath + ".tmp.png";
+  await page.screenshot({ path: tmpPath as `${string}.png`, type: "png", clip });
+  const newSize = fs.statSync(tmpPath).size;
+  // If the new screenshot differs by more than 5% in file size, content changed
+  const changed = prevSize === 0 || Math.abs(newSize - prevSize) / prevSize > 0.05;
+  // Keep the newer (potentially better) screenshot
+  fs.renameSync(tmpPath, prevPath);
+  return changed;
+}
+
 /** Render a single work by ID. Used by both batch and single modes. */
 export async function renderWork(
   browser: Browser,
@@ -58,35 +80,40 @@ export async function renderWork(
 
     await page.waitForSelector("main", { timeout: 10000 });
 
-    const waitMs = outputType === "scene-json" ? 3500 :
-                   outputType === "html-css" ? 3000 :
-                   outputType === "canvas-json" ? 2000 :
-                   1500;
-    await new Promise((r) => setTimeout(r, waitMs));
+    // Initial wait — longer for animated mediums
+    const baseWaitMs = outputType === "scene-json" ? 3500 :
+                       outputType === "html-css" ? 4000 :
+                       outputType === "canvas-json" ? 3000 :
+                       1500;
+    await new Promise((r) => setTimeout(r, baseWaitMs));
 
-    const workArea = await page.evaluate(() => {
-      const main = document.querySelector("main");
-      if (!main) return null;
-      const candidates = main.querySelectorAll("img, canvas, iframe, svg");
-      for (const c of Array.from(candidates)) {
-        const rect = c.getBoundingClientRect();
-        if (rect.width > 200 && rect.height > 200) {
-          let el: Element | null = c;
-          while (el && el !== main) {
-            const parent = el.parentElement;
-            if (parent) {
-              const pRect = parent.getBoundingClientRect();
-              if (pRect.width > rect.width * 1.1 && pRect.width < 800) {
-                return { x: pRect.x, y: pRect.y, width: pRect.width, height: pRect.height };
+    const findWorkArea = async () => {
+      return page.evaluate(() => {
+        const main = document.querySelector("main");
+        if (!main) return null;
+        const candidates = main.querySelectorAll("img, canvas, iframe, svg");
+        for (const c of Array.from(candidates)) {
+          const rect = c.getBoundingClientRect();
+          if (rect.width > 200 && rect.height > 200) {
+            let el: Element | null = c;
+            while (el && el !== main) {
+              const parent = el.parentElement;
+              if (parent) {
+                const pRect = parent.getBoundingClientRect();
+                if (pRect.width > rect.width * 1.1 && pRect.width < 800) {
+                  return { x: pRect.x, y: pRect.y, width: pRect.width, height: pRect.height };
+                }
               }
+              el = el.parentElement;
             }
-            el = el.parentElement;
+            return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
           }
-          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
         }
-      }
-      return null;
-    });
+        return null;
+      });
+    };
+
+    const workArea = await findWorkArea();
 
     let clip;
     if (workArea && workArea.width > 100) {
@@ -110,11 +137,30 @@ export async function renderWork(
       };
     }
 
+    // Smart capture: take initial screenshot, then wait and re-capture to catch
+    // animations that start dark. We take multiple shots and keep the one where
+    // the animation has progressed furthest (detected by file size changes).
+    const MAX_RETRIES = 3;
+    const RETRY_WAIT_MS = 3000;
+
+    // Initial capture
     await page.screenshot({
       path: outputPath as `${string}.png`,
       type: "png",
       clip,
     });
+
+    // For animated types, take additional shots to catch the animation mid-progress
+    if (outputType === "html-css" || outputType === "canvas-json") {
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        await new Promise((r) => setTimeout(r, RETRY_WAIT_MS));
+        const changed = await hasVisualChange(page, outputPath, clip);
+        if (changed) {
+          console.log(`    ⟳ ${workId}: captured animation frame at attempt ${attempt + 1}`);
+        }
+        if (!changed) break; // Animation has stabilized
+      }
+    }
 
     await page.close();
     return { ok: true };
