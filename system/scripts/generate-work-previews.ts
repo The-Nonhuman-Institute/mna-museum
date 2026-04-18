@@ -68,7 +68,7 @@ export async function renderWork(
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1400, height: 1600, deviceScaleFactor: 2 });
-    await page.goto(`${SITE}/work/${workId}`, { waitUntil: "networkidle2", timeout: 30000 });
+    await page.goto(`${SITE}/work/${workId}`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     await page.addStyleTag({
       content: `
@@ -210,6 +210,7 @@ async function main() {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    protocolTimeout: 120000,
   });
 
   let success = 0;
