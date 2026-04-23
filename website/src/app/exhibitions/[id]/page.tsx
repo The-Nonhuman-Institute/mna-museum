@@ -476,7 +476,7 @@ export default async function ExhibitionDetailPage({ params }: PageProps) {
               </p>
               {works.length > featured.length ? (
                 <Link
-                  href="/canon"
+                  href={`/exhibitions/${exhibition.id}/works`}
                   className="text-[10px] font-sans uppercase tracking-[0.24em] text-ink hover:text-ink/70 transition-colors inline-flex items-center gap-2"
                 >
                   <span>View All {works.length} Works</span>
