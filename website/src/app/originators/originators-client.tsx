@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";
 import OriginatorCard from "@/components/OriginatorCard";
+import InstitutionalSelect from "@/components/InstitutionalSelect";
 
 interface Counts {
   active: number;
@@ -35,27 +36,14 @@ function FilterDropdown({
   onChange?: (v: string) => void;
 }) {
   return (
-    <label className="flex flex-col min-w-[130px]">
-      <span className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 mb-1.5">
-        {label}
-      </span>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange?.(e.target.value)}
-          className="appearance-none w-full text-[13px] font-sans text-ink bg-bone border border-ink/20 hover:border-ink/40 transition-colors pl-3.5 pr-9 py-2.5 cursor-pointer"
-        >
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink/50 text-[9px]">
-          ▾
-        </span>
-      </div>
-    </label>
+    <div className="min-w-[130px]">
+      <InstitutionalSelect
+        label={label}
+        value={value}
+        options={options}
+        onChange={onChange}
+      />
+    </div>
   );
 }
 

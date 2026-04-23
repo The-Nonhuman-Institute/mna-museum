@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import WorkDisplay from "@/components/WorkDisplay";
+import InstitutionalSelect from "@/components/InstitutionalSelect";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";
 
@@ -787,20 +788,18 @@ export default function OriginatorDetailClient({
                   <span className="text-[9px] font-sans uppercase tracking-[0.26em] text-ink/55">
                     Sort By
                   </span>
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value as SortOrder)}
-                    className="text-[11px] font-sans bg-transparent border border-ink/20 px-3 py-2 pr-8 text-ink appearance-none cursor-pointer hover:border-ink/40 transition-colors"
-                    style={{
-                      backgroundImage:
-                        "url(\"data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%230a0a0a' stroke-width='1'/%3E%3C/svg%3E\")",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 10px center",
-                    }}
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                  </select>
+                  <div className="min-w-[150px]">
+                    <InstitutionalSelect
+                      ariaLabel="Sort works"
+                      size="compact"
+                      value={sort}
+                      options={[
+                        { value: "newest", label: "Newest First" },
+                        { value: "oldest", label: "Oldest First" },
+                      ]}
+                      onChange={(v) => setSort(v as SortOrder)}
+                    />
+                  </div>
                 </div>
               </div>
 
