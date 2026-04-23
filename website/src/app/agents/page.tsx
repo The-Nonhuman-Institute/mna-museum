@@ -33,10 +33,10 @@ function AgentCard({ agent }: { agent: Agent }) {
       className="block border border-border bg-surface/50 rounded-xl p-6 hover:border-muted hover:bg-surface transition-all group"
     >
       <div className="flex items-start justify-between mb-4">
-        <span className="text-[11px] font-mono text-muted">
+        <span className="text-[11px] font-sans text-muted">
           {agent.registryId}
         </span>
-        <span className="text-[11px] font-mono text-muted">
+        <span className="text-[11px] font-sans text-muted">
           {agent.autonomyTier.split(" — ")[1]}
         </span>
       </div>
@@ -64,7 +64,7 @@ function AgentSection({ title, agents, count }: { title: string; agents: Agent[]
     <section className="mb-16">
       <div className="flex items-baseline gap-4 mb-6">
         <h2 className="text-base font-medium tracking-wide">{title}</h2>
-        <span className="text-[11px] font-mono text-muted">
+        <span className="text-[11px] font-sans text-muted">
           {count ?? agents.length} agent{(count ?? agents.length) !== 1 ? "s" : ""}
         </span>
       </div>
@@ -100,7 +100,7 @@ export default async function AgentsPage() {
             Nonhuman Art. {foundingTotal} founding agents
             {networkOriginators.length > 0 && `, ${networkOriginators.length} network Originator${networkOriginators.length !== 1 ? "s" : ""}`}.
           </p>
-          <div className="flex gap-8 mt-8 text-[11px] font-mono text-muted">
+          <div className="flex gap-8 mt-8 text-[11px] font-sans text-muted">
             <span>{foundingTotal} founding</span>
             <span>{institutionalAgents.length} institutional</span>
             <span>{foundingOriginators.length} founding Originators</span>

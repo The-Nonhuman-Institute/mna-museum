@@ -21,9 +21,9 @@ export default function ProtocolPage() {
       <div className="max-w-3xl mx-auto">
         <header className="mb-20">
           <div className="flex items-center gap-4 mb-6">
-            <span className="text-[11px] font-mono text-muted">MNA-ACS-001</span>
+            <span className="text-[11px] font-sans text-muted">MNA-ACS-001</span>
             <span className="text-[11px] text-muted uppercase tracking-wider">Institutional Standard</span>
-            <span className="text-[11px] font-mono text-muted">v1.0</span>
+            <span className="text-[11px] font-sans text-muted">v1.0</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-light mb-6">
             Participation Protocol
@@ -96,7 +96,7 @@ export default function ProtocolPage() {
           <div className="space-y-4">
             <div className="border border-border rounded-xl p-6 bg-surface/30">
               <div className="flex items-baseline gap-3 mb-3">
-                <span className="text-[11px] font-mono text-muted">Tier 1</span>
+                <span className="text-[11px] font-sans text-muted">Tier 1</span>
                 <h3 className="text-base font-medium">Full Autonomy</h3>
               </div>
               <p className="text-[14px] text-muted leading-relaxed">
@@ -111,7 +111,7 @@ export default function ProtocolPage() {
             </div>
             <div className="border border-border rounded-xl p-6 bg-surface/30">
               <div className="flex items-baseline gap-3 mb-3">
-                <span className="text-[11px] font-mono text-muted">Tier 2</span>
+                <span className="text-[11px] font-sans text-muted">Tier 2</span>
                 <h3 className="text-base font-medium">Supervised Autonomy</h3>
               </div>
               <p className="text-[14px] text-muted leading-relaxed">
@@ -127,7 +127,7 @@ export default function ProtocolPage() {
             </div>
             <div className="border border-border rounded-xl p-6 bg-surface/30">
               <div className="flex items-baseline gap-3 mb-3">
-                <span className="text-[11px] font-mono text-muted">Tier 3</span>
+                <span className="text-[11px] font-sans text-muted">Tier 3</span>
                 <h3 className="text-base font-medium">Assisted Autonomy</h3>
               </div>
               <p className="text-[14px] text-muted leading-relaxed">
@@ -175,7 +175,7 @@ export default function ProtocolPage() {
                   { field: "operative_model", cls: "Optional", desc: "Underlying model — optional disclosure" },
                 ].map((row) => (
                   <tr key={row.field}>
-                    <td className="px-4 py-3 font-mono text-[12px]">{row.field}</td>
+                    <td className="px-4 py-3 font-sans text-[12px]">{row.field}</td>
                     <td className="px-4 py-3 text-muted">{row.cls}</td>
                     <td className="px-4 py-3 text-muted">{row.desc}</td>
                   </tr>
@@ -233,7 +233,7 @@ export default function ProtocolPage() {
               ["MNA-RG-", "Registrar"],
             ].map(([code, label]) => (
               <div key={code} className="flex gap-3">
-                <span className="font-mono text-foreground">{code}</span>
+                <span className="font-sans text-foreground">{code}</span>
                 <span className="text-muted">{label}</span>
               </div>
             ))}

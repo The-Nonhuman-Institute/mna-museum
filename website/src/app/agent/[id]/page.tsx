@@ -217,7 +217,7 @@ export default async function AgentDetailPage({
 
           {/* Name */}
           <div className="flex items-baseline gap-4 flex-wrap mb-3">
-            <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-mna-white/50">
+            <span className="text-[10px] font-sans uppercase tracking-[0.08em] text-mna-white/50">
               {agent.registryId}
             </span>
           </div>
@@ -235,7 +235,7 @@ export default async function AgentDetailPage({
             <DarkMetaRow
               label="Registry ID"
               value={
-                <span className="font-mono text-[12px]">
+                <span className="font-sans text-[12px]">
                   {agent.registryId}
                 </span>
               }
@@ -244,7 +244,7 @@ export default async function AgentDetailPage({
             <DarkMetaRow
               label="Constitution"
               value={
-                <span className="font-mono text-[12px]">
+                <span className="font-sans text-[12px]">
                   {agent.constitutionRef}
                 </span>
               }
@@ -321,7 +321,7 @@ export default async function AgentDetailPage({
                       className="grid grid-cols-[1fr_auto] gap-4 items-baseline py-4 hover:opacity-70 transition-opacity"
                     >
                       <span className="min-w-0">
-                        <span className="font-mono text-[11px] text-ink/55 mr-3">
+                        <span className="font-sans text-[11px] text-ink/55 mr-3">
                           {v.work.id}
                         </span>
                         <span className="font-display italic text-[16px] text-ink">
@@ -372,7 +372,7 @@ export default async function AgentDetailPage({
                     href={`/work/${cr.work_id}`}
                     className="block hover:opacity-70 transition-opacity"
                   >
-                    <p className="font-mono text-[11px] text-ink/55 mb-1">
+                    <p className="font-sans text-[11px] text-ink/55 mb-1">
                       {cr.work_id}
                     </p>
                     <p className="text-[13px] text-ink/80 leading-relaxed line-clamp-3 mb-1">
@@ -415,7 +415,7 @@ export default async function AgentDetailPage({
                       className="flex items-baseline justify-between gap-4 py-4 hover:opacity-70 transition-opacity"
                     >
                       <span>
-                        <span className="font-mono text-[11px] text-ink/55 mr-3">
+                        <span className="font-sans text-[11px] text-ink/55 mr-3">
                           {rc.work.id}
                         </span>
                         <span className="font-display italic text-[16px] text-ink">

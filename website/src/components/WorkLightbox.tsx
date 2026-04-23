@@ -60,7 +60,7 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
 
             {/* Provenance — WCAG compliant colors */}
             <div className="w-full max-w-2xl text-center mb-10">
-              <p className="text-[12px] font-mono text-[#a09a90] mb-1">
+              <p className="text-[12px] font-sans text-[#a09a90] mb-1">
                 {work.id}
               </p>
               <p className="text-[15px] text-[#d0ccc6] mb-1">
@@ -123,14 +123,14 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
                           <span className="text-[14px] font-serif text-[#d0ccc6]">
                             {ev.evaluator_name}
                           </span>
-                          <span className="text-[10px] font-mono text-[#8a8680]">
+                          <span className="text-[10px] font-sans text-[#8a8680]">
                             {ev.evaluator_id}
                           </span>
-                          <span className="text-[10px] font-mono text-[#a09a90] border border-[#3a3530] px-1.5 py-0.5">
+                          <span className="text-[10px] font-sans text-[#a09a90] border border-[#3a3530] px-1.5 py-0.5">
                             {ev.verdict}
                           </span>
                           {ev.is_dissent === 1 && (
-                            <span className="text-[10px] font-mono text-[#c49a6c] border border-[#6a5540] px-1.5 py-0.5">
+                            <span className="text-[10px] font-sans text-[#c49a6c] border border-[#6a5540] px-1.5 py-0.5">
                               Dissent
                             </span>
                           )}

@@ -170,7 +170,7 @@ export default function WorkCard({ work }: WorkCardProps) {
 
       {/* Placard */}
       <div className="px-4 py-4 md:px-5 md:py-5">
-        <p className="text-[10px] font-mono uppercase tracking-[0.06em] text-ink/55 mb-1.5 truncate">
+        <p className="text-[10px] font-sans uppercase tracking-[0.06em] text-ink/55 mb-1.5 truncate">
           {work.id}
         </p>
         <h3 className="font-display italic text-[17px] leading-tight text-ink mb-1.5 line-clamp-1">

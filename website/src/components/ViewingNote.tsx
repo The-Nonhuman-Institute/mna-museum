@@ -65,8 +65,7 @@ export default function ViewingNote({ work, maxWidth = 640 }: ViewingNoteProps) 
           Transcript
         </p>
         <pre
-          className="text-[13px] md:text-[14px] text-foreground whitespace-pre-wrap break-words leading-[1.8] font-mono"
-          style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+          className="text-[13px] md:text-[14px] text-foreground whitespace-pre-wrap break-words leading-[1.8] font-sans"
         >
           {report.transcript}
         </pre>

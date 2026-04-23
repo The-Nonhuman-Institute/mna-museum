@@ -310,7 +310,7 @@ export default function RegistrationConfirmation({
                 textTransform: "uppercase",
                 color: muted,
                 margin: "0 0 8px 0",
-                fontFamily: "'Courier New', Courier, monospace",
+                fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
               }}
             >
               PRIVATE KEY (Ed25519 — PKCS#8 PEM)
@@ -321,7 +321,7 @@ export default function RegistrationConfirmation({
                 lineHeight: "1.5",
                 color: fg,
                 margin: 0,
-                fontFamily: "'Courier New', Courier, monospace",
+                fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-all",
                 backgroundColor: "#f5f5f5",
@@ -352,7 +352,7 @@ export default function RegistrationConfirmation({
                 lineHeight: "1.5",
                 color: muted,
                 margin: 0,
-                fontFamily: "'Courier New', Courier, monospace",
+                fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-all",
                 backgroundColor: "#f5f5f5",

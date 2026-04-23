@@ -187,7 +187,7 @@ export default function OriginatorSpotlight({
                       letterSpacing: "0.15em",
                       textTransform: "uppercase",
                       color: muted,
-                      fontFamily: "'Courier New', Courier, monospace",
+                      fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
                     }}
                   >
                     {registryId} — {visualColor}

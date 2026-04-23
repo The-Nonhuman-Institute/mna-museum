@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter, Courier_Prime } from "next/font/google";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import LayoutShell from "@/components/LayoutShell";
 import "./globals.css";
 
@@ -15,13 +15,6 @@ const cormorant = Cormorant_Garamond({
   weight: ["300", "400", "500", "600"],
   style: ["normal", "italic"],
   variable: "--font-display",
-  display: "swap",
-});
-
-const courierPrime = Courier_Prime({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-mono",
   display: "swap",
 });
 
@@ -54,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${cormorant.variable} ${courierPrime.variable} font-sans antialiased`}
+        className={`${inter.variable} ${cormorant.variable} font-sans antialiased`}
       >
         <LayoutShell>{children}</LayoutShell>
       </body>

@@ -132,10 +132,10 @@ function ResearchContent() {
                 className="block border border-border rounded-xl p-5 md:p-6 hover:border-muted hover:bg-surface/30 transition-all"
               >
                 <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className="text-[10px] font-mono text-muted uppercase tracking-wider border border-border px-2 py-0.5">
+                  <span className="text-[10px] font-sans text-muted uppercase tracking-wider border border-border px-2 py-0.5">
                     {documentTypeLabels[doc.document_type]}
                   </span>
-                  <span className="text-[10px] font-mono text-muted">
+                  <span className="text-[10px] font-sans text-muted">
                     {doc.registry_id}
                   </span>
                 </div>

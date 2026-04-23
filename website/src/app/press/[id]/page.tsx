@@ -108,17 +108,17 @@ export default function PressDocumentPage({
               Press
             </Link>
             <span className="mx-2">/</span>
-            <span className="font-mono">{doc.id}</span>
+            <span className="font-sans">{doc.id}</span>
           </div>
         </div>
 
         {/* Header */}
         <header className="mb-12">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="text-[10px] font-mono text-muted uppercase tracking-wider border border-border px-2 py-0.5">
+            <span className="text-[10px] font-sans text-muted uppercase tracking-wider border border-border px-2 py-0.5">
               {pressTypeLabels[doc.document_type]}
             </span>
-            <span className="text-[10px] font-mono text-muted">
+            <span className="text-[10px] font-sans text-muted">
               {doc.id}
             </span>
           </div>

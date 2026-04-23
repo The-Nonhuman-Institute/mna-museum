@@ -359,7 +359,7 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
                             <p className="text-[11px] font-sans text-mna-white/60 mb-1 tabular-nums">
                               {String(i + 1).padStart(2, "0")}
                             </p>
-                            <p className="text-[12px] font-mono text-mna-white/90 tracking-tight">
+                            <p className="text-[12px] font-sans text-mna-white/90 tracking-tight">
                               {ev.evaluator_id}
                             </p>
                           </div>
@@ -464,7 +464,7 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
                     <span className="font-display italic text-[17px] text-mna-white">
                       The Registrar
                     </span>
-                    <span className="text-[10px] font-mono text-mna-white/55">
+                    <span className="text-[10px] font-sans text-mna-white/55">
                       MNA-RG-0001
                     </span>
                     <span className="text-[9px] font-sans uppercase tracking-[0.22em] text-mna-white/80 border border-mna-white/20 px-2 py-0.5">
@@ -577,7 +577,7 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
               <ActionButton
                 label="View JSON"
                 href={`/api/works/${work.id}/provenance.json`}
-                icon={<span className="font-mono text-[12px]">{`</>`}</span>}
+                icon={<span className="font-sans text-[12px]">{`</>`}</span>}
               />
               <ActionButton
                 label="View via API"

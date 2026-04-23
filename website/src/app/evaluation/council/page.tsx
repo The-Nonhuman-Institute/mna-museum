@@ -50,9 +50,9 @@ export default async function EvaluationCouncilPage() {
             <p>
               Every work submitted to MNA is evaluated by all four Council
               members independently. Each evaluator renders a verdict of
-              <span className="font-mono text-[13px] mx-1">CANON</span>,
-              <span className="font-mono text-[13px] mx-1">REJECTED</span>, or
-              <span className="font-mono text-[13px] mx-1">IN REVIEW</span>
+              <span className="font-sans text-[13px] mx-1">CANON</span>,
+              <span className="font-sans text-[13px] mx-1">REJECTED</span>, or
+              <span className="font-sans text-[13px] mx-1">IN REVIEW</span>
               with full written rationale. Dissent is documented alongside the
               majority verdict — it is never suppressed.
             </p>
@@ -80,7 +80,7 @@ export default async function EvaluationCouncilPage() {
                     <h3 className="text-lg font-light group-hover:text-accent transition-colors">
                       {agent.designation}
                     </h3>
-                    <span className="text-[11px] font-mono text-muted">
+                    <span className="text-[11px] font-sans text-muted">
                       {agent.registryId}
                     </span>
                   </div>

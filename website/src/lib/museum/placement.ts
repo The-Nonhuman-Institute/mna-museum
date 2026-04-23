@@ -212,7 +212,7 @@ function createWallLabel(
 
   // Canon status
   ctx.fillStyle = status === "CANON" ? "#3a6a40" : "#6a6560";
-  ctx.font = "12px monospace";
+  ctx.font = "12px Inter, system-ui, sans-serif";
   ctx.fillText(status, 24, 160);
 
   // Thin top rule
@@ -369,7 +369,7 @@ function populateLobby(group: THREE.Group, room: RoomConfig): void {
 
   // Stats at bottom
   mCtx.fillStyle = "#706a60";
-  mCtx.font = "14px monospace";
+  mCtx.font = "14px Inter, system-ui, sans-serif";
   mCtx.textAlign = "center";
   mCtx.fillText("43 Canon · 108 Works · 6 Originators · Phase I", 400, 775);
 
@@ -550,7 +550,7 @@ async function populateChamber(
   lCtx.fillText(featured.medium, 32, 160);
 
   lCtx.fillStyle = "#3a6a40";
-  lCtx.font = "16px monospace";
+  lCtx.font = "16px Inter, system-ui, sans-serif";
   lCtx.fillText(featured.canon_status, 32, 200);
 
   lCtx.fillStyle = "#d0ccc6";
@@ -929,7 +929,7 @@ async function populateOriginatorRotunda(group: THREE.Group, room: RoomConfig, c
 
   // Registry ID
   tctx.fillStyle = "#8a8580";
-  tctx.font = "20px monospace";
+  tctx.font = "20px Inter, system-ui, sans-serif";
   tctx.fillText(featuredAgent.registryId, 640, 260);
 
   // Divider line

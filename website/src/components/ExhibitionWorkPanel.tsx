@@ -24,7 +24,7 @@ export default function ExhibitionWorkPanel({ work, index }: ExhibitionWorkPanel
   return (
     <article className="flex flex-col items-center">
       {/* Sequence index — small, quiet, gives the visitor a sense of order */}
-      <div className="text-[10px] uppercase tracking-[0.25em] text-muted mb-5 font-mono">
+      <div className="text-[10px] uppercase tracking-[0.25em] text-muted mb-5 font-sans">
         {String(index).padStart(2, "0")} / {work.medium}
       </div>
 

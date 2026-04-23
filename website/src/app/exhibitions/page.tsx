@@ -303,7 +303,7 @@ function TimelineCard({
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[9px] font-mono text-mna-white/30">
+              <span className="text-[9px] font-sans text-mna-white/30">
                 —
               </span>
             </div>
@@ -524,7 +524,7 @@ function ArchiveCard({
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] font-mono text-ink/30">
+            <span className="text-[10px] font-sans text-ink/30">
               No Cover
             </span>
           </div>
@@ -673,7 +673,7 @@ function InFormationBand() {
                 <span className="text-[9px] font-sans uppercase tracking-[0.28em] text-ink/30 mb-2">
                   No Formation
                 </span>
-                <span className="text-[10px] font-mono text-ink/25">—</span>
+                <span className="text-[10px] font-sans text-ink/25">—</span>
               </div>
             ))}
           </div>

@@ -216,7 +216,7 @@ export default function NoticeOfIdentityEmergence({
                         fontSize: "13px",
                         color: "#8a8580",
                         margin: 0,
-                        fontFamily: "monospace",
+                        fontFamily: "Inter, system-ui, sans-serif", letterSpacing: "0.08em",
                       }}
                     >
                       {visualColor.toUpperCase()}

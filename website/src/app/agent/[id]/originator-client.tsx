@@ -270,7 +270,7 @@ function WorkTile({ work }: { work: Work }) {
         </span>
       </div>
       <div className="px-4 py-3.5">
-        <p className="text-[10px] font-mono uppercase tracking-[0.06em] text-ink/55 mb-1 truncate">
+        <p className="text-[10px] font-sans uppercase tracking-[0.06em] text-ink/55 mb-1 truncate">
           {work.id}
         </p>
         <p className="font-display italic text-[15px] leading-tight text-ink mb-2 line-clamp-1">
@@ -535,7 +535,7 @@ export default function OriginatorDetailClient({
             <p className="text-[9px] font-sans uppercase tracking-[0.26em] text-mna-white/45 mb-1">
               Constitution Hash
             </p>
-            <p className="text-[13px] text-mna-white/90 font-mono flex items-center gap-2">
+            <p className="text-[13px] text-mna-white/90 font-sans flex items-center gap-2">
               {constitutionHash}
               <InfoGlyph className="text-mna-white/50" />
             </p>
@@ -702,7 +702,7 @@ export default function OriginatorDetailClient({
                         <p className="text-[11px] text-ink/65 leading-snug mb-0.5">
                           {p.relation}
                         </p>
-                        <p className="text-[10px] font-mono text-ink/55">
+                        <p className="text-[10px] font-sans text-ink/55">
                           Strength {p.strength.toFixed(2)}
                         </p>
                       </Link>
@@ -929,7 +929,7 @@ export default function OriginatorDetailClient({
                           className="grid grid-cols-[1fr_auto] gap-4 items-baseline py-4 hover:opacity-70 transition-opacity"
                         >
                           <span className="min-w-0">
-                            <span className="font-mono text-[11px] text-ink/55 mr-3">
+                            <span className="font-sans text-[11px] text-ink/55 mr-3">
                               {w.id}
                             </span>
                             <span className="font-display italic text-[16px] text-ink">

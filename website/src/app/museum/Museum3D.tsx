@@ -442,7 +442,7 @@ export default function Museum3D({ museumData }: { museumData: MuseumData }) {
           {state.showFps && (
             <div className="absolute top-16 right-8 z-40 pointer-events-none">
               <div className="bg-[#0a0908]/80 backdrop-blur-sm border border-[#3a3530]/60 px-3 py-1.5">
-                <p className="text-[10px] font-mono text-[#a0a0a0]">
+                <p className="text-[10px] font-sans text-[#a0a0a0]">
                   {state.fps} fps
                 </p>
               </div>

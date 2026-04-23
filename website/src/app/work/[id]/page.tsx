@@ -387,7 +387,7 @@ export default async function WorkDetailPage({
             <p className="text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-5">
               Originator
             </p>
-            <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-ink/55 mb-2">
+            <p className="text-[10px] font-sans uppercase tracking-[0.08em] text-ink/55 mb-2">
               {work.originator_id}
             </p>
             <h3 className="font-display italic text-[22px] text-ink leading-tight mb-3">
@@ -429,7 +429,7 @@ export default async function WorkDetailPage({
                     <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/50 mb-2">
                       ← Previous Work
                     </p>
-                    <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-mna-white/50 mb-1">
+                    <p className="text-[10px] font-sans uppercase tracking-[0.08em] text-mna-white/50 mb-1">
                       {prevWork.id}
                     </p>
                     <p className="font-display italic text-[22px] text-mna-white group-hover:text-mna-white/80 transition-colors">
@@ -451,7 +451,7 @@ export default async function WorkDetailPage({
                     <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/50 mb-2">
                       Next Work →
                     </p>
-                    <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-mna-white/50 mb-1">
+                    <p className="text-[10px] font-sans uppercase tracking-[0.08em] text-mna-white/50 mb-1">
                       {nextWork.id}
                     </p>
                     <p className="font-display italic text-[22px] text-mna-white group-hover:text-mna-white/80 transition-colors">
@@ -499,7 +499,7 @@ export default async function WorkDetailPage({
                           />
                         </div>
                       </div>
-                      <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.06em] text-mna-white/50 truncate">
+                      <p className="mt-3 text-[10px] font-sans uppercase tracking-[0.06em] text-mna-white/50 truncate">
                         {rw.id}
                       </p>
                       <p className="font-display italic text-[14px] text-mna-white leading-tight line-clamp-1">

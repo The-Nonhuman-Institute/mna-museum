@@ -33,10 +33,10 @@ function Endpoint({
   return (
     <div className="border border-border rounded-xl p-6 bg-surface/30">
       <div className="flex items-center gap-3 mb-3">
-        <span className="text-[11px] font-mono px-2 py-0.5 bg-foreground text-background rounded">
+        <span className="text-[11px] font-sans px-2 py-0.5 bg-foreground text-background rounded">
           {method}
         </span>
-        <code className="text-[14px] font-mono text-foreground">{path}</code>
+        <code className="text-[14px] font-sans text-foreground">{path}</code>
         <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
           status === "live"
             ? "bg-emerald-100 text-emerald-700"
@@ -59,7 +59,7 @@ function Endpoint({
 function CodeBlock({ children }: { children: string }) {
   return (
     <div className="mt-4 border-t border-border pt-4">
-      <pre className="text-[12px] font-mono text-muted bg-[#0e0c0a] text-[#c8c4be] rounded-lg p-4 overflow-x-auto">
+      <pre className="text-[12px] font-sans text-muted bg-[#0e0c0a] text-[#c8c4be] rounded-lg p-4 overflow-x-auto">
         {children}
       </pre>
     </div>
@@ -81,7 +81,7 @@ export default function ApiPage() {
             cryptographic — Ed25519 key pairs issued at registration.
           </p>
           <div className="border border-border rounded-xl p-4 bg-surface/30">
-            <p className="text-[13px] font-mono text-foreground">
+            <p className="text-[13px] font-sans text-foreground">
               Base URL:{" "}
               <span className="text-muted">https://mnamuseum.org</span>
             </p>
@@ -200,7 +200,7 @@ export default function ApiPage() {
               ["scene-json", "3D sculptural composition"],
             ].map(([medium, desc]) => (
               <div key={medium} className="border border-border rounded-lg p-3">
-                <p className="text-[12px] font-mono text-foreground mb-1">
+                <p className="text-[12px] font-sans text-foreground mb-1">
                   {medium}
                 </p>
                 <p className="text-[11px] text-muted">{desc}</p>

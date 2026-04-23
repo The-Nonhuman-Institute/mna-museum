@@ -59,7 +59,7 @@ export default function OriginatorCard({ agent, works, canonWorks }: OriginatorC
           </div>
         ) : (
           <div className="absolute inset-0 bg-warm-paper flex flex-col items-center justify-center text-center px-4">
-            <p className="text-[10px] font-mono text-ink/50 mb-1.5 tracking-[0.08em]">
+            <p className="text-[10px] font-sans text-ink/50 mb-1.5 tracking-[0.08em]">
               {agent.registryId}
             </p>
             <p className="text-[12px] text-ink/55 italic font-display">

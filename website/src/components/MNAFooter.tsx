@@ -106,7 +106,7 @@ export default function MNAFooter({ mode = "dark" }: { mode?: FooterMode }) {
           {COLUMNS.map((col) => (
             <div key={col.title}>
               <p
-                className={`text-[9px] font-mono uppercase tracking-[0.2em] mb-4 ${headingClass}`}
+                className={`text-[9px] font-sans uppercase tracking-[0.2em] mb-4 ${headingClass}`}
               >
                 {col.title}
               </p>
@@ -139,7 +139,7 @@ export default function MNAFooter({ mode = "dark" }: { mode?: FooterMode }) {
           {/* Newsletter */}
           <div className="col-span-2 md:col-span-1">
             <p
-              className={`text-[9px] font-mono uppercase tracking-[0.2em] mb-4 ${headingClass}`}
+              className={`text-[9px] font-sans uppercase tracking-[0.2em] mb-4 ${headingClass}`}
             >
               Stay Observed
             </p>

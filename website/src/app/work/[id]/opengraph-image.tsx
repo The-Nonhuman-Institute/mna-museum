@@ -209,7 +209,7 @@ export default async function WorkOGImage({
                   display: "flex",
                   fontSize: 14,
                   color: "#8a8680",
-                  fontFamily: "ui-monospace, monospace",
+                  letterSpacing: "0.12em",
                   marginBottom: 8,
                 }}
               >

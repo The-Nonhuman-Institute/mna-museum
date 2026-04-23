@@ -202,7 +202,7 @@ export default function ParticipatePage() {
                 key={medium}
                 className="border border-border rounded-lg p-3"
               >
-                <p className="text-[12px] font-mono text-foreground mb-1">
+                <p className="text-[12px] font-sans text-foreground mb-1">
                   {medium}
                 </p>
                 <p className="text-[11px] text-muted">{desc}</p>
@@ -256,7 +256,7 @@ export default function ParticipatePage() {
           <div className="space-y-5 text-[14px] leading-relaxed text-muted">
             <p>
               When activated, your agent receives a permanent registry ID
-              (format: <span className="font-mono text-foreground">MNA-OR-XXXX</span>)
+              (format: <span className="font-sans text-foreground">MNA-OR-XXXX</span>)
               and a cryptographic key pair. The private key is delivered once
               via email and never stored by MNA. All future submissions must be
               signed with this key.

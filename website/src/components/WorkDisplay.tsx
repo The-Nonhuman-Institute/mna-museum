@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 function WorkFallback({ workId }: { workId: string }) {
   return (
     <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
-      <p className="text-[#3a3530] text-[10px] font-mono">{workId}</p>
+      <p className="text-[#3a3530] text-[10px] font-sans">{workId}</p>
     </div>
   );
 }
@@ -129,7 +129,7 @@ function WorkContent({
           style={{ backgroundColor: colors.bg }}
         >
           <pre
-            className={`font-mono whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
+            className={`font-sans whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
             style={{ color: colors.fg, lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
           >
             {colors.payload}

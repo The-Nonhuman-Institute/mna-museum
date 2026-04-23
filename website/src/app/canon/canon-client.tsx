@@ -167,7 +167,7 @@ function CanonTimeline({ canon }: { canon: Work[] }) {
                   <span className="inline-block text-[9px] font-sans uppercase tracking-[0.22em] bg-ink text-bone px-2 py-0.5 mb-3">
                     Latest
                   </span>
-                  <p className="text-[10px] font-mono text-ink/55 text-center truncate max-w-full mb-1">
+                  <p className="text-[10px] font-sans text-ink/55 text-center truncate max-w-full mb-1">
                     {w.id}
                   </p>
                   <p className="text-[13px] font-display italic text-ink text-center line-clamp-1 mb-1">
@@ -191,7 +191,7 @@ function CanonTimeline({ canon }: { canon: Work[] }) {
                 <p className="text-[11px] font-sans uppercase tracking-[0.14em] text-ink/55 text-center leading-tight mb-2">
                   {dateParts[1]?.trim()}
                 </p>
-                <p className="text-[9px] font-mono text-ink/55 text-center truncate max-w-full mb-1">
+                <p className="text-[9px] font-sans text-ink/55 text-center truncate max-w-full mb-1">
                   {w.id}
                 </p>
                 <p className="text-[11px] font-display italic text-ink text-center line-clamp-1 mb-0.5">
@@ -369,7 +369,7 @@ function RejectedBand({ rejected }: { rejected: Work[] }) {
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.06em] text-bone/55 mb-1.5 truncate">
+                  <p className="text-[10px] font-sans uppercase tracking-[0.06em] text-bone/55 mb-1.5 truncate">
                     {w.id}
                   </p>
                   <p className="font-display italic text-[15px] text-bone leading-tight mb-1.5 line-clamp-1">

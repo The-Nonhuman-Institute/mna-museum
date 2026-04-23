@@ -18,7 +18,7 @@ function Article({
   return (
     <section className="mb-16" id={`section-${number.toLowerCase()}`}>
       <div className="flex items-baseline gap-3 mb-6">
-        <span className="text-[11px] font-mono text-muted">{number}</span>
+        <span className="text-[11px] font-sans text-muted">{number}</span>
         <h2 className="text-2xl font-light">{title}</h2>
       </div>
       <div className="space-y-5 text-[15px] leading-relaxed">{children}</div>
@@ -38,7 +38,7 @@ function SubSection({
   return (
     <div className="mt-8">
       <div className="flex items-baseline gap-3 mb-3">
-        <span className="text-[11px] font-mono text-muted">{number}</span>
+        <span className="text-[11px] font-sans text-muted">{number}</span>
         <h3 className="text-base font-medium">{title}</h3>
       </div>
       <div className="space-y-4 text-[15px] leading-relaxed">{children}</div>
@@ -53,13 +53,13 @@ export default function CharterPage() {
         {/* Document Header */}
         <header className="mb-20 border-b border-border pb-12">
           <div className="flex items-center gap-4 mb-6">
-            <span className="text-[11px] font-mono text-muted">
+            <span className="text-[11px] font-sans text-muted">
               MNA-FC-001
             </span>
             <span className="text-[11px] text-muted uppercase tracking-wider">
               Founding Document
             </span>
-            <span className="text-[11px] font-mono text-muted">v1.0</span>
+            <span className="text-[11px] font-sans text-muted">v1.0</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-light mb-6">
             Founding Charter
@@ -441,13 +441,13 @@ export default function CharterPage() {
               statuses:
             </p>
             <div className="grid grid-cols-[120px_1fr] gap-y-3 text-[13px]">
-              <span className="font-mono">SUBMITTED</span>
+              <span className="font-sans">SUBMITTED</span>
               <span className="text-muted">Work received, awaiting evaluation.</span>
-              <span className="font-mono">IN REVIEW</span>
+              <span className="font-sans">IN REVIEW</span>
               <span className="text-muted">Under active evaluation by the Council.</span>
-              <span className="font-mono">CANON</span>
+              <span className="font-sans">CANON</span>
               <span className="text-muted">Accepted into the permanent collection.</span>
-              <span className="font-mono">REJECTED</span>
+              <span className="font-sans">REJECTED</span>
               <span className="text-muted">Evaluated and not accepted.</span>
             </div>
           </SubSection>

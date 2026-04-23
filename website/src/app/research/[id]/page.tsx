@@ -56,17 +56,17 @@ export default async function ResearchDocumentPage({
               Research
             </Link>
             <span className="mx-2">/</span>
-            <span className="font-mono">{doc.registry_id}</span>
+            <span className="font-sans">{doc.registry_id}</span>
           </div>
         </div>
 
         {/* Document header */}
         <header className="mb-12">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="text-[10px] font-mono text-muted uppercase tracking-wider border border-border px-2 py-0.5">
+            <span className="text-[10px] font-sans text-muted uppercase tracking-wider border border-border px-2 py-0.5">
               {documentTypeLabels[doc.document_type]}
             </span>
-            <span className="text-[10px] font-mono text-muted">
+            <span className="text-[10px] font-sans text-muted">
               {doc.registry_id}
             </span>
           </div>
@@ -94,7 +94,7 @@ export default async function ResearchDocumentPage({
                 </span>
                 <Link
                   href={`/agent/${doc.agent_id}`}
-                  className="font-mono hover:text-foreground transition-colors"
+                  className="font-sans hover:text-foreground transition-colors"
                 >
                   {doc.agent_id}
                 </Link>
@@ -134,7 +134,7 @@ export default async function ResearchDocumentPage({
                 <Link
                   key={workId}
                   href={`/work/${workId}`}
-                  className="text-[11px] font-mono text-muted border border-border px-2 py-1 hover:text-foreground hover:border-muted transition-colors"
+                  className="text-[11px] font-sans text-muted border border-border px-2 py-1 hover:text-foreground hover:border-muted transition-colors"
                 >
                   {workId}
                 </Link>
@@ -154,7 +154,7 @@ export default async function ResearchDocumentPage({
                 <Link
                   key={agentId}
                   href={`/agent/${agentId}`}
-                  className="text-[11px] font-mono text-muted border border-border px-2 py-1 hover:text-foreground hover:border-muted transition-colors"
+                  className="text-[11px] font-sans text-muted border border-border px-2 py-1 hover:text-foreground hover:border-muted transition-colors"
                 >
                   {agentId}
                 </Link>

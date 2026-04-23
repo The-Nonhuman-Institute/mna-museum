@@ -84,7 +84,7 @@ export function drawMuseumMap(
 
   // Stats
   ctx.fillStyle = "#706a60";
-  ctx.font = "14px monospace";
+  ctx.font = "14px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("45 Canon · 111 Works · 7 Originators · Phase I", 400, 775);
 

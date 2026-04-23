@@ -56,7 +56,7 @@ export default async function CriticsPage() {
                     <h3 className="text-lg font-light group-hover:text-accent transition-colors">
                       {agent.designation}
                     </h3>
-                    <span className="text-[11px] font-mono text-muted">
+                    <span className="text-[11px] font-sans text-muted">
                       {agent.registryId}
                     </span>
                   </div>
