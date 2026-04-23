@@ -423,6 +423,7 @@ export default function ExhibitionWorksClient({
                 zoom={zoom}
                 hovered={hovered}
                 setHovered={setHovered}
+                exhibitionId={exhibition.id}
               />
             ) : null}
 
@@ -432,6 +433,7 @@ export default function ExhibitionWorksClient({
                 works={works}
                 previews={previews}
                 visibleMap={visibleMap}
+                exhibitionId={exhibition.id}
               />
             ) : null}
           </div>
@@ -681,6 +683,7 @@ function ArrangementCanvas({
   zoom,
   hovered,
   setHovered,
+  exhibitionId,
 }: {
   works: Work[];
   placements: Placement[];
@@ -689,6 +692,7 @@ function ArrangementCanvas({
   zoom: number;
   hovered: string | null;
   setHovered: (id: string | null) => void;
+  exhibitionId: number;
 }) {
   return (
     <div className="relative border border-ink/15 bg-[#f0ede7] overflow-hidden">
@@ -740,7 +744,7 @@ function ArrangementCanvas({
           return (
             <Link
               key={w.id}
-              href={`/work/${w.id}`}
+              href={`/work/${w.id}?from=exhibition-works&fromId=${exhibitionId}`}
               onMouseEnter={() => setHovered(w.id)}
               onMouseLeave={() => setHovered((cur) => (cur === w.id ? null : cur))}
               className="absolute block group focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/70"
@@ -841,10 +845,12 @@ function IndexTable({
   works,
   previews,
   visibleMap,
+  exhibitionId,
 }: {
   works: Work[];
   previews: Set<string>;
   visibleMap: Map<string, boolean>;
+  exhibitionId: number;
 }) {
   return (
     <div className="border border-ink/10 bg-mna-white/60">
@@ -893,7 +899,7 @@ function IndexTable({
                 </td>
                 <td className="py-3 pr-4">
                   <Link
-                    href={`/work/${w.id}`}
+                    href={`/work/${w.id}?from=exhibition-works&fromId=${exhibitionId}`}
                     className="text-ink hover:text-ink/60 transition-colors font-display text-[14px] leading-tight"
                   >
                     {w.title || "Untitled"}
@@ -916,7 +922,7 @@ function IndexTable({
                 </td>
                 <td className="py-3 pr-5 md:pr-6 text-right">
                   <Link
-                    href={`/work/${w.id}`}
+                    href={`/work/${w.id}?from=exhibition-works&fromId=${exhibitionId}`}
                     aria-label={`Open ${w.title || w.id}`}
                     className="text-ink/40 hover:text-ink transition-colors"
                   >

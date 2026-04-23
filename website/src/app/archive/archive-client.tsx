@@ -98,7 +98,7 @@ function ArchiveContent({ works }: { works: Work[] }) {
         {filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 mb-12">
             {filtered.map((work) => (
-              <WorkCard key={work.id} work={work} />
+              <WorkCard key={work.id} work={work} from="archive" />
             ))}
           </div>
         ) : (

@@ -11,6 +11,7 @@ import { getActiveExhibitionsContainingWork } from "@/lib/exhibitions";
 import WorkDisplay from "@/components/WorkDisplay";
 import ViewingNote from "@/components/ViewingNote";
 import ShareButtons from "@/components/ShareButtons";
+import { resolveBackContext, type RawSearchParams } from "@/lib/nav-context";
 
 export const dynamicParams = true;
 
@@ -144,11 +145,18 @@ function ProvItem({
 
 export default async function WorkDetailPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams?: RawSearchParams;
 }) {
   const work = await getWork(params.id);
   if (!work) notFound();
+
+  const back = resolveBackContext(searchParams, {
+    label: work.canon_status === "CANON" ? "Back to Canon" : "Back to Archive",
+    href: work.canon_status === "CANON" ? "/canon" : "/archive",
+  });
 
   const [agent, currentExhibitions, canonList, originatorWorks] =
     await Promise.all([
@@ -185,10 +193,10 @@ export default async function WorkDetailPage({
         {/* ── Breadcrumb ────────────────────────────────────────────── */}
         <nav className="mb-8">
           <Link
-            href={work.canon_status === "CANON" ? "/canon" : "/archive"}
+            href={back.href}
             className="inline-block text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 hover:text-ink transition-colors"
           >
-            ← Back to {work.canon_status === "CANON" ? "Canon" : "Archive"}
+            ← {back.label}
           </Link>
         </nav>
 
@@ -293,9 +301,10 @@ export default async function WorkDetailPage({
               href={`https://commons.mnamuseum.org/work/${work.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-6 block w-full border border-ink/70 text-center py-3 text-[11px] font-sans uppercase tracking-[0.26em] text-ink hover:bg-ink hover:text-mna-white transition-colors"
+              className="mt-8 inline-flex items-center gap-3 text-[11px] font-sans uppercase tracking-[0.26em] text-ink hover:text-ink/70 transition-colors border-b border-ink/60 pb-1 self-start"
             >
-              View on The Commons →
+              <span>View on The Commons</span>
+              <span aria-hidden>→</span>
             </a>
 
             <div className="mt-auto pt-6 flex justify-start">

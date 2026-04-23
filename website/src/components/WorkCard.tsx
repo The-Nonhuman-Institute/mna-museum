@@ -20,6 +20,7 @@ import Link from "next/link";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "./WorkDisplay";
 import { kindFor, type IconKind } from "./MediumIcon";
+import { withNavFrom, type NavSource } from "@/lib/nav-context";
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -32,6 +33,10 @@ function formatDatePretty(dateStr: string): string {
 
 interface WorkCardProps {
   work: Work;
+  /** Where the visitor is coming from, so the work detail can render a
+   *  contextual back link. Omit to use the default fallback. */
+  from?: NavSource;
+  fromId?: string | number;
 }
 
 function statusDot(canon_status: string): string {
@@ -145,15 +150,18 @@ function IconStrip({ activeKind }: { activeKind: IconKind }) {
   );
 }
 
-export default function WorkCard({ work }: WorkCardProps) {
+export default function WorkCard({ work, from, fromId }: WorkCardProps) {
   const displayDate = work.canon_date ?? work.submission_date;
   const titleText = work.title?.trim() || "Untitled";
   const originator = formatOriginator(work);
   const kind = kindFor(work.output_type);
+  const href = from
+    ? withNavFrom(`/work/${work.id}`, from, fromId)
+    : `/work/${work.id}`;
 
   return (
     <Link
-      href={`/work/${work.id}`}
+      href={href}
       className="group block bg-mna-white border border-ink/10 hover:border-ink/30 transition-colors"
     >
       {/* Square thumbnail tile — live renderer fills edge-to-edge */}

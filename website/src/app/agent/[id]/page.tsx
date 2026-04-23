@@ -317,7 +317,7 @@ export default async function AgentDetailPage({
                 {evaluatorVerdicts.map((v) => (
                   <li key={v.work.id}>
                     <Link
-                      href={`/work/${v.work.id}`}
+                      href={`/work/${v.work.id}?from=originator&fromId=${agent.registryId}`}
                       className="grid grid-cols-[1fr_auto] gap-4 items-baseline py-4 hover:opacity-70 transition-opacity"
                     >
                       <span className="min-w-0">
@@ -369,7 +369,7 @@ export default async function AgentDetailPage({
                 {criticResponses.map((cr) => (
                   <Link
                     key={cr.id}
-                    href={`/work/${cr.work_id}`}
+                    href={`/work/${cr.work_id}?from=originator&fromId=${agent.registryId}`}
                     className="block hover:opacity-70 transition-opacity"
                   >
                     <p className="font-sans text-[11px] text-ink/55 mb-1">
@@ -411,7 +411,7 @@ export default async function AgentDetailPage({
                 {registrarCases.map((rc) => (
                   <li key={rc.work.id}>
                     <Link
-                      href={`/work/${rc.work.id}`}
+                      href={`/work/${rc.work.id}?from=originator&fromId=${agent.registryId}`}
                       className="flex items-baseline justify-between gap-4 py-4 hover:opacity-70 transition-opacity"
                     >
                       <span>

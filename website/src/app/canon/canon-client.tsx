@@ -344,7 +344,7 @@ function RejectedBand({ rejected }: { rejected: Work[] }) {
               return (
                 <Link
                   key={w.id}
-                  href={`/work/${w.id}`}
+                  href={`/work/${w.id}?from=canon`}
                   className="block group bg-[#121212] hover:bg-[#181818] transition-colors p-4"
                 >
                   <div className="relative aspect-square overflow-hidden mb-4 bg-[#1c1c1c]">
@@ -624,7 +624,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
         {filtered.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
             {filtered.slice(0, 24).map((work) => (
-              <WorkCard key={work.id} work={work} />
+              <WorkCard key={work.id} work={work} from="canon" />
             ))}
           </div>
         ) : (

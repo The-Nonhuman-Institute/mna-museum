@@ -21,7 +21,7 @@ export default function CanonCarousel({ works }: CanonCarouselProps) {
         {items.map((work, i) => (
           <Link
             key={`${work.id}-${i}`}
-            href={`/work/${work.id}`}
+            href={`/work/${work.id}?from=home`}
             className="shrink-0 group relative"
           >
             <div className="absolute inset-0 z-10" />

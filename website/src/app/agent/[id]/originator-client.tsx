@@ -259,7 +259,7 @@ function WorkTile({ work }: { work: Work }) {
 
   return (
     <Link
-      href={`/work/${work.id}`}
+      href={`/work/${work.id}?from=originator&fromId=${work.originator_id}`}
       className="group block bg-mna-white border border-ink/12 hover:border-ink/30 transition-colors"
     >
       <div className="relative aspect-square overflow-hidden bg-warm-paper">
@@ -924,7 +924,7 @@ export default function OriginatorDetailClient({
                     .map((w) => (
                       <li key={w.id}>
                         <Link
-                          href={`/work/${w.id}`}
+                          href={`/work/${w.id}?from=originator&fromId=${agent.registryId}`}
                           className="grid grid-cols-[1fr_auto] gap-4 items-baseline py-4 hover:opacity-70 transition-opacity"
                         >
                           <span className="min-w-0">

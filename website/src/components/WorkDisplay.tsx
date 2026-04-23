@@ -129,8 +129,14 @@ function WorkContent({
           style={{ backgroundColor: colors.bg }}
         >
           <pre
-            className={`font-sans whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
-            style={{ color: colors.fg, lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
+            className={`whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
+            style={{
+              color: colors.fg,
+              lineHeight: "1.4",
+              maxHeight: "100%",
+              overflow: "hidden",
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+            }}
           >
             {colors.payload}
           </pre>

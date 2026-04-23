@@ -498,7 +498,7 @@ export default async function ExhibitionDetailPage({ params }: PageProps) {
                   return (
                     <li key={w.id}>
                       <Link
-                        href={`/work/${w.id}`}
+                        href={`/work/${w.id}?from=exhibition&fromId=${exhibition.id}`}
                         className="group grid grid-cols-[72px_1fr_auto] items-center gap-5 py-5 hover:bg-warm-paper/40 transition-colors -mx-2 px-2"
                       >
                         <div className="relative w-[72px] h-[72px] bg-ink/5 overflow-hidden">
