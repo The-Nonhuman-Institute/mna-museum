@@ -2,13 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light mode (default) — canon, originator profiles, about, participate, etc. */
 :root {
-  --background: #f5f2ed;
-  --foreground: #1a1a1a;
-  --muted: #8a8680;
+  --color-ink: #0A0A0A;
+  --color-charcoal: #2A2A2A;
+  --color-warm-paper: #EAE7E2;
+  --color-bone: #F4F2EE;
+  --color-glitch: #8A8AAB;
+  --color-mna-white: #FFFFFF;
+
+  --background: var(--color-warm-paper);
+  --foreground: var(--color-ink);
+  --surface: var(--color-bone);
+  --muted: #6b6660;
   --border: #d6d0c8;
-  --accent: #2a2a2a;
-  --surface: #ece8e1;
+  --accent: var(--color-charcoal);
+}
+
+/* Dark mode — homepage hero, Archive, Commons, exhibition hero sections. */
+.mode-dark {
+  --background: var(--color-ink);
+  --foreground: var(--color-mna-white);
+  --surface: var(--color-charcoal);
+  --muted: #8a8680;
+  --border: #2a2a2a;
+  --accent: var(--color-glitch);
+
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Explicit light wrapper (use when nested inside a dark parent). */
+.mode-light {
+  --background: var(--color-warm-paper);
+  --foreground: var(--color-ink);
+  --surface: var(--color-bone);
+  --muted: #6b6660;
+  --border: #d6d0c8;
+  --accent: var(--color-charcoal);
+
+  color: var(--foreground);
+  background: var(--background);
 }
 
 ::selection {
@@ -18,27 +52,13 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-interface), system-ui, sans-serif;
 }
 
 @layer base {
-  h1, h2, h3 {
-    @apply font-serif;
-  }
-
-  h1 {
-    @apply tracking-normal;
-  }
-
-  h2 {
-    @apply tracking-normal;
-  }
-
-  h3 {
-    @apply tracking-normal;
-  }
-
-  p {
-    @apply leading-relaxed;
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 300;
   }
 }
 
@@ -60,7 +80,7 @@ body {
 
 /* Phase heading — display treatment */
 .text-phase {
-  font-family: var(--font-serif), Georgia, serif;
+  font-family: var(--font-display), Georgia, serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-shadow:

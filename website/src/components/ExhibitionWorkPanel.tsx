@@ -40,7 +40,7 @@ export default function ExhibitionWorkPanel({ work, index }: ExhibitionWorkPanel
         aria-label={`View ${work.title || work.id}`}
         className="group inline-block w-[280px] sm:w-auto transition-opacity hover:opacity-90"
       >
-        <WorkDisplay work={work} size="detail" showPlacard={false} />
+        <WorkDisplay work={work} size="detail" showPlacard={false} framed={false} />
       </Link>
 
       {/* Placard — serif title, muted metadata, links */}

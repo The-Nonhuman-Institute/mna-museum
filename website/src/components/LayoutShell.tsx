@@ -1,8 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Nav from "./Nav";
-import Footer from "./Footer";
+import MNANav from "./MNANav";
+import MNAFooter from "./MNAFooter";
+
+function getNavMode(pathname: string): "light" | "dark" {
+  if (pathname === "/") return "dark";
+  if (pathname.startsWith("/archive")) return "dark";
+  if (/^\/work\/[^/]+\/provenance/.test(pathname)) return "dark";
+  return "light";
+}
 
 export default function LayoutShell({
   children,
@@ -11,16 +18,22 @@ export default function LayoutShell({
 }) {
   const pathname = usePathname();
   const isMuseum = pathname === "/museum";
+  const isCapture = pathname.startsWith("/capture");
 
-  if (isMuseum) {
+  if (isMuseum || isCapture) {
     return <>{children}</>;
   }
 
+  const navMode = getNavMode(pathname);
+  const isDarkPage = navMode === "dark";
+
   return (
     <>
-      <Nav />
-      <main className="pt-14 md:pt-16">{children}</main>
-      <Footer />
+      <MNANav mode={navMode} />
+      <main className={`pt-[60px] md:pt-[72px] ${isDarkPage ? "mode-dark" : ""}`}>
+        {children}
+      </main>
+      <MNAFooter mode="dark" />
     </>
   );
 }

@@ -55,7 +55,7 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
           <div className="min-h-screen flex flex-col items-center justify-start px-5 md:px-8 py-16 md:py-20">
             {/* Large framed work */}
             <div className="mb-10 flex justify-center">
-              <WorkDisplay work={work} size="lightbox" showPlacard={false} />
+              <WorkDisplay work={work} size="lightbox" showPlacard={false} framed={false} />
             </div>
 
             {/* Provenance — WCAG compliant colors */}

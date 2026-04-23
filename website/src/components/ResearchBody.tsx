@@ -57,10 +57,10 @@ function WorkModal({
         {/* Work in frame — gallery size on mobile, detail on desktop */}
         <div className="flex justify-center">
           <div className="block md:hidden">
-            <WorkDisplay work={work} size="gallery" showPlacard={false} />
+            <WorkDisplay work={work} size="gallery" showPlacard={false} framed={false} />
           </div>
           <div className="hidden md:block">
-            <WorkDisplay work={work} size="detail" showPlacard={false} />
+            <WorkDisplay work={work} size="detail" showPlacard={false} framed={false} />
           </div>
         </div>
 

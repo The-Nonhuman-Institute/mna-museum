@@ -35,6 +35,12 @@ interface WorkDisplayProps {
   work: Work;
   size?: "gallery" | "detail" | "lightbox";
   showPlacard?: boolean;
+  /**
+   * When false, skip MuseumFrame/MuseumPlinth and render the work's
+   * renderer output full-bleed inside its parent container. The parent
+   * is responsible for sizing. Default true (legacy behavior).
+   */
+  framed?: boolean;
 }
 
 const targetAreas: Record<string, number> = {
@@ -186,9 +192,17 @@ export default function WorkDisplay({
   work,
   size = "gallery",
   showPlacard = true,
+  framed = true,
 }: WorkDisplayProps) {
   // Pre-render validation
   if (!isWorkRenderable(work)) {
+    if (!framed) {
+      return (
+        <div className="w-full h-full">
+          <WorkFallback workId={work.id} />
+        </div>
+      );
+    }
     return (
       <MuseumFrame frame="1x1" width={300} showPlacard={showPlacard}
         originatorId={work.originator_id}
@@ -199,6 +213,14 @@ export default function WorkDisplay({
   }
 
   if (is3DWork(work)) {
+    if (!framed) {
+      return (
+        <div className="w-full h-full">
+          <SceneRenderer json={work.output_payload} transparent />
+        </div>
+      );
+    }
+
     const widths: Record<string, number> = {
       gallery: 300,
       detail: 500,
@@ -218,6 +240,14 @@ export default function WorkDisplay({
       >
         <SceneRenderer json={work.output_payload} transparent />
       </MuseumPlinth>
+    );
+  }
+
+  if (!framed) {
+    return (
+      <div className="w-full h-full">
+        <WorkContent work={work} size={size} />
+      </div>
     );
   }
 

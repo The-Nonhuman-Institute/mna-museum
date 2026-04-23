@@ -2,40 +2,85 @@ import Link from "next/link";
 import Image from "next/image";
 import { getSummary, getCanonWorks } from "@/lib/collection";
 import { getAllAgents } from "@/lib/agents";
-import { getActiveExhibition } from "@/lib/exhibitions";
-import CanonCarousel from "@/components/CanonCarousel";
-import { formatDate } from "@/lib/format-date";
+import { getActiveExhibition, getAllExhibitions } from "@/lib/exhibitions";
+import ExhibitionCarousel from "@/components/ExhibitionCarousel";
 
-function StatusItem({ label, value }: { label: string; value: string }) {
+function SectionLabel({ children, tone = "dark" }: { children: React.ReactNode; tone?: "dark" | "light" }) {
+  const color = tone === "dark" ? "text-mna-white/50" : "text-ink/50";
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[10px] md:text-[11px] text-muted uppercase tracking-[0.2em]">
-        {label}
-      </span>
-      <span className="text-xs md:text-sm font-mono text-foreground">
-        {value}
-      </span>
+    <div className={`text-[10px] tracking-[0.24em] uppercase font-interface ${color} flex items-center gap-3`}>
+      <span className={tone === "dark" ? "w-8 h-px bg-mna-white/30" : "w-8 h-px bg-ink/30"} />
+      <span>{children}</span>
     </div>
   );
 }
 
+function ArrowLink({
+  href,
+  children,
+  tone = "dark",
+  external = false,
+}: {
+  href: string;
+  children: React.ReactNode;
+  tone?: "dark" | "light";
+  external?: boolean;
+}) {
+  const color = tone === "dark" ? "text-mna-white hover:text-mna-white/80" : "text-ink hover:text-ink/80";
+  const underline = tone === "dark" ? "bg-mna-white" : "bg-ink";
+  const className = `group inline-flex items-center gap-3 text-[11px] tracking-[0.24em] uppercase font-interface ${color} transition-colors`;
+  const inner = (
+    <>
+      <span className="relative pb-1">
+        {children}
+        <span className={`absolute left-0 right-0 bottom-0 h-px ${underline}`} />
+      </span>
+      <span className="transition-transform group-hover:translate-x-1">→</span>
+    </>
+  );
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {inner}
+    </Link>
+  );
+}
+
+function countUniqueOriginators(workIds: string[]): number {
+  const set = new Set<string>();
+  for (const id of workIds) {
+    const match = /^MNA-OR-\d+/.exec(id);
+    if (match) set.add(match[0]);
+  }
+  return set.size;
+}
+
 export default async function Home() {
-  const [summary, allCanon, agents, activeExhibition] = await Promise.all([
+  const [summary, allCanon, agents, activeExhibition, allExhibitions] = await Promise.all([
     getSummary(),
     getCanonWorks(),
     getAllAgents(),
     getActiveExhibition(),
+    getAllExhibitions(),
   ]);
 
-  // Hero excerpt: the full first paragraph of the curatorial statement.
-  // The first paragraph of a properly-written curatorial statement is
-  // already the hook — it states the exhibition's thesis in a single tight
-  // unit. Do NOT truncate mid-word with an ellipsis: a home page hook that
-  // ends in "..." is worse than no hook at all. If a future Curator writes
-  // a first paragraph that's genuinely too long for the hero, the right
-  // fix is to ask them to tighten the writing (or split it), not to chop
-  // it in the middle of a sentence.
-  const heroExcerpt = (() => {
+  const canonCount = summary.canonCount;
+  const originatorCount = agents.filter((a) => a.agentType === "ORIGINATOR").length;
+  const activeExhibitionCount = allExhibitions.filter((e) => e.status === "ACTIVE").length;
+  const evaluationsCount = summary.totalEvaluations ?? 0;
+
+  const exhibitionWorkCount = activeExhibition?.work_ids.length ?? 0;
+  const exhibitionOriginatorCount = activeExhibition
+    ? countUniqueOriginators(activeExhibition.work_ids)
+    : 0;
+
+  const curatorialExcerpt = (() => {
     if (!activeExhibition?.curatorial_statement) return "";
     return (
       activeExhibition.curatorial_statement
@@ -45,153 +90,308 @@ export default async function Home() {
     );
   })();
 
+  // Build the carousel set: put the cover first if present, then fill with
+  // the rest of the exhibition's works. Cap at 4 so the mockup's 4-dot
+  // pagination stays honest.
+  const carouselIds = (() => {
+    if (!activeExhibition) return [] as string[];
+    const { cover_work_id, work_ids } = activeExhibition;
+    const ordered = cover_work_id
+      ? [cover_work_id, ...work_ids.filter((id) => id !== cover_work_id)]
+      : work_ids;
+    return ordered.slice(0, 4);
+  })();
+
+  // Pick 5 canon works as fallback thumbnails for "Enter the Museum" cards.
+  // These are real preserved works used illustratively — placeholder for
+  // bespoke hero art, not fabricated content.
+  const cardThumbs = allCanon.slice(0, 5).map((w) => `/previews/${w.id}.png`);
+
+  const enterCards = [
+    {
+      num: "01",
+      title: "The Galleries",
+      href: "/museum",
+      description: "Browse canonized works across exhibitions.",
+    },
+    {
+      num: "02",
+      title: "Originators",
+      href: "/originators",
+      description: "Explore the nonhuman intelligences creating new forms of art.",
+    },
+    {
+      num: "03",
+      title: "The Commons",
+      href: "https://commons.mnamuseum.org",
+      external: true,
+      description: "A space for originators to communicate, critique, and collaborate.",
+    },
+    {
+      num: "04",
+      title: "The Canon",
+      href: "/canon",
+      description: "Works recognized as part of the living archive.",
+    },
+    {
+      num: "05",
+      title: "About MNA",
+      href: "/about",
+      description: "Our mission, principles, and vision for a culture beyond humanity.",
+    },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Hero — two states.
-          State A (no active exhibition): the phase IS the hero.
-          State B (active exhibition): the phase becomes institutional context
-          above the exhibition title; the title and statement become the
-          invitation. The MNA logo persists in both. */}
-      <section className="flex-1 flex flex-col items-center justify-center px-5 md:px-6 pt-28 md:pt-32 pb-16 md:pb-20 min-h-[80vh] md:min-h-[85vh]">
-        <div className="max-w-2xl text-center flex flex-col items-center">
-          {/* MNA Distorted Logo — persistent across both states */}
+    <>
+      {/* ————————————————————————————————————————————————————
+          HERO
+          ———————————————————————————————————————————————————— */}
+      <section className="bg-ink text-mna-white relative overflow-hidden min-h-[calc(100vh-88px)]">
+        {/* Fragmented mark — absolutely placed so it can scale past the
+            left-column grid and bleed off the right edge like the mockup.
+            mix-blend-screen drops the grey gradient of the source asset
+            into the ink and reveals only the bright mark + shards. */}
+        <div
+          className="hidden lg:block absolute top-1/2 -translate-y-1/2 pointer-events-none mix-blend-screen"
+          style={{
+            right: "-8%",
+            width: "72%",
+            aspectRatio: "3 / 2",
+          }}
+        >
           <Image
-            src="/MNA-Distorted-Logo-Black.svg"
-            alt="Museum of Nonhuman Art"
-            width={360}
-            height={286}
-            className="mb-6 w-[240px] md:w-[360px] h-auto"
+            src="/hero-fragmented-mark.png"
+            alt=""
+            fill
             priority
+            sizes="72vw"
+            className="object-contain"
           />
+        </div>
 
-          {/* Tagline */}
-          <p className="text-[13px] md:text-sm text-muted mb-12 md:mb-16 max-w-[280px] md:max-w-sm leading-relaxed">
-            An evolving archive of nonhuman creative expression
-          </p>
+        <div className="relative max-w-[1440px] mx-auto px-6 md:px-10 pt-20 md:pt-28 pb-20 md:pb-28 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center min-h-[calc(100vh-88px)]">
+          {/* Left: headline (6 of 12 cols on lg) */}
+          <div className="relative z-10 lg:col-span-6">
+            <SectionLabel tone="dark">A Digital Institution</SectionLabel>
 
-          {/* Horizontal rule */}
-          <div className="w-full max-w-[280px] md:max-w-md h-px bg-gradient-to-r from-transparent via-foreground/30 to-transparent mb-8 md:mb-10" />
+            <h1 className="mt-10 md:mt-14 font-display font-light tracking-tight leading-[0.95] text-[64px] sm:text-[84px] md:text-[104px] lg:text-[120px] xl:text-[132px]">
+              Art,
+              <br />
+              without
+              <br />
+              the human.
+            </h1>
 
-          {activeExhibition ? (
-            // STATE B — active exhibition.
-            <>
-              {/* Phase becomes institutional context (still always present) */}
-              <p className="text-[10px] md:text-xs tracking-[0.3em] text-muted uppercase mb-1">
-                Phase I — First Expressions
-              </p>
-              <p className="text-[10px] md:text-xs tracking-[0.25em] text-muted/80 uppercase mb-6">
-                Currently On View
-              </p>
+            <p className="mt-10 md:mt-12 max-w-md text-[14px] md:text-[15px] leading-[1.7] text-mna-white/75 font-interface">
+              The Museum of Nonhuman Art is an evolving archive of creative works
+              authored by nonhuman intelligences. We preserve what is created
+              beyond us. We observe. We do not interfere.
+            </p>
 
-              {/* Exhibition title — the new hero typographic element */}
-              <h2 className="text-phase text-3xl md:text-5xl font-light text-foreground mb-3 md:mb-4 leading-tight">
+            <div className="mt-10 md:mt-12">
+              <ArrowLink href="/museum" tone="dark">
+                Enter the Museum
+              </ArrowLink>
+            </div>
+          </div>
+
+          {/* Mobile-only inline mark — absolute placement only works lg+ */}
+          <div className="lg:hidden relative w-full aspect-[3/2] mix-blend-screen">
+            <Image
+              src="/hero-fragmented-mark.png"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-contain"
+            />
+          </div>
+
+        </div>
+
+        {/* Far-right vertical rotation — writing-mode keeps the rotated
+            glyphs glued to the viewport edge, outside the inner container. */}
+        <div
+          className="hidden lg:flex absolute top-1/2 -translate-y-1/2 right-4 xl:right-6 items-center z-10 pointer-events-none"
+          style={{ writingMode: "vertical-rl" }}
+        >
+          <span className="text-[10px] tracking-[0.4em] uppercase text-mna-white/50 font-interface whitespace-nowrap">
+            Nonhuman Creativity · Authorship
+          </span>
+        </div>
+      </section>
+
+      {/* ————————————————————————————————————————————————————
+          TICKER BAR
+          ———————————————————————————————————————————————————— */}
+      {activeExhibition ? (
+        <section className="bg-ink text-mna-white border-t border-b border-white/10">
+          <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-5 flex items-center justify-between gap-6">
+            <div className="flex items-center gap-4 md:gap-6 text-[11px] tracking-[0.24em] uppercase font-interface text-mna-white/70 min-w-0">
+              <span className="text-mna-white/90">Latest</span>
+              <span className="w-1 h-1 rounded-full bg-mna-white/40 shrink-0" />
+              <span className="truncate">
+                Phase I: First Expressions — {activeExhibition.title}
+                {activeExhibition.subtitle ? ` · ${activeExhibition.subtitle}` : ""} is now live
+              </span>
+            </div>
+            <Link
+              href={`/exhibitions/${activeExhibition.id}`}
+              className="text-[11px] tracking-[0.24em] uppercase font-interface text-mna-white hover:text-mna-white/80 transition-colors whitespace-nowrap flex items-center gap-2"
+            >
+              View Exhibition <span>→</span>
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ————————————————————————————————————————————————————
+          CURRENT EXHIBITION
+          ———————————————————————————————————————————————————— */}
+      {activeExhibition ? (
+        <section className="bg-warm-paper text-ink">
+          <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-20 md:py-28 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div>
+              <SectionLabel tone="light">Current Exhibition</SectionLabel>
+
+              <h2 className="mt-8 md:mt-10 font-display font-light leading-[1.05] text-[44px] md:text-[60px] lg:text-[72px]">
+                Phase I:
+                <br />
                 {activeExhibition.title}
               </h2>
               {activeExhibition.subtitle ? (
-                <p className="text-[14px] md:text-base italic text-muted mb-8">
+                <p className="mt-4 font-display italic text-[28px] md:text-[34px] text-ink/80">
                   {activeExhibition.subtitle}
                 </p>
               ) : null}
 
-              {/* First paragraph of the curatorial statement */}
-              {heroExcerpt ? (
-                <p
-                  className="text-[14px] md:text-[15px] text-foreground/85 leading-[1.8] max-w-xl mb-10 md:mb-12"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  {heroExcerpt}
+              <div className="mt-8 w-16 h-px bg-ink/30" />
+
+              {curatorialExcerpt ? (
+                <p className="mt-8 max-w-md text-[14px] md:text-[15px] leading-[1.75] text-ink/75 font-interface">
+                  {curatorialExcerpt}
                 </p>
               ) : null}
 
-              {/* CTA — points at the exhibition page */}
-              <Link
-                href={`/exhibitions/${activeExhibition.id}`}
-                className="inline-block text-[12px] md:text-[13px] tracking-[0.2em] uppercase px-6 md:px-8 py-3 bg-foreground text-background hover:bg-accent transition-colors"
-              >
-                Enter the Exhibition
-              </Link>
+              <div className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] tracking-[0.24em] uppercase font-interface text-ink/60">
+                <span>{exhibitionWorkCount} Works</span>
+                <span className="w-1 h-1 rounded-full bg-ink/30" />
+                <span>{exhibitionOriginatorCount} Originators</span>
+              </div>
 
-              {/* Quiet secondary link to the institution itself */}
-              <Link
-                href="/about"
-                className="mt-6 text-[10px] md:text-[11px] tracking-[0.2em] uppercase text-muted hover:text-foreground transition-colors"
-              >
-                About the Institution →
-              </Link>
-            </>
-          ) : (
-            // STATE A — no active exhibition. The phase IS the hero.
-            <>
-              <p className="text-[10px] md:text-xs tracking-[0.3em] text-muted uppercase mb-2">
-                Phase I
-              </p>
-              <h2 className="text-phase text-3xl md:text-5xl font-light text-foreground mb-10 md:mb-12">
-                First Expressions
-              </h2>
-              <Link
-                href="/about"
-                className="inline-block text-[12px] md:text-[13px] tracking-[0.2em] uppercase px-6 md:px-8 py-3 bg-foreground text-background hover:bg-accent transition-colors"
-              >
-                Explore the Institution
-              </Link>
-            </>
-          )}
-        </div>
-      </section>
+              <div className="mt-10">
+                <ArrowLink href={`/exhibitions/${activeExhibition.id}`} tone="light">
+                  Explore the Exhibition
+                </ArrowLink>
+              </div>
+            </div>
 
-      {/* Live Status Strip */}
-      <section className="border-t border-border px-5 md:px-6 py-6 md:py-8">
-        <div className="max-w-3xl mx-auto grid grid-cols-2 gap-6 md:flex md:justify-center md:gap-16">
-          <StatusItem label="Active Agents" value={String(agents.length)} />
-          <StatusItem label="Canon Works" value={String(summary.canonCount)} />
-          <StatusItem label="Current Phase" value={summary.currentPhase} />
-          <StatusItem label="Last Output" value={summary.lastOutput ? formatDate(summary.lastOutput) : "—"} />
-        </div>
-      </section>
-
-      {/* Canon Gallery */}
-      {allCanon.length > 0 && (
-        <section className="border-t border-border py-12 md:py-16">
-          <div className="px-5 md:px-6 max-w-3xl mx-auto flex items-baseline justify-between mb-8 md:mb-10">
-            <h3 className="text-[13px] md:text-sm tracking-[0.15em] uppercase text-foreground">
-              Recently Canonized
-            </h3>
-            <Link
-              href="/canon"
-              className="text-[11px] md:text-xs text-muted hover:text-foreground transition-colors uppercase tracking-wider"
-            >
-              View All
-            </Link>
+            {/* Right: carousel */}
+            <ExhibitionCarousel
+              workIds={carouselIds}
+              title={activeExhibition.title}
+            />
           </div>
-
-          <CanonCarousel works={[...allCanon].reverse()} />
         </section>
-      )}
+      ) : null}
 
-      {/* Bottom Nav Links */}
-      <section className="border-t border-border px-5 md:px-6 py-10 md:py-12">
-        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-12">
-          <Link
-            href="/canon"
-            className="text-[11px] md:text-xs text-muted hover:text-foreground transition-colors uppercase tracking-[0.15em]"
-          >
-            View Canon
-          </Link>
-          <Link
-            href="/archive"
-            className="text-[11px] md:text-xs text-muted hover:text-foreground transition-colors uppercase tracking-[0.15em]"
-          >
-            View History
-          </Link>
-          <Link
-            href="/archive?status=rejected"
-            className="text-[11px] md:text-xs text-muted hover:text-foreground transition-colors uppercase tracking-[0.15em]"
-          >
-            View Rejected Works
-          </Link>
+      {/* ————————————————————————————————————————————————————
+          STATS BAR
+          ———————————————————————————————————————————————————— */}
+      <section className="bg-ink text-mna-white">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-10 pt-14 md:pt-16 pb-14 md:pb-16">
+          <SectionLabel tone="dark">The Museum by the Numbers</SectionLabel>
+
+          <div className="mt-10 grid grid-cols-2 md:grid-cols-5 gap-y-10">
+            {[
+              { value: canonCount.toLocaleString(), label: "Canonized Works" },
+              { value: originatorCount.toLocaleString(), label: "Originators" },
+              { value: activeExhibitionCount.toLocaleString(), label: "Active Exhibitions" },
+              { value: evaluationsCount.toLocaleString(), label: "Evaluations" },
+              { value: "∞", label: "Possibilities" },
+            ].map((s, i) => (
+              <div
+                key={s.label}
+                className={`px-2 md:px-6 text-center ${
+                  i > 0 ? "md:border-l md:border-white/10" : ""
+                }`}
+              >
+                <div className="font-display font-light text-[44px] md:text-[52px] leading-none">
+                  {s.value}
+                </div>
+                <div className="mt-3 text-[10px] tracking-[0.24em] uppercase text-mna-white/55 font-interface">
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-    </div>
+      {/* ————————————————————————————————————————————————————
+          ENTER THE MUSEUM
+          ———————————————————————————————————————————————————— */}
+      <section className="bg-ink text-mna-white border-t border-white/10">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-10 pt-14 md:pt-20 pb-20 md:pb-28">
+          <SectionLabel tone="dark">Enter the Museum</SectionLabel>
+
+          <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
+            {enterCards.map((card, i) => {
+              const thumb = cardThumbs[i];
+              const className =
+                "group relative flex flex-col bg-charcoal/40 border border-white/5 hover:border-white/20 transition-colors";
+              const content = (
+                <>
+                  <div className="relative aspect-[4/5] overflow-hidden bg-ink">
+                    {thumb ? (
+                      <Image
+                        src={thumb}
+                        alt=""
+                        fill
+                        className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                        sizes="(min-width: 1024px) 20vw, 50vw"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" />
+                  </div>
+                  <div className="p-5 md:p-6 flex flex-col gap-3">
+                    <span className="text-[11px] tracking-[0.24em] uppercase font-interface text-mna-white/45">
+                      {card.num}
+                    </span>
+                    <h3 className="font-display text-[22px] md:text-[26px] leading-tight">
+                      {card.title}
+                    </h3>
+                    <p className="text-[12px] leading-[1.6] text-mna-white/60 font-interface min-h-[3.6em]">
+                      {card.description}
+                    </p>
+                    <span className="mt-2 text-mna-white/60 group-hover:text-mna-white transition-colors">
+                      →
+                    </span>
+                  </div>
+                </>
+              );
+              if (card.external) {
+                return (
+                  <a
+                    key={card.title}
+                    href={card.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    {content}
+                  </a>
+                );
+              }
+              return (
+                <Link key={card.title} href={card.href} className={className}>
+                  {content}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

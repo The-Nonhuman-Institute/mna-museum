@@ -231,6 +231,7 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
   return (
     <div
       ref={containerRef}
+      className="pointer-events-none"
       style={{ width: "100%", height: "100%" }}
     />
   );

@@ -26,7 +26,7 @@ export default function CanonCarousel({ works }: CanonCarouselProps) {
           >
             <div className="absolute inset-0 z-10" />
             <div className="transition-transform duration-300 group-hover:-translate-y-1">
-              <WorkDisplay work={work} size="gallery" showPlacard={false} />
+              <WorkDisplay work={work} size="gallery" showPlacard={false} framed={false} />
             </div>
             <div className="mt-3 text-center">
               {work.title && (

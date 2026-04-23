@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { Work } from "@/lib/collection";
-import WorkDisplay from "@/components/WorkDisplay";
+import WorkCard from "@/components/WorkCard";
 
 type StatusFilter = "ALL" | "CANON" | "REJECTED" | "IN_REVIEW";
 
@@ -96,41 +96,9 @@ function ArchiveContent({ works }: { works: Work[] }) {
         </div>
 
         {filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-12 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 mb-12">
             {filtered.map((work) => (
-              <Link
-                key={work.id}
-                href={`/work/${work.id}`}
-                className="transition-transform hover:scale-[1.02] cursor-pointer relative flex flex-col items-center justify-end"
-              >
-                <div className="absolute inset-0 z-10" />
-                <WorkDisplay work={work} size="gallery" showPlacard={false} />
-                <div className="mt-3 text-center">
-                  {work.title && (
-                    <p className="text-[13px] font-serif italic text-foreground/80 mb-1">
-                      {work.title}
-                    </p>
-                  )}
-                  <p className="text-[11px] font-mono text-muted">
-                    {work.id}
-                  </p>
-                  <p className="text-[10px] text-muted/60 mt-0.5">
-                    {work.originator_id}
-                    <span className="mx-1">·</span>
-                    <span className={
-                      work.canon_status === "CANON" ? "text-foreground/60" :
-                      work.canon_status === "IN_REVIEW" ? "text-amber-600/60" :
-                      "text-muted/40"
-                    }>
-                      {work.canon_status === "IN_REVIEW"
-                        ? "Reconsidering"
-                        : work.canon_status === "CANON"
-                          ? "Canon"
-                          : "Rejected"}
-                    </span>
-                  </p>
-                </div>
-              </Link>
+              <WorkCard key={work.id} work={work} />
             ))}
           </div>
         ) : (

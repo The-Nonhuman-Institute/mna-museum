@@ -39,7 +39,7 @@ export default function SvgRenderer({ svg }: SvgRendererProps) {
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center p-2"
+      className="w-full h-full flex items-center justify-center p-2 [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto"
       dangerouslySetInnerHTML={{ __html: cleanSvg }}
       style={{
         backgroundColor: svgBg,

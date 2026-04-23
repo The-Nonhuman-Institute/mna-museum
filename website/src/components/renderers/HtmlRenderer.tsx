@@ -10,7 +10,7 @@ export default function HtmlRenderer({ html }: HtmlRendererProps) {
       <iframe
         srcDoc={html}
         sandbox="allow-scripts allow-same-origin"
-        className="w-full h-full border-0"
+        className="w-full h-full border-0 pointer-events-none"
         title="Work"
         style={{ background: "#0e0c0a" }}
       />
