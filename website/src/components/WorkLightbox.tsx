@@ -8,11 +8,33 @@ import { formatDate } from "@/lib/format-date";
 
 interface WorkLightboxProps {
   work: Work;
-  children: React.ReactNode;
+  /** Uncontrolled trigger: when provided, clicking it opens the lightbox
+   *  and the component manages its own open state. Styling applied is
+   *  minimal — add your own hover treatment on the trigger. */
+  children?: React.ReactNode;
+  /** Optional controlled state. If `open` is provided the component is
+   *  fully controlled and must pair with `onOpenChange`. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Visual treatment on the trigger wrapper. Defaults to cursor + subtle
+   *  hover scale; pass "none" to disable so the consumer can style freely. */
+  triggerStyle?: "default" | "none";
 }
 
-export default function WorkLightbox({ work, children }: WorkLightboxProps) {
-  const [open, setOpen] = useState(false);
+export default function WorkLightbox({
+  work,
+  children,
+  open: controlledOpen,
+  onOpenChange,
+  triggerStyle = "default",
+}: WorkLightboxProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (isControlled) onOpenChange?.(v);
+    else setInternalOpen(v);
+  };
 
   useEffect(() => {
     if (open) {
@@ -33,14 +55,18 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  const triggerClass =
+    triggerStyle === "none"
+      ? ""
+      : "cursor-pointer transition-transform hover:scale-[1.02]";
+
   return (
     <>
-      <div
-        onClick={() => setOpen(true)}
-        className="cursor-pointer transition-transform hover:scale-[1.02]"
-      >
-        {children}
-      </div>
+      {children ? (
+        <div onClick={() => setOpen(true)} className={triggerClass}>
+          {children}
+        </div>
+      ) : null}
 
       {open && (
         <div className="fixed inset-0 z-[100] bg-[#0a0908]/95 overflow-y-auto">

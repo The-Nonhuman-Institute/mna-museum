@@ -108,7 +108,12 @@ function WorkContent({
       return <SvgRenderer svg={work.output_payload} />;
 
     case "html-css":
-      return <HtmlRenderer html={work.output_payload} />;
+      return (
+        <HtmlRenderer
+          html={work.output_payload}
+          interactive={size === "detail" || size === "lightbox"}
+        />
+      );
 
     case "audio-json":
       return <AudioRenderer json={work.output_payload} />;

@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import type { Work } from "@/lib/collection";
 import type { Agent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
+import WorkLightbox from "@/components/WorkLightbox";
 
 interface ProvenanceClientProps {
   work: Work;
@@ -176,6 +177,7 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
     () => new Set(work.evaluations[0] ? [work.evaluations[0].evaluator_id] : []),
   );
   const [delibOpen, setDelibOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const toggle = (id: string) => {
     setExpanded((prev) => {
@@ -207,21 +209,37 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
               ← Back to Work
             </Link>
 
-            <div className="relative bg-bone overflow-hidden mb-3" style={{ aspectRatio: "1 / 1" }}>
-              <div className="absolute inset-0 [&>*]:w-full [&>*]:h-full [&_svg]:w-full [&_svg]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_iframe]:w-full [&_iframe]:h-full [&_canvas]:w-full [&_canvas]:h-full">
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              aria-label="Expand work"
+              className="relative bg-bone overflow-hidden mb-3 block w-full cursor-zoom-in transition-opacity hover:opacity-90"
+              style={{ aspectRatio: "1 / 1" }}
+            >
+              <div className="absolute inset-0 [&>*]:w-full [&>*]:h-full [&_svg]:w-full [&_svg]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_iframe]:w-full [&_iframe]:h-full [&_canvas]:w-full [&_canvas]:h-full pointer-events-none">
                 <WorkDisplay work={work} size="gallery" showPlacard={false} framed={false} />
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center justify-between text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 mb-8">
-              <span className="inline-flex items-center gap-2 cursor-default">
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className="inline-flex items-center gap-2 hover:text-mna-white transition-colors"
+              >
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25">
                   <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
                 </svg>
                 Expand
-              </span>
+              </button>
               <span className="tabular-nums text-mna-white/55">— / —</span>
             </div>
+
+            <WorkLightbox
+              work={work}
+              open={lightboxOpen}
+              onOpenChange={setLightboxOpen}
+            />
 
             <div className="flex items-center gap-2 mb-4">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden />
