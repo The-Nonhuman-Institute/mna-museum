@@ -6,6 +6,7 @@ import { getExhibition, type Exhibition } from "@/lib/exhibitions";
 import { getWork, getCanonWorks, type Work } from "@/lib/collection";
 import { getAllAgents, type Agent } from "@/lib/agents";
 import { getPreviewIndex } from "@/lib/previews";
+import ExhibitionAboutCarousel from "@/components/ExhibitionAboutCarousel";
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -232,7 +233,14 @@ export default async function ExhibitionDetailPage({ params }: PageProps) {
     heroId,
     ...works.slice(0, 4).map((w) => w.id).filter((wid) => wid !== heroId),
   ].filter((x): x is string => Boolean(x)).slice(0, 4);
-  const aboutImagePrimary = previewSrc(aboutImageIds[0] ?? null, previews);
+  const aboutImages = aboutImageIds
+    .map((wid) => {
+      const src = previewSrc(wid, previews);
+      if (!src) return null;
+      const work = works.find((w) => w.id === wid);
+      return { src, alt: work?.title || wid };
+    })
+    .filter((x): x is { src: string; alt: string } => x !== null);
 
   const featured = works.slice(0, 5);
   const originatorsTop = participating.slice(0, 5);
@@ -400,38 +408,11 @@ export default async function ExhibitionDetailPage({ params }: PageProps) {
             ) : null}
           </div>
 
-          {/* Right — feature image */}
-          <div>
-            <div className="relative aspect-[4/3] bg-bone overflow-hidden border border-ink/10">
-              {aboutImagePrimary ? (
-                <Image
-                  src={aboutImagePrimary}
-                  alt={exhibition.title}
-                  fill
-                  sizes="(min-width: 1024px) 55vw, 100vw"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[10px] font-sans uppercase tracking-[0.28em] text-ink/30">
-                    Image Forthcoming
-                  </span>
-                </div>
-              )}
-            </div>
-            {aboutImageIds.length > 1 ? (
-              <div className="mt-5 flex items-center gap-2" aria-hidden>
-                {aboutImageIds.map((wid, i) => (
-                  <span
-                    key={wid}
-                    className={`w-[6px] h-[6px] rounded-full ${
-                      i === 0 ? "bg-ink" : "bg-ink/20"
-                    }`}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </div>
+          {/* Right — feature image carousel */}
+          <ExhibitionAboutCarousel
+            images={aboutImages}
+            title={exhibition.title}
+          />
         </div>
       </section>
 
