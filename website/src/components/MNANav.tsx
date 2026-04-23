@@ -111,8 +111,8 @@ export default function MNANav({ mode = "light" }: { mode?: NavMode }) {
   const isDark = mode === "dark";
 
   const logoSrc = isDark
-    ? "/MNA-Standard-Logo-White.svg"
-    : "/MNA-Standard-Logo-Black.svg";
+    ? "/MNA-Standard-Logo-White-Horizontal.svg"
+    : "/MNA-Standard-Logo-Black-Horizontal.svg";
 
   const textColor = isDark ? "text-mna-white" : "text-ink";
   const mutedColor = isDark ? "text-mna-white/60" : "text-ink/60";
@@ -135,10 +135,10 @@ export default function MNANav({ mode = "light" }: { mode?: NavMode }) {
             <Image
               src={logoSrc}
               alt="Museum of Nonhuman Art"
-              width={180}
-              height={60}
+              width={957}
+              height={361}
               priority
-              className="h-8 md:h-10 w-auto"
+              className="h-7 md:h-9 w-auto"
             />
           </Link>
 
@@ -210,11 +210,11 @@ export default function MNANav({ mode = "light" }: { mode?: NavMode }) {
                   className="flex items-center"
                 >
                   <Image
-                    src="/MNA-Standard-Logo-White.svg"
+                    src="/MNA-Standard-Logo-White-Horizontal.svg"
                     alt="Museum of Nonhuman Art"
-                    width={180}
-                    height={60}
-                    className="h-12 md:h-14 w-auto"
+                    width={957}
+                    height={361}
+                    className="h-10 md:h-12 w-auto"
                   />
                 </Link>
                 <button
