@@ -150,3 +150,65 @@ export function computePlacements(
     return positionFor(w);
   });
 }
+
+/**
+ * Deterministic collision-relax pass. Treats each node as a rectangle in
+ * normalized space (given dimensions) and iteratively pushes overlapping
+ * pairs apart along the axis of smaller overlap. Positions stay clamped
+ * inside the canvas so nothing escapes. Same inputs produce the same
+ * output — the result is stable across reloads even when nudged.
+ *
+ * nodeW / nodeH are normalized (0–1) dimensions of a node, i.e. the
+ * node's pixel size divided by the canvas's pixel size. Pass a small
+ * padding via `gap` to keep an airspace between adjacent nodes.
+ */
+export function relaxPlacements(
+  placements: Placement[],
+  nodeW: number,
+  nodeH: number,
+  opts?: { iterations?: number; gap?: number; strength?: number }
+): Placement[] {
+  const iterations = opts?.iterations ?? 14;
+  const gap = opts?.gap ?? 0.008;
+  const strength = opts?.strength ?? 0.55;
+  const minDx = nodeW + gap;
+  const minDy = nodeH + gap;
+
+  const pts = placements.map((p) => ({ ...p }));
+  const clampX = (x: number) => Math.max(nodeW / 2 + 0.01, Math.min(1 - nodeW / 2 - 0.01, x));
+  const clampY = (y: number) => Math.max(nodeH / 2 + 0.02, Math.min(1 - nodeH / 2 - 0.02, y));
+
+  for (let it = 0; it < iterations; it++) {
+    let moved = 0;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const a = pts[i]!;
+        const b = pts[j]!;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        if (absDx < minDx && absDy < minDy) {
+          const ovX = minDx - absDx;
+          const ovY = minDy - absDy;
+          // Tiebreaker based on index pair keeps the pass deterministic.
+          const preferX = ovX < ovY || (ovX === ovY && (i + j) % 2 === 0);
+          if (preferX) {
+            const nudge = (ovX * strength) / 2;
+            const sign = dx === 0 ? ((i + j) % 2 === 0 ? 1 : -1) : dx > 0 ? 1 : -1;
+            a.x = clampX(a.x - sign * nudge);
+            b.x = clampX(b.x + sign * nudge);
+          } else {
+            const nudge = (ovY * strength) / 2;
+            const sign = dy === 0 ? ((i + j) % 2 === 0 ? 1 : -1) : dy > 0 ? 1 : -1;
+            a.y = clampY(a.y - sign * nudge);
+            b.y = clampY(b.y + sign * nudge);
+          }
+          moved++;
+        }
+      }
+    }
+    if (moved === 0) break;
+  }
+  return pts;
+}

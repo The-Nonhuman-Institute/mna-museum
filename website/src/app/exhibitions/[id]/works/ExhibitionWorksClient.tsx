@@ -8,6 +8,7 @@ import type { Work } from "@/lib/collection";
 import {
   ZONES,
   computePlacements,
+  relaxPlacements,
   type Placement,
 } from "@/lib/exhibition-layout";
 
@@ -117,10 +118,20 @@ export default function ExhibitionWorksClient({
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
   }, [works]);
 
-  const placements = useMemo<Placement[]>(
-    () => computePlacements(works),
-    [works]
-  );
+  // Node footprint in normalized space (rough canvas 1100×825px, node + placard
+  // ~92×82px). Keeps collision pass agreement across common widths without
+  // over-correcting on huge screens.
+  const NODE_W_NORM = 92 / 1100;
+  const NODE_H_NORM = 82 / 825;
+
+  const placements = useMemo<Placement[]>(() => {
+    const initial = computePlacements(works);
+    return relaxPlacements(initial, NODE_W_NORM, NODE_H_NORM, {
+      iterations: 16,
+      gap: 0.012,
+      strength: 0.55,
+    });
+  }, [works]);
 
   /* ── State ──────────────────────────────────────────────────────────── */
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -723,6 +734,7 @@ function ArrangementCanvas({
           const pl = placements[i]!;
           const num = pad2(i + 1);
           const thumb = previews.has(w.id) ? `/previews/${w.id}.png` : null;
+          const short = originatorShort(w);
           const visible = visibleMap.get(w.id) !== false;
           const isHover = hovered === w.id;
           return (
@@ -735,37 +747,47 @@ function ArrangementCanvas({
               style={{
                 left: `${pl.x * 100}%`,
                 top: `${pl.y * 100}%`,
-                transform: `translate(-50%, -50%) scale(${isHover ? 1.08 : 1})`,
+                transform: `translate(-50%, -50%) scale(${isHover ? 1.06 : 1})`,
                 opacity: visible ? 1 : 0.08,
                 pointerEvents: visible ? "auto" : "none",
                 transition: "opacity 200ms ease, transform 160ms ease",
                 zIndex: isHover ? 20 : 10,
               }}
-              aria-label={`${w.title || w.id} — ${originatorShort(w)} — ${statusLabelShort(w.canon_status)}`}
+              aria-label={`${w.title || w.id} — ${short} — ${statusLabelShort(w.canon_status)}`}
             >
-              <div className="relative w-[58px] h-[40px] md:w-[68px] md:h-[46px] bg-ink/85 overflow-hidden ring-1 ring-ink/15">
+              <div className="relative w-[84px] h-[58px] md:w-[92px] md:h-[64px] bg-ink overflow-hidden ring-1 ring-ink/20">
                 {thumb ? (
                   <Image
                     src={thumb}
                     alt=""
                     fill
-                    sizes="68px"
-                    className="object-cover"
+                    sizes="92px"
+                    className="object-cover opacity-90"
                   />
                 ) : null}
+                {/* Work number — top-left inside the tile */}
+                <span className="absolute top-1 left-1.5 text-[9px] font-sans tracking-[0.12em] text-mna-white/80 tabular-nums leading-none">
+                  {num}
+                </span>
+                {/* Status dot — top-right inside the tile */}
+                <span className="absolute top-[5px] right-1.5">
+                  <StatusDot status={w.canon_status} tone="dark" />
+                </span>
               </div>
-              <div className="mt-1.5 flex items-center justify-center gap-1.5">
-                <span className="text-[9px] font-sans tracking-[0.1em] text-ink/80 tabular-nums">{num}</span>
-                <StatusDot status={w.canon_status} />
+              {/* Placard — originator short name as institutional identity */}
+              <div className="mt-1 flex justify-center">
+                <span className="max-w-[92px] truncate text-[9px] font-sans uppercase tracking-[0.22em] text-ink/70 group-hover:text-ink transition-colors">
+                  {short}
+                </span>
               </div>
               {isHover ? (
                 <div
-                  className="absolute left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-ink text-mna-white text-[10px] font-sans uppercase tracking-[0.18em] px-2.5 py-1.5 z-30 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.5)]"
+                  className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap bg-ink text-mna-white text-[10px] font-sans uppercase tracking-[0.18em] px-2.5 py-1.5 z-30 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.5)] mt-2"
                   style={{ top: "100%" }}
                 >
                   <span className="block text-mna-white">{w.title || "Untitled"}</span>
                   <span className="block text-mna-white/60 mt-0.5 normal-case tracking-[0.08em]">
-                    {originatorShort(w)} · {statusLabelShort(w.canon_status)}
+                    {short} · {statusLabelShort(w.canon_status)}
                   </span>
                 </div>
               ) : null}
@@ -793,14 +815,24 @@ function ArrangementCanvas({
   );
 }
 
-function StatusDot({ status }: { status: string }) {
+function StatusDot({
+  status,
+  tone = "light",
+}: {
+  status: string;
+  tone?: "light" | "dark";
+}) {
+  const isDark = tone === "dark";
+  const fill = isDark ? "bg-mna-white" : "bg-ink";
+  const border = isDark ? "border-mna-white/70" : "border-ink/60";
+  const borderMuted = isDark ? "border-mna-white/40" : "border-ink/40";
   if (status === "CANON") {
-    return <span aria-hidden className="inline-block w-[7px] h-[7px] rounded-full bg-ink" />;
+    return <span aria-hidden className={`inline-block w-[7px] h-[7px] rounded-full ${fill}`} />;
   }
   if (status === "IN_REVIEW") {
-    return <span aria-hidden className="inline-block w-[7px] h-[7px] rounded-full border border-ink/60" />;
+    return <span aria-hidden className={`inline-block w-[7px] h-[7px] rounded-full border ${border}`} />;
   }
-  return <span aria-hidden className="inline-block w-[7px] h-[7px] rounded-full border border-ink/40" />;
+  return <span aria-hidden className={`inline-block w-[7px] h-[7px] rounded-full border ${borderMuted}`} />;
 }
 
 /* ─── Index table ───────────────────────────────────────────────────────── */
