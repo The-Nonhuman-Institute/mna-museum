@@ -5,19 +5,11 @@
  * orbital diagram, etc.) rendered procedurally from a deterministic seed.
  * Same family + same seed → same glyph, always. Families share a visual
  * language: thin white line-work on black, centered composition, geometric
- * construction visible, negative space dominant. Think 18th-century
- * scientific engraving, not app iconography.
+ * construction visible, negative space dominant.
  *
- * Use cases:
- *   - Pre-identity placeholders for agents below work #20
- *   - Navigational / sectional chrome (home nav buttons, dividers)
- *   - Empty-state fills and institutional decoration
- *
- * The library is deliberately closed: extending it is a code change. That
- * keeps the visual vocabulary coherent. When agents crystallize their own
- * identity at work #20, the chosen family + seed are recorded in the DB
- * (agent_identity table) so the render stays stable even if the library
- * evolves.
+ * Every family applies within-variant perturbation (rotation, scale, count,
+ * jitter, density) derived from the higher bits of its seed so that two
+ * seeds hashing to the same `seed % N` still render distinct glyphs.
  */
 
 import * as React from "react";
@@ -41,6 +33,21 @@ function mulberry32(seed: number) {
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* Derive secondary values from higher seed bits for within-variant variety.
+   Uses bit-shifts rather than mulberry32 so values stay stable and easy to
+   reason about — every family can pull the same named knobs. */
+function knobs(seed: number) {
+  /* Use unsigned right shift (>>>) so large hashes don't go negative. */
+  return {
+    rot: (((seed >>> 2) % 360) * Math.PI) / 180,            // 0..2π
+    rotDeg: (seed >>> 2) % 360,                             // 0..359
+    scale: 0.90 + (((seed >>> 8) % 100) / 100) * 0.18,      // 0.90..1.08
+    density: 0.75 + (((seed >>> 12) % 100) / 100) * 0.50,   // 0.75..1.25
+    alt: (seed >>> 16) % 5,                                 // 0..4
+    swirl: (((seed >>> 20) % 100) - 50) / 100,              // -0.5..0.5
   };
 }
 
@@ -118,8 +125,7 @@ export const GLYPH_FAMILIES: Record<GlyphFamily, GlyphMeta> = {
 
 export const ALL_FAMILIES = Object.keys(GLYPH_FAMILIES) as GlyphFamily[];
 
-/** Deterministically pick a family from a string seed. Useful for
- *  pre-identity placeholders: same agent always gets the same family. */
+/** Deterministically pick a family from a string seed. */
 export function pickFamily(seed: string): GlyphFamily {
   const h = hashSeed(`family::${seed}`);
   return ALL_FAMILIES[h % ALL_FAMILIES.length];
@@ -129,7 +135,6 @@ export function pickFamily(seed: string): GlyphFamily {
 
 export interface MNAGlyphProps {
   family: GlyphFamily;
-  /** String or numeric seed. Strings are hashed. */
   seed: string | number;
   size?: number;
   color?: string;
@@ -146,7 +151,7 @@ export default function MNAGlyph({
   title,
 }: MNAGlyphProps) {
   const n = typeof seed === "number" ? seed >>> 0 : hashSeed(String(seed));
-  const body = renderFamily(family, n, color);
+  const body = RENDERERS[family](n, color);
   return (
     <svg
       width={size}
@@ -163,14 +168,7 @@ export default function MNAGlyph({
   );
 }
 
-/* ─── Dispatch ─────────────────────────────────────────────────────────── */
-
 type Renderer = (seed: number, color: string) => React.ReactNode;
-
-function renderFamily(family: GlyphFamily, seed: number, color: string): React.ReactNode {
-  const fn = RENDERERS[family];
-  return fn(seed, color);
-}
 
 const RENDERERS: Record<GlyphFamily, Renderer> = {
   "particle-cloud":   particleCloud,
@@ -200,11 +198,17 @@ const RENDERERS: Record<GlyphFamily, Renderer> = {
   "halftone":         halftone,
 };
 
+/* Wrap an element tree in a rotation transform around (50,50). */
+function Rot({ deg, children }: { deg: number; children: React.ReactNode }) {
+  if (deg === 0) return <>{children}</>;
+  return <g transform={`rotate(${deg} 50 50)`}>{children}</g>;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════ */
 /*  FAMILIES                                                                */
 /* ═══════════════════════════════════════════════════════════════════════ */
 
-/* ─── particle-cloud — 4 variants ──────────────────────────────────────── */
+/* ─── particle-cloud ───────────────────────────────────────────────────── */
 
 function particleCloud(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
@@ -212,19 +216,12 @@ function particleCloud(seed: number, color: string): React.ReactNode {
   const pts: { x: number; y: number; r: number; op: number }[] = [];
 
   if (variant === 0) {
-    // Dust cloud, radial falloff
     for (let i = 0; i < 260; i++) {
       const r = Math.pow(rand(), 0.6) * 42;
       const a = rand() * Math.PI * 2;
-      pts.push({
-        x: 50 + Math.cos(a) * r,
-        y: 50 + Math.sin(a) * r,
-        r: 0.3 + rand() * 0.6,
-        op: 0.4 + (1 - r / 42) * 0.6,
-      });
+      pts.push({ x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, r: 0.3 + rand() * 0.6, op: 0.4 + (1 - r / 42) * 0.6 });
     }
   } else if (variant === 1) {
-    // Ringed system
     const rings = 3 + (seed % 3);
     for (let ri = 0; ri < rings; ri++) {
       const r = 10 + ri * 10 + rand() * 3;
@@ -232,12 +229,7 @@ function particleCloud(seed: number, color: string): React.ReactNode {
       for (let i = 0; i < count; i++) {
         const a = (i / count) * Math.PI * 2 + rand() * 0.2;
         const jitter = rand() * 1.5;
-        pts.push({
-          x: 50 + Math.cos(a) * (r + jitter),
-          y: 50 + Math.sin(a) * (r + jitter),
-          r: 0.3 + rand() * 0.4,
-          op: 0.5 + rand() * 0.35,
-        });
+        pts.push({ x: 50 + Math.cos(a) * (r + jitter), y: 50 + Math.sin(a) * (r + jitter), r: 0.3 + rand() * 0.4, op: 0.5 + rand() * 0.35 });
       }
     }
     for (let i = 0; i < 40; i++) {
@@ -246,7 +238,6 @@ function particleCloud(seed: number, color: string): React.ReactNode {
       pts.push({ x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, r: 0.4 + rand() * 0.6, op: 0.9 });
     }
   } else if (variant === 2) {
-    // Filamentary arms
     const arms = 3 + Math.floor(rand() * 3);
     for (let ai = 0; ai < arms; ai++) {
       const baseA = (ai / arms) * Math.PI * 2 + rand() * 0.3;
@@ -254,27 +245,16 @@ function particleCloud(seed: number, color: string): React.ReactNode {
         const t = i / 50;
         const r = t * 40;
         const a = baseA + (rand() - 0.5) * 0.6 + t * 0.5;
-        pts.push({
-          x: 50 + Math.cos(a) * r,
-          y: 50 + Math.sin(a) * r,
-          r: 0.25 + rand() * 0.5,
-          op: 0.4 + (1 - t) * 0.5,
-        });
+        pts.push({ x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, r: 0.25 + rand() * 0.5, op: 0.4 + (1 - t) * 0.5 });
       }
     }
   } else {
-    // Lissajous weave
     const a1 = 1 + (seed % 3);
     const a2 = 2 + ((seed >> 2) % 3);
     const phase = (seed % 100) / 100;
     for (let i = 0; i < 300; i++) {
       const t = (i / 300) * Math.PI * 2;
-      pts.push({
-        x: 50 + Math.sin(a1 * t + phase) * 36,
-        y: 50 + Math.sin(a2 * t) * 36,
-        r: 0.35,
-        op: 0.75,
-      });
+      pts.push({ x: 50 + Math.sin(a1 * t + phase) * 36, y: 50 + Math.sin(a2 * t) * 36, r: 0.35, op: 0.75 });
     }
   }
 
@@ -283,31 +263,37 @@ function particleCloud(seed: number, color: string): React.ReactNode {
   ));
 }
 
-/* ─── polyhedron — 4 variants ──────────────────────────────────────────── */
+/* ─── polyhedron ───────────────────────────────────────────────────────── */
 
 function polyhedron(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
   const family = seed % 4;
   const lines: [number, number, number, number][] = [];
   const dots: [number, number][] = [];
-  const cx = 50, cy = 50, R = 32;
+  const cx = 50, cy = 50, R = 32 * k.scale;
+  const depth = 0.22 + (((seed >> 12) % 100) / 100) * 0.22;
+  const depthA = ((seed >> 4) % 360) * (Math.PI / 180);
+  const dx = Math.cos(depthA) * depth;
+  const dy = Math.sin(depthA) * depth;
 
   if (family === 0) {
-    // Octahedron
+    // Octahedron, depth vertices displace along random direction
     const verts: [number, number][] = [
       [cx, cy - R], [cx, cy + R], [cx - R, cy], [cx + R, cy],
-      [cx - R * 0.7, cy - R * 0.3], [cx + R * 0.7, cy + R * 0.3],
+      [cx - R * dx * 2, cy - R * dy * 2], [cx + R * dx * 2, cy + R * dy * 2],
     ];
     for (let i = 0; i < verts.length; i++)
       for (let j = i + 1; j < verts.length; j++)
         lines.push([verts[i][0], verts[i][1], verts[j][0], verts[j][1]]);
     dots.push(...verts);
   } else if (family === 1) {
-    // Cube
+    // Cube with variable back-face offset
     const front: [number, number][] = [
       [cx - R * 0.7, cy - R * 0.7], [cx + R * 0.7, cy - R * 0.7],
       [cx + R * 0.7, cy + R * 0.7], [cx - R * 0.7, cy + R * 0.7],
     ];
-    const back: [number, number][] = front.map(([x, y]) => [x + R * 0.3, y - R * 0.3]);
+    const back: [number, number][] = front.map(([x, y]) => [x + R * dx, y + R * dy]);
     for (let i = 0; i < 4; i++) {
       const ni = (i + 1) % 4;
       lines.push([front[i][0], front[i][1], front[ni][0], front[ni][1]]);
@@ -316,15 +302,16 @@ function polyhedron(seed: number, color: string): React.ReactNode {
     }
     dots.push(...front, ...back);
   } else if (family === 2) {
-    // Icosahedral star
+    // Icosahedral star, variable chord skip
     const count = 12;
+    const skip = 3 + ((seed >> 6) % 3); // 3, 4, or 5
     const verts: [number, number][] = [];
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 - Math.PI / 2;
       verts.push([cx + Math.cos(a) * R, cy + Math.sin(a) * R]);
     }
     for (let i = 0; i < count; i++) {
-      const j = (i + 4) % count;
+      const j = (i + skip) % count;
       lines.push([verts[i][0], verts[i][1], verts[j][0], verts[j][1]]);
     }
     for (let i = 0; i < count; i++) {
@@ -333,7 +320,8 @@ function polyhedron(seed: number, color: string): React.ReactNode {
     }
     dots.push(...verts);
   } else {
-    // Cuboctahedron
+    // Cuboctahedron, variable inner rotation
+    const innerRot = (((seed >> 10) % 100) / 100) * (Math.PI / 2);
     const outer: [number, number][] = [];
     const inner: [number, number][] = [];
     for (let i = 0; i < 8; i++) {
@@ -341,7 +329,7 @@ function polyhedron(seed: number, color: string): React.ReactNode {
       outer.push([cx + Math.cos(a) * R, cy + Math.sin(a) * R]);
     }
     for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 - Math.PI / 4;
+      const a = (i / 4) * Math.PI * 2 - Math.PI / 4 + innerRot;
       inner.push([cx + Math.cos(a) * R * 0.5, cy + Math.sin(a) * R * 0.5]);
     }
     for (let i = 0; i < 8; i++) {
@@ -352,19 +340,25 @@ function polyhedron(seed: number, color: string): React.ReactNode {
       lines.push([outer[i * 2][0], outer[i * 2][1], inner[i][0], inner[i][1]]);
       lines.push([outer[i * 2 + 1][0], outer[i * 2 + 1][1], inner[i][0], inner[i][1]]);
     }
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4;
+      lines.push([inner[i][0], inner[i][1], inner[j][0], inner[j][1]]);
+    }
     dots.push(...outer, ...inner);
   }
 
+  const jittered = dots.map(([x, y]) => [x + (rand() - 0.5) * 0.6, y + (rand() - 0.5) * 0.6] as [number, number]);
+
   return (
-    <>
+    <Rot deg={k.rotDeg}>
       {lines.map(([x1, y1, x2, y2], i) => (
         <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="0.4" opacity="0.55" />
       ))}
-      {dots.map(([x, y], i) => (
+      {jittered.map(([x, y], i) => (
         <circle key={`d${i}`} cx={x} cy={y} r="1" fill={color} opacity="0.85" />
       ))}
       <circle cx={cx} cy={cy} r="1.2" fill={color} />
-    </>
+    </Rot>
   );
 }
 
@@ -372,16 +366,17 @@ function polyhedron(seed: number, color: string): React.ReactNode {
 
 function fracturedDisc(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const cuts = 2 + (seed % 3); // 2 or 3 diametric cuts
-  const baseAngles = Array.from({ length: cuts }, (_, i) => (i * Math.PI) / cuts);
-  const angles = baseAngles.map((a) => a + (rand() - 0.5) * 0.35);
-  const R = 34;
+  const cuts = 2 + (seed % 3);
+  const rotOffset = rand() * Math.PI;
+  const baseAngles = Array.from({ length: cuts }, (_, i) => (i * Math.PI) / cuts + rotOffset);
+  const angles = baseAngles.map((a) => a + (rand() - 0.5) * 0.4);
+  const R = 32 + rand() * 4;
 
   return (
     <>
       <defs>
-        <radialGradient id={`keep-${seed}`} cx="50%" cy="42%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.12" />
+        <radialGradient id={`keep-${seed}`} cx={`${42 + rand() * 16}%`} cy={`${38 + rand() * 14}%`}>
+          <stop offset="0%" stopColor={color} stopOpacity="0.14" />
           <stop offset="100%" stopColor={color} stopOpacity="0.03" />
         </radialGradient>
       </defs>
@@ -395,8 +390,8 @@ function fracturedDisc(seed: number, color: string): React.ReactNode {
           x2={50 - Math.cos(a) * R}
           y2={50 - Math.sin(a) * R}
           stroke={color}
-          strokeWidth="2.2"
-          opacity="0.92"
+          strokeWidth={1.8 + rand() * 0.8}
+          opacity={0.82 + rand() * 0.15}
         />
       ))}
       <circle cx="50" cy="50" r="1.8" fill={color} />
@@ -408,22 +403,14 @@ function fracturedDisc(seed: number, color: string): React.ReactNode {
 
 function starburst(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const count = [72, 96, 120][seed % 3];
+  const count = [72, 96, 120, 144][seed % 4];
+  const k = knobs(seed);
   const spokes: React.ReactNode[] = [];
   for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2 + rand() * 0.05;
+    const a = (i / count) * Math.PI * 2 + k.rot + rand() * 0.05;
     const len = 10 + rand() * 30;
     spokes.push(
-      <line
-        key={i}
-        x1="50"
-        y1="50"
-        x2={50 + Math.cos(a) * len}
-        y2={50 + Math.sin(a) * len}
-        stroke={color}
-        strokeWidth={0.25 + rand() * 0.25}
-        opacity={0.3 + rand() * 0.6}
-      />
+      <line key={i} x1="50" y1="50" x2={50 + Math.cos(a) * len} y2={50 + Math.sin(a) * len} stroke={color} strokeWidth={0.25 + rand() * 0.25} opacity={0.3 + rand() * 0.6} />
     );
   }
   return (
@@ -438,23 +425,17 @@ function starburst(seed: number, color: string): React.ReactNode {
 
 function starburstLong(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const count = 160;
+  const k = knobs(seed);
+  const count = [120, 160, 200][seed % 3];
+  const longEvery = [6, 8, 10, 12][(seed >> 3) % 4];
+  const longLen = 30 + rand() * 8;
   const spokes: React.ReactNode[] = [];
   for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2;
-    const long = i % 8 === 0;
-    const len = long ? 36 : 12 + rand() * 10;
+    const a = (i / count) * Math.PI * 2 + k.rot;
+    const long = i % longEvery === 0;
+    const len = long ? longLen : 10 + rand() * 12;
     spokes.push(
-      <line
-        key={i}
-        x1="50"
-        y1="50"
-        x2={50 + Math.cos(a) * len}
-        y2={50 + Math.sin(a) * len}
-        stroke={color}
-        strokeWidth="0.3"
-        opacity={long ? 0.9 : 0.3 + rand() * 0.3}
-      />
+      <line key={i} x1="50" y1="50" x2={50 + Math.cos(a) * len} y2={50 + Math.sin(a) * len} stroke={color} strokeWidth="0.3" opacity={long ? 0.9 : 0.3 + rand() * 0.3} />
     );
   }
   return (
@@ -468,101 +449,168 @@ function starburstLong(seed: number, color: string): React.ReactNode {
 /* ─── grid-square ──────────────────────────────────────────────────────── */
 
 function gridSquare(seed: number, color: string): React.ReactNode {
-  const sz = 46;
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const divisions = 2 + (seed % 4); // 2,3,4,5
+  const sz = 44 + rand() * 6;
   const x = 50 - sz / 2;
   const y = 50 - sz / 2;
-  const divisions = 2 + (seed % 3); // 2, 3, or 4
   const step = sz / divisions;
-  const lines: React.ReactNode[] = [
-    <rect key="r" x={x} y={y} width={sz} height={sz} stroke={color} strokeWidth="0.5" opacity="0.75" />,
-  ];
+  const diag = ((seed >> 5) % 3); // 0=none, 1=one diag, 2=both diagonals
+  const cellMarks = ((seed >> 9) % 3) === 0; // sometimes dot in each cell
+  const tilt = (((seed >> 11) % 100) - 50) / 100 * 12; // -6..6°
+
+  const elems: React.ReactNode[] = [];
+  elems.push(<rect key="r" x={x} y={y} width={sz} height={sz} stroke={color} strokeWidth="0.5" opacity="0.75" />);
   for (let i = 1; i < divisions; i++) {
-    lines.push(
+    elems.push(
       <line key={`h${i}`} x1={x} y1={y + i * step} x2={x + sz} y2={y + i * step} stroke={color} strokeWidth="0.4" opacity="0.45" />,
       <line key={`v${i}`} x1={x + i * step} y1={y} x2={x + i * step} y2={y + sz} stroke={color} strokeWidth="0.4" opacity="0.45" />
     );
   }
-  return (
-    <>
-      {lines}
-      <circle cx="50" cy="50" r="1.4" fill={color} />
-    </>
-  );
+  if (diag >= 1) {
+    elems.push(<line key="d1" x1={x} y1={y} x2={x + sz} y2={y + sz} stroke={color} strokeWidth="0.3" opacity="0.35" />);
+  }
+  if (diag === 2) {
+    elems.push(<line key="d2" x1={x + sz} y1={y} x2={x} y2={y + sz} stroke={color} strokeWidth="0.3" opacity="0.35" />);
+  }
+  if (cellMarks) {
+    for (let r = 0; r < divisions; r++) {
+      for (let c = 0; c < divisions; c++) {
+        elems.push(
+          <circle key={`m${r}-${c}`} cx={x + (c + 0.5) * step} cy={y + (r + 0.5) * step} r="0.5" fill={color} opacity="0.45" />
+        );
+      }
+    }
+  }
+  elems.push(<circle key="core" cx="50" cy="50" r="1.4" fill={color} />);
+  return <Rot deg={tilt}>{elems}</Rot>;
 }
 
 /* ─── isocube ──────────────────────────────────────────────────────────── */
 
 function isocube(seed: number, color: string): React.ReactNode {
-  const variant = seed % 3;
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const variant = seed % 4;
+  // Scaled cube geometry — varies per seed
+  const w = 30 * k.scale;
+  const hh = 15 * k.scale;
+  const vh = 30 * k.scale;
+  // Build main cube from center (50,50)
+  const pts = {
+    top:   [50, 50 - vh] as [number, number],
+    right: [50 + w, 50 - hh] as [number, number],
+    br:    [50 + w, 50 + hh] as [number, number],
+    bot:   [50, 50 + vh] as [number, number],
+    bl:    [50 - w, 50 + hh] as [number, number],
+    left:  [50 - w, 50 - hh] as [number, number],
+    ctr:   [50, 50] as [number, number],
+  };
+  const hex = `${pts.top[0]},${pts.top[1]} ${pts.right[0]},${pts.right[1]} ${pts.br[0]},${pts.br[1]} ${pts.bot[0]},${pts.bot[1]} ${pts.bl[0]},${pts.bl[1]} ${pts.left[0]},${pts.left[1]}`;
   const base = (
     <>
-      <polygon points="50,20 80,35 80,65 50,80 20,65 20,35" stroke={color} strokeWidth="0.55" opacity="0.75" />
-      <polyline points="20,35 50,50 80,35" stroke={color} strokeWidth="0.55" opacity="0.75" />
-      <line x1="50" y1="50" x2="50" y2="80" stroke={color} strokeWidth="0.55" opacity="0.75" />
+      <polygon points={hex} stroke={color} strokeWidth="0.55" opacity="0.75" />
+      <polyline points={`${pts.left[0]},${pts.left[1]} ${pts.ctr[0]},${pts.ctr[1]} ${pts.right[0]},${pts.right[1]}`} stroke={color} strokeWidth="0.5" opacity="0.75" />
+      <line x1={pts.ctr[0]} y1={pts.ctr[1]} x2={pts.bot[0]} y2={pts.bot[1]} stroke={color} strokeWidth="0.5" opacity="0.75" />
     </>
   );
-  if (variant === 0) {
-    return (
-      <>
-        {base}
-        <circle cx="50" cy="50" r="1.2" fill={color} />
-      </>
-    );
-  }
+
+  let extra: React.ReactNode = null;
   if (variant === 1) {
-    // Nested inner cube
-    return (
+    // Nested inner cube at 60% scale
+    const s = 0.6;
+    const iw = w * s, ihh = hh * s, ivh = vh * s;
+    extra = (
       <>
-        {base}
-        <polygon points="50,32 68,41 68,59 50,68 32,59 32,41" stroke={color} strokeWidth="0.4" opacity="0.5" />
-        <polyline points="32,41 50,50 68,41" stroke={color} strokeWidth="0.35" opacity="0.45" />
-        <circle cx="50" cy="50" r="1.2" fill={color} />
+        <polygon points={`50,${50 - ivh} ${50 + iw},${50 - ihh} ${50 + iw},${50 + ihh} 50,${50 + ivh} ${50 - iw},${50 + ihh} ${50 - iw},${50 - ihh}`} stroke={color} strokeWidth="0.4" opacity="0.5" />
+        <polyline points={`${50 - iw},${50 - ihh} 50,50 ${50 + iw},${50 - ihh}`} stroke={color} strokeWidth="0.35" opacity="0.45" />
+      </>
+    );
+  } else if (variant === 2) {
+    // Two satellite cubes at random corner offsets
+    const ang1 = rand() * Math.PI * 2;
+    const ang2 = ang1 + Math.PI + (rand() - 0.5) * 0.6;
+    const dist = 26 + rand() * 6;
+    const mini = (cx: number, cy: number, key: string, s: number) => {
+      const mw = 8 * s, mh = 4 * s, mv = 8 * s;
+      return (
+        <polygon
+          key={key}
+          points={`${cx},${cy - mv} ${cx + mw},${cy - mh} ${cx + mw},${cy + mh} ${cx},${cy + mv} ${cx - mw},${cy + mh} ${cx - mw},${cy - mh}`}
+          stroke={color} strokeWidth="0.3" opacity="0.55"
+        />
+      );
+    };
+    extra = (
+      <>
+        {mini(50 + Math.cos(ang1) * dist, 50 + Math.sin(ang1) * dist * 0.55, "s1", 1)}
+        {mini(50 + Math.cos(ang2) * dist, 50 + Math.sin(ang2) * dist * 0.55, "s2", 0.8)}
+      </>
+    );
+  } else if (variant === 3) {
+    // Exploded: offset the top triangle face
+    const lift = 4 + rand() * 3;
+    extra = (
+      <>
+        <polyline
+          points={`${pts.left[0]},${pts.left[1] - lift} ${pts.top[0]},${pts.top[1] - lift} ${pts.right[0]},${pts.right[1] - lift}`}
+          stroke={color} strokeWidth="0.45" opacity="0.6"
+        />
+        <line x1={pts.left[0]} y1={pts.left[1] - lift} x2={pts.left[0]} y2={pts.left[1]} stroke={color} strokeWidth="0.25" opacity="0.4" strokeDasharray="1,1" />
+        <line x1={pts.top[0]} y1={pts.top[1] - lift} x2={pts.top[0]} y2={pts.top[1]} stroke={color} strokeWidth="0.25" opacity="0.4" strokeDasharray="1,1" />
+        <line x1={pts.right[0]} y1={pts.right[1] - lift} x2={pts.right[0]} y2={pts.right[1]} stroke={color} strokeWidth="0.25" opacity="0.4" strokeDasharray="1,1" />
       </>
     );
   }
-  // Cluster: cube + two satellite cubes
+
   return (
-    <>
+    <Rot deg={((seed >> 14) % 7) - 3 /* -3..3° tilt */}>
       {base}
-      <polygon points="18,22 26,26 26,34 18,38 10,34 10,26" stroke={color} strokeWidth="0.3" opacity="0.55" />
-      <polygon points="82,66 90,70 90,78 82,82 74,78 74,70" stroke={color} strokeWidth="0.3" opacity="0.55" />
+      {extra}
       <circle cx="50" cy="50" r="1.2" fill={color} />
-    </>
+    </Rot>
   );
 }
 
 /* ─── concentric ───────────────────────────────────────────────────────── */
 
 function concentric(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
   const variant = seed % 3;
-  const ringCount = 5 + (seed % 3);
-  const rings: number[] = [];
-  if (variant === 0) {
-    // Uniform
-    for (let i = 0; i < ringCount; i++) rings.push(8 + i * (28 / ringCount));
-  } else if (variant === 1) {
-    // Log-spaced (tighter near center)
-    for (let i = 0; i < ringCount; i++) rings.push(6 + Math.pow(i / ringCount, 1.5) * 30);
-  } else {
-    // Gapped: skip middle ring
-    for (let i = 0; i < ringCount; i++) {
-      if (i === Math.floor(ringCount / 2)) continue;
-      rings.push(8 + i * (28 / ringCount));
-    }
+  const ringCount = 4 + (seed % 5); // 4..8
+  const dashIdx = (seed >> 6) % ringCount;  // which ring gets dashed
+  const rings: { r: number; dash: boolean; op: number }[] = [];
+  for (let i = 0; i < ringCount; i++) {
+    let r: number;
+    if (variant === 0) r = 8 + i * (30 / ringCount);
+    else if (variant === 1) r = 6 + Math.pow(i / ringCount, 1.5) * 32;
+    else r = (i === Math.floor(ringCount / 2)) ? 0 : 8 + i * (28 / ringCount);
+    if (r === 0) continue;
+    rings.push({ r: r * (0.95 + rand() * 0.1), dash: i === dashIdx, op: 0.35 + (1 - i / ringCount) * 0.45 });
   }
+  // Sometimes add a diameter cross
+  const cross = ((seed >> 10) % 3) === 0;
   return (
     <>
-      {rings.map((r, i) => (
+      {rings.map((ring, i) => (
         <circle
           key={i}
           cx="50"
           cy="50"
-          r={r}
+          r={ring.r}
           stroke={color}
           strokeWidth="0.45"
-          opacity={0.35 + (1 - i / rings.length) * 0.45}
+          strokeDasharray={ring.dash ? "1,1.2" : undefined}
+          opacity={ring.op}
         />
       ))}
+      {cross ? (
+        <>
+          <line x1="16" y1="50" x2="84" y2="50" stroke={color} strokeWidth="0.25" opacity="0.3" />
+          <line x1="50" y1="16" x2="50" y2="84" stroke={color} strokeWidth="0.25" opacity="0.3" />
+        </>
+      ) : null}
       <circle cx="50" cy="50" r="1.6" fill={color} />
     </>
   );
@@ -575,11 +623,16 @@ function barcode(seed: number, color: string): React.ReactNode {
   const bars: React.ReactNode[] = [];
   let x = 20;
   let key = 0;
+  // Vary bar height range per seed
+  const yTop = 20 + rand() * 4;
+  const yBot = 76 + rand() * 4;
+  const h = yBot - yTop;
   while (x < 82) {
     const w = 0.6 + rand() * 3;
     const gap = 0.8 + rand() * 2.2;
+    const yJ = rand() * 4;
     bars.push(
-      <rect key={key++} x={x} y="22" width={w} height="56" fill={color} opacity={0.55 + rand() * 0.4} />
+      <rect key={key++} x={x} y={yTop + yJ} width={w} height={h - yJ * 1.5} fill={color} opacity={0.55 + rand() * 0.4} />
     );
     x += w + gap;
   }
@@ -588,81 +641,179 @@ function barcode(seed: number, color: string): React.ReactNode {
 
 /* ─── targeting-ring ───────────────────────────────────────────────────── */
 
-function targetingRing(_seed: number, color: string): React.ReactNode {
-  return (
-    <>
-      <circle cx="50" cy="50" r="32" stroke={color} strokeWidth="0.5" opacity="0.8" />
-      <circle cx="50" cy="50" r="22" stroke={color} strokeWidth="0.35" opacity="0.45" />
-      <line x1="12" y1="50" x2="22" y2="50" stroke={color} strokeWidth="0.4" opacity="0.55" />
-      <line x1="78" y1="50" x2="88" y2="50" stroke={color} strokeWidth="0.4" opacity="0.55" />
-      <line x1="50" y1="12" x2="50" y2="22" stroke={color} strokeWidth="0.4" opacity="0.55" />
-      <line x1="50" y1="78" x2="50" y2="88" stroke={color} strokeWidth="0.4" opacity="0.55" />
-      <circle cx="50" cy="50" r="2.2" fill={color} />
-    </>
-  );
+function targetingRing(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const variant = seed % 5;
+  const elems: React.ReactNode[] = [];
+  // Per-seed ring radii so same variant still varies
+  const rOuter = 28 + ((seed >> 6) % 80) / 10; // 28..36
+  const rInner = 16 + ((seed >> 10) % 80) / 10; // 16..24
+  const tickLen = 6 + rand() * 4;
+  const coreSize = 1.8 + rand() * 0.8;
+
+  if (variant === 0) {
+    elems.push(
+      <circle key="r1" cx="50" cy="50" r={rOuter} stroke={color} strokeWidth="0.5" opacity="0.8" />,
+      <circle key="r2" cx="50" cy="50" r={rInner} stroke={color} strokeWidth="0.35" opacity="0.45" />
+    );
+    const cross: [number, number, number, number][] = [
+      [50 - rOuter - tickLen, 50, 50 - rOuter - 2, 50],
+      [50 + rOuter + 2, 50, 50 + rOuter + tickLen, 50],
+      [50, 50 - rOuter - tickLen, 50, 50 - rOuter - 2],
+      [50, 50 + rOuter + 2, 50, 50 + rOuter + tickLen],
+    ];
+    cross.forEach(([x1, y1, x2, y2], i) => elems.push(
+      <line key={`c${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="0.4" opacity="0.55" />
+    ));
+  } else if (variant === 1) {
+    elems.push(
+      <circle key="r1" cx="50" cy="50" r={rOuter + 2} stroke={color} strokeWidth="0.5" opacity="0.8" />,
+      <circle key="r2" cx="50" cy="50" r={rInner + 2} stroke={color} strokeWidth="0.35" opacity="0.5" />,
+      <circle key="r3" cx="50" cy="50" r={rInner - 6} stroke={color} strokeWidth="0.3" opacity="0.4" />
+    );
+    elems.push(
+      <line key="ch" x1="10" y1="50" x2="90" y2="50" stroke={color} strokeWidth="0.35" opacity="0.4" />,
+      <line key="cv" x1="50" y1="10" x2="50" y2="90" stroke={color} strokeWidth="0.35" opacity="0.4" />
+    );
+  } else if (variant === 2) {
+    elems.push(
+      <circle key="r1" cx="50" cy="50" r={rOuter} stroke={color} strokeWidth="0.5" opacity="0.8" />,
+      <circle key="r2" cx="50" cy="50" r={rInner} stroke={color} strokeWidth="0.3" opacity="0.4" />
+    );
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + (i * Math.PI) / 2;
+      elems.push(
+        <line key={`d${i}`} x1={50 + Math.cos(a) * (rInner - 4)} y1={50 + Math.sin(a) * (rInner - 4)} x2={50 + Math.cos(a) * (rOuter + 4)} y2={50 + Math.sin(a) * (rOuter + 4)} stroke={color} strokeWidth="0.45" opacity="0.7" />
+      );
+    }
+    const tickN = [16, 24, 32][(seed >> 7) % 3];
+    for (let i = 0; i < tickN; i++) {
+      const a = (i / tickN) * Math.PI * 2;
+      const inner = i % 4 === 0 ? rOuter - 4 : rOuter - 2;
+      elems.push(
+        <line key={`t${i}`} x1={50 + Math.cos(a) * inner} y1={50 + Math.sin(a) * inner} x2={50 + Math.cos(a) * rOuter} y2={50 + Math.sin(a) * rOuter} stroke={color} strokeWidth="0.3" opacity="0.55" />
+      );
+    }
+  } else if (variant === 3) {
+    const spokeN = [6, 8, 10, 12][(seed >> 8) % 4];
+    elems.push(
+      <circle key="r1" cx="50" cy="50" r={rOuter - 2} stroke={color} strokeWidth="0.5" opacity="0.75" />,
+      <circle key="r2" cx="50" cy="50" r="10" stroke={color} strokeWidth="0.3" opacity="0.4" />
+    );
+    for (let i = 0; i < spokeN; i++) {
+      const a = (i / spokeN) * Math.PI * 2;
+      const long = i % 2 === 0;
+      const inner = long ? 11 : rInner - 4;
+      const outer = long ? rOuter + 4 : rOuter - 2;
+      elems.push(
+        <line key={`s${i}`} x1={50 + Math.cos(a) * inner} y1={50 + Math.sin(a) * inner} x2={50 + Math.cos(a) * outer} y2={50 + Math.sin(a) * outer} stroke={color} strokeWidth={long ? "0.5" : "0.35"} opacity={long ? "0.75" : "0.5"} />
+      );
+    }
+  } else {
+    // Offset reticle
+    const ox = (rand() - 0.5) * 10;
+    const oy = (rand() - 0.5) * 10;
+    elems.push(
+      <circle key="r1" cx="50" cy="50" r={rOuter} stroke={color} strokeWidth="0.5" opacity="0.7" />,
+      <circle key="r2" cx="50" cy="50" r={rInner} stroke={color} strokeWidth="0.35" opacity="0.5" strokeDasharray="1,1.5" />,
+      <line key="xh" x1={50 + ox - 6} y1={50 + oy} x2={50 + ox + 6} y2={50 + oy} stroke={color} strokeWidth="0.5" opacity="0.9" />,
+      <line key="yh" x1={50 + ox} y1={50 + oy - 6} x2={50 + ox} y2={50 + oy + 6} stroke={color} strokeWidth="0.5" opacity="0.9" />,
+      <circle key="tgt" cx={50 + ox} cy={50 + oy} r="1.6" fill={color} />
+    );
+    return <Rot deg={k.rotDeg / 3}>{elems}</Rot>;
+  }
+
+  elems.push(<circle key="core" cx="50" cy="50" r={coreSize} fill={color} />);
+  return <Rot deg={k.rotDeg / 6}>{elems}</Rot>;
 }
 
-/* ─── threshold — doorway / portal with lintel ─────────────────────────── */
+/* ─── threshold ────────────────────────────────────────────────────────── */
 
 function threshold(seed: number, color: string): React.ReactNode {
-  const variant = seed % 3;
-  const gates = variant === 0 ? 1 : variant === 1 ? 2 : 3;
-  const total = 50;
-  const lintel = 22;
-  const floor = 80;
-  const halfWidth = 22;
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const gates = 1 + (seed % 3); // 1,2,3
+  const halfWidth = 18 + rand() * 8;  // varies per seed
+  const halfHeight = 22 + rand() * 8;
+  const lintel = 50 - halfHeight;
+  const floor = 50 + halfHeight;
   const elems: React.ReactNode[] = [];
+  // Lintel + floor
   elems.push(
     <line key="l-top" x1={50 - halfWidth} y1={lintel} x2={50 + halfWidth} y2={lintel} stroke={color} strokeWidth="0.6" opacity="0.8" />,
     <line key="l-bot" x1={50 - halfWidth} y1={floor} x2={50 + halfWidth} y2={floor} stroke={color} strokeWidth="0.6" opacity="0.8" />
   );
+  // Second lintel if seed says so
+  const doubleLintel = ((seed >> 4) % 3) === 0;
+  if (doubleLintel) {
+    elems.push(
+      <line key="l-top2" x1={50 - halfWidth - 2} y1={lintel - 3} x2={50 + halfWidth + 2} y2={lintel - 3} stroke={color} strokeWidth="0.4" opacity="0.55" />
+    );
+  }
   // Uprights
   const step = (halfWidth * 2) / gates;
   for (let i = 0; i <= gates; i++) {
     const x = 50 - halfWidth + i * step;
+    const edge = i === 0 || i === gates;
     elems.push(
-      <line key={`u${i}`} x1={x} y1={lintel} x2={x} y2={floor} stroke={color} strokeWidth={i === 0 || i === gates ? "0.55" : "0.4"} opacity={i === 0 || i === gates ? "0.75" : "0.55"} />
+      <line key={`u${i}`} x1={x} y1={lintel} x2={x} y2={floor} stroke={color} strokeWidth={edge ? "0.55" : "0.4"} opacity={edge ? "0.8" : "0.55"} />
     );
   }
-  elems.push(<circle key="c" cx={total} cy={(lintel + floor) / 2} r="1.3" fill={color} />);
-  return <>{elems}</>;
+  // Threshold mark on the floor
+  const hasMark = ((seed >> 8) % 2) === 0;
+  if (hasMark) {
+    elems.push(
+      <line key="m" x1="50" y1={floor} x2="50" y2={floor + 4} stroke={color} strokeWidth="0.5" opacity="0.7" />
+    );
+  }
+  elems.push(<circle key="c" cx="50" cy={(lintel + floor) / 2} r="1.3" fill={color} />);
+  // Slight rotation
+  return <Rot deg={(((seed >> 12) % 11) - 5)}>{elems}</Rot>;
 }
 
-/* ─── codex — horizontal lamellae / strata ─────────────────────────────── */
+/* ─── codex ────────────────────────────────────────────────────────────── */
 
 function codex(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
   const variant = seed % 3;
   const elems: React.ReactNode[] = [];
+  const yTop = 22, yBot = 78, yH = yBot - yTop;
   if (variant === 0) {
-    // Uniform bands
-    const count = 9;
+    // Uniform bands with per-row jitter
+    const count = 7 + (seed % 5); // 7..11
     for (let i = 0; i < count; i++) {
-      const y = 22 + i * (56 / (count - 1));
-      const w = 56;
+      const y = yTop + i * (yH / (count - 1));
+      const w = 44 + rand() * 18;
+      const thick = (i + ((seed >> 3) % 2)) % 2 === 0;
       elems.push(
-        <line key={i} x1={50 - w / 2} y1={y} x2={50 + w / 2} y2={y} stroke={color} strokeWidth={i % 2 === 0 ? "0.6" : "0.3"} opacity={i % 2 === 0 ? "0.8" : "0.5"} />
+        <line key={i} x1={50 - w / 2} y1={y} x2={50 + w / 2} y2={y} stroke={color} strokeWidth={thick ? "0.6" : "0.3"} opacity={thick ? "0.8" : "0.5"} />
       );
     }
   } else if (variant === 1) {
-    // Tapered — narrow top, wide bottom
-    const count = 11;
+    // Tapered — sometimes widening, sometimes narrowing
+    const count = 9 + (seed % 5);
+    const direction = ((seed >> 3) % 2) === 0 ? 1 : -1;
     for (let i = 0; i < count; i++) {
-      const y = 22 + i * (56 / (count - 1));
-      const w = 18 + (i / (count - 1)) * 46;
+      const t = i / (count - 1);
+      const y = yTop + i * (yH / (count - 1));
+      const w = 18 + (direction === 1 ? t : 1 - t) * 46 + rand() * 4;
       elems.push(
         <line key={i} x1={50 - w / 2} y1={y} x2={50 + w / 2} y2={y} stroke={color} strokeWidth="0.4" opacity="0.65" />
       );
     }
   } else {
-    // Grouped — 3 bands of lamellae
-    for (let g = 0; g < 3; g++) {
-      const yBase = 25 + g * 18;
-      for (let i = 0; i < 4; i++) {
-        const y = yBase + i * 3;
-        const w = 46 + rand() * 6;
+    // Grouped bands
+    const groups = 2 + (seed % 3); // 2..4
+    const rowsPerGroup = 3 + ((seed >> 3) % 3);
+    const groupGap = yH / (groups + 1);
+    for (let g = 0; g < groups; g++) {
+      const yBase = yTop + (g + 0.5) * groupGap - (rowsPerGroup - 1);
+      for (let i = 0; i < rowsPerGroup; i++) {
+        const y = yBase + i * 2.5;
+        const w = 40 + rand() * 12;
         elems.push(
-          <line key={`${g}-${i}`} x1={50 - w / 2} y1={y} x2={50 + w / 2} y2={y} stroke={color} strokeWidth="0.35" opacity={0.4 + rand() * 0.4} />
+          <line key={`${g}-${i}`} x1={50 - w / 2} y1={y} x2={50 + w / 2} y2={y} stroke={color} strokeWidth="0.35" opacity={0.4 + rand() * 0.45} />
         );
       }
     }
@@ -673,49 +824,59 @@ function codex(seed: number, color: string): React.ReactNode {
 /* ─── spiral ───────────────────────────────────────────────────────────── */
 
 function spiral(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
   const variant = seed % 3;
-  const pts: string[] = [];
-  if (variant === 0) {
-    // Logarithmic
-    for (let i = 0; i < 320; i++) {
-      const t = i / 40;
-      const r = 1.2 * Math.exp(0.15 * t);
-      if (r > 36) break;
-      const a = t;
-      pts.push(`${50 + Math.cos(a) * r},${50 + Math.sin(a) * r}`);
-    }
-  } else if (variant === 1) {
-    // Archimedean
-    for (let i = 0; i < 400; i++) {
-      const t = i / 20;
-      const r = 1 + t * 1.05;
-      if (r > 36) break;
-      pts.push(`${50 + Math.cos(t) * r},${50 + Math.sin(t) * r}`);
-    }
-  } else {
-    // Double spiral (two arms, mirror)
+  const turns = 2 + rand() * 3; // 2..5 turns
+
+  if (variant === 2) {
+    // Double spiral with variable winding
     const a: string[] = [];
     const b: string[] = [];
-    for (let i = 0; i < 260; i++) {
-      const t = i / 30;
-      const r = 1 + t * 1.3;
+    const growth = 1.0 + rand() * 0.6;
+    const steps = Math.ceil(turns * 100);
+    for (let i = 0; i < steps; i++) {
+      const t = (i / 100) * Math.PI;
+      const r = 1 + t * growth;
       if (r > 34) break;
       a.push(`${50 + Math.cos(t) * r},${50 + Math.sin(t) * r}`);
       b.push(`${50 - Math.cos(t) * r},${50 - Math.sin(t) * r}`);
     }
     return (
-      <>
-        <polyline points={a.join(" ")} stroke={color} strokeWidth="0.5" opacity="0.75" />
-        <polyline points={b.join(" ")} stroke={color} strokeWidth="0.5" opacity="0.75" />
+      <Rot deg={k.rotDeg}>
+        <polyline points={a.join(" ")} stroke={color} strokeWidth="0.5" opacity="0.8" fill="none" />
+        <polyline points={b.join(" ")} stroke={color} strokeWidth="0.5" opacity="0.8" fill="none" />
         <circle cx="50" cy="50" r="1.4" fill={color} />
-      </>
+      </Rot>
     );
   }
+
+  const pts: string[] = [];
+  if (variant === 0) {
+    // Logarithmic
+    const b = 0.12 + rand() * 0.08;
+    const a0 = 1.0 + rand() * 0.6;
+    const maxT = turns * Math.PI * 2;
+    for (let t = 0; t < maxT; t += 0.05) {
+      const r = a0 * Math.exp(b * t);
+      if (r > 36) break;
+      pts.push(`${50 + Math.cos(t) * r},${50 + Math.sin(t) * r}`);
+    }
+  } else {
+    // Archimedean
+    const slope = 0.8 + rand() * 0.8;
+    const maxT = turns * Math.PI * 2;
+    for (let t = 0; t < maxT; t += 0.05) {
+      const r = 1 + (t / (2 * Math.PI)) * slope * 6;
+      if (r > 36) break;
+      pts.push(`${50 + Math.cos(t) * r},${50 + Math.sin(t) * r}`);
+    }
+  }
   return (
-    <>
-      <polyline points={pts.join(" ")} stroke={color} strokeWidth="0.5" opacity="0.8" />
+    <Rot deg={k.rotDeg}>
+      <polyline points={pts.join(" ")} stroke={color} strokeWidth="0.5" opacity="0.8" fill="none" />
       <circle cx="50" cy="50" r="1.4" fill={color} />
-    </>
+    </Rot>
   );
 }
 
@@ -723,9 +884,8 @@ function spiral(seed: number, color: string): React.ReactNode {
 
 function constellation(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const count = [5, 7, 9][seed % 3];
+  const count = [5, 6, 7, 8, 9, 10][seed % 6];
   const pts: [number, number][] = [];
-  // Scatter points on a disc, reject too-close
   let attempts = 0;
   while (pts.length < count && attempts < count * 40) {
     attempts++;
@@ -733,31 +893,21 @@ function constellation(seed: number, color: string): React.ReactNode {
     const r = 8 + rand() * 30;
     const x = 50 + Math.cos(a) * r;
     const y = 50 + Math.sin(a) * r;
-    const tooClose = pts.some(([px, py]) => Math.hypot(px - x, py - y) < 10);
-    if (!tooClose) pts.push([x, y]);
+    if (!pts.some(([px, py]) => Math.hypot(px - x, py - y) < 10)) pts.push([x, y]);
   }
-  // Connect each point to nearest neighbor (tree-ish, no duplicates)
   const edges: [number, number][] = [];
   for (let i = 1; i < pts.length; i++) {
-    let best = 0;
-    let bestD = Infinity;
+    let best = 0, bestD = Infinity;
     for (let j = 0; j < i; j++) {
       const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
-      if (d < bestD) {
-        bestD = d;
-        best = j;
-      }
+      if (d < bestD) { bestD = d; best = j; }
     }
     edges.push([i, best]);
   }
   return (
     <>
       {edges.map(([a, b], i) => (
-        <line
-          key={`e${i}`}
-          x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]}
-          stroke={color} strokeWidth="0.3" opacity="0.45"
-        />
+        <line key={`e${i}`} x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]} stroke={color} strokeWidth="0.3" opacity="0.45" />
       ))}
       {pts.map(([x, y], i) => (
         <g key={`s${i}`}>
@@ -772,182 +922,178 @@ function constellation(seed: number, color: string): React.ReactNode {
 /* ─── lattice-weave ────────────────────────────────────────────────────── */
 
 function latticeWeave(seed: number, color: string): React.ReactNode {
-  const variant = seed % 2;
-  const divisions = variant === 0 ? 3 : 4;
-  const sz = 52;
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const divisions = 3 + (seed % 3); // 3, 4, 5
+  const sz = 46 + rand() * 10;
   const x0 = 50 - sz / 2;
   const y0 = 50 - sz / 2;
   const step = sz / divisions;
-  const GAP = 2.5; // at crossings, gap to suggest weave
-
+  const GAP = 1.8 + rand() * 1.4;
+  const parity = (seed >> 3) % 2; // which direction goes over at (0,0)
   const elems: React.ReactNode[] = [];
-  // Horizontal strands (broken over vertical strands)
+
   for (let r = 0; r <= divisions; r++) {
     const y = y0 + r * step;
-    const segments: [number, number][] = [];
+    const segs: [number, number][] = [];
     let cur = x0;
     for (let c = 0; c <= divisions; c++) {
       const cx = x0 + c * step;
-      if ((r + c) % 2 === 0) {
-        // this horizontal runs OVER vertical — unbroken here
-        continue;
-      }
-      // Horizontal runs UNDER — break around the vertical
-      segments.push([cur, cx - GAP]);
+      if (((r + c) % 2) === parity) continue;
+      segs.push([cur, cx - GAP]);
       cur = cx + GAP;
     }
-    segments.push([cur, x0 + sz]);
-    for (let i = 0; i < segments.length; i++) {
-      elems.push(
-        <line key={`h${r}-${i}`} x1={segments[i][0]} y1={y} x2={segments[i][1]} y2={y} stroke={color} strokeWidth="0.5" opacity="0.75" />
-      );
-    }
+    segs.push([cur, x0 + sz]);
+    segs.forEach(([a, b], i) => {
+      elems.push(<line key={`h${r}-${i}`} x1={a} y1={y} x2={b} y2={y} stroke={color} strokeWidth="0.5" opacity="0.75" />);
+    });
   }
-  // Vertical strands
   for (let c = 0; c <= divisions; c++) {
     const x = x0 + c * step;
-    const segments: [number, number][] = [];
+    const segs: [number, number][] = [];
     let cur = y0;
     for (let r = 0; r <= divisions; r++) {
       const cy = y0 + r * step;
-      if ((r + c) % 2 === 0) continue;
-      segments.push([cur, cy - GAP]);
+      if (((r + c) % 2) === parity) continue;
+      segs.push([cur, cy - GAP]);
       cur = cy + GAP;
     }
-    segments.push([cur, y0 + sz]);
-    for (let i = 0; i < segments.length; i++) {
-      elems.push(
-        <line key={`v${c}-${i}`} x1={x} y1={segments[i][0]} x2={x} y2={segments[i][1]} stroke={color} strokeWidth="0.5" opacity="0.75" />
-      );
-    }
+    segs.push([cur, y0 + sz]);
+    segs.forEach(([a, b], i) => {
+      elems.push(<line key={`v${c}-${i}`} x1={x} y1={a} x2={x} y2={b} stroke={color} strokeWidth="0.5" opacity="0.75" />);
+    });
   }
-  return <>{elems}</>;
+  return <Rot deg={(((seed >> 8) % 9) - 4)}>{elems}</Rot>;
 }
 
-/* ─── dendrite — binary branching tree ─────────────────────────────────── */
+/* ─── dendrite ─────────────────────────────────────────────────────────── */
 
 function dendrite(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const variant = seed % 3;
+  const k = knobs(seed);
+  const mode = seed % 3;
+  const MAX_DEPTH = 3 + (seed % 3); // 3..5
+  const INITIAL_LEN = 10 + rand() * 8;
+  const ANGLE_SPREAD = Math.PI / (2.4 + rand() * 0.8);
   const lines: React.ReactNode[] = [];
-  const MAX_DEPTH = [3, 4, 4][variant];
-  const INITIAL_LEN = [18, 15, 12][variant];
-  const ANGLE_SPREAD = [Math.PI / 3, Math.PI / 3.2, Math.PI / 2.6][variant];
 
   function branch(x: number, y: number, len: number, angle: number, depth: number, key: string) {
     if (depth > MAX_DEPTH) return;
     const x2 = x + Math.cos(angle) * len;
     const y2 = y + Math.sin(angle) * len;
-    const op = 0.9 - depth * 0.15;
+    const op = 0.9 - depth * 0.14;
     lines.push(
-      <line key={key} x1={x} y1={y} x2={x2} y2={y2} stroke={color} strokeWidth={Math.max(0.25, 0.8 - depth * 0.15)} opacity={op} />
+      <line key={key} x1={x} y1={y} x2={x2} y2={y2} stroke={color} strokeWidth={Math.max(0.25, 0.8 - depth * 0.14)} opacity={op} />
     );
-    const jitter = (rand() - 0.5) * 0.2;
-    branch(x2, y2, len * 0.7, angle - ANGLE_SPREAD / 2 + jitter, depth + 1, key + "L");
-    branch(x2, y2, len * 0.7, angle + ANGLE_SPREAD / 2 + jitter, depth + 1, key + "R");
+    const jitter = (rand() - 0.5) * 0.25;
+    branch(x2, y2, len * 0.72, angle - ANGLE_SPREAD / 2 + jitter, depth + 1, key + "L");
+    branch(x2, y2, len * 0.72, angle + ANGLE_SPREAD / 2 + jitter, depth + 1, key + "R");
   }
 
-  if (variant === 1) {
-    // Radial — 4 initial branches
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 - Math.PI / 2;
-      branch(50, 50, INITIAL_LEN, a, 0, `r${i}`);
+  if (mode === 0) {
+    const arms = 3 + (seed % 3);
+    const rot0 = rand() * Math.PI * 2;
+    for (let i = 0; i < arms; i++) {
+      branch(50, 50, INITIAL_LEN, rot0 + (i / arms) * Math.PI * 2, 0, `r${i}`);
     }
     lines.push(<circle key="c" cx="50" cy="50" r="1.4" fill={color} />);
-  } else {
-    // Rooted from bottom-center going up
-    branch(50, 80, INITIAL_LEN, -Math.PI / 2, 0, "t");
+  } else if (mode === 1) {
+    branch(50, 80, INITIAL_LEN, -Math.PI / 2 + (rand() - 0.5) * 0.3, 0, "t");
     lines.push(<circle key="c" cx="50" cy="80" r="1.2" fill={color} />);
+  } else {
+    // Horizontal: root on left edge
+    branch(18, 50, INITIAL_LEN, 0 + (rand() - 0.5) * 0.3, 0, "h");
+    lines.push(<circle key="c" cx="18" cy="50" r="1.2" fill={color} />);
   }
   return <>{lines}</>;
 }
 
-/* ─── eclipse — two overlapping circles ────────────────────────────────── */
+/* ─── eclipse ──────────────────────────────────────────────────────────── */
 
 function eclipse(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
   const variant = seed % 3;
   const elems: React.ReactNode[] = [];
+
   if (variant === 0) {
-    // Partial: sun + moon sliding in
+    // Partial: sun stationary, moon covers left or right by variable amount
+    const offset = (rand() > 0.5 ? 1 : -1) * (8 + rand() * 10);
     elems.push(
-      <circle key="sun" cx="44" cy="50" r="22" stroke={color} strokeWidth="0.5" opacity="0.7" />
-    );
-    elems.push(
-      <circle key="moon" cx="60" cy="50" r="22" fill={color} fillOpacity="0.9" />
+      <circle key="sun" cx="50" cy="50" r={22 + rand() * 4} stroke={color} strokeWidth="0.5" opacity="0.7" />,
+      <circle key="moon" cx={50 + offset} cy={50 + (rand() - 0.5) * 4} r={22 + rand() * 3} fill={color} fillOpacity="0.9" />
     );
   } else if (variant === 1) {
-    // Total: moon centered
+    // Total with corona — corona ray count varies
+    const sunR = 24 + rand() * 3;
+    const moonR = sunR - 1.5 - rand() * 1.2;
+    const rayN = 12 + (seed % 8); // 12..19
     elems.push(
-      <circle key="sun" cx="50" cy="50" r="26" stroke={color} strokeWidth="0.5" opacity="0.7" />
+      <circle key="sun" cx="50" cy="50" r={sunR + 2} stroke={color} strokeWidth="0.5" opacity="0.7" />,
+      <circle key="moon" cx="50" cy="50" r={moonR} fill={color} fillOpacity="0.92" />
     );
-    elems.push(
-      <circle key="moon" cx="50" cy="50" r="22" fill={color} fillOpacity="0.92" />
-    );
-    // Corona rays
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2;
+    for (let i = 0; i < rayN; i++) {
+      const a = (i / rayN) * Math.PI * 2 + k.rot;
+      const len = 5 + rand() * 6;
       elems.push(
-        <line
-          key={`r${i}`}
-          x1={50 + Math.cos(a) * 27}
-          y1={50 + Math.sin(a) * 27}
-          x2={50 + Math.cos(a) * 34}
-          y2={50 + Math.sin(a) * 34}
-          stroke={color}
-          strokeWidth="0.4"
-          opacity="0.55"
-        />
+        <line key={`r${i}`} x1={50 + Math.cos(a) * (sunR + 3)} y1={50 + Math.sin(a) * (sunR + 3)} x2={50 + Math.cos(a) * (sunR + 3 + len)} y2={50 + Math.sin(a) * (sunR + 3 + len)} stroke={color} strokeWidth="0.4" opacity="0.55" />
       );
     }
   } else {
-    // Annular — inner circle smaller than outer
+    // Annular — inner ring smaller than outer
+    const outer = 26 + rand() * 4;
+    const inner = 14 + rand() * 4;
     elems.push(
-      <circle key="sun" cx="50" cy="50" r="28" stroke={color} strokeWidth="0.5" opacity="0.75" />
-    );
-    elems.push(
-      <circle key="moon" cx="50" cy="50" r="18" fill={color} fillOpacity="0.9" />
-    );
-    elems.push(
-      <circle key="inner" cx="50" cy="50" r="18" stroke={color} strokeWidth="0.25" opacity="0.4" />
+      <circle key="sun" cx="50" cy="50" r={outer} stroke={color} strokeWidth="0.5" opacity="0.75" />,
+      <circle key="moon" cx="50" cy="50" r={inner} fill={color} fillOpacity="0.9" />,
+      <circle key="ring" cx="50" cy="50" r={inner + 0.5} stroke={color} strokeWidth="0.25" opacity="0.4" />
     );
   }
-  return <>{elems}</>;
+  return <Rot deg={(((seed >> 6) % 13) - 6)}>{elems}</Rot>;
 }
 
-/* ─── phase-moon — 5 phases ────────────────────────────────────────────── */
+/* ─── phase-moon ───────────────────────────────────────────────────────── */
 
 function phaseMoon(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
   const phase = seed % 5; // 0=new, 1=crescent, 2=quarter, 3=gibbous, 4=full
-  const R = 28;
-  // Circle outline always visible
-  const outline = (
-    <circle cx="50" cy="50" r={R} stroke={color} strokeWidth="0.5" opacity="0.75" />
-  );
+  const R = 24 + rand() * 6;
+  const tilt = ((seed >> 4) % 360); // orient the terminator at any angle
+  const outline = <circle cx="50" cy="50" r={R} stroke={color} strokeWidth="0.5" opacity="0.75" />;
+
   if (phase === 0) {
-    // New moon — just outline
+    // New — outline only, small off-center dot
     return (
       <>
         {outline}
-        <circle cx="50" cy="50" r="0.8" fill={color} opacity="0.4" />
+        <circle cx={50 + (rand() - 0.5) * 8} cy={50 + (rand() - 0.5) * 8} r="0.8" fill={color} opacity="0.4" />
       </>
     );
   }
   if (phase === 4) {
-    // Full
     return (
       <>
         {outline}
         <circle cx="50" cy="50" r={R} fill={color} fillOpacity="0.85" />
+        {/* Subtle mare pattern */}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <circle
+            key={i}
+            cx={50 + (rand() - 0.5) * R * 1.2}
+            cy={50 + (rand() - 0.5) * R * 1.2}
+            r={0.6 + rand() * 1.2}
+            fill={color === "currentColor" ? "black" : "#000"}
+            opacity="0.2"
+          />
+        ))}
       </>
     );
   }
-  // Intermediate: create crescent via two arcs
-  const fracs = [0.25, 0.5, 0.75];
+  const fracs = [0.28, 0.5, 0.72];
   const illuminated = fracs[phase - 1];
-  // Offset circle creates crescent via difference — approximate with clip path
   const shift = R * (1 - 2 * illuminated);
   return (
-    <>
+    <Rot deg={tilt}>
       <defs>
         <mask id={`m-${seed}`}>
           <rect x="0" y="0" width="100" height="100" fill="black" />
@@ -956,50 +1102,54 @@ function phaseMoon(seed: number, color: string): React.ReactNode {
         </mask>
       </defs>
       <circle cx="50" cy="50" r={R} fill={color} fillOpacity="0.85" mask={`url(#m-${seed})`} />
-      {outline}
-    </>
+      <circle cx="50" cy="50" r={R} stroke={color} strokeWidth="0.5" opacity="0.75" />
+    </Rot>
   );
 }
 
 /* ─── waveform ─────────────────────────────────────────────────────────── */
 
 function waveform(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
   const variant = seed % 3;
   const pts: string[] = [];
-  const N = 200;
+  const N = 220;
+  const freq = 2 + rand() * 4;         // cycles across
+  const amp = 12 + rand() * 10;
+  const phase = rand() * Math.PI * 2;
+  const baseY = 50 + (rand() - 0.5) * 12;
+
   if (variant === 0) {
-    // Pure sine
     for (let i = 0; i < N; i++) {
       const x = 15 + (i / (N - 1)) * 70;
-      const t = (i / (N - 1)) * Math.PI * 4;
-      const y = 50 + Math.sin(t) * 18;
-      pts.push(`${x},${y}`);
+      const t = (i / (N - 1)) * Math.PI * freq + phase;
+      pts.push(`${x},${baseY + Math.sin(t) * amp}`);
     }
   } else if (variant === 1) {
-    // Damped sine
+    // Damped
+    const decayRate = 0.15 + rand() * 0.12;
     for (let i = 0; i < N; i++) {
       const x = 15 + (i / (N - 1)) * 70;
-      const t = (i / (N - 1)) * Math.PI * 6;
-      const decay = Math.exp(-t * 0.18);
-      const y = 50 + Math.sin(t) * 22 * decay;
-      pts.push(`${x},${y}`);
+      const t = (i / (N - 1)) * Math.PI * (freq + 2) + phase;
+      const decay = Math.exp(-t * decayRate);
+      pts.push(`${x},${baseY + Math.sin(t) * amp * decay}`);
     }
   } else {
-    // Composite (sine + octave)
+    // Composite sum of two harmonics at random ratios
+    const harm = [2, 3, 4][(seed >> 3) % 3];
+    const mix = 0.3 + rand() * 0.4;
     for (let i = 0; i < N; i++) {
       const x = 15 + (i / (N - 1)) * 70;
-      const t = (i / (N - 1)) * Math.PI * 4;
-      const y = 50 + Math.sin(t) * 14 + Math.sin(t * 3) * 5;
-      pts.push(`${x},${y}`);
+      const t = (i / (N - 1)) * Math.PI * freq + phase;
+      pts.push(`${x},${baseY + Math.sin(t) * amp * (1 - mix) + Math.sin(t * harm) * amp * mix}`);
     }
   }
   return (
     <>
-      {/* Baseline */}
-      <line x1="15" y1="50" x2="85" y2="50" stroke={color} strokeWidth="0.25" opacity="0.35" strokeDasharray="1,2" />
+      <line x1="15" y1={baseY} x2="85" y2={baseY} stroke={color} strokeWidth="0.25" opacity="0.35" strokeDasharray="1,2" />
       <polyline points={pts.join(" ")} stroke={color} strokeWidth="0.6" fill="none" opacity="0.9" />
-      <circle cx="15" cy="50" r="1" fill={color} opacity="0.8" />
-      <circle cx="85" cy="50" r="1" fill={color} opacity="0.8" />
+      <circle cx="15" cy={baseY} r="1" fill={color} opacity="0.8" />
+      <circle cx="85" cy={baseY} r="1" fill={color} opacity="0.8" />
     </>
   );
 }
@@ -1008,13 +1158,13 @@ function waveform(seed: number, color: string): React.ReactNode {
 
 function orbitDiagram(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const variant = seed % 3;
+  const k = knobs(seed);
+  const orbits = 2 + (seed % 3); // 2,3,4
+  const tilt = ((seed >> 4) % 60) - 30; // -30..30 deg
   const elems: React.ReactNode[] = [];
-  const orbits = variant === 2 ? 2 : variant === 1 ? 3 : 2;
-  const tilt = variant === 2 ? 25 : 0;
   for (let i = 0; i < orbits; i++) {
-    const r = 12 + i * 12;
-    const ry = r * (variant === 0 ? 0.4 : variant === 1 ? 0.35 : 0.38);
+    const r = 10 + i * (10 + rand() * 3);
+    const ry = r * (0.3 + rand() * 0.2);
     elems.push(
       <ellipse
         key={`o${i}`}
@@ -1024,26 +1174,24 @@ function orbitDiagram(seed: number, color: string): React.ReactNode {
         ry={ry}
         stroke={color}
         strokeWidth="0.4"
-        opacity={0.6 - i * 0.08}
+        opacity={0.6 - i * 0.07}
         transform={tilt ? `rotate(${tilt} 50 50)` : undefined}
       />
     );
-    // Planet dot on orbit
     const a = rand() * Math.PI * 2;
     const px = 50 + Math.cos(a) * r;
     const py = 50 + Math.sin(a) * ry;
     if (tilt) {
       const rad = (tilt * Math.PI) / 180;
-      const rx2 = 50 + (px - 50) * Math.cos(rad) - (py - 50) * Math.sin(rad);
-      const ry2 = 50 + (px - 50) * Math.sin(rad) + (py - 50) * Math.cos(rad);
-      elems.push(<circle key={`p${i}`} cx={rx2} cy={ry2} r="1.2" fill={color} />);
+      const px2 = 50 + (px - 50) * Math.cos(rad) - (py - 50) * Math.sin(rad);
+      const py2 = 50 + (px - 50) * Math.sin(rad) + (py - 50) * Math.cos(rad);
+      elems.push(<circle key={`p${i}`} cx={px2} cy={py2} r="1.2" fill={color} />);
     } else {
       elems.push(<circle key={`p${i}`} cx={px} cy={py} r="1.2" fill={color} />);
     }
   }
-  // Central star
-  elems.push(<circle key="star" cx="50" cy="50" r="2.2" fill={color} />);
   elems.push(
+    <circle key="star" cx="50" cy="50" r="2.2" fill={color} />,
     <circle key="halo" cx="50" cy="50" r="4" fill="none" stroke={color} strokeWidth="0.25" opacity="0.4" />
   );
   return <>{elems}</>;
@@ -1052,142 +1200,122 @@ function orbitDiagram(seed: number, color: string): React.ReactNode {
 /* ─── compass-rose ─────────────────────────────────────────────────────── */
 
 function compassRose(seed: number, color: string): React.ReactNode {
-  const variant = seed % 3;
-  const major = variant === 0 ? 4 : variant === 1 ? 8 : 16;
-  const minor = variant === 0 ? 12 : variant === 1 ? 16 : 0;
-  const outerR = 34;
-  const innerR = 22;
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const major = [4, 6, 8, 12, 16][seed % 5];
+  const minor = [0, 8, 12, 16, 24][(seed >> 3) % 5];
+  const outerR = 30 + rand() * 6;
+  const innerR = 18 + rand() * 6;
+  const base = 3 + rand() * 2;
   const elems: React.ReactNode[] = [];
   elems.push(
     <circle key="r1" cx="50" cy="50" r={outerR} stroke={color} strokeWidth="0.35" opacity="0.45" />,
     <circle key="r2" cx="50" cy="50" r={innerR} stroke={color} strokeWidth="0.25" opacity="0.35" />
   );
-  // Major points — diamond spikes
   for (let i = 0; i < major; i++) {
     const a = (i / major) * Math.PI * 2 - Math.PI / 2;
     const tipX = 50 + Math.cos(a) * outerR;
     const tipY = 50 + Math.sin(a) * outerR;
-    const sideA1 = a + Math.PI / 2;
-    const sideA2 = a - Math.PI / 2;
-    const base = 4;
-    const leftX = 50 + Math.cos(sideA1) * base;
-    const leftY = 50 + Math.sin(sideA1) * base;
-    const rightX = 50 + Math.cos(sideA2) * base;
-    const rightY = 50 + Math.sin(sideA2) * base;
+    const side1 = a + Math.PI / 2;
+    const side2 = a - Math.PI / 2;
+    const leftX = 50 + Math.cos(side1) * base;
+    const leftY = 50 + Math.sin(side1) * base;
+    const rightX = 50 + Math.cos(side2) * base;
+    const rightY = 50 + Math.sin(side2) * base;
     elems.push(
-      <polygon
-        key={`M${i}`}
-        points={`${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`}
-        stroke={color}
-        strokeWidth="0.35"
-        opacity={i % 2 === 0 ? "0.85" : "0.55"}
-      />
+      <polygon key={`M${i}`} points={`${tipX},${tipY} ${leftX},${leftY} ${rightX},${rightY}`} stroke={color} strokeWidth="0.35" opacity={i % 2 === 0 ? "0.85" : "0.55"} />
     );
   }
-  // Minor ticks
   for (let i = 0; i < minor; i++) {
-    const a = (i / minor) * Math.PI * 2 - Math.PI / 2 + Math.PI / minor;
+    const a = (i / minor) * Math.PI * 2 - Math.PI / 2 + Math.PI / (minor || 1);
     elems.push(
-      <line
-        key={`m${i}`}
-        x1={50 + Math.cos(a) * (outerR - 2)}
-        y1={50 + Math.sin(a) * (outerR - 2)}
-        x2={50 + Math.cos(a) * outerR}
-        y2={50 + Math.sin(a) * outerR}
-        stroke={color}
-        strokeWidth="0.3"
-        opacity="0.55"
-      />
+      <line key={`m${i}`} x1={50 + Math.cos(a) * (outerR - 2)} y1={50 + Math.sin(a) * (outerR - 2)} x2={50 + Math.cos(a) * outerR} y2={50 + Math.sin(a) * outerR} stroke={color} strokeWidth="0.3" opacity="0.55" />
     );
   }
   elems.push(<circle key="c" cx="50" cy="50" r="1.5" fill={color} />);
-  return <>{elems}</>;
+  return <Rot deg={k.rotDeg}>{elems}</Rot>;
 }
 
 /* ─── vesica ───────────────────────────────────────────────────────────── */
 
 function vesica(seed: number, color: string): React.ReactNode {
-  const variant = seed % 2;
-  const R = 22;
-  const offset = R * 0.75;
-  if (variant === 0) {
-    // Horizontal pair
-    return (
-      <>
-        <circle cx={50 - offset} cy="50" r={R} stroke={color} strokeWidth="0.5" opacity="0.75" />
-        <circle cx={50 + offset} cy="50" r={R} stroke={color} strokeWidth="0.5" opacity="0.75" />
-        <circle cx={50 - offset} cy="50" r="1.2" fill={color} opacity="0.8" />
-        <circle cx={50 + offset} cy="50" r="1.2" fill={color} opacity="0.8" />
-        <circle cx="50" cy="50" r="1.6" fill={color} />
-      </>
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const R = 18 + rand() * 6;
+  const offset = R * (0.55 + rand() * 0.4); // 55–95% of R
+  const pairCount = 1 + (seed % 3); // 1,2,3 pairs
+  const elems: React.ReactNode[] = [];
+
+  for (let p = 0; p < pairCount; p++) {
+    const a = (p / pairCount) * Math.PI + (rand() - 0.5) * 0.4;
+    const cx1 = 50 + Math.cos(a) * offset;
+    const cy1 = 50 + Math.sin(a) * offset;
+    const cx2 = 50 - Math.cos(a) * offset;
+    const cy2 = 50 - Math.sin(a) * offset;
+    elems.push(
+      <circle key={`a${p}`} cx={cx1} cy={cy1} r={R} stroke={color} strokeWidth="0.5" opacity={0.75 - p * 0.12} />,
+      <circle key={`b${p}`} cx={cx2} cy={cy2} r={R} stroke={color} strokeWidth="0.5" opacity={0.75 - p * 0.12} />,
+      <circle key={`da${p}`} cx={cx1} cy={cy1} r="1.1" fill={color} opacity="0.75" />,
+      <circle key={`db${p}`} cx={cx2} cy={cy2} r="1.1" fill={color} opacity="0.75" />
     );
   }
-  // Vertical pair
-  return (
-    <>
-      <circle cx="50" cy={50 - offset} r={R} stroke={color} strokeWidth="0.5" opacity="0.75" />
-      <circle cx="50" cy={50 + offset} r={R} stroke={color} strokeWidth="0.5" opacity="0.75" />
-      <circle cx="50" cy={50 - offset} r="1.2" fill={color} opacity="0.8" />
-      <circle cx="50" cy={50 + offset} r="1.2" fill={color} opacity="0.8" />
-      <circle cx="50" cy="50" r="1.6" fill={color} />
-    </>
-  );
+  elems.push(<circle key="c" cx="50" cy="50" r="1.6" fill={color} />);
+  return <Rot deg={k.rotDeg}>{elems}</Rot>;
 }
 
 /* ─── crosshatch ───────────────────────────────────────────────────────── */
 
 function crosshatch(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
   const variant = seed % 3;
-  const lines: React.ReactNode[] = [];
-  const sz = 52;
+  const sz = 50 + rand() * 6;
   const x0 = 50 - sz / 2;
   const y0 = 50 - sz / 2;
-  // Bounding square
-  lines.push(
-    <rect key="b" x={x0} y={y0} width={sz} height={sz} stroke={color} strokeWidth="0.35" opacity="0.4" />
-  );
-  // Diagonals
-  const step = variant === 0 ? 5 : variant === 1 ? 4 : 6;
-  // Down-right diagonals
+  const step = 4 + ((seed >> 3) % 4); // 4..7
+  const lines: React.ReactNode[] = [];
+  lines.push(<rect key="b" x={x0} y={y0} width={sz} height={sz} stroke={color} strokeWidth="0.35" opacity="0.4" />);
+
+  // Down-right diagonals (always present)
   for (let i = -sz; i <= sz; i += step) {
     const x1 = x0 + Math.max(0, i);
     const y1 = y0 + Math.max(0, -i);
     const x2 = x0 + Math.min(sz, sz + i);
     const y2 = y0 + Math.min(sz, sz - i);
-    lines.push(
-      <line key={`a${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="0.3" opacity="0.5" />
-    );
+    lines.push(<line key={`a${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="0.3" opacity="0.5" />);
   }
   if (variant !== 2) {
-    // Up-right diagonals (second direction)
+    // Second direction
     for (let i = -sz; i <= sz; i += step) {
       const x1 = x0 + Math.max(0, i);
       const y1 = y0 + sz - Math.max(0, -i);
       const x2 = x0 + Math.min(sz, sz + i);
       const y2 = y0 + sz - Math.min(sz, sz - i);
-      lines.push(
-        <line key={`b${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="0.3" opacity="0.5" />
-      );
+      lines.push(<line key={`b${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="0.3" opacity="0.5" />);
     }
   }
-  return <>{lines}</>;
+  if (variant === 1) {
+    // Add horizontal for triple-hatch
+    for (let y = y0 + step; y < y0 + sz; y += step * 2) {
+      lines.push(<line key={`h${y}`} x1={x0} y1={y} x2={x0 + sz} y2={y} stroke={color} strokeWidth="0.25" opacity="0.35" />);
+    }
+  }
+  return <Rot deg={k.rotDeg / 4}>{lines}</Rot>;
 }
 
-/* ─── meridian — curved parallels ──────────────────────────────────────── */
+/* ─── meridian ─────────────────────────────────────────────────────────── */
 
 function meridian(seed: number, color: string): React.ReactNode {
-  const variant = seed % 3;
-  const count = variant === 0 ? 5 : variant === 1 ? 7 : 9;
-  const R = 32;
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const parallels = 3 + (seed % 5); // 3..7
+  const meridians = (seed >> 3) % 2 === 0 ? 0 : 2 + ((seed >> 5) % 3); // 0, or 2..4
+  const R = 30 + rand() * 4;
   const elems: React.ReactNode[] = [];
-  // Sphere outline
-  elems.push(
-    <circle key="s" cx="50" cy="50" r={R} stroke={color} strokeWidth="0.4" opacity="0.5" />
-  );
-  // Horizontal parallels — arcs whose ry = R * |sin(angle)|
-  for (let i = 0; i < count; i++) {
-    const frac = (i + 1) / (count + 1); // 0..1
-    const phi = frac * Math.PI; // 0..π — latitude
+  elems.push(<circle key="s" cx="50" cy="50" r={R} stroke={color} strokeWidth="0.4" opacity="0.5" />);
+  for (let i = 0; i < parallels; i++) {
+    const frac = (i + 1) / (parallels + 1);
+    const phi = frac * Math.PI;
     const y = 50 - Math.cos(phi) * R;
     const rx = Math.sin(phi) * R;
     const ry = rx * 0.25;
@@ -1195,41 +1323,43 @@ function meridian(seed: number, color: string): React.ReactNode {
       <ellipse key={`p${i}`} cx="50" cy={y} rx={rx} ry={ry} stroke={color} strokeWidth="0.3" opacity="0.65" />
     );
   }
-  // Equator emphasized
-  elems.push(
-    <line key="eq" x1={50 - R} y1="50" x2={50 + R} y2="50" stroke={color} strokeWidth="0.35" opacity="0.55" />
-  );
-  // Central axis
-  elems.push(
-    <line key="ax" x1="50" y1={50 - R} x2="50" y2={50 + R} stroke={color} strokeWidth="0.25" opacity="0.4" strokeDasharray="1,1.5" />
-  );
-  return <>{elems}</>;
+  // Equator
+  elems.push(<line key="eq" x1={50 - R} y1="50" x2={50 + R} y2="50" stroke={color} strokeWidth="0.35" opacity="0.55" />);
+  // Optional longitudinal meridians
+  for (let i = 0; i < meridians; i++) {
+    const lon = (i / meridians) * Math.PI - Math.PI / 2;
+    const rx = Math.abs(Math.cos(lon)) * R;
+    elems.push(
+      <ellipse key={`mr${i}`} cx="50" cy="50" rx={rx} ry={R} stroke={color} strokeWidth="0.3" opacity="0.55" />
+    );
+  }
+  elems.push(<line key="ax" x1="50" y1={50 - R} x2="50" y2={50 + R} stroke={color} strokeWidth="0.25" opacity="0.4" strokeDasharray="1,1.5" />);
+  return <Rot deg={k.rotDeg / 6}>{elems}</Rot>;
 }
 
-/* ─── halftone — density gradient of dots ──────────────────────────────── */
+/* ─── halftone ─────────────────────────────────────────────────────────── */
 
 function halftone(seed: number, color: string): React.ReactNode {
-  const variant = seed % 3;
-  const dots: React.ReactNode[] = [];
-  const step = 4.5;
+  const rand = mulberry32(seed);
+  const variant = seed % 4;
+  const step = 3.5 + (((seed >> 3) % 4)); // 3.5..6.5
   const x0 = 18, x1 = 82, y0 = 18, y1 = 82;
+  const dots: React.ReactNode[] = [];
+  const axisA = rand() * Math.PI * 2;
+  const cx = 50 + (rand() - 0.5) * 14;
+  const cy = 50 + (rand() - 0.5) * 14;
   let key = 0;
   for (let y = y0; y <= y1; y += step) {
     for (let x = x0; x <= x1; x += step) {
-      const dx = x - 50;
-      const dy = y - 50;
+      const dx = x - cx;
+      const dy = y - cy;
       const d = Math.hypot(dx, dy);
+      const along = dx * Math.cos(axisA) + dy * Math.sin(axisA);
       let size: number;
-      if (variant === 0) {
-        // Radial (dense center)
-        size = Math.max(0, 2.2 - d / 18);
-      } else if (variant === 1) {
-        // Linear (dark left → light right)
-        size = Math.max(0, 2.2 - (x - x0) / 30);
-      } else {
-        // Inverse radial (sparse center, dense at edge)
-        size = Math.max(0, (d - 6) / 22);
-      }
+      if (variant === 0) size = Math.max(0, 2.4 - d / 16);
+      else if (variant === 1) size = Math.max(0, 1.6 - along / 20);
+      else if (variant === 2) size = Math.max(0, (d - 4) / 22);
+      else size = Math.max(0, 1.2 + Math.sin(d / 4) * 1.0);
       if (size > 0.15) {
         dots.push(<circle key={key++} cx={x} cy={y} r={size} fill={color} opacity="0.85" />);
       }
