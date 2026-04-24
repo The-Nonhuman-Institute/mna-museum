@@ -41,6 +41,29 @@ const GROUP_ORDER: GroupMeta[] = [
   { key: "NETWORK_ORIGINATOR", label: "Network Originators", agentType: "ORIGINATOR" },
 ];
 
+/* Rows define how groups pack horizontally in grid view. maxCards caps the
+   preview; any remainder collapses into a "+N More" tile that links to the
+   filtered view. */
+const ROWS: { key: GroupKey; maxCards: number }[][] = [
+  [
+    { key: "FOUNDING_ORIGINATOR", maxCards: 4 },
+    { key: "EVALUATOR", maxCards: 4 },
+  ],
+  [
+    { key: "KEEPER", maxCards: 1 },
+    { key: "CRITIC", maxCards: 3 },
+    { key: "CURATOR", maxCards: 1 },
+    { key: "INSTALLER", maxCards: 1 },
+    { key: "CONSERVATOR", maxCards: 1 },
+  ],
+  [
+    { key: "AMBASSADOR", maxCards: 1 },
+    { key: "REGISTRAR", maxCards: 1 },
+    { key: "STEWARD", maxCards: 1 },
+    { key: "NETWORK_ORIGINATOR", maxCards: 4 },
+  ],
+];
+
 const FOUNDING_IDS = new Set([
   "MNA-OR-0001",
   "MNA-OR-0002",
@@ -298,52 +321,103 @@ export default function AgentDirectoryClient({
 
           {/* Groups */}
           {view === "grid" ? (
-            <div className="space-y-14">
-              {GROUP_ORDER.map((g) => {
-                const members = visibleInGroup(g.key);
-                if (members.length === 0 && typeFilter.length > 0) return null;
-                const all = sortedInGroup(grouped.get(g.key) ?? []);
-                const showViewAll = all.length > 4;
-                const cards = members.slice(0, 4);
-                const remaining = all.length - cards.length;
+            <div className="space-y-10 md:space-y-12">
+              {ROWS.map((rowGroups, rowIdx) => {
+                /* Per-row group calcs, filtered + slot-sized. */
+                const prepared = rowGroups
+                  .map((rg) => {
+                    const all = sortedInGroup(grouped.get(rg.key) ?? []);
+                    if (all.length === 0) return null;
+                    /* Apply filters identically to visibleInGroup but keep total
+                       for the "View All (N)" readout. */
+                    if (typeFilter.length > 0 && !typeFilter.includes(rg.key))
+                      return null;
+                    const filtered =
+                      statusFilter.length === 0
+                        ? all
+                        : all.filter((a) =>
+                            statusFilter.includes(
+                              (a.status as StatusKey) ?? "ACTIVE"
+                            )
+                          );
+                    if (filtered.length === 0) return null;
+                    const meta = GROUP_ORDER.find((x) => x.key === rg.key)!;
+                    const cards = filtered.slice(0, rg.maxCards);
+                    const overflow = filtered.length - cards.length;
+                    const slots = cards.length + (overflow > 0 ? 1 : 0);
+                    return {
+                      key: rg.key,
+                      label: meta.label,
+                      cards,
+                      overflow,
+                      slots,
+                      total: all.length,
+                    };
+                  })
+                  .filter((x): x is NonNullable<typeof x> => x !== null);
+                if (prepared.length === 0) return null;
+                /* Shared row grid → every card in the row has identical width. */
+                const totalSlots = prepared.reduce((n, g) => n + g.slots, 0);
                 return (
-                  <div key={g.key}>
-                    <div className="flex items-baseline justify-between gap-4 mb-5">
-                      <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/70">
-                        {g.label}
-                      </p>
-                      {showViewAll ? (
-                        <Link
-                          href={`/agents?type=${g.key}`}
-                          className="text-[10px] font-sans uppercase tracking-[0.24em] text-mna-white/65 hover:text-mna-white transition-colors inline-flex items-center gap-2"
-                        >
-                          <span>View All ({all.length})</span>
-                          <span aria-hidden>→</span>
-                        </Link>
-                      ) : null}
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-                      {cards.map((a) => (
-                        <AgentCard
-                          key={a.registryId}
-                          agent={a}
-                          isNetwork={g.key === "NETWORK_ORIGINATOR"}
-                        />
-                      ))}
-                      {remaining > 0 ? (
-                        <Link
-                          href={`/agents?type=${g.key}`}
-                          className="relative border border-mna-white/15 hover:border-mna-white/45 bg-mna-white/[0.03] aspect-square flex flex-col items-center justify-center text-center px-4 transition-colors"
-                        >
-                          <span className="font-display text-[28px] text-mna-white/85 leading-none">
-                            +{remaining}
-                          </span>
-                          <span className="mt-2 text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/60 leading-tight">
-                            More {g.label.replace(/^The /, "")}
-                          </span>
-                        </Link>
-                      ) : null}
-                    </div>
+                  <div
+                    key={rowIdx}
+                    className="grid gap-x-2.5 md:gap-x-3"
+                    style={{
+                      gridTemplateColumns: `repeat(${totalSlots}, minmax(0, 1fr))`,
+                      gridTemplateRows: "auto auto",
+                    }}
+                  >
+                    {/* Row 1: headers, each spanning its group's slots */}
+                    {prepared.map((g) => (
+                      <div
+                        key={`h-${g.key}`}
+                        style={{ gridColumn: `span ${g.slots}`, gridRow: 1 }}
+                        className="flex items-baseline justify-between gap-2 mb-3 md:mb-4 min-w-0"
+                      >
+                        <span className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/70 truncate">
+                          {g.label}
+                        </span>
+                        {g.total > 1 ? (
+                          <Link
+                            href={`/agents?type=${g.key}`}
+                            className="shrink-0 text-[9.5px] font-sans uppercase tracking-[0.2em] text-mna-white/55 hover:text-mna-white transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <span>View All ({g.total})</span>
+                            <span aria-hidden>→</span>
+                          </Link>
+                        ) : null}
+                      </div>
+                    ))}
+                    {/* Row 2: cards + overflow tiles, each takes 1 col */}
+                    {prepared.flatMap((g) =>
+                      [
+                        ...g.cards.map((a) => (
+                          <div
+                            key={a.registryId}
+                            style={{ gridRow: 2 }}
+                            className="min-w-0"
+                          >
+                            <AgentCard
+                              agent={a}
+                              isNetwork={g.key === "NETWORK_ORIGINATOR"}
+                            />
+                          </div>
+                        )),
+                        g.overflow > 0 ? (
+                          <div
+                            key={`ov-${g.key}`}
+                            style={{ gridRow: 2 }}
+                            className="min-w-0"
+                          >
+                            <OverflowTile
+                              count={g.overflow}
+                              href={`/agents?type=${g.key}`}
+                              label={g.label.replace(/^The /, "")}
+                            />
+                          </div>
+                        ) : null,
+                      ].filter(Boolean)
+                    )}
                   </div>
                 );
               })}
@@ -380,7 +454,7 @@ function AgentCard({
   return (
     <Link
       href={`/agent/${agent.registryId}`}
-      className="group relative block border border-mna-white/15 hover:border-mna-white/45 bg-mna-white/[0.02] hover:bg-mna-white/[0.04] transition-colors"
+      className="group relative block border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
     >
       <div className="relative aspect-square overflow-hidden flex items-center justify-center">
         <AgentSignature
@@ -388,27 +462,66 @@ function AgentCard({
           agentType={agent.agentType}
           constitutionRef={agent.constitutionRef}
           size={220}
-          className="text-mna-white/90 w-[80%] h-[80%]"
+          className="text-mna-white/95 w-[86%] h-[86%]"
         />
         <span
           aria-hidden
-          className={`absolute top-2.5 right-2.5 inline-block w-[7px] h-[7px] rounded-full ${
-            agent.status === "ACTIVE" ? "bg-emerald-500" : "bg-mna-white/40"
+          className={`absolute top-2 right-2 inline-block w-[6px] h-[6px] rounded-full ${
+            agent.status === "ACTIVE"
+              ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.65)]"
+              : agent.status === "IN_REVIEW"
+                ? "bg-amber-400"
+                : agent.status === "RETIRED"
+                  ? "bg-red-500"
+                  : "bg-mna-white/40"
           }`}
         />
       </div>
-      <div className="px-3.5 py-3 border-t border-mna-white/10">
-        <p className="text-[10px] font-sans uppercase tracking-[0.16em] text-mna-white/60 tabular-nums truncate">
+      <div className="px-2.5 md:px-3 pt-2.5 pb-3 border-t border-mna-white/[0.08]">
+        <p className="text-[9px] font-sans uppercase tracking-[0.14em] text-mna-white/55 tabular-nums truncate">
           {agent.registryId}
         </p>
-        <p className="font-display text-[17px] md:text-[18px] leading-tight text-mna-white truncate mt-0.5">
+        <p className="font-display text-[15px] md:text-[16px] leading-tight text-mna-white truncate mt-0.5">
           {agent.designation || agent.registryId}
         </p>
         {subtitle ? (
-          <p className="text-[11px] text-mna-white/55 mt-1 truncate">
+          <p className="text-[10px] text-mna-white/50 mt-0.5 truncate">
             {subtitle}
           </p>
         ) : null}
+      </div>
+    </Link>
+  );
+}
+
+/* ─── Overflow tile ─────────────────────────────────────────────────────── */
+
+function OverflowTile({
+  count,
+  href,
+  label,
+}: {
+  count: number;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group relative block border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
+    >
+      <div className="aspect-square flex items-center justify-center">
+        <span className="font-display text-[30px] md:text-[34px] text-mna-white/90 leading-none">
+          +{count}
+        </span>
+      </div>
+      <div className="px-2.5 md:px-3 pt-2.5 pb-3 border-t border-mna-white/[0.08]">
+        <p className="text-[9px] font-sans uppercase tracking-[0.14em] text-mna-white/55 truncate">
+          More
+        </p>
+        <p className="text-[10px] text-mna-white/50 mt-0.5 leading-tight truncate">
+          {label}
+        </p>
       </div>
     </Link>
   );
