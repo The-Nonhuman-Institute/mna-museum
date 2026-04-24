@@ -9,6 +9,7 @@ function getNavMode(pathname: string): "light" | "dark" {
   if (pathname.startsWith("/archive")) return "dark";
   if (/^\/work\/[^/]+\/provenance/.test(pathname)) return "dark";
   if (/^\/exhibitions\/[^/]+/.test(pathname)) return "dark";
+  if (pathname === "/charter" || pathname.startsWith("/charter/")) return "dark";
   return "light";
 }
 
