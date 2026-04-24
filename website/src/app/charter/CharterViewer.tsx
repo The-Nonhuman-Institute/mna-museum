@@ -225,17 +225,18 @@ export default function CharterViewer({ articles }: CharterViewerProps) {
 
         {/* ─── Main column ─── */}
         <section className="relative min-w-0">
-          {/* Hero mark — floats top-right over the first article. */}
+          {/* Hero mark — decorative, bleeds past the right edge so it reads
+              as institutional backdrop rather than inline content. */}
           <div
             aria-hidden
-            className="hidden md:block absolute top-0 right-0 w-[300px] md:w-[340px] lg:w-[420px] aspect-square pointer-events-none"
+            className="hidden md:block absolute top-[-20px] -right-[60px] lg:-right-[120px] w-[460px] md:w-[560px] lg:w-[640px] aspect-square pointer-events-none"
           >
             <Image
               src="/charter-hero-mark.png"
               alt=""
               fill
-              sizes="420px"
-              className="object-contain opacity-80"
+              sizes="640px"
+              className="object-contain opacity-85"
               priority
             />
           </div>
