@@ -18,6 +18,7 @@ const PRIMARY_ITEMS: NavItem[] = [
   { label: "Exhibitions", href: "/exhibitions", match: (p) => p.startsWith("/exhibitions") },
   { label: "Canon", href: "/canon", match: (p) => p.startsWith("/canon") },
   { label: "Originators", href: "/originators", match: (p) => p.startsWith("/originators") },
+  { label: "Agents", href: "/agents", match: (p) => p === "/agents" || p.startsWith("/agents/") },
   {
     label: "The Commons",
     href: "https://commons.mnamuseum.org",
