@@ -229,13 +229,13 @@ export default function CharterViewer({ articles }: CharterViewerProps) {
               as institutional backdrop rather than inline content. */}
           <div
             aria-hidden
-            className="hidden md:block absolute top-[-20px] -right-[60px] lg:-right-[120px] w-[460px] md:w-[560px] lg:w-[640px] aspect-square pointer-events-none"
+            className="hidden md:block absolute top-[-20px] -right-[180px] lg:-right-[280px] xl:-right-[320px] w-[440px] md:w-[520px] lg:w-[620px] aspect-square pointer-events-none"
           >
             <Image
               src="/charter-hero-mark.png"
               alt=""
               fill
-              sizes="640px"
+              sizes="620px"
               className="object-contain opacity-85"
               priority
             />
@@ -406,11 +406,11 @@ function ArticleBlock({
       <p className="text-[11px] font-sans uppercase tracking-[0.26em] text-mna-white/55 mb-4">
         Article {article.num}
       </p>
-      <h2 className="font-display font-light leading-[1.04] tracking-tight text-[42px] md:text-[56px] lg:text-[64px] text-mna-white mb-8 max-w-[80%]">
+      <h2 className="font-display font-light leading-[1.04] tracking-tight text-[42px] md:text-[56px] lg:text-[64px] text-mna-white mb-8 max-w-[60ch]">
         {article.title}
       </h2>
       {article.intro.length > 0 ? (
-        <div className="space-y-5 text-[14px] md:text-[15px] leading-[1.75] text-mna-white/80 max-w-[68ch] mb-12">
+        <div className="space-y-5 text-[14px] md:text-[15px] leading-[1.75] text-mna-white/80 max-w-[58ch] mb-12">
           {article.intro.map((p, i) => (
             <p key={i}>{p}</p>
           ))}
@@ -418,7 +418,7 @@ function ArticleBlock({
       ) : null}
 
       {article.subsections.length > 0 ? (
-        <ul className="space-y-0 max-w-[76ch]">
+        <ul className="space-y-0 max-w-[66ch]">
           {article.subsections.map((s, i) => (
             <li
               key={s.num}
@@ -447,7 +447,7 @@ function ArticleBlock({
       ) : null}
 
       {/* Prev / Next pills */}
-      <div className="mt-12 border border-mna-white/15 grid grid-cols-2 divide-x divide-mna-white/15 max-w-[76ch]">
+      <div className="mt-12 border border-mna-white/15 grid grid-cols-2 divide-x divide-mna-white/15 max-w-[66ch]">
         <button
           type="button"
           onClick={() => onNavigate("prev")}
