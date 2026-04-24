@@ -86,7 +86,10 @@ export type GlyphFamily =
   | "vesica"
   | "crosshatch"
   | "meridian"
-  | "halftone";
+  | "halftone"
+  | "glitch"
+  | "phaze"
+  | "fracture";
 
 export interface GlyphMeta {
   key: GlyphFamily;
@@ -121,6 +124,9 @@ export const GLYPH_FAMILIES: Record<GlyphFamily, GlyphMeta> = {
   "crosshatch":       { key: "crosshatch",       label: "Crosshatch",       category: "orthogonal", description: "Density and shade." },
   "meridian":         { key: "meridian",         label: "Meridian",         category: "signal",     description: "Parallels and projection." },
   "halftone":         { key: "halftone",         label: "Halftone",         category: "signal",     description: "Dither and gradient." },
+  "glitch":           { key: "glitch",           label: "Glitch",           category: "signal",     description: "Displacement and signal slippage." },
+  "phaze":            { key: "phaze",            label: "Phaze",            category: "signal",     description: "Phase interference and beating." },
+  "fracture":         { key: "fracture",         label: "Fracture",         category: "organic",    description: "Impact radial crack network." },
 };
 
 export const ALL_FAMILIES = Object.keys(GLYPH_FAMILIES) as GlyphFamily[];
@@ -196,6 +202,9 @@ const RENDERERS: Record<GlyphFamily, Renderer> = {
   "crosshatch":       crosshatch,
   "meridian":         meridian,
   "halftone":         halftone,
+  "glitch":           glitch,
+  "phaze":            phaze,
+  "fracture":         fracture,
 };
 
 /* Wrap an element tree in a rotation transform around (50,50). */
@@ -1366,4 +1375,293 @@ function halftone(seed: number, color: string): React.ReactNode {
     }
   }
   return <>{dots}</>;
+}
+
+/* ─── glitch — signal-displaced figure ─────────────────────────────────── */
+
+function glitch(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const shape = seed % 3; // 0=circle, 1=square, 2=diamond
+  const R = 26 + rand() * 6;
+  const cy = 50;
+  const rowH = 2.0 + rand() * 1.5;
+  const numRows = Math.ceil((2 * R) / rowH);
+  const glitchProb = 0.18 + rand() * 0.22;
+  const maxShift = 10 + rand() * 8;
+
+  const elems: React.ReactNode[] = [];
+  for (let i = 0; i < numRows; i++) {
+    const y = cy - R + i * rowH + rowH / 2;
+    const dy = y - cy;
+    let halfW: number;
+    if (shape === 0) {
+      if (Math.abs(dy) >= R) continue;
+      halfW = Math.sqrt(R * R - dy * dy);
+    } else if (shape === 1) {
+      halfW = R * 0.85;
+    } else {
+      halfW = Math.max(0, R - Math.abs(dy));
+      if (halfW < 0.5) continue;
+    }
+    const isGlitch = rand() < glitchProb;
+    const dx = isGlitch ? (rand() - 0.5) * maxShift : 0;
+    const op = isGlitch ? 0.95 : 0.55 + rand() * 0.15;
+    const w = isGlitch ? 0.55 : 0.35;
+    elems.push(
+      <line
+        key={i}
+        x1={50 - halfW + dx}
+        y1={y}
+        x2={50 + halfW + dx}
+        y2={y}
+        stroke={color}
+        strokeWidth={w}
+        opacity={op}
+      />
+    );
+    if (isGlitch) {
+      // Tiny seam at the origin edge — suggests the tear
+      const seamX = dx > 0 ? 50 - halfW : 50 + halfW;
+      elems.push(
+        <line
+          key={`s${i}`}
+          x1={seamX}
+          y1={y}
+          x2={seamX + Math.sign(dx) * -2}
+          y2={y}
+          stroke={color}
+          strokeWidth="0.3"
+          opacity="0.5"
+          strokeDasharray="0.6,0.6"
+        />
+      );
+    }
+  }
+  // Top/bottom hairline markers to frame the figure
+  elems.push(
+    <line key="mt" x1={50 - R - 3} y1={cy - R - 1.5} x2={50 - R + 3} y2={cy - R - 1.5} stroke={color} strokeWidth="0.3" opacity="0.45" />,
+    <line key="mb" x1={50 + R - 3} y1={cy + R + 1.5} x2={50 + R + 3} y2={cy + R + 1.5} stroke={color} strokeWidth="0.3" opacity="0.45" />,
+    <circle key="c" cx="50" cy="50" r="1.2" fill={color} />
+  );
+  return <Rot deg={(((seed >>> 14) % 7) - 3)}>{elems}</Rot>;
+}
+
+/* ─── phaze — phase-interference / moiré ───────────────────────────────── */
+
+function phaze(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const mode = seed % 3;
+  const elems: React.ReactNode[] = [];
+
+  if (mode === 0) {
+    // Two sine waves, slightly different frequencies (beating)
+    const f1 = 3 + rand() * 2;
+    const f2 = f1 + 0.25 + rand() * 0.45;
+    const amp = 13 + rand() * 7;
+    const phase = rand() * Math.PI * 2;
+    const N = 220;
+    const pts1: string[] = [];
+    const pts2: string[] = [];
+    for (let i = 0; i < N; i++) {
+      const x = 14 + (i / (N - 1)) * 72;
+      const t = (i / (N - 1)) * Math.PI * 2;
+      pts1.push(`${x},${50 + Math.sin(t * f1 + phase) * amp}`);
+      pts2.push(`${x},${50 + Math.sin(t * f2) * amp}`);
+    }
+    elems.push(
+      <line key="base" x1="14" y1="50" x2="86" y2="50" stroke={color} strokeWidth="0.25" opacity="0.3" strokeDasharray="1,2" />,
+      <polyline key="w1" points={pts1.join(" ")} stroke={color} strokeWidth="0.55" fill="none" opacity="0.88" />,
+      <polyline key="w2" points={pts2.join(" ")} stroke={color} strokeWidth="0.4" fill="none" opacity="0.55" strokeDasharray="1.4,0.8" />,
+      <circle key="a" cx="14" cy="50" r="1" fill={color} opacity="0.8" />,
+      <circle key="b" cx="86" cy="50" r="1" fill={color} opacity="0.8" />
+    );
+  } else if (mode === 1) {
+    // Two sets of concentric rings, second set offset — creates visual beating
+    const rings = 4 + (seed % 4);
+    const offA = rand() * Math.PI * 2;
+    const offD = 4 + rand() * 7;
+    const ox = Math.cos(offA) * offD;
+    const oy = Math.sin(offA) * offD;
+    for (let i = 0; i < rings; i++) {
+      const r = 8 + i * (28 / rings);
+      elems.push(
+        <circle key={`a${i}`} cx="50" cy="50" r={r} stroke={color} strokeWidth="0.4" opacity={0.5 + (1 - i / rings) * 0.25} />,
+        <circle
+          key={`b${i}`}
+          cx={50 + ox}
+          cy={50 + oy}
+          r={r}
+          stroke={color}
+          strokeWidth="0.4"
+          opacity={0.35 + (1 - i / rings) * 0.2}
+          strokeDasharray="0.9,0.7"
+        />
+      );
+    }
+    elems.push(
+      <circle key="cA" cx="50" cy="50" r="1.4" fill={color} />,
+      <circle key="cB" cx={50 + ox} cy={50 + oy} r="1.2" fill={color} opacity="0.7" />
+    );
+  } else {
+    // Moiré — two sets of parallel lines at near-perpendicular angles
+    const count = 22 + (seed % 10);
+    const angle1 = rand() * Math.PI;
+    const skew = 0.12 + rand() * 0.2; // small angle difference from 90°
+    const angle2 = angle1 + Math.PI / 2 + skew * (rand() > 0.5 ? 1 : -1);
+    const sz = 56;
+    const sin1 = Math.sin(angle1), cos1 = Math.cos(angle1);
+    const sin2 = Math.sin(angle2), cos2 = Math.cos(angle2);
+    const halfLen = sz * 0.85;
+    for (let i = 0; i <= count; i++) {
+      const t = -sz / 2 + (i / count) * sz;
+      // first set
+      const x1a = 50 - sin1 * t - cos1 * halfLen;
+      const y1a = 50 + cos1 * t - sin1 * halfLen;
+      const x1b = 50 - sin1 * t + cos1 * halfLen;
+      const y1b = 50 + cos1 * t + sin1 * halfLen;
+      elems.push(
+        <line key={`m${i}a`} x1={x1a} y1={y1a} x2={x1b} y2={y1b} stroke={color} strokeWidth="0.3" opacity="0.55" />
+      );
+      // second set
+      const x2a = 50 - sin2 * t - cos2 * halfLen;
+      const y2a = 50 + cos2 * t - sin2 * halfLen;
+      const x2b = 50 - sin2 * t + cos2 * halfLen;
+      const y2b = 50 + cos2 * t + sin2 * halfLen;
+      elems.push(
+        <line key={`m${i}b`} x1={x2a} y1={y2a} x2={x2b} y2={y2b} stroke={color} strokeWidth="0.3" opacity="0.45" />
+      );
+    }
+    // Bounding circle
+    elems.push(
+      <circle key="frame" cx="50" cy="50" r="30" stroke={color} strokeWidth="0.3" opacity="0.35" />,
+      <circle key="core" cx="50" cy="50" r="1.3" fill={color} />
+    );
+  }
+
+  return <Rot deg={k.rotDeg}>{elems}</Rot>;
+}
+
+/* ─── fracture — impact crack network ──────────────────────────────────── */
+
+function fracture(seed: number, color: string): React.ReactNode {
+  const rand = mulberry32(seed);
+  const k = knobs(seed);
+  const cx = 50, cy = 50;
+  const elems: React.ReactNode[] = [];
+
+  // Primary radial fractures — irregular count and angles
+  const primaryCount = 5 + (seed % 5); // 5..9
+  const primaryEnds: { x: number; y: number; angle: number; length: number }[] = [];
+  for (let i = 0; i < primaryCount; i++) {
+    const angle = (i / primaryCount) * Math.PI * 2 + (rand() - 0.5) * 0.5;
+    const length = 20 + rand() * 16;
+    // Build a slightly jagged polyline for each primary crack (2–3 segments)
+    const segN = 2 + Math.floor(rand() * 2); // 2 or 3
+    const pts: [number, number][] = [[cx, cy]];
+    for (let s = 1; s <= segN; s++) {
+      const t = s / segN;
+      const r = length * t;
+      const jitterA = angle + (rand() - 0.5) * 0.25;
+      pts.push([cx + Math.cos(jitterA) * r, cy + Math.sin(jitterA) * r]);
+    }
+    for (let s = 0; s < pts.length - 1; s++) {
+      elems.push(
+        <line
+          key={`p${i}-${s}`}
+          x1={pts[s][0]}
+          y1={pts[s][1]}
+          x2={pts[s + 1][0]}
+          y2={pts[s + 1][1]}
+          stroke={color}
+          strokeWidth={0.55 - s * 0.08}
+          opacity={0.88 - s * 0.08}
+        />
+      );
+    }
+    const end = pts[pts.length - 1];
+    primaryEnds.push({ x: end[0], y: end[1], angle, length });
+
+    // Branches off the primary crack
+    const branchCount = Math.floor(rand() * 3);
+    for (let b = 0; b < branchCount; b++) {
+      const t = 0.3 + rand() * 0.5;
+      const branchStart: [number, number] = [
+        cx + Math.cos(angle) * (length * t),
+        cy + Math.sin(angle) * (length * t),
+      ];
+      const branchAngle = angle + (rand() - 0.5) * (Math.PI * 0.7);
+      const branchLen = 4 + rand() * 10;
+      const bx = branchStart[0] + Math.cos(branchAngle) * branchLen;
+      const by = branchStart[1] + Math.sin(branchAngle) * branchLen;
+      elems.push(
+        <line
+          key={`b${i}-${b}`}
+          x1={branchStart[0]}
+          y1={branchStart[1]}
+          x2={bx}
+          y2={by}
+          stroke={color}
+          strokeWidth="0.35"
+          opacity="0.6"
+        />
+      );
+    }
+  }
+
+  // Partial concentric fracture arcs (the "shock ring" of broken glass)
+  const arcCount = 2 + (seed % 3);
+  for (let i = 0; i < arcCount; i++) {
+    const r = 7 + i * 7 + rand() * 3;
+    const startA = rand() * Math.PI * 2;
+    const sweep = Math.PI * (0.25 + rand() * 0.75);
+    const segments = 14;
+    let prev: [number, number] | null = null;
+    for (let s = 0; s <= segments; s++) {
+      const a = startA + (s / segments) * sweep;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      if (prev) {
+        elems.push(
+          <line
+            key={`arc${i}-${s}`}
+            x1={prev[0]}
+            y1={prev[1]}
+            x2={x}
+            y2={y}
+            stroke={color}
+            strokeWidth="0.3"
+            opacity={0.5 - i * 0.06}
+          />
+        );
+      }
+      prev = [x, y];
+    }
+  }
+
+  // Impact site — dense nucleus
+  elems.push(
+    <circle key="nuc0" cx={cx} cy={cy} r="3" fill="none" stroke={color} strokeWidth="0.3" opacity="0.5" />,
+    <circle key="nuc1" cx={cx} cy={cy} r="1.8" fill={color} />
+  );
+
+  // Debris — small dots scattered beyond fracture endpoints
+  const debrisCount = 10 + (seed % 8);
+  for (let i = 0; i < debrisCount; i++) {
+    const a = rand() * Math.PI * 2;
+    const r = 6 + rand() * 30;
+    elems.push(
+      <circle
+        key={`d${i}`}
+        cx={cx + Math.cos(a) * r}
+        cy={cy + Math.sin(a) * r}
+        r={0.3 + rand() * 0.4}
+        fill={color}
+        opacity={0.35 + rand() * 0.35}
+      />
+    );
+  }
+
+  return <Rot deg={k.rotDeg}>{elems}</Rot>;
 }
