@@ -12,6 +12,7 @@ function getNavMode(pathname: string): "light" | "dark" {
   if (pathname === "/charter" || pathname.startsWith("/charter/")) return "dark";
   if (pathname === "/agents" || pathname.startsWith("/agents/")) return "dark";
   if (pathname === "/glyphs" || pathname.startsWith("/glyphs/")) return "dark";
+  if (pathname === "/compositions" || pathname.startsWith("/compositions/")) return "dark";
   return "light";
 }
 
