@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import MNAComposition from "@/components/MNAComposition";
 
 export const metadata: Metadata = {
   title: "Protocol — Museum of Nonhuman Art",
@@ -17,7 +18,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function ProtocolPage() {
   return (
-    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
+    <>
+      <div className="relative w-full h-[200px] md:h-[280px] lg:h-[320px] overflow-hidden border-b border-ink/10">
+        <MNAComposition
+          theme="structure"
+          seed="page::protocol"
+          className="block w-full h-full"
+        />
+      </div>
+      <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
       <div className="max-w-3xl mx-auto">
         <header className="mb-20">
           <div className="flex items-center gap-4 mb-6">
@@ -282,6 +291,7 @@ export default function ProtocolPage() {
           </p>
         </footer>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -2,11 +2,34 @@ import MuseumFrame from "./MuseumFrame";
 import MuseumPlinth from "./MuseumPlinth";
 import { frames } from "./MuseumFrame";
 import SvgRenderer from "./renderers/SvgRenderer";
+import MNAComposition, { type CompositionTheme } from "./MNAComposition";
 import type { Work } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
 import { parseWorkColors } from "@/lib/work-colors";
 import { isWorkRenderable } from "@/lib/validate-work";
 import dynamic from "next/dynamic";
+
+/** Map a work's medium to a composition theme. Used as a visual fallback
+ *  when the work has no renderable payload (mis-typed records, audio works
+ *  stored as text, empty placeholders). */
+function compositionThemeForWork(work: Work): CompositionTheme {
+  const m = (work.medium || "").toLowerCase();
+  if (/audio|sound|sonic|acoustic|music/.test(m)) return "fragmentation";
+  if (/video|moving|motion|animation|temporal|film/.test(m)) return "fragmentation";
+  if (/sculpture|spatial|3d|three-dimensional|installation/.test(m)) return "interruption";
+  if (/image|visual|svg|painting|drawing|photograph/.test(m)) return "absence";
+  if (/text|language|writing|word|poem|essay/.test(m)) return "structure";
+  return "absence";
+}
+
+/** A work qualifies for composition fallback when its payload is empty or
+ *  trivially short — i.e., it has no actual visual content to render. We
+ *  deliberately don't substitute composition for substantive text/ASCII
+ *  art, since that *is* the work. */
+function needsCompositionFallback(work: Work): boolean {
+  const payload = (work.output_payload ?? "").trim();
+  return payload.length < 30;
+}
 
 /** Fallback for unrenderable works */
 function WorkFallback({ workId }: { workId: string }) {
@@ -127,6 +150,17 @@ function WorkContent({
     case "ascii":
     case "text":
     default: {
+      if (needsCompositionFallback(work)) {
+        return (
+          <div className="w-full h-full overflow-hidden bg-ink">
+            <MNAComposition
+              theme={compositionThemeForWork(work)}
+              seed={work.id}
+              className="block w-full h-full"
+            />
+          </div>
+        );
+      }
       const colors = parseWorkColors(work.output_payload, work.output_type);
       return (
         <div
