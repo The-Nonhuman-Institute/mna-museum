@@ -32,8 +32,19 @@ export interface EvaluatorClientProps {
   citations: CitationActivity;
   /** Timeline events (constitution registered, first eval, amendments). */
   timeline: { date: string; label: string }[];
-  /** Originators this evaluator has rendered verdicts on, with counts. */
-  relationships: { originatorId: string; designation: string; count: number }[];
+  /** Originators this evaluator has rendered verdicts on. Includes the
+   *  per-originator verdict mix (canon / rejected / in-review rates) so
+   *  the map can color each spoke by verdict pattern instead of raw
+   *  count — count is identical across all council members by design
+   *  and made every evaluator's map look the same. */
+  relationships: {
+    originatorId: string;
+    designation: string;
+    count: number;
+    canonRate: number;
+    rejectedRate: number;
+    inReviewRate: number;
+  }[];
   registrationDate: string;
   lastAmended: string;
   totalEvaluationsLink: string;
@@ -413,9 +424,14 @@ export default function EvaluatorClient({
               </ul>
             </Panel>
 
-            {/* Relationship Map */}
+            {/* Verdict Pattern by Originator —
+                Every Council member evaluates every submission, so
+                "relationship count" is identical across all four
+                evaluators. The differentiating signal is the verdict
+                mix per originator, which IS unique to each evaluator.
+                Spokes are colored by canon-vs-rejected lean. */}
             <Panel
-              label="Relationship Map"
+              label="Verdict Pattern by Originator"
               footerHref={`/agent/${agent.registryId}/network`}
               footerLabel="View full network"
             >
@@ -423,13 +439,11 @@ export default function EvaluatorClient({
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 relationships={relationships}
               />
-              {/* Tight legend row sitting under the map, deliberately
-                  compact so it doesn't push the column past its siblings. */}
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
-                <Legend dot="bg-emerald-600" label="Evaluates" />
-                <Legend dot="bg-amber-500" label="Agrees with" />
-                <Legend dot="bg-red-500" label="Conflicts" />
-                <Legend dot="bg-ink/65" label="Cites" />
+                <Legend dot="bg-emerald-600" label="Mostly canonized" />
+                <Legend dot="bg-amber-500" label="Mixed verdicts" />
+                <Legend dot="bg-red-600" label="Mostly rejected" />
+                <Legend dot="bg-ink/40" label="Pending review" />
               </div>
             </Panel>
 
@@ -734,7 +748,14 @@ function RelationshipMap({
   relationships,
 }: {
   centerLabel: string;
-  relationships: { originatorId: string; designation: string; count: number }[];
+  relationships: {
+    originatorId: string;
+    designation: string;
+    count: number;
+    canonRate: number;
+    rejectedRate: number;
+    inReviewRate: number;
+  }[];
 }) {
   /* Wider viewBox so the labels — which sit OUTSIDE each dot at a fixed
      radial offset — never overlap their dots. Padding around the dot
@@ -786,8 +807,8 @@ function RelationshipMap({
                 stroke="rgba(10,10,10,0.18)"
                 strokeWidth={0.7}
               />
-              <circle cx={x} cy={y} r={dotSize} fill={spokeColor(i)}>
-                <title>{`${isEmergencePending(r.designation) ? r.originatorId : r.designation} — ${r.count} evaluation${r.count === 1 ? "" : "s"}`}</title>
+              <circle cx={x} cy={y} r={dotSize} fill={verdictColor(r)}>
+                <title>{`${isEmergencePending(r.designation) ? r.originatorId : r.designation} — ${r.count} eval${r.count === 1 ? "" : "s"} · ${(r.canonRate * 100).toFixed(0)}% canon · ${(r.rejectedRate * 100).toFixed(0)}% rejected${r.inReviewRate > 0 ? ` · ${(r.inReviewRate * 100).toFixed(0)}% in review` : ""}`}</title>
               </circle>
               <text
                 x={lx}
@@ -832,19 +853,22 @@ function RelationshipMap({
   );
 }
 
-function spokeColor(i: number): string {
-  /* Map node hue to category — not all relationships are one type, so this
-     varies positions visually. Real semantics will arrive when we bucket
-     edges by event_type. */
-  const palette = [
-    "#059669",
-    "#D97706",
-    "#0A0A0A",
-    "#DC2626",
-    "#059669",
-    "#0A0A0A",
-  ];
-  return palette[i % palette.length];
+function verdictColor(r: {
+  canonRate: number;
+  rejectedRate: number;
+  inReviewRate: number;
+}): string {
+  /* Color spokes by where this evaluator's verdicts on this originator's
+     works lean. Universal Council coverage means count is uniform across
+     all four evaluators; the verdict pattern is what's distinctive.
+       ≥ 0.65 canon  → emerald (mostly canonized)
+       ≥ 0.65 reject → red (mostly rejected)
+       ≥ 0.65 review → grey (pending verdict)
+       otherwise     → amber (mixed verdicts) */
+  if (r.canonRate >= 0.65) return "#059669";
+  if (r.rejectedRate >= 0.65) return "#DC2626";
+  if (r.inReviewRate >= 0.65) return "rgba(10,10,10,0.4)";
+  return "#D97706";
 }
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */

@@ -165,7 +165,10 @@ export default async function AgentDetailPage({
         getDb().execute({
           sql: `SELECT w.originator_id,
                        a.common_designation,
-                       COUNT(*) AS n
+                       COUNT(*) AS n,
+                       SUM(CASE WHEN e.verdict = 'CANON' THEN 1 ELSE 0 END) AS canon_n,
+                       SUM(CASE WHEN e.verdict = 'REJECTED' THEN 1 ELSE 0 END) AS rej_n,
+                       SUM(CASE WHEN e.verdict IN ('IN_REVIEW','IN REVIEW') THEN 1 ELSE 0 END) AS ir_n
                   FROM evaluations e
                   JOIN works w  ON w.id = e.work_id
                   LEFT JOIN agents a ON a.registry_id = w.originator_id
@@ -184,11 +187,20 @@ export default async function AgentDetailPage({
       ),
     }));
 
-    const relationships = relRows.rows.map((r) => ({
-      originatorId: String(r.originator_id ?? ""),
-      designation: String(r.common_designation ?? r.originator_id ?? ""),
-      count: Number(r.n ?? 0),
-    }));
+    const relationships = relRows.rows.map((r) => {
+      const n = Number(r.n ?? 0);
+      const canon = Number(r.canon_n ?? 0);
+      const rej = Number(r.rej_n ?? 0);
+      const ir = Number(r.ir_n ?? 0);
+      return {
+        originatorId: String(r.originator_id ?? ""),
+        designation: String(r.common_designation ?? r.originator_id ?? ""),
+        count: n,
+        canonRate: n > 0 ? canon / n : 0,
+        rejectedRate: n > 0 ? rej / n : 0,
+        inReviewRate: n > 0 ? ir / n : 0,
+      };
+    });
 
     return (
       <EvaluatorClient
