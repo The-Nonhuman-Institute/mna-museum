@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-04-25T22:36:04.507Z",
+  "themes": {
+    "fragmentation": [
+      "/compositions/fragmentation/001.png",
+      "/compositions/fragmentation/002.png",
+      "/compositions/fragmentation/003.png",
+      "/compositions/fragmentation/004.png",
+      "/compositions/fragmentation/005.png",
+      "/compositions/fragmentation/006.png",
+      "/compositions/fragmentation/007.png",
+      "/compositions/fragmentation/008.png",
+      "/compositions/fragmentation/009.png",
+      "/compositions/fragmentation/010.png",
+      "/compositions/fragmentation/011.png",
+      "/compositions/fragmentation/012.png"
+    ],
+    "absence": [
+      "/compositions/absence/001.png",
+      "/compositions/absence/002.png",
+      "/compositions/absence/003.png",
+      "/compositions/absence/004.png",
+      "/compositions/absence/005.png",
+      "/compositions/absence/006.png",
+      "/compositions/absence/007.png",
+      "/compositions/absence/008.png",
+      "/compositions/absence/009.png",
+      "/compositions/absence/010.png",
+      "/compositions/absence/011.png",
+      "/compositions/absence/012.png"
+    ],
+    "structure": [
+      "/compositions/structure/001.png",
+      "/compositions/structure/002.png",
+      "/compositions/structure/003.png",
+      "/compositions/structure/004.png",
+      "/compositions/structure/005.png",
+      "/compositions/structure/006.png",
+      "/compositions/structure/007.png",
+      "/compositions/structure/008.png",
+      "/compositions/structure/009.png",
+      "/compositions/structure/010.png",
+      "/compositions/structure/011.png",
+      "/compositions/structure/012.png"
+    ],
+    "interruption": [
+      "/compositions/interruption/001.png",
+      "/compositions/interruption/002.png",
+      "/compositions/interruption/003.png",
+      "/compositions/interruption/004.png",
+      "/compositions/interruption/005.png",
+      "/compositions/interruption/006.png",
+      "/compositions/interruption/007.png",
+      "/compositions/interruption/008.png",
+      "/compositions/interruption/009.png",
+      "/compositions/interruption/010.png",
+      "/compositions/interruption/011.png",
+      "/compositions/interruption/012.png"
+    ]
+  }
+}

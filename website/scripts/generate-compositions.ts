@@ -205,17 +205,23 @@ async function main() {
     manifest[theme] = files.map((f) => `/compositions/${theme}/${f}`);
   }
 
-  const manifestPath = path.join(outRoot, "manifest.json");
-  await writeFile(
-    manifestPath,
-    JSON.stringify({ generatedAt: new Date().toISOString(), themes: manifest }, null, 2)
+  const json = JSON.stringify(
+    { generatedAt: new Date().toISOString(), themes: manifest },
+    null,
+    2
   );
+  const publicManifest = path.join(outRoot, "manifest.json");
+  const srcManifest = path.join(repoRoot, "src", "lib", "composition-manifest.json");
+  await mkdir(path.dirname(srcManifest), { recursive: true });
+  await writeFile(publicManifest, json);
+  await writeFile(srcManifest, json);
 
   console.log("\n── manifest ──");
   for (const [theme, files] of Object.entries(manifest)) {
     console.log(`  ${theme.padEnd(14)}  ${files.length} files`);
   }
-  console.log(`\nWrote ${manifestPath}`);
+  console.log(`\nWrote ${publicManifest}`);
+  console.log(`Wrote ${srcManifest}`);
 }
 
 /* FNV-1a hash, same one MNAGlyph uses, so seed alignment stays trivial. */
