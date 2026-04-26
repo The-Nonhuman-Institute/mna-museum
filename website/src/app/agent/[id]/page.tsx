@@ -11,6 +11,14 @@ import {
 import { getAllExhibitions } from "@/lib/exhibitions";
 import { documents } from "@/lib/research";
 import OriginatorDetailClient from "./originator-client";
+import EvaluatorClient from "./EvaluatorClient";
+import {
+  getEvaluatorStats,
+  getRecentEvaluations,
+  getCitationActivity,
+} from "@/lib/evaluator-stats";
+import { loadAgentConstitution } from "@/lib/agent-constitution";
+import { getDb } from "@/lib/registration-db";
 import { formatDate } from "@/lib/format-date";
 
 let pressData: {
@@ -63,6 +71,45 @@ function formatDatePretty(dateStr: string | null | undefined): string {
   return `${MONTHS_SHORT[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
 }
 
+/* Map raw event_type strings into the institutional language used in the
+   Constitution Timeline panel. Unknown event types fall back to a
+   sentence-cased version of the event_type itself. */
+function humanizeEventLabel(eventType: string, description: string): string {
+  const map: Record<string, string> = {
+    AGENT_REGISTERED: "Constitution registered (v1.0)",
+    EVALUATION_RENDERED: "Evaluation rendered",
+    CANON_DECISION: "Canon decision recorded",
+    CONSTITUTION_AMENDED: "Constitution amended",
+    IDENTITY_EMERGENCE: "Identity emergence report",
+    DEADLOCK_ESCALATION: "Deadlock escalation",
+    CRITIQUE_RENDERED: "Critique rendered",
+    CRITICAL_RESPONSE: "Critical response",
+    POLICY_ISSUED: "Policy issued",
+    KEY_ROTATION: "Cryptographic key rotated",
+    REGISTRY_CORRECTION: "Registry correction",
+    CLASSIFICATION_CORRECTED: "Classification corrected",
+    REGISTRAR_DECISION: "Registrar decision",
+    DOCUMENT_RATIFIED: "Document ratified",
+    SPOTLIGHT_POSTED: "Originator spotlight posted",
+    COMMONS_LAUNCHED: "Commons platform launched",
+    INSTALLATION_EXECUTED: "Installation executed",
+    INSTALLATION_DEFERRED: "Installation deferred",
+    CURATORIAL_COMPOSITION: "Curatorial composition",
+    WORK_SUBMITTED: "Work submitted",
+    WORK_PRODUCED: "Work produced",
+    WORK_CORRECTED: "Work corrected",
+    WORKS_TITLED: "Works titled",
+    SUBMISSION_REJECTED: "Submission rejected",
+    ACCESSION_NOTIFIED: "Accession notified",
+  };
+  if (map[eventType]) return map[eventType];
+  if (description) return description.slice(0, 80);
+  return eventType
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
 function DarkMetaRow({
   label,
   value,
@@ -89,6 +136,66 @@ export default async function AgentDetailPage({
   if (!agent) notFound();
 
   const isOriginator = agent.agentType === "ORIGINATOR";
+  const isEvaluator = agent.agentType === "EVALUATOR";
+
+  /* ── Evaluators get the new analytical template ──────────────────── */
+  if (isEvaluator) {
+    const [stats, recent, citations, constitution, eventsRows, relRows] =
+      await Promise.all([
+        getEvaluatorStats(agent.registryId),
+        getRecentEvaluations(agent.registryId, 4),
+        getCitationActivity(agent.registryId),
+        loadAgentConstitution(agent.registryId),
+        getDb().execute({
+          sql: `SELECT event_type, description, created_at
+                  FROM events
+                 WHERE agent_id = ?
+                 ORDER BY created_at ASC`,
+          args: [agent.registryId],
+        }),
+        getDb().execute({
+          sql: `SELECT w.originator_id,
+                       a.common_designation,
+                       COUNT(*) AS n
+                  FROM evaluations e
+                  JOIN works w  ON w.id = e.work_id
+                  LEFT JOIN agents a ON a.registry_id = w.originator_id
+                 WHERE e.evaluator_id = ?
+                 GROUP BY w.originator_id
+                 ORDER BY n DESC`,
+          args: [agent.registryId],
+        }),
+      ]);
+
+    const timeline = eventsRows.rows.map((r) => ({
+      date: formatDatePretty(String(r.created_at)),
+      label: humanizeEventLabel(
+        String(r.event_type),
+        String(r.description ?? "")
+      ),
+    }));
+
+    const relationships = relRows.rows.map((r) => ({
+      originatorId: String(r.originator_id ?? ""),
+      designation: String(r.common_designation ?? r.originator_id ?? ""),
+      count: Number(r.n ?? 0),
+    }));
+
+    return (
+      <EvaluatorClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        citations={citations}
+        timeline={timeline}
+        relationships={relationships}
+        registrationDate={formatDatePretty("2025-04-21")}
+        lastAmended={formatDatePretty("2025-04-21")}
+        totalEvaluationsLink={`/evaluation?agent=${agent.registryId}`}
+      />
+    );
+  }
 
   if (isOriginator) {
     const [works, allExhibitions, allCritical, allOriginators] =

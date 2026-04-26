@@ -78,6 +78,15 @@ body {
   will-change: transform;
 }
 
+/* Multi-line clamp for table cells — used in the Evaluator agent
+   template's recent-evaluations rationale excerpt. */
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Tab strip on the standards page can overflow horizontally on narrow
    screens; the scrollbar would visually break the institutional rule. */
 .no-scrollbar {
