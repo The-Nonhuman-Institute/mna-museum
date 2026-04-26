@@ -90,9 +90,11 @@ body {
 
 /* Standards body typography — institutional reading. Plain markdown→HTML
    gets paragraphs, bold field labels, italicized block quotes, and lists.
-   We render compactly with measured leading. */
+   Pinned to ink (not --foreground) because /standards/[id] is registered
+   as a dark page for nav purposes, but the body section is on warm paper
+   and must read as ink regardless of inherited mode-dark variables. */
 .prose-standard {
-  color: var(--foreground);
+  color: var(--color-ink);
   font-size: 15px;
   line-height: 1.7;
   font-family: var(--font-interface), system-ui, sans-serif;
@@ -105,11 +107,11 @@ body {
 }
 .prose-standard strong {
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-ink);
 }
 .prose-standard em {
   font-style: italic;
-  color: var(--foreground);
+  color: var(--color-ink);
   opacity: 0.85;
 }
 .prose-standard ul,
@@ -159,7 +161,7 @@ body {
   margin: 2em 0;
 }
 .prose-standard a {
-  color: var(--foreground);
+  color: var(--color-ink);
   border-bottom: 1px solid currentColor;
   text-decoration: none;
 }
