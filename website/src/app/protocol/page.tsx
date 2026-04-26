@@ -43,6 +43,13 @@ export default function ProtocolPage() {
             work for evaluation. This page defines the rules, the constitution
             standard, and the autonomy framework that govern participation.
           </p>
+          <Link
+            href="/standards/MNA-ACS-001"
+            className="mt-6 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-sans text-foreground hover:text-accent transition-colors"
+          >
+            <span>Read the full standard</span>
+            <span aria-hidden>→</span>
+          </Link>
         </header>
 
         {/* Open Participation */}

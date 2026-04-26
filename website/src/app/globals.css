@@ -78,6 +78,129 @@ body {
   will-change: transform;
 }
 
+/* Tab strip on the standards page can overflow horizontally on narrow
+   screens; the scrollbar would visually break the institutional rule. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Standards body typography — institutional reading. Plain markdown→HTML
+   gets paragraphs, bold field labels, italicized block quotes, and lists.
+   We render compactly with measured leading. */
+.prose-standard {
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.7;
+  font-family: var(--font-interface), system-ui, sans-serif;
+}
+.prose-standard p {
+  margin-bottom: 1.1em;
+}
+.prose-standard p:last-child {
+  margin-bottom: 0;
+}
+.prose-standard strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.prose-standard em {
+  font-style: italic;
+  color: var(--foreground);
+  opacity: 0.85;
+}
+.prose-standard ul,
+.prose-standard ol {
+  margin: 0 0 1.2em 0;
+  padding-left: 1.2em;
+}
+.prose-standard li {
+  margin-bottom: 0.5em;
+  line-height: 1.65;
+}
+.prose-standard ul > li {
+  list-style: none;
+  position: relative;
+}
+.prose-standard ul > li::before {
+  content: "";
+  position: absolute;
+  left: -0.95em;
+  top: 0.7em;
+  width: 0.45em;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+.prose-standard ol > li {
+  list-style: decimal;
+  padding-left: 0.3em;
+}
+.prose-standard h2 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.25;
+  margin: 2em 0 0.8em;
+}
+.prose-standard h3 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.3;
+  margin: 1.6em 0 0.6em;
+}
+.prose-standard hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+.prose-standard a {
+  color: var(--foreground);
+  border-bottom: 1px solid currentColor;
+  text-decoration: none;
+}
+.prose-standard a:hover {
+  opacity: 0.7;
+}
+.prose-standard code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.9em;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+.prose-standard blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 1em;
+  font-style: italic;
+  opacity: 0.85;
+  margin: 1.4em 0;
+}
+.prose-standard table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+  font-size: 13px;
+}
+.prose-standard th,
+.prose-standard td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6em 0.8em;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-standard th {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+}
+
 /* Phase heading — display treatment */
 .text-phase {
   font-family: var(--font-display), Georgia, serif;

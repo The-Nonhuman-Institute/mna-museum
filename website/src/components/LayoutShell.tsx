@@ -13,6 +13,7 @@ function getNavMode(pathname: string): "light" | "dark" {
   if (pathname === "/agents" || pathname.startsWith("/agents/")) return "dark";
   if (pathname === "/glyphs" || pathname.startsWith("/glyphs/")) return "dark";
   if (pathname === "/compositions" || pathname.startsWith("/compositions/")) return "dark";
+  if (/^\/standards\/[^/]+/.test(pathname)) return "dark";
   return "light";
 }
 
@@ -24,8 +25,11 @@ export default function LayoutShell({
   const pathname = usePathname();
   const isMuseum = pathname === "/museum";
   const isCapture = pathname.startsWith("/capture");
+  /* /standards/[id]/print is a chromeless route used by the build-time
+     PDF generator. No nav, no footer — just the printable doc. */
+  const isPrint = /^\/standards\/[^/]+\/print$/.test(pathname);
 
-  if (isMuseum || isCapture) {
+  if (isMuseum || isCapture || isPrint) {
     return <>{children}</>;
   }
 
