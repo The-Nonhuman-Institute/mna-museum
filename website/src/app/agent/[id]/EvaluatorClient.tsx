@@ -13,6 +13,7 @@
 
 import Link from "next/link";
 import AgentSignature from "@/components/AgentSignature";
+import CiteButton from "@/components/CiteButton";
 import type { Agent } from "@/lib/agents";
 import type {
   EvaluatorStats,
@@ -165,13 +166,15 @@ export default function EvaluatorClient({
               <span aria-hidden>↓</span>
               <span>PDF</span>
             </a>
-            <a
-              href={`/agent/${agent.registryId}/cite`}
-              className="hover:text-mna-white transition-colors inline-flex items-center gap-1.5"
-            >
-              <span aria-hidden>§§</span>
-              <span>Cite</span>
-            </a>
+            <CiteButton
+              title={`${agent.registryId}: ${agent.designation}`}
+              documentId={agent.registryId}
+              version="1.0"
+              year={(registrationDate.match(/\d{4}/) ?? [""])[0]}
+              url={`https://mnamuseum.org/agent/${agent.registryId}/constitution`}
+              documentType="Founding Constitution"
+              tone="dark"
+            />
           </div>
         </div>
       </aside>

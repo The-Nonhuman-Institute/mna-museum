@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MNAGlyph, { type GlyphFamily } from "@/components/MNAGlyph";
+import CiteButton from "@/components/CiteButton";
 
 /* ─── Props from server ────────────────────────────────────────────────── */
 
@@ -203,13 +204,24 @@ export default function StandardClient({
               </button>
             ))}
           </div>
-          <a
-            href={resolvedPdfHref}
-            className="shrink-0 inline-flex items-center justify-center gap-3 bg-ink text-mna-white text-[10px] font-sans uppercase tracking-[0.26em] px-5 py-3 hover:bg-ink/85 transition-colors"
-          >
-            <span>Download {backHref.startsWith("/agent") ? "Constitution" : "Standard"}</span>
-            <span aria-hidden>↓</span>
-          </a>
+          <div className="shrink-0 flex items-center gap-5">
+            <CiteButton
+              title={`${meta.id}: ${meta.title}`}
+              documentId={meta.id}
+              version={fields.version}
+              year={(fields.ratified ?? fields.prepared ?? "").match(/\d{4}/)?.[0]}
+              url={`https://mnamuseum.org${backHref.startsWith("/agent") ? `/agent/${meta.id}/constitution` : `/standards/${meta.id}`}`}
+              documentType={fields.classification}
+              tone="light"
+            />
+            <a
+              href={resolvedPdfHref}
+              className="inline-flex items-center justify-center gap-3 bg-ink text-mna-white text-[10px] font-sans uppercase tracking-[0.26em] px-5 py-3 hover:bg-ink/85 transition-colors"
+            >
+              <span>Download {backHref.startsWith("/agent") ? "Constitution" : "Standard"}</span>
+              <span aria-hidden>↓</span>
+            </a>
+          </div>
         </div>
       </div>
 
