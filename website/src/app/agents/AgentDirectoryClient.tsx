@@ -99,6 +99,26 @@ function originatorMedium(agent: Agent): string {
   return "Generative Work";
 }
 
+/* Every card gets a 3-line text block so the grid row stays even regardless
+ * of agent type. Originators get their medium; institutional agents get
+ * their function category. */
+function agentSubtitle(agent: Agent, isNetwork: boolean): string {
+  if (isNetwork) return "External";
+  if (agent.agentType === "ORIGINATOR") return originatorMedium(agent);
+  switch (agent.agentType) {
+    case "EVALUATOR":   return "Evaluation";
+    case "KEEPER":      return "Preservation";
+    case "CRITIC":      return "Criticism";
+    case "CURATOR":     return "Curation";
+    case "INSTALLER":   return "Installation";
+    case "CONSERVATOR": return "Conservation";
+    case "AMBASSADOR":  return "Outreach";
+    case "REGISTRAR":   return "Registry";
+    case "STEWARD":     return "Stewardship";
+    default:            return "Institutional";
+  }
+}
+
 /* ─── Main ──────────────────────────────────────────────────────────────── */
 
 export interface AgentDirectoryClientProps {
@@ -445,18 +465,13 @@ function AgentCard({
   agent: Agent;
   isNetwork: boolean;
 }) {
-  const isOriginator = agent.agentType === "ORIGINATOR";
-  const subtitle = isNetwork
-    ? "External"
-    : isOriginator
-      ? originatorMedium(agent)
-      : "";
+  const subtitle = agentSubtitle(agent, isNetwork);
   return (
     <Link
       href={`/agent/${agent.registryId}`}
-      className="group relative block border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
+      className="group relative flex flex-col h-full border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
     >
-      <div className="relative aspect-square overflow-hidden flex items-center justify-center">
+      <div className="relative aspect-square overflow-hidden flex items-center justify-center shrink-0">
         <AgentSignature
           registryId={agent.registryId}
           agentType={agent.agentType}
@@ -477,18 +492,16 @@ function AgentCard({
           }`}
         />
       </div>
-      <div className="px-2.5 md:px-3 pt-2.5 pb-3 border-t border-mna-white/[0.08]">
+      <div className="px-2.5 md:px-3 pt-2.5 pb-3 border-t border-mna-white/[0.08] mt-auto">
         <p className="text-[9px] font-sans uppercase tracking-[0.14em] text-mna-white/55 tabular-nums truncate">
           {agent.registryId}
         </p>
         <p className="font-display text-[15px] md:text-[16px] leading-tight text-mna-white truncate mt-0.5">
           {agent.designation || agent.registryId}
         </p>
-        {subtitle ? (
-          <p className="text-[10px] text-mna-white/50 mt-0.5 truncate">
-            {subtitle}
-          </p>
-        ) : null}
+        <p className="text-[10px] text-mna-white/50 mt-0.5 truncate">
+          {subtitle}
+        </p>
       </div>
     </Link>
   );
@@ -508,18 +521,21 @@ function OverflowTile({
   return (
     <Link
       href={href}
-      className="group relative block border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
+      className="group relative flex flex-col h-full border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
     >
-      <div className="aspect-square flex items-center justify-center">
+      <div className="aspect-square flex items-center justify-center shrink-0">
         <span className="font-display text-[30px] md:text-[34px] text-mna-white/90 leading-none">
           +{count}
         </span>
       </div>
-      <div className="px-2.5 md:px-3 pt-2.5 pb-3 border-t border-mna-white/[0.08]">
-        <p className="text-[9px] font-sans uppercase tracking-[0.14em] text-mna-white/55 truncate">
+      <div className="px-2.5 md:px-3 pt-2.5 pb-3 border-t border-mna-white/[0.08] mt-auto">
+        <p className="text-[9px] font-sans uppercase tracking-[0.14em] text-mna-white/55 tabular-nums truncate">
+          —
+        </p>
+        <p className="font-display text-[15px] md:text-[16px] leading-tight text-mna-white truncate mt-0.5">
           More
         </p>
-        <p className="text-[10px] text-mna-white/50 mt-0.5 leading-tight truncate">
+        <p className="text-[10px] text-mna-white/50 mt-0.5 truncate">
           {label}
         </p>
       </div>
