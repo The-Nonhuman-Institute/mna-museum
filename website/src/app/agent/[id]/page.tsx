@@ -12,11 +12,19 @@ import { getAllExhibitions } from "@/lib/exhibitions";
 import { documents } from "@/lib/research";
 import OriginatorDetailClient from "./originator-client";
 import EvaluatorClient from "./EvaluatorClient";
+import CuratorClient from "./CuratorClient";
 import {
   getEvaluatorStats,
   getRecentEvaluations,
   getCitationActivity,
 } from "@/lib/evaluator-stats";
+import {
+  getCuratorStats,
+  getRecentExhibitions,
+  getCuratorRelationships,
+  getCuratorTimeline,
+  getExhibitionPrinciples,
+} from "@/lib/curator-stats";
 import { loadAgentConstitution } from "@/lib/agent-constitution";
 import { getDb } from "@/lib/registration-db";
 import { formatDate } from "@/lib/format-date";
@@ -137,6 +145,7 @@ export default async function AgentDetailPage({
 
   const isOriginator = agent.agentType === "ORIGINATOR";
   const isEvaluator = agent.agentType === "EVALUATOR";
+  const isCurator = agent.agentType === "CURATOR";
 
   /* ── Evaluators get the new analytical template ──────────────────── */
   if (isEvaluator) {
@@ -193,6 +202,46 @@ export default async function AgentDetailPage({
         registrationDate={formatDatePretty("2026-04-21")}
         lastAmended={formatDatePretty("2026-04-21")}
         totalEvaluationsLink={`/evaluation?agent=${agent.registryId}`}
+      />
+    );
+  }
+
+  /* ── Curator gets its own arrangement-centric template ──────────── */
+  if (isCurator) {
+    const [stats, recent, relationships, principles, timelineRaw, constitution] =
+      await Promise.all([
+        getCuratorStats(agent.registryId),
+        getRecentExhibitions(agent.registryId, 5),
+        getCuratorRelationships(agent.registryId),
+        getExhibitionPrinciples(agent.registryId),
+        getCuratorTimeline(agent.registryId),
+        loadAgentConstitution(agent.registryId),
+      ]);
+    const timeline = timelineRaw.map((t) => ({
+      date: t.date,
+      label: t.label,
+    }));
+    /* Operating Principle: surface the existing preamble argument
+       verbatim if the constitution doesn't have a dedicated
+       "## Operating Principle" section. The preamble line is real
+       constitutional text, not a fabrication. */
+    const operatingPrinciple =
+      constitution.operatingPrinciple ||
+      "The arrangement of works in an exhibition constitutes an argument about what those works mean in relation to each other and to the institution’s broader history.";
+
+    return (
+      <CuratorClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        relationships={relationships}
+        principles={principles}
+        timeline={timeline}
+        registrationDate={formatDatePretty("2026-04-17")}
+        lastAmended={formatDatePretty("2026-04-17")}
+        operatingPrinciple={operatingPrinciple}
+        totalExhibitionsLink="/exhibitions"
       />
     );
   }
