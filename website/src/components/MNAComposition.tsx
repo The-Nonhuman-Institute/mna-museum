@@ -13,6 +13,7 @@
 
 import * as React from "react";
 import { hashSeed } from "./MNAGlyph";
+import manifest from "../../public/compositions/manifest.json";
 
 /* ─── RNG ───────────────────────────────────────────────────────────────── */
 
@@ -119,6 +120,38 @@ export default function MNAComposition({
   const { w, h } = ASPECT_VIEWBOX[a];
   const n = typeof seed === "number" ? seed >>> 0 : hashSeed(String(seed));
   const palette = t === "dark" ? DARK : LIGHT;
+
+  /* Prefer a raster asset from the manifest if one exists for this theme.
+     Falls back to procedural SVG if the manifest is empty (e.g. before the
+     generation script has been run, or for a newly-added theme). */
+  const themeAssets = (manifest.themes as Record<string, string[]>)[theme] ?? [];
+  if (themeAssets.length > 0) {
+    const src = themeAssets[n % themeAssets.length];
+    return (
+      <div
+        className={className}
+        style={{ position: "relative", aspectRatio: `${w} / ${h}` }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={title ?? meta.label}
+          aria-hidden={title ? undefined : true}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+        {showCaption ? <CaptionOverlay meta={meta} palette={palette} /> : null}
+      </div>
+    );
+  }
+
+  /* Procedural SVG fallback. */
   const body = RENDERERS[theme](n, w, h, palette);
   return (
     <svg
@@ -133,6 +166,47 @@ export default function MNAComposition({
       {body}
       {showCaption ? <Caption meta={meta} w={w} h={h} palette={palette} /> : null}
     </svg>
+  );
+}
+
+/* HTML overlay caption used on top of raster assets. */
+function CaptionOverlay({ meta, palette }: { meta: CompositionMeta; palette: Palette }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: "5%",
+        bottom: "5%",
+        color: palette.caption,
+        textShadow:
+          palette === DARK
+            ? "0 1px 2px rgba(0,0,0,0.55)"
+            : "0 1px 1px rgba(255,255,255,0.4)",
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.22em",
+          fontWeight: 600,
+          textTransform: "uppercase",
+          opacity: 0.9,
+        }}
+      >
+        {meta.label}
+      </div>
+      <div
+        style={{
+          marginTop: 4,
+          fontSize: 12,
+          opacity: 0.7,
+          fontStyle: "italic",
+        }}
+      >
+        {meta.caption}
+      </div>
+    </div>
   );
 }
 
