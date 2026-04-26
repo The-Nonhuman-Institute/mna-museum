@@ -340,12 +340,25 @@ export default function EvaluatorClient({
                   </p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] text-ink uppercase tracking-[0.06em] truncate">
-                    {r.originator_designation || ""}
-                  </p>
-                  <p className="text-[11px] font-sans tabular-nums text-ink/55 truncate">
-                    {r.originator_id}
-                  </p>
+                  {isEmergencePending(r.originator_designation) ? (
+                    <>
+                      <p className="text-[12px] text-ink font-sans tabular-nums tracking-[0.04em] truncate">
+                        {r.originator_id}
+                      </p>
+                      <p className="text-[11px] italic text-ink/55 truncate">
+                        Pending emergence
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[12px] text-ink uppercase tracking-[0.06em] truncate">
+                        {r.originator_designation}
+                      </p>
+                      <p className="text-[11px] font-sans tabular-nums text-ink/55 truncate">
+                        {r.originator_id}
+                      </p>
+                    </>
+                  )}
                 </div>
                 <VerdictPill verdict={r.verdict} />
                 <span className="text-[12px] font-sans text-ink/65 tabular-nums">
@@ -773,7 +786,7 @@ function RelationshipMap({
                 strokeWidth={0.7}
               />
               <circle cx={x} cy={y} r={dotSize} fill={spokeColor(i)}>
-                <title>{`${r.designation || r.originatorId} — ${r.count} evaluation${r.count === 1 ? "" : "s"}`}</title>
+                <title>{`${isEmergencePending(r.designation) ? r.originatorId : r.designation} — ${r.count} evaluation${r.count === 1 ? "" : "s"}`}</title>
               </circle>
               <text
                 x={lx}
@@ -834,6 +847,10 @@ function spokeColor(i: number): string {
 }
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
+
+function isEmergencePending(val: string | null | undefined): boolean {
+  return !val || val === "PENDING_EMERGENCE" || val === "[Pending Emergence]";
+}
 
 function pct(n: number): string {
   if (!isFinite(n) || n <= 0) return "0.0%";
