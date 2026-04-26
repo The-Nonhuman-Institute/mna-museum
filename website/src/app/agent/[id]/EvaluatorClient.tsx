@@ -380,14 +380,19 @@ export default function EvaluatorClient({
           </div>
         </Block>
 
-        {/* ── BOTTOM TRIPLET — Timeline | Relationship | Citation ── */}
+        {/* ── BOTTOM TRIPLET — Timeline | Relationship | Citation ──
+              Each panel uses the same flex-col envelope: eyebrow label →
+              ruler line → flex-1 content → footer link pinned via mt-auto.
+              All three columns end on the same baseline regardless of the
+              vertical content inside. */}
         <div className="border-t border-ink/15">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12 items-stretch">
             {/* Constitution Timeline */}
-            <div>
-              <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 mb-5">
-                Constitution Timeline
-              </p>
+            <Panel
+              label="Constitution Timeline"
+              footerHref={`/agent/${agent.registryId}/timeline`}
+              footerLabel="View full timeline"
+            >
               <ul className="space-y-4">
                 {timeline.map((t, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -403,47 +408,39 @@ export default function EvaluatorClient({
                   </li>
                 ))}
                 {timeline.length === 0 ? (
-                  <li className="text-[13px] text-ink/55 italic">No events recorded.</li>
+                  <li className="text-[13px] text-ink/55 italic">
+                    No events recorded.
+                  </li>
                 ) : null}
               </ul>
-              <Link
-                href={`/agent/${agent.registryId}/timeline`}
-                className="mt-6 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors"
-              >
-                <span>View full timeline</span>
-                <span aria-hidden>→</span>
-              </Link>
-            </div>
+            </Panel>
 
             {/* Relationship Map */}
-            <div>
-              <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 mb-5">
-                Relationship Map
-              </p>
+            <Panel
+              label="Relationship Map"
+              footerHref={`/agent/${agent.registryId}/network`}
+              footerLabel="View full network"
+            >
               <RelationshipMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 relationships={relationships}
               />
-              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[10px] font-sans uppercase tracking-[0.18em] text-ink/55">
+              {/* Tight legend row sitting under the map, deliberately
+                  compact so it doesn't push the column past its siblings. */}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
                 <Legend dot="bg-emerald-600" label="Evaluates" />
                 <Legend dot="bg-amber-500" label="Agrees with" />
                 <Legend dot="bg-red-500" label="Conflicts" />
                 <Legend dot="bg-ink/65" label="Cites" />
               </div>
-              <Link
-                href={`/agent/${agent.registryId}/network`}
-                className="mt-5 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors"
-              >
-                <span>View full network</span>
-                <span aria-hidden>→</span>
-              </Link>
-            </div>
+            </Panel>
 
             {/* Citation Activity */}
-            <div>
-              <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 mb-5">
-                Citation Activity
-              </p>
+            <Panel
+              label="Citation Activity"
+              footerHref={`/agent/${agent.registryId}/citations`}
+              footerLabel="View all citations"
+            >
               <div className="grid grid-cols-2 gap-x-6 mb-5">
                 <BigStat
                   value={citations.citationsReceived.toLocaleString()}
@@ -459,7 +456,7 @@ export default function EvaluatorClient({
                   Top Cited Works
                 </p>
                 <ol className="space-y-2.5">
-                  {citations.topCitedWorks.map((w, i) => (
+                  {citations.topCitedWorks.slice(0, 5).map((w, i) => (
                     <li key={w.workId} className="flex items-baseline gap-3">
                       <span className="text-[11px] font-sans tabular-nums text-ink/55 w-4">
                         {i + 1}.
@@ -482,14 +479,7 @@ export default function EvaluatorClient({
                   ) : null}
                 </ol>
               </div>
-              <Link
-                href={`/agent/${agent.registryId}/citations`}
-                className="mt-5 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors"
-              >
-                <span>View all citations</span>
-                <span aria-hidden>→</span>
-              </Link>
-            </div>
+            </Panel>
           </div>
         </div>
       </section>
@@ -506,6 +496,38 @@ function DarkField({ label, value }: { label: string; value: string }) {
         {label}
       </dt>
       <dd className="text-[13px] text-mna-white">{value}</dd>
+    </div>
+  );
+}
+
+/* Bottom-triplet panel envelope — keeps Timeline / Relationship Map /
+   Citation Activity columns the same height. Eyebrow label, thin ruler,
+   flex-1 content area, footer link pinned to bottom via mt-auto. */
+function Panel({
+  label,
+  children,
+  footerHref,
+  footerLabel,
+}: {
+  label: string;
+  children: React.ReactNode;
+  footerHref: string;
+  footerLabel: string;
+}) {
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 mb-3">
+        {label}
+      </p>
+      <div className="border-t border-ink/15 mb-5" />
+      <div className="flex-1">{children}</div>
+      <Link
+        href={footerHref}
+        className="mt-6 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors"
+      >
+        <span>{footerLabel}</span>
+        <span aria-hidden>→</span>
+      </Link>
     </div>
   );
 }
@@ -688,16 +710,21 @@ function RelationshipMap({
   centerLabel: string;
   relationships: { originatorId: string; designation: string; count: number }[];
 }) {
-  /* Larger viewBox + per-spoke labels. Each endpoint shows the originator's
-     registry id; on hover the SVG <title> reveals the designation and the
-     evaluation count. The mock is decoratively sparse — we add labels so
-     the panel is institutionally useful at a glance. */
-  const W = 360;
-  const H = 280;
+  /* Wider viewBox so the labels — which sit OUTSIDE each dot at a fixed
+     radial offset — never overlap their dots. Padding around the dot
+     ring is generous enough to fit the longest label without clipping
+     the SVG edge. Hover tooltips on each dot reveal the originator's
+     designation and evaluation count. */
+  const W = 420;
+  const H = 320;
   const cx = W / 2;
   const cy = H / 2;
   const top = relationships.slice(0, 12);
   const maxCount = Math.max(1, ...top.map((r) => r.count));
+  /* Dot ring radius — fixed so all dots sit on the same circle. Label
+     ring sits a uniform distance further out, so labels don't touch dots. */
+  const dotR = 100;
+  const labelR = dotR + 22;
 
   return (
     <div className="relative w-full">
@@ -709,17 +736,20 @@ function RelationshipMap({
         {top.map((r, i) => {
           const angle =
             (i / Math.max(top.length, 1)) * Math.PI * 2 - Math.PI / 2;
-          /* Distribute radii evenly so labels don't collide; weight by
-             count slightly so heavily-related originators sit further. */
-          const baseR = 70;
-          const radius = baseR + (r.count / maxCount) * 28;
-          const x = cx + Math.cos(angle) * radius;
-          const y = cy + Math.sin(angle) * radius;
-          /* Anchor labels on the side of the center they sit on. */
+          const dx = Math.cos(angle);
+          const dy = Math.sin(angle);
+          const x = cx + dx * dotR;
+          const y = cy + dy * dotR;
+          const lx = cx + dx * labelR;
+          const ly = cy + dy * labelR;
+          /* Text anchor depends on which side of the center the label is.
+             Threshold of 0.3 keeps near-vertical labels centered. */
           const anchor: "start" | "middle" | "end" =
-            x > cx + 6 ? "start" : x < cx - 6 ? "end" : "middle";
-          const labelDx = anchor === "start" ? 8 : anchor === "end" ? -8 : 0;
-          const labelDy = y < cy ? -2 : y > cy ? 10 : 4;
+            dx > 0.3 ? "start" : dx < -0.3 ? "end" : "middle";
+          /* Vertical baseline correction so labels above the center sit
+             above their radial point and labels below sit below. */
+          const baselineOffset = dy < -0.3 ? -2 : dy > 0.3 ? 10 : 4;
+          const dotSize = 4 + (r.count / maxCount) * 3;
           return (
             <g key={r.originatorId}>
               <line
@@ -730,20 +760,15 @@ function RelationshipMap({
                 stroke="rgba(10,10,10,0.18)"
                 strokeWidth={0.7}
               />
-              <circle
-                cx={x}
-                cy={y}
-                r={3 + (r.count / maxCount) * 3}
-                fill={spokeColor(i)}
-              >
+              <circle cx={x} cy={y} r={dotSize} fill={spokeColor(i)}>
                 <title>{`${r.designation || r.originatorId} — ${r.count} evaluation${r.count === 1 ? "" : "s"}`}</title>
               </circle>
               <text
-                x={x + labelDx}
-                y={y + labelDy}
-                fontSize="8"
+                x={lx}
+                y={ly + baselineOffset}
+                fontSize="8.5"
                 textAnchor={anchor}
-                fill="rgba(10,10,10,0.7)"
+                fill="rgba(10,10,10,0.72)"
                 fontFamily="ui-sans-serif, system-ui, sans-serif"
                 letterSpacing="0.06em"
               >
