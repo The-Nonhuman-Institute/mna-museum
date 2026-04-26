@@ -118,6 +118,11 @@ export interface MNACompositionProps {
   className?: string;
   /** ARIA title; if absent, the SVG is decorative. */
   title?: string;
+  /** Absolutely fill the parent (parent must be positioned). The component's
+   *  intrinsic aspect ratio is dropped — the asset is cover-cropped to the
+   *  parent's dimensions. Use when embedding into a card or hero of a
+   *  different aspect than the composition library's native ratios. */
+  fill?: boolean;
 }
 
 export default function MNAComposition({
@@ -128,6 +133,7 @@ export default function MNAComposition({
   showCaption = false,
   className,
   title,
+  fill = false,
 }: MNACompositionProps) {
   const meta = COMPOSITIONS[theme];
   const a = aspect ?? meta.defaultAspect;
@@ -145,7 +151,11 @@ export default function MNAComposition({
     return (
       <div
         className={className}
-        style={{ position: "relative", aspectRatio: `${w} / ${h}` }}
+        style={
+          fill
+            ? { position: "absolute", inset: 0 }
+            : { position: "relative", aspectRatio: `${w} / ${h}` }
+        }
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -175,6 +185,7 @@ export default function MNAComposition({
       preserveAspectRatio="xMidYMid slice"
       aria-hidden={title ? undefined : true}
       role={title ? "img" : undefined}
+      style={fill ? { position: "absolute", inset: 0, width: "100%", height: "100%" } : undefined}
     >
       {title ? <title>{title}</title> : null}
       <rect width={w} height={h} fill={palette.bg} />

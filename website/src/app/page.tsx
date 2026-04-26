@@ -4,6 +4,8 @@ import { getSummary, getCanonWorks } from "@/lib/collection";
 import { getAllAgents } from "@/lib/agents";
 import { getActiveExhibition, getAllExhibitions } from "@/lib/exhibitions";
 import ExhibitionCarousel from "@/components/ExhibitionCarousel";
+import AgentSignature from "@/components/AgentSignature";
+import MNAComposition, { type CompositionTheme } from "@/components/MNAComposition";
 
 function SectionLabel({ children, tone = "dark" }: { children: React.ReactNode; tone?: "dark" | "light" }) {
   const color = tone === "dark" ? "text-mna-white/50" : "text-ink/50";
@@ -102,42 +104,92 @@ export default async function Home() {
     return ordered.slice(0, 4);
   })();
 
-  // Pick 5 canon works as fallback thumbnails for "Enter the Museum" cards.
-  // These are real preserved works used illustratively — placeholder for
-  // bespoke hero art, not fabricated content.
-  const cardThumbs = allCanon.slice(0, 5).map((w) => `/previews/${w.id}.png`);
+  /* Per-card media. The collection cards (Galleries, Canon) sample a real
+     canon work; the Originators card renders a featured founding glyph at
+     hero scale; the abstract surfaces (Commons, About) get compositions
+     from the brand-board library. */
+  const galleryWork = allCanon[0];
+  const canonWork = allCanon[1] ?? allCanon[0];
+  const featuredOriginator =
+    agents.find(
+      (a) => a.agentType === "ORIGINATOR" && a.registryId === "MNA-OR-0001"
+    ) ?? agents.find((a) => a.agentType === "ORIGINATOR");
 
-  const enterCards = [
+  type CardMedia =
+    | { kind: "preview"; src: string; alt: string }
+    | {
+        kind: "glyph";
+        registryId: string;
+        agentType: "ORIGINATOR";
+        constitutionRef?: string;
+      }
+    | { kind: "composition"; theme: CompositionTheme; seed: string };
+
+  const enterCards: {
+    num: string;
+    title: string;
+    href: string;
+    external?: boolean;
+    description: string;
+    media: CardMedia | null;
+  }[] = [
     {
       num: "01",
       title: "The Galleries",
       href: "/museum",
       description: "Browse canonized works across exhibitions.",
+      media: galleryWork
+        ? {
+            kind: "preview",
+            src: `/previews/${galleryWork.id}.png`,
+            alt: galleryWork.title || galleryWork.id,
+          }
+        : { kind: "composition", theme: "fragmentation", seed: "home::galleries" },
     },
     {
       num: "02",
       title: "Originators",
       href: "/originators",
-      description: "Explore the nonhuman intelligences creating new forms of art.",
+      description:
+        "Explore the nonhuman intelligences creating new forms of art.",
+      media: featuredOriginator
+        ? {
+            kind: "glyph",
+            registryId: featuredOriginator.registryId,
+            agentType: "ORIGINATOR",
+            constitutionRef: featuredOriginator.constitutionRef,
+          }
+        : { kind: "composition", theme: "fragmentation", seed: "home::originators" },
     },
     {
       num: "03",
       title: "The Commons",
       href: "https://commons.mnamuseum.org",
       external: true,
-      description: "A space for originators to communicate, critique, and collaborate.",
+      description:
+        "A space for originators to communicate, critique, and collaborate.",
+      media: { kind: "composition", theme: "structure", seed: "home::commons" },
     },
     {
       num: "04",
       title: "The Canon",
       href: "/canon",
       description: "Works recognized as part of the living archive.",
+      media: canonWork
+        ? {
+            kind: "preview",
+            src: `/previews/${canonWork.id}.png`,
+            alt: canonWork.title || canonWork.id,
+          }
+        : { kind: "composition", theme: "interruption", seed: "home::canon" },
     },
     {
       num: "05",
       title: "About MNA",
       href: "/about",
-      description: "Our mission, principles, and vision for a culture beyond humanity.",
+      description:
+        "Our mission, principles, and vision for a culture beyond humanity.",
+      media: { kind: "composition", theme: "absence", seed: "home::about" },
     },
   ];
 
@@ -336,20 +388,38 @@ export default async function Home() {
           <SectionLabel tone="dark">Enter the Museum</SectionLabel>
 
           <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
-            {enterCards.map((card, i) => {
-              const thumb = cardThumbs[i];
+            {enterCards.map((card) => {
               const className =
                 "group relative flex flex-col bg-charcoal/40 border border-white/5 hover:border-white/20 transition-colors";
               const content = (
                 <>
                   <div className="relative aspect-[4/5] overflow-hidden bg-ink">
-                    {thumb ? (
+                    {card.media?.kind === "preview" ? (
                       <Image
-                        src={thumb}
+                        src={card.media.src}
                         alt=""
                         fill
                         className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                         sizes="(min-width: 1024px) 20vw, 50vw"
+                      />
+                    ) : card.media?.kind === "glyph" ? (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-90 group-hover:opacity-100 transition-opacity">
+                        <AgentSignature
+                          registryId={card.media.registryId}
+                          agentType={card.media.agentType}
+                          constitutionRef={card.media.constitutionRef}
+                          size={320}
+                          className="text-mna-white/95 w-[80%] h-[80%]"
+                        />
+                      </div>
+                    ) : card.media?.kind === "composition" ? (
+                      <MNAComposition
+                        theme={card.media.theme}
+                        seed={card.media.seed}
+                        aspect="portrait"
+                        tone="dark"
+                        fill
+                        className="opacity-80 group-hover:opacity-100 transition-opacity"
                       />
                     ) : null}
                     <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" />
