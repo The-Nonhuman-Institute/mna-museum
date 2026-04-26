@@ -341,6 +341,37 @@ export default function AgentDirectoryClient({
 
           {/* Groups */}
           {view === "grid" ? (
+            (typeFilter.length > 0 || statusFilter.length > 0) ? (
+              /* Filtered: show every matching agent per group, no cap. */
+              <div className="space-y-12 md:space-y-14">
+                {GROUP_ORDER.map((meta) => {
+                  const filtered = visibleInGroup(meta.key);
+                  if (filtered.length === 0) return null;
+                  return (
+                    <div key={meta.key}>
+                      <div className="flex items-baseline justify-between gap-2 mb-3 md:mb-4">
+                        <span className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/70 truncate">
+                          {meta.label}
+                        </span>
+                        <span className="shrink-0 text-[9.5px] font-sans uppercase tracking-[0.2em] text-mna-white/55 tabular-nums">
+                          {filtered.length} shown
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2.5 md:gap-x-3 gap-y-6">
+                        {filtered.map((a) => (
+                          <div key={a.registryId} className="min-w-0">
+                            <AgentCard
+                              agent={a}
+                              isNetwork={meta.key === "NETWORK_ORIGINATOR"}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
             <div className="space-y-10 md:space-y-12">
               {ROWS.map((rowGroups, rowIdx) => {
                 /* Per-row group calcs, filtered + slot-sized. */
@@ -442,6 +473,7 @@ export default function AgentDirectoryClient({
                 );
               })}
             </div>
+            )
           ) : (
             <ListView
               groups={GROUP_ORDER.map((g) => ({
