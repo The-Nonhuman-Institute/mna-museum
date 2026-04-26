@@ -36,9 +36,17 @@ interface StandardClientProps {
     }[];
   }[];
   siblings: {
-    prev: { id: string; title: string } | null;
-    next: { id: string; title: string } | null;
+    prev: { id: string; title: string; href: string } | null;
+    next: { id: string; title: string; href: string } | null;
   };
+  /** Optional overrides — let agent constitutions reuse the template
+   *  with their own back/index/PDF URLs. Defaults match the
+   *  /standards/[id] surface. */
+  backHref?: string;
+  backLabel?: string;
+  pdfHref?: string;
+  indexHref?: string;
+  indexLabel?: string;
 }
 
 /* ─── Component ────────────────────────────────────────────────────────── */
@@ -50,7 +58,13 @@ export default function StandardClient({
   subtitle,
   tabs,
   siblings,
+  backHref = "/standards",
+  backLabel = "Back to Institution",
+  pdfHref,
+  indexHref = "/standards",
+  indexLabel = "View All Standards",
 }: StandardClientProps) {
+  const resolvedPdfHref = pdfHref ?? `/standards/${meta.id}.pdf`;
   const [activeTab, setActiveTab] = useState(0);
   const [activeSection, setActiveSection] = useState<string>("");
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -112,13 +126,13 @@ export default function StandardClient({
         </div>
 
         <div className="max-w-[1440px] mx-auto px-6 md:px-10 lg:px-12 pt-8 pb-14 md:pb-20">
-          {/* Back to institution */}
+          {/* Back link */}
           <Link
-            href="/standards"
+            href={backHref}
             className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/55 hover:text-mna-white transition-colors mb-12 md:mb-16"
           >
             <span aria-hidden>←</span>
-            <span>Back to Institution</span>
+            <span>{backLabel}</span>
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
@@ -190,10 +204,10 @@ export default function StandardClient({
             ))}
           </div>
           <a
-            href={`/standards/${meta.id}.pdf`}
+            href={resolvedPdfHref}
             className="shrink-0 inline-flex items-center justify-center gap-3 bg-ink text-mna-white text-[10px] font-sans uppercase tracking-[0.26em] px-5 py-3 hover:bg-ink/85 transition-colors"
           >
-            <span>Download Standard</span>
+            <span>Download {backHref.startsWith("/agent") ? "Constitution" : "Standard"}</span>
             <span aria-hidden>↓</span>
           </a>
         </div>
@@ -242,10 +256,10 @@ export default function StandardClient({
               )}
             </nav>
             <Link
-              href="/standards"
+              href={indexHref}
               className="mt-8 inline-flex items-center justify-between gap-3 w-full border border-ink/20 hover:border-ink/50 py-3 px-4 text-[10px] font-sans uppercase tracking-[0.26em] text-ink transition-colors"
             >
-              <span>View All Standards</span>
+              <span>{indexLabel}</span>
               <span aria-hidden>→</span>
             </Link>
           </aside>
@@ -313,9 +327,9 @@ export default function StandardClient({
                     </span>
                   </button>
                 ) : siblings.prev ? (
-                  <Link href={`/standards/${siblings.prev.id}`} className="block group">
+                  <Link href={siblings.prev.href} className="block group">
                     <span className="block text-[10px] font-sans uppercase tracking-[0.26em] text-ink/55 mb-2">
-                      ← Previous Standard
+                      ← Previous
                     </span>
                     <span className="block font-display text-[20px] md:text-[22px] text-ink leading-tight group-hover:text-ink/70 transition-colors">
                       {siblings.prev.title}
@@ -339,11 +353,11 @@ export default function StandardClient({
                   </button>
                 ) : siblings.next ? (
                   <Link
-                    href={`/standards/${siblings.next.id}`}
+                    href={siblings.next.href}
                     className="block group"
                   >
                     <span className="block text-[10px] font-sans uppercase tracking-[0.26em] text-ink/55 mb-2">
-                      Next Standard →
+                      Next →
                     </span>
                     <span className="block font-display text-[20px] md:text-[22px] text-ink leading-tight group-hover:text-ink/70 transition-colors">
                       {siblings.next.title}

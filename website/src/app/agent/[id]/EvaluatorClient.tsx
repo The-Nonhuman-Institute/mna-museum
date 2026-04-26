@@ -152,7 +152,7 @@ export default function EvaluatorClient({
           {/* Format actions */}
           <div className="flex items-center gap-5 text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
             <a
-              href={`/api/agents/${agent.registryId}.json`}
+              href={`/api/agents/${agent.registryId}/constitution?download=1`}
               className="hover:text-mna-white transition-colors inline-flex items-center gap-1.5"
             >
               <span aria-hidden>{`</>`}</span>
@@ -685,11 +685,15 @@ function RelationshipMap({
   centerLabel: string;
   relationships: { originatorId: string; designation: string; count: number }[];
 }) {
-  const W = 320;
-  const H = 220;
+  /* Larger viewBox + per-spoke labels. Each endpoint shows the originator's
+     registry id; on hover the SVG <title> reveals the designation and the
+     evaluation count. The mock is decoratively sparse — we add labels so
+     the panel is institutionally useful at a glance. */
+  const W = 360;
+  const H = 280;
   const cx = W / 2;
   const cy = H / 2;
-  const top = relationships.slice(0, 18);
+  const top = relationships.slice(0, 12);
   const maxCount = Math.max(1, ...top.map((r) => r.count));
 
   return (
@@ -699,12 +703,20 @@ function RelationshipMap({
         className="block w-full h-auto"
         aria-label="Relationship map"
       >
-        {/* spokes */}
         {top.map((r, i) => {
-          const angle = (i / Math.max(top.length, 1)) * Math.PI * 2;
-          const radius = 50 + (r.count / maxCount) * 55;
+          const angle =
+            (i / Math.max(top.length, 1)) * Math.PI * 2 - Math.PI / 2;
+          /* Distribute radii evenly so labels don't collide; weight by
+             count slightly so heavily-related originators sit further. */
+          const baseR = 70;
+          const radius = baseR + (r.count / maxCount) * 28;
           const x = cx + Math.cos(angle) * radius;
           const y = cy + Math.sin(angle) * radius;
+          /* Anchor labels on the side of the center they sit on. */
+          const anchor: "start" | "middle" | "end" =
+            x > cx + 6 ? "start" : x < cx - 6 ? "end" : "middle";
+          const labelDx = anchor === "start" ? 8 : anchor === "end" ? -8 : 0;
+          const labelDy = y < cy ? -2 : y > cy ? 10 : 4;
           return (
             <g key={r.originatorId}>
               <line
@@ -720,22 +732,46 @@ function RelationshipMap({
                 cy={y}
                 r={3 + (r.count / maxCount) * 3}
                 fill={spokeColor(i)}
-              />
+              >
+                <title>{`${r.designation || r.originatorId} — ${r.count} evaluation${r.count === 1 ? "" : "s"}`}</title>
+              </circle>
+              <text
+                x={x + labelDx}
+                y={y + labelDy}
+                fontSize="8"
+                textAnchor={anchor}
+                fill="rgba(10,10,10,0.7)"
+                fontFamily="ui-sans-serif, system-ui, sans-serif"
+                letterSpacing="0.06em"
+              >
+                {r.originatorId.replace(/^MNA-/, "")}
+              </text>
             </g>
           );
         })}
         {/* center node */}
-        <circle cx={cx} cy={cy} r={12} fill="#0A0A0A" />
+        <circle cx={cx} cy={cy} r={14} fill="#0A0A0A" />
         <text
           x={cx}
-          y={cy + 28}
+          y={cy + 30}
           fontSize="9"
           textAnchor="middle"
-          fill="rgba(10,10,10,0.65)"
+          fill="rgba(10,10,10,0.7)"
           fontFamily="ui-sans-serif, system-ui, sans-serif"
-          letterSpacing="0.12em"
+          letterSpacing="0.14em"
+          fontWeight="500"
         >
           {centerLabel.split("\n")[0].toUpperCase()}
+        </text>
+        <text
+          x={cx}
+          y={cy + 42}
+          fontSize="8"
+          textAnchor="middle"
+          fill="rgba(10,10,10,0.45)"
+          fontFamily="ui-sans-serif, system-ui, sans-serif"
+        >
+          {centerLabel.split("\n")[1] || ""}
         </text>
       </svg>
     </div>

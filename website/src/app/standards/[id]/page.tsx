@@ -67,10 +67,18 @@ export default async function StandardPage({
       tabs={renderedTabs}
       siblings={{
         prev: siblings.prev
-          ? { id: siblings.prev.id, title: siblings.prev.shortLabel }
+          ? {
+              id: siblings.prev.id,
+              title: siblings.prev.shortLabel,
+              href: `/standards/${siblings.prev.id}`,
+            }
           : null,
         next: siblings.next
-          ? { id: siblings.next.id, title: siblings.next.shortLabel }
+          ? {
+              id: siblings.next.id,
+              title: siblings.next.shortLabel,
+              href: `/standards/${siblings.next.id}`,
+            }
           : null,
       }}
     />

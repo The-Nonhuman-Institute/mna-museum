@@ -91,17 +91,48 @@ export async function loadAgentConstitution(
 function parseConstitution(raw: string): AgentConstitutionExtracts {
   const lines = raw.split(/\r?\n/);
 
-  /* Core principle — the first single-line italic epigraph that sits
-     between em-dash separators near the top of every constitution. */
+  /* Core principle — the institutional epigraph after the em-dash
+     separator near the top of every constitution. We can't pick the
+     first italic line because evaluator and critic docs italicize the
+     designation ("*Formal Structuralist*") on its own line above the
+     epigraph. The em-dash separator (―, ―, ―, … with no other content)
+     marks the boundary; the next italic line is the principle. If no
+     separator is found, fall back to the LONGEST italic line in the
+     preamble — the principle is always more than a couple of words. */
   let corePrinciple = "";
+  let separatorIdx = -1;
   for (let i = 0; i < lines.length; i++) {
     const t = lines[i].trim();
     if (!t) continue;
-    /* "*…*" alone on a line, no leading bold-label. */
-    if (/^\*[^*].*\*$/.test(t) && !t.startsWith("**")) {
-      corePrinciple = t.replace(/^\*|\*$/g, "");
+    if (/^[―\-—]{6,}$/.test(t)) {
+      separatorIdx = i;
       break;
     }
+    if (/^# /.test(t)) break;
+  }
+  if (separatorIdx >= 0) {
+    for (let i = separatorIdx + 1; i < lines.length; i++) {
+      const t = lines[i].trim();
+      if (!t) continue;
+      if (/^# /.test(t)) break;
+      if (/^\*[^*].*\*$/.test(t) && !t.startsWith("**")) {
+        corePrinciple = t.replace(/^\*|\*$/g, "");
+        break;
+      }
+    }
+  }
+  if (!corePrinciple) {
+    /* Fallback: longest italic line in the preamble. */
+    let best = "";
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i].trim();
+      if (/^# /.test(t)) break;
+      if (/^\*[^*].*\*$/.test(t) && !t.startsWith("**")) {
+        const inner = t.replace(/^\*|\*$/g, "");
+        if (inner.length > best.length) best = inner;
+      }
+    }
+    corePrinciple = best;
   }
 
   /* Hard constraints — bullets under any heading whose text equals
@@ -211,17 +242,34 @@ function extractFirstParagraphAfterLabel(
       break;
     }
   }
-  /* Skip blank lines, then collect until the next blank line or label. */
+  /* Skip blank lines, then collect until the next blank line or section
+     break. We DON'T break on a leading **bold** because constitutions
+     embed inline field-name labels like "**conflict_constraints: **"
+     immediately under the section heading; we just strip those below. */
   while (i < lines.length && !lines[i].trim()) i++;
   const para: string[] = [];
   for (; i < lines.length; i++) {
     const t = lines[i].trim();
     if (!t) break;
-    if (/^\*\*[A-Z]/.test(t)) break;
     if (/^#{1,3}\s/.test(t)) break;
+    /* Stop if we hit the next bold *section* label (capitalized words +
+       no colon). */
+    if (/^\*\*[A-Z][a-zA-Z ]+\*\*\s*$/.test(t)) break;
     para.push(t.replace(/\s{2,}/g, " "));
   }
-  return para.join(" ").trim();
+  return cleanParagraph(para.join(" "));
+}
+
+/* Strip residual constitution-format artifacts: leading inline field
+   prefixes like "**conflict_constraints: **", inline bold around the
+   field value if any, and collapse double-bold markers. */
+function cleanParagraph(s: string): string {
+  let out = s.trim();
+  out = out.replace(/^\*\*[a-z_]+:\s*\*\*\s*/i, "");
+  out = out.replace(/^\*\*[A-Za-z _]+:\s*\*\*\s*/i, "");
+  /* Unwrap any bare **…** wrappers that survived. */
+  out = out.replace(/\*\*([^*]+)\*\*/g, "$1");
+  return out.trim();
 }
 
 function extractAutonomyBlock(lines: string[]): string {
