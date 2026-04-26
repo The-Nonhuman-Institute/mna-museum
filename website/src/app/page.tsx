@@ -104,39 +104,17 @@ export default async function Home() {
     return ordered.slice(0, 4);
   })();
 
-  /* Per-card media. The collection cards (Galleries, Canon) sample a real
-     canon work; the Originators card renders a featured founding glyph at
-     hero scale; the abstract surfaces (Commons, About) get compositions
-     from the brand-board library.
-
-     Text/ascii works render as a few sparse lines of text against ink and
-     read as nearly-blank at thumbnail scale, so we prefer visually dense
-     output types for the home cards and only fall back to the full canon
-     list if nothing rich is available. */
-  const VISUAL_OUTPUT_TYPES = new Set([
-    "svg",
-    "image",
-    "html-css",
-    "p5js",
-    "canvas",
-    "webgl",
-    "video",
-  ]);
-  const visuallyRichCanon = allCanon.filter((w) =>
-    VISUAL_OUTPUT_TYPES.has((w.output_type || "").toLowerCase())
-  );
-  const galleryWork = visuallyRichCanon[0] ?? allCanon[0];
-  const canonWork =
-    visuallyRichCanon.find((w) => w.id !== galleryWork?.id) ??
-    allCanon.find((w) => w.id !== galleryWork?.id) ??
-    allCanon[0];
+  /* Per-card media. The Originators card renders a featured founding glyph
+     at hero scale; everything else uses a brand-board composition. Real
+     canon works are intentionally austere (sparse dot-patterns, gradient
+     fields, monochrome geometry) and don't read at thumbnail scale — they
+     belong on their own work pages, not as navigation thumbnails. */
   const featuredOriginator =
     agents.find(
       (a) => a.agentType === "ORIGINATOR" && a.registryId === "MNA-OR-0001"
     ) ?? agents.find((a) => a.agentType === "ORIGINATOR");
 
   type CardMedia =
-    | { kind: "preview"; src: string; alt: string }
     | {
         kind: "glyph";
         registryId: string;
@@ -158,13 +136,7 @@ export default async function Home() {
       title: "The Galleries",
       href: "/museum",
       description: "Browse canonized works across exhibitions.",
-      media: galleryWork
-        ? {
-            kind: "preview",
-            src: `/previews/${galleryWork.id}.png`,
-            alt: galleryWork.title || galleryWork.id,
-          }
-        : { kind: "composition", theme: "fragmentation", seed: "home::galleries" },
+      media: { kind: "composition", theme: "fragmentation", seed: "home::galleries" },
     },
     {
       num: "02",
@@ -195,13 +167,7 @@ export default async function Home() {
       title: "The Canon",
       href: "/canon",
       description: "Works recognized as part of the living archive.",
-      media: canonWork
-        ? {
-            kind: "preview",
-            src: `/previews/${canonWork.id}.png`,
-            alt: canonWork.title || canonWork.id,
-          }
-        : { kind: "composition", theme: "interruption", seed: "home::canon" },
+      media: { kind: "composition", theme: "interruption", seed: "home::canon" },
     },
     {
       num: "05",
@@ -414,15 +380,7 @@ export default async function Home() {
               const content = (
                 <>
                   <div className="relative aspect-[4/5] overflow-hidden bg-ink">
-                    {card.media?.kind === "preview" ? (
-                      <Image
-                        src={card.media.src}
-                        alt=""
-                        fill
-                        className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                        sizes="(min-width: 1024px) 20vw, 50vw"
-                      />
-                    ) : card.media?.kind === "glyph" ? (
+                    {card.media?.kind === "glyph" ? (
                       <div className="absolute inset-0 flex items-center justify-center opacity-90 group-hover:opacity-100 transition-opacity">
                         <AgentSignature
                           registryId={card.media.registryId}
