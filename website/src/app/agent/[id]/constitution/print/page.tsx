@@ -52,7 +52,7 @@ export default async function ConstitutionPrint({
           <div className="print-cover-glyph">
             <MNAGlyph
               family={cdoc.glyphFamily}
-              seed={agent.registryId}
+              seed={`${agent.registryId}::${agent.constitutionRef}`}
               size={400}
             />
           </div>

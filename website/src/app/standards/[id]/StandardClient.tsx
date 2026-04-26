@@ -13,6 +13,11 @@ interface StandardClientProps {
     title: string;
     classification: string;
     glyphFamily: GlyphFamily;
+    /** Optional override for the procedural-glyph seed. Defaults to
+     *  `meta.id`. Agent constitutions pass `${registryId}::${constitutionRef}`
+     *  so the constitution page and PDF cover render the exact same
+     *  glyph as the agent's profile sidebar (which uses AgentSignature). */
+    glyphSeed?: string;
   };
   fields: {
     documentReference: string;
@@ -172,7 +177,7 @@ export default function StandardClient({
 
             {/* Right: blueprint hero */}
             <div className="lg:col-span-5 relative w-full aspect-square max-w-[480px] lg:max-w-none lg:ml-auto">
-              <BlueprintHero family={meta.glyphFamily} seed={meta.id} />
+              <BlueprintHero family={meta.glyphFamily} seed={meta.glyphSeed ?? meta.id} />
             </div>
           </div>
         </div>

@@ -64,6 +64,9 @@ export default async function AgentConstitutionPage({
         title: `${agent.designation} Constitution`,
         classification: agentTypeLabels[agent.agentType] + " — Founding Constitution",
         glyphFamily: cdoc.glyphFamily,
+        /* Match AgentSignature on the profile sidebar so all three
+           surfaces (profile / constitution / PDF) render the same glyph. */
+        glyphSeed: `${agent.registryId}::${agent.constitutionRef}`,
       }}
       fields={{
         documentReference: cdoc.doc.fields.documentReference || agent.registryId,
