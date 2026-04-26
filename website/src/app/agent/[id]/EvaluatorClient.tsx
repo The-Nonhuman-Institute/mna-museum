@@ -304,7 +304,7 @@ export default function EvaluatorClient({
             </Link>
           }
         >
-          <div className="border-t border-ink/15">
+          <div>
             {/* Table header */}
             <div className="hidden md:grid grid-cols-[58px_minmax(180px,1.1fr)_minmax(150px,1fr)_120px_120px_minmax(220px,1.6fr)_24px] gap-x-6 py-3 border-b border-ink/15 text-[10px] font-sans uppercase tracking-[0.18em] text-ink/55">
               <span></span>
@@ -545,8 +545,8 @@ function Block({
 }) {
   return (
     <section className="border-t border-ink/15 first:border-t-0">
-      <div className="px-7 md:px-10 pt-9 pb-3 flex flex-wrap items-baseline gap-x-3 gap-y-2 justify-between">
-        <p className="text-[10px] font-sans uppercase tracking-[0.24em] text-ink/65">
+      <div className="px-7 md:px-10 pt-9 pb-5 flex flex-wrap items-baseline gap-x-3 gap-y-2 justify-between">
+        <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/65">
           {label}
           {labelExtra ? (
             <span className="ml-2 text-ink/40 normal-case tracking-normal">
@@ -556,7 +556,8 @@ function Block({
         </p>
         {right}
       </div>
-      <div className="px-7 md:px-10 pb-12">{children}</div>
+      <div className="mx-7 md:mx-10 border-t border-ink/12" />
+      <div className="px-7 md:px-10 pt-7 pb-12">{children}</div>
     </section>
   );
 }
