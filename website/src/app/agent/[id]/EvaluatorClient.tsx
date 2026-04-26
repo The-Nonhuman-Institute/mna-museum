@@ -184,46 +184,31 @@ export default function EvaluatorClient({
         {/* ── FUNCTIONAL MANDATE ── */}
         <Block label="Functional Mandate">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-7">
-            <div>
-              <p className="text-[12px] font-sans uppercase tracking-[0.18em] text-ink/55 mb-3">
-                Function Statement
-              </p>
-              <p className="text-[13.5px] leading-[1.7] text-ink/85 mb-3">
+            <FieldBlock
+              label="Function Statement"
+              moreHref={`/agent/${agent.registryId}/constitution#function`}
+              moreLabel="View full"
+            >
+              <p className="text-[13.5px] leading-[1.7] text-ink/85">
                 {constitution.functionStatementBlock || agent.functionStatement}
               </p>
-              <Link
-                href={`/agent/${agent.registryId}/constitution#function`}
-                className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-sans text-ink/65 hover:text-ink transition-colors"
-              >
-                <span>View full function statement</span>
-                <span aria-hidden>→</span>
-              </Link>
-            </div>
+            </FieldBlock>
             <div className="space-y-7">
-              <div>
-                <p className="text-[12px] font-sans uppercase tracking-[0.18em] text-ink/55 mb-3">
-                  Autonomy Declaration — {agent.autonomyTier}
-                </p>
-                <p className="text-[13.5px] leading-[1.7] text-ink/85 mb-3">
+              <FieldBlock
+                label={`Autonomy Declaration — ${agent.autonomyTier}`}
+                moreHref={`/agent/${agent.registryId}/constitution#autonomy`}
+                moreLabel="View full"
+              >
+                <p className="text-[13.5px] leading-[1.7] text-ink/85">
                   {summarizeAutonomy(constitution.autonomyDeclaration, agent.autonomyTier)}
                 </p>
-                <Link
-                  href={`/agent/${agent.registryId}/constitution#autonomy`}
-                  className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-sans text-ink/65 hover:text-ink transition-colors"
-                >
-                  <span>View full autonomy declaration</span>
-                  <span aria-hidden>→</span>
-                </Link>
-              </div>
+              </FieldBlock>
               {constitution.conflictConstraints ? (
-                <div>
-                  <p className="text-[12px] font-sans uppercase tracking-[0.18em] text-ink/55 mb-3">
-                    Conflict Constraints
-                  </p>
+                <FieldBlock label="Conflict Constraints">
                   <p className="text-[13.5px] leading-[1.7] text-ink/85">
                     {constitution.conflictConstraints}
                   </p>
-                </div>
+                </FieldBlock>
               ) : null}
             </div>
           </div>
@@ -501,8 +486,8 @@ function DarkField({ label, value }: { label: string; value: string }) {
 }
 
 /* Bottom-triplet panel envelope — keeps Timeline / Relationship Map /
-   Citation Activity columns the same height. Eyebrow label, thin ruler,
-   flex-1 content area, footer link pinned to bottom via mt-auto. */
+   Citation Activity columns the same height. Eyebrow label and "View all"
+   link share the header row; thin ruler; flex-1 content area below. */
 function Panel({
   label,
   children,
@@ -516,18 +501,20 @@ function Panel({
 }) {
   return (
     <div className="flex flex-col h-full min-h-0">
-      <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 mb-3">
-        {label}
-      </p>
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55">
+          {label}
+        </p>
+        <Link
+          href={footerHref}
+          className="text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors inline-flex items-center gap-1.5"
+        >
+          <span>{footerLabel}</span>
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
       <div className="border-t border-ink/15 mb-5" />
       <div className="flex-1">{children}</div>
-      <Link
-        href={footerHref}
-        className="mt-6 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors"
-      >
-        <span>{footerLabel}</span>
-        <span aria-hidden>→</span>
-      </Link>
     </div>
   );
 }
@@ -573,12 +560,9 @@ function ProfileCol({
   moreLabel: string;
 }) {
   return (
-    <div>
-      <p className="text-[12px] font-sans uppercase tracking-[0.18em] text-ink/55 mb-3">
-        {label}
-      </p>
+    <FieldBlock label={label} moreHref={moreHref} moreLabel="View all">
       {Array.isArray(body) ? (
-        <ul className="space-y-2 mb-4">
+        <ul className="space-y-2">
           {body.map((b, i) => (
             <li key={i} className="flex items-start gap-2.5">
               <span className="shrink-0 mt-2 w-[5px] h-[5px] rounded-full bg-ink/70" />
@@ -587,15 +571,43 @@ function ProfileCol({
           ))}
         </ul>
       ) : (
-        <p className="text-[13px] leading-[1.6] text-ink/85 mb-4">{body}</p>
+        <p className="text-[13px] leading-[1.6] text-ink/85">{body}</p>
       )}
-      <Link
-        href={moreHref}
-        className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] font-sans text-ink/65 hover:text-ink transition-colors"
-      >
-        <span>{moreLabel}</span>
-        <span aria-hidden>→</span>
-      </Link>
+    </FieldBlock>
+  );
+}
+
+/* Field-level header: column label on the left, "View full / view all"
+   link on the right. Mirrors the bottom-triplet Panel pattern so a
+   visitor can jump to the full entry without scrolling past the body. */
+function FieldBlock({
+  label,
+  moreHref,
+  moreLabel,
+  children,
+}: {
+  label: string;
+  moreHref?: string;
+  moreLabel?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <p className="text-[12px] font-sans uppercase tracking-[0.18em] text-ink/55">
+          {label}
+        </p>
+        {moreHref ? (
+          <Link
+            href={moreHref}
+            className="text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors inline-flex items-center gap-1.5 shrink-0"
+          >
+            <span>{moreLabel ?? "View"}</span>
+            <span aria-hidden>→</span>
+          </Link>
+        ) : null}
+      </div>
+      {children}
     </div>
   );
 }

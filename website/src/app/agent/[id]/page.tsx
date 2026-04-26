@@ -190,8 +190,8 @@ export default async function AgentDetailPage({
         citations={citations}
         timeline={timeline}
         relationships={relationships}
-        registrationDate={formatDatePretty("2025-04-21")}
-        lastAmended={formatDatePretty("2025-04-21")}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
         totalEvaluationsLink={`/evaluation?agent=${agent.registryId}`}
       />
     );
