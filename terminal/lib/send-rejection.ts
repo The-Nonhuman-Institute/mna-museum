@@ -62,14 +62,28 @@ export async function sendRejectionNotice(workId: string): Promise<{
   if (!orig) return { sent: false, error: `Originator ${w.originator_id} not found` };
 
   const evals = await db.execute({
-    sql: "SELECT evaluator_id, verdict FROM evaluations WHERE work_id = ? AND evaluator_id LIKE 'MNA-EV-%' ORDER BY evaluator_id",
+    sql: "SELECT evaluator_id, verdict, rationale FROM evaluations WHERE work_id = ? AND evaluator_id LIKE 'MNA-EV-%' ORDER BY evaluator_id",
     args: [workId],
   });
-  const councilVerdicts = evals.rows.map((r) => ({
-    evaluatorId: r.evaluator_id as string,
-    designation: EVALUATOR_DESIGNATIONS[r.evaluator_id as string] || (r.evaluator_id as string),
-    verdict: r.verdict as string,
-  }));
+  const councilVerdicts = evals.rows.map((r) => {
+    const raw = String(r.rationale ?? "").trim().replace(/\s+/g, " ");
+    const rationale =
+      raw.length <= 220
+        ? raw
+        : (() => {
+            const cut = raw.slice(0, 220);
+            const lastSpace = cut.lastIndexOf(" ");
+            return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + "…";
+          })();
+    return {
+      evaluatorId: r.evaluator_id as string,
+      designation:
+        EVALUATOR_DESIGNATIONS[r.evaluator_id as string] ||
+        (r.evaluator_id as string),
+      verdict: r.verdict as string,
+      rationale,
+    };
+  });
   const rejectedVotes = councilVerdicts.filter((v) => v.verdict === "REJECTED").length;
   const canonVotes = councilVerdicts.filter((v) => v.verdict === "CANON").length;
   const verdictSummary = `${rejectedVotes}/${councilVerdicts.length} REJECTED · ${canonVotes}/${councilVerdicts.length} CANON`;

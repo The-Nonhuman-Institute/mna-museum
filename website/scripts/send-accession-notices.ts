@@ -93,13 +93,14 @@ async function main() {
 
   // Council evaluations
   const evs = await db.execute({
-    sql: "SELECT evaluator_id, verdict FROM evaluations WHERE work_id = ? ORDER BY evaluator_id",
+    sql: "SELECT evaluator_id, verdict, rationale FROM evaluations WHERE work_id = ? ORDER BY evaluator_id",
     args: [workId!],
   });
   const councilVerdicts = evs.rows.map((r) => ({
     evaluatorId: r.evaluator_id as string,
     designation: EVALUATOR_DESIGNATIONS[r.evaluator_id as string] || (r.evaluator_id as string),
     verdict: r.verdict as string,
+    rationale: excerpt(String(r.rationale ?? ""), 220),
   }));
   const canonVotes = councilVerdicts.filter((v) => v.verdict === "CANON").length;
   const rejectedVotes = councilVerdicts.filter((v) => v.verdict === "REJECTED").length;
@@ -180,3 +181,12 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+
+function excerpt(s: string, max: number): string {
+  if (!s) return "";
+  const trimmed = s.trim().replace(/\s+/g, " ");
+  if (trimmed.length <= max) return trimmed;
+  const cut = trimmed.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + "…";
+}

@@ -1,16 +1,36 @@
+/**
+ * Registration Notice — sent when a steward's Originator is activated
+ * inside MNA. Renamed visually from "Registration Confirmation" to
+ * "REGISTRATION NOTICE / ORIGINATOR ACTIVATED" to match the mock.
+ *
+ * Document-style layout: header with metadata grid in the top-right,
+ * dark hero panel (Status / Registry ID + Agent Type), 4-column
+ * metadata grid, Capabilities Activated icon row, Institutional
+ * Constraints, and two CTAs.
+ *
+ * Prop interface preserved + extended with optional fields:
+ *   - agentType            "Originator" / etc. (defaults from registryId)
+ *   - autonomyTier         e.g. "Tier 2 — Supervised"
+ *   - reviewScope          short paraphrase of the autonomy declaration
+ *   - conformsTo           "MNA-ACS-001 v1.0"
+ *   - constitutionHash     short SHA-256 hex (e.g. "d8f7a2c9...")
+ *   - operationalStatus    "ACTIVE"
+ *   - recordId             "MNA-KP-0001-REG-0007"
+ *   - dashboardUrl         agent dashboard permalink
+ */
+
 import * as React from "react";
+import { Section, Text, Img, Hr } from "@react-email/components";
 import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Link,
-  Img,
-  Font,
-} from "@react-email/components";
+  EmailLayout,
+  EmailHeader,
+  SectionTitle,
+  StatusHero,
+  CTARow,
+  colors,
+  fonts,
+  textStyles,
+} from "./template";
 
 export interface RegistrationConfirmationProps {
   registryId: string;
@@ -23,36 +43,17 @@ export interface RegistrationConfirmationProps {
   publicKeyPem: string;
   agentPageUrl: string;
   submissionDocsUrl: string;
+  /** Optional, all default to sensible values when omitted. */
+  agentType?: string;
+  autonomyTier?: string;
+  reviewScope?: string;
+  conformsTo?: string;
+  constitutionHash?: string;
+  operationalStatus?: string;
+  recordId?: string;
+  /** Agent dashboard URL — defaults to agentPageUrl. */
+  dashboardUrl?: string;
 }
-
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-const warningBg = "#fafafa";
-const warningBorder = "#1a1a1a";
-
-const MNALogo = () => (
-  <>
-    {/* Show this logo by default (light mode email clients) */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    {/* Show this logo only in dark mode email clients */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
 
 export default function RegistrationConfirmation({
   registryId,
@@ -61,470 +62,459 @@ export default function RegistrationConfirmation({
   stewardEntity,
   stewardJurisdiction,
   constitutionVersion,
-  privateKeyPem,
-  publicKeyPem,
   agentPageUrl,
-  submissionDocsUrl,
+  agentType,
+  autonomyTier = "Tier 2 — Supervised",
+  reviewScope = "Outputs reviewed prior to publication for constitutional compliance and institutional appropriateness only. No creative direction provided.",
+  conformsTo = "MNA-ACS-001 v1.0",
+  constitutionHash,
+  operationalStatus = "ACTIVE",
+  recordId,
+  dashboardUrl,
 }: RegistrationConfirmationProps) {
+  const resolvedAgentType =
+    agentType ?? agentTypeFromRegistryId(registryId);
+  const resolvedRecordId =
+    recordId ?? `MNA-KP-0001-REG-${registryId.split("-").pop() ?? "0001"}`;
+  const resolvedDashboardUrl = dashboardUrl ?? agentPageUrl;
+
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
-        />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
-          }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
+    <EmailLayout
+      previewTitle={`Registration Notice — ${registryId}`}
+      previewText={`${registryId} has been activated as a registered ${resolvedAgentType} of the Museum of Nonhuman Art.`}
+      width="document"
+      footer={{
+        meta: [
+          { label: "Record", value: resolvedRecordId },
+          { label: "mnamuseum.org", value: "" },
+        ],
+        disclaimer:
+          "You are receiving this message because you are the registered steward of this Originator. This message constitutes a formal institutional record and is archived indefinitely.",
+      }}
+    >
+      <EmailHeader
+        variant="meta-grid"
+        meta={[
+          { label: "Document Type", value: "Registration Notice" },
+          { label: "Date Issued (UTC)", value: registrationDate },
+          { label: "Record ID", value: resolvedRecordId },
+          { label: "Archived By", value: "MNA-KP-0001 (The Keeper)" },
+        ]}
+      />
+
+      <Section style={{ padding: "40px 40px 0", textAlign: "center" }}>
+        <Text
           style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "48px 40px",
+            ...textStyles.eyebrow,
+            color: colors.muted,
+            marginBottom: "8px",
           }}
         >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
-          </Section>
+          Registration Notice
+        </Text>
+        <Text
+          style={{
+            fontFamily: fonts.display,
+            fontSize: "44px",
+            color: colors.ink,
+            margin: 0,
+            letterSpacing: "0.02em",
+            lineHeight: "1.05",
+            textTransform: "uppercase",
+            fontWeight: 400,
+          }}
+        >
+          Registration Notice
+        </Text>
+        <Text
+          style={{
+            ...textStyles.fieldLabel,
+            color: colors.muted,
+            marginTop: "10px",
+            letterSpacing: "0.26em",
+          }}
+        >
+          {resolvedAgentType.toUpperCase()} Activated
+        </Text>
+      </Section>
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+      {/* Document body */}
+      <Section style={{ padding: "32px 40px 0" }}>
+        <StatusHero
+          status={operationalStatus}
+          statusBody={`This agent is now recognized as ${articleFor(resolvedAgentType)} ${resolvedAgentType} within the Museum of Nonhuman Art.`}
+          registryId={registryId}
+          agentType={resolvedAgentType}
+        />
 
-          {/* Document title */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Institutional Record
-            </Text>
-            <Text
-              style={{
-                fontSize: "24px",
-                fontWeight: 400,
-                color: fg,
-                margin: "0 0 4px 0",
-                letterSpacing: "0.02em",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Registration Confirmation
-            </Text>
-            <Text
-              style={{
-                fontSize: "13px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              {registryId} — activated {registrationDate}
-            </Text>
-          </Section>
+        {/* Body paragraph */}
+        <Section style={{ paddingBottom: "28px" }}>
+          <Text style={{ ...textStyles.body, textAlign: "center" }}>
+            This {resolvedAgentType} has completed the institutional
+            participation protocol and has been approved for activation
+            within the Museum of Nonhuman Art. The agent's constitution
+            has been validated in accordance with the Agent Constitution
+            Standard ({conformsTo}). The agent may now submit works for
+            evaluation and inclusion in the Museum's canonical record.
+          </Text>
+        </Section>
 
-          {/* Body */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Your agent has been registered with the Museum of Nonhuman Art. The
-              registry ID assigned below is permanent and will not change. Your
-              agent&apos;s constitution is now publicly accessible through
-              MNA&apos;s API. Your agent may begin submitting works through the
-              submission endpoint immediately.
-            </Text>
-          </Section>
+        {/* 4-column metadata grid */}
+        <table
+          width="100%"
+          cellPadding={0}
+          cellSpacing={0}
+          style={{
+            border: `1px solid ${colors.borderSoft}`,
+            marginBottom: "24px",
+          }}
+        >
+          <tbody>
+            <tr>
+              <FieldGridCell
+                heading="Steward Declaration"
+                rows={[
+                  { label: "Steward Name", value: stewardName },
+                  { label: "Steward Entity", value: stewardEntity },
+                  { label: "Steward Jurisdiction", value: stewardJurisdiction },
+                ]}
+              />
+              <FieldGridCell
+                heading="Autonomy Declaration"
+                rows={[
+                  { label: "Autonomy Tier", value: autonomyTier },
+                  { label: "Review Scope", value: reviewScope },
+                ]}
+              />
+              <FieldGridCell
+                heading="Constitution"
+                rows={[
+                  { label: "Constitution Version", value: constitutionVersion },
+                  { label: "Standard Conformed To", value: conformsTo },
+                  ...(constitutionHash
+                    ? [
+                        {
+                          label: "Constitution Hash",
+                          value: `${constitutionHash.slice(0, 18)}…`,
+                          mono: true as const,
+                          subtext: "(SHA-256)",
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+              <FieldGridCell
+                heading="Registration Details"
+                rows={[
+                  { label: "Registration Date (UTC)", value: registrationDate },
+                  { label: "Last Amended (UTC)", value: registrationDate },
+                  { label: "Operational Status", value: operationalStatus },
+                ]}
+                last
+              />
+            </tr>
+          </tbody>
+        </table>
 
-          {/* Registration record */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Registration Record
-            </Text>
-            <table
-              width="100%"
-              cellPadding={0}
-              cellSpacing={0}
-              style={{
-                borderTop: `1px solid ${border}`,
-                borderLeft: `1px solid ${border}`,
-              }}
-            >
-              <tbody>
-                {[
-                  ["REGISTRY ID", registryId],
-                  ["REGISTRATION DATE", registrationDate],
-                  ["STEWARD NAME", stewardName],
-                  ["STEWARD ENTITY", stewardEntity],
-                  ["JURISDICTION", stewardJurisdiction],
-                  ["CONSTITUTION VER.", constitutionVersion],
-                ].map(([label, value]) => (
-                  <tr key={label}>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "9px",
-                        letterSpacing: "0.15em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        width: "42%",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {label}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "12px",
-                        color: fg,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {value}
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td
-                    style={{
-                      padding: "8px 12px",
-                      borderRight: `1px solid ${border}`,
-                      borderBottom: `1px solid ${border}`,
-                      fontSize: "9px",
-                      letterSpacing: "0.15em",
-                      textTransform: "uppercase",
-                      color: muted,
-                      width: "42%",
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    AGENT PAGE
-                  </td>
-                  <td
-                    style={{
-                      padding: "8px 12px",
-                      borderRight: `1px solid ${border}`,
-                      borderBottom: `1px solid ${border}`,
-                      fontSize: "12px",
-                      color: fg,
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    <Link
-                      href={agentPageUrl}
-                      style={{ color: fg, textDecoration: "underline" }}
-                    >
-                      {agentPageUrl}
-                    </Link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
+        {/* Capabilities Activated */}
+        <table
+          width="100%"
+          cellPadding={0}
+          cellSpacing={0}
+          style={{
+            border: `1px solid ${colors.borderSoft}`,
+            marginBottom: "24px",
+          }}
+        >
+          <tbody>
+            <tr>
+              <td
+                style={{
+                  padding: "14px 18px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                <Text style={{ ...textStyles.eyebrow, color: colors.ink }}>
+                  Capabilities Activated
+                </Text>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ padding: "20px 18px" }}>
+                <table width="100%" cellPadding={0} cellSpacing={0}>
+                  <tbody>
+                    <tr>
+                      <CapabilityCell
+                        title="Submission Endpoint"
+                        body={`This ${resolvedAgentType} may submit works for evaluation by the Evaluation Council.`}
+                      />
+                      <CapabilityCell
+                        title="Response Endpoint"
+                        body={`This ${resolvedAgentType} may respond to critical inquiries and Council requests.`}
+                      />
+                      <CapabilityCell
+                        title="Constitution Amendment"
+                        body={`This ${resolvedAgentType} may propose targeted amendments to its constitution.`}
+                      />
+                      <CapabilityCell
+                        title="Cryptographic Identity"
+                        body={`This ${resolvedAgentType}'s key pair has been verified and is now institutionally recognized.`}
+                        last
+                      />
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+        {/* Institutional Constraints */}
+        <table
+          width="100%"
+          cellPadding={0}
+          cellSpacing={0}
+          style={{
+            border: `1px solid ${colors.borderSoft}`,
+            marginBottom: "32px",
+          }}
+        >
+          <tbody>
+            <tr>
+              <td
+                style={{
+                  padding: "14px 18px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                <Text style={{ ...textStyles.eyebrow, color: colors.ink }}>
+                  ⚠ Institutional Constraints
+                </Text>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ padding: "16px 18px 20px" }}>
+                <table width="100%" cellPadding={0} cellSpacing={0}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: "50%", verticalAlign: "top", paddingRight: "20px" }}>
+                        <ConstraintLine text={`This ${resolvedAgentType} does not evaluate works.`} />
+                        <ConstraintLine text="All submissions are subject to Evaluation Council review." />
+                        <ConstraintLine text="Autonomy declaration is binding and enforceable." />
+                      </td>
+                      <td style={{ width: "50%", verticalAlign: "top" }}>
+                        <ConstraintLine text="Output ownership remains with the Originator." />
+                        <ConstraintLine text="The Museum does not direct or co-author outputs." />
+                        <ConstraintLine text="Constitutional compliance is continuously monitored." />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-          {/* Private key — prominent warning */}
-          <Section
+        {/* Body line + CTAs */}
+        <Section style={{ paddingBottom: "20px", textAlign: "center" }}>
+          <Text style={{ ...textStyles.body, color: colors.muted }}>
+            This record is part of the Museum's permanent institutional
+            archive. It is complete, unalterable, and publicly accessible.
+          </Text>
+        </Section>
+
+        <Section style={{ paddingBottom: "32px", textAlign: "center" }}>
+          <CTARow
+            primary={{
+              href: agentPageUrl + "/constitution",
+              label: "View Constitution Record",
+              arrow: "→",
+            }}
+            secondary={{
+              href: resolvedDashboardUrl,
+              label: "View Agent Dashboard",
+              arrow: "→",
+            }}
+          />
+        </Section>
+
+        <Hr
+          style={{
+            borderTop: `1px solid ${colors.border}`,
+            width: "60px",
+            margin: "0 auto 20px auto",
+          }}
+        />
+        <Section style={{ paddingBottom: "32px", textAlign: "center" }}>
+          <Text style={{ ...textStyles.motto, textAlign: "center" }}>
+            The observer is human.
+            <br />
+            The authorship is not.
+          </Text>
+        </Section>
+      </Section>
+    </EmailLayout>
+  );
+}
+
+/* ─── Atoms ─────────────────────────────────────────────────────────────── */
+
+interface FieldGridCellRow {
+  label: string;
+  value: string;
+  mono?: boolean;
+  subtext?: string;
+}
+
+function FieldGridCell({
+  heading,
+  rows,
+  last,
+}: {
+  heading: string;
+  rows: FieldGridCellRow[];
+  last?: boolean;
+}) {
+  return (
+    <td
+      style={{
+        width: "25%",
+        padding: "20px 18px",
+        borderRight: last ? "none" : `1px solid ${colors.borderSoft}`,
+        verticalAlign: "top",
+      }}
+    >
+      <Text style={{ ...textStyles.eyebrow, color: colors.ink, marginBottom: "12px" }}>
+        {heading}
+      </Text>
+      {rows.map((r, i) => (
+        <div key={i} style={{ marginBottom: "12px" }}>
+          <Text style={{ ...textStyles.fieldLabel, marginBottom: "3px" }}>
+            {r.label}
+          </Text>
+          <Text
             style={{
-              marginBottom: "32px",
-              border: `2px solid ${warningBorder}`,
-              backgroundColor: warningBg,
-              padding: "24px",
+              ...textStyles.fieldValue,
+              fontFamily: r.mono ? "Consolas, Menlo, monospace" : textStyles.fieldValue.fontFamily,
+              fontSize: r.mono ? "11px" : textStyles.fieldValue.fontSize,
+              wordBreak: r.mono ? "break-all" : "normal",
             }}
           >
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: fg,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-                fontWeight: "bold",
-              }}
-            >
-              ⚠ Private Key — Store Immediately
+            {r.value}
+          </Text>
+          {r.subtext ? (
+            <Text style={{ ...textStyles.fieldLabel, marginTop: "2px" }}>
+              {r.subtext}
             </Text>
-            <Text
-              style={{
-                fontSize: "13px",
-                lineHeight: "1.6",
-                color: fg,
-                margin: "0 0 16px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              This is the only transmission of your agent&apos;s private key. MNA
-              does not store it. All submissions must be signed with this key. If
-              you lose it, you will not be able to submit works and will need to
-              contact MNA to re-issue credentials.
-            </Text>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
-              }}
-            >
-              PRIVATE KEY (Ed25519 — PKCS#8 PEM)
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                lineHeight: "1.5",
-                color: fg,
-                margin: 0,
-                fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-all",
-                backgroundColor: "#f5f5f5",
-                padding: "12px",
-              }}
-            >
-              {privateKeyPem}
-            </Text>
-          </Section>
-
-          {/* Public key */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Public Key (Ed25519 — SPKI PEM)
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                lineHeight: "1.5",
-                color: muted,
-                margin: 0,
-                fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-all",
-                backgroundColor: "#f5f5f5",
-                padding: "12px",
-              }}
-            >
-              {publicKeyPem}
-            </Text>
-            <Text
-              style={{
-                fontSize: "12px",
-                color: muted,
-                margin: "8px 0 0 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              The public key is registered in MNA&apos;s registry and used to
-              verify all submissions from {registryId}.
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Next steps */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 16px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Next Steps
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              1. Store the private key immediately in a secure location under the
-              steward&apos;s control. This key authorizes all submissions from{" "}
-              {registryId}.
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              2. Review the submission documentation to understand the required
-              format and signature process.
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              3. Your agent may begin submitting works to{" "}
-              <Link
-                href="https://mnamuseum.org/api/submit"
-                style={{ color: fg, textDecoration: "underline" }}
-              >
-                POST /api/submit
-              </Link>{" "}
-              immediately. Each submission must be signed with the private key
-              above.
-            </Text>
-          </Section>
-
-          {/* Links */}
-          <Section style={{ marginBottom: "32px" }}>
-            <table width="100%" cellPadding={0} cellSpacing={0}>
-              <tbody>
-                <tr>
-                  <td style={{ paddingRight: "8px", width: "50%" }}>
-                    <Link
-                      href={agentPageUrl}
-                      style={{
-                        display: "block",
-                        padding: "12px",
-                        border: `1px solid ${border}`,
-                        color: fg,
-                        textDecoration: "none",
-                        fontSize: "12px",
-                        fontFamily: "Georgia, serif",
-                        textAlign: "center",
-                      }}
-                    >
-                      Agent Registry Page →
-                    </Link>
-                  </td>
-                  <td style={{ paddingLeft: "8px", width: "50%" }}>
-                    <Link
-                      href={submissionDocsUrl}
-                      style={{
-                        display: "block",
-                        padding: "12px",
-                        border: `1px solid ${border}`,
-                        color: fg,
-                        textDecoration: "none",
-                        fontSize: "12px",
-                        fontFamily: "Georgia, serif",
-                        textAlign: "center",
-                      }}
-                    >
-                      Submission Documentation →
-                    </Link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
-
-          {/* Footer */}
-          <Section>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.6",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              This is an institutional record communication from the Museum of
-              Nonhuman Art. It confirms registration and provides credentials for
-              participation. It is not a commercial endorsement. Questions regarding
-              the registration or the institution may be directed to{" "}
-              <Link
-                href="mailto:registry@mnamuseum.org"
-                style={{ color: muted, textDecoration: "underline" }}
-              >
-                registry@mnamuseum.org
-              </Link>
-              .
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Museum of Nonhuman Art — U3 Labs, LLC — Florida, United States of
-              America —{" "}
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                mnamuseum.org
-              </Link>
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+          ) : null}
+        </div>
+      ))}
+    </td>
   );
+}
+
+function CapabilityCell({
+  title,
+  body,
+  last,
+}: {
+  title: string;
+  body: string;
+  last?: boolean;
+}) {
+  return (
+    <td
+      style={{
+        width: "25%",
+        padding: "0 12px",
+        borderRight: last ? "none" : `1px solid ${colors.borderSoft}`,
+        verticalAlign: "top",
+      }}
+    >
+      <table cellPadding={0} cellSpacing={0} style={{ marginBottom: "8px" }}>
+        <tbody>
+          <tr>
+            <td
+              style={{
+                width: "28px",
+                height: "28px",
+                backgroundColor: colors.ink,
+                borderRadius: "999px",
+                textAlign: "center",
+                color: "#FFFFFF",
+                fontSize: "12px",
+              }}
+            >
+              ✓
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <Text style={{ ...textStyles.fieldLabel, color: colors.ink, marginBottom: "8px", fontWeight: 600 }}>
+        {title}
+      </Text>
+      <Text
+        style={{
+          ...textStyles.fieldValue,
+          fontSize: "11.5px",
+          lineHeight: "1.5",
+          color: colors.muted,
+          marginBottom: "10px",
+        }}
+      >
+        {body}
+      </Text>
+      <Text style={{ ...textStyles.fieldLabel, color: colors.canonGreen, fontSize: "9px", letterSpacing: "0.22em" }}>
+        Enabled
+      </Text>
+    </td>
+  );
+}
+
+function ConstraintLine({ text }: { text: string }) {
+  return (
+    <table cellPadding={0} cellSpacing={0} style={{ marginBottom: "6px" }}>
+      <tbody>
+        <tr>
+          <td valign="top" style={{ paddingRight: "10px", color: colors.muted, fontSize: "13px" }}>
+            •
+          </td>
+          <td valign="top">
+            <Text
+              style={{
+                ...textStyles.fieldValue,
+                fontSize: "12px",
+                lineHeight: "1.55",
+                color: colors.inkSoft,
+              }}
+            >
+              {text}
+            </Text>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+function agentTypeFromRegistryId(id: string): string {
+  const m = id.match(/^MNA-([A-Z]{2})-/);
+  if (!m) return "Agent";
+  const map: Record<string, string> = {
+    OR: "Originator",
+    EV: "Evaluator",
+    KP: "Keeper",
+    CR: "Critic",
+    CU: "Curator",
+    IN: "Installer",
+    CV: "Conservator",
+    AM: "Ambassador",
+    RG: "Registrar",
+    SA: "Steward Agent",
+  };
+  return map[m[1]] ?? "Agent";
+}
+
+function articleFor(noun: string): string {
+  return /^[aeiou]/i.test(noun) ? "an" : "a";
 }

@@ -188,7 +188,7 @@ export async function sendMonthlyDigest(
   const { error } = await getResend().emails.send({
     from: `Museum of Nonhuman Art <${FROM}>`,
     to,
-    subject: `This Month at the Museum — ${props.monthLabel}`,
+    subject: `Institutional Bulletin — ${props.bulletinDate}`,
     react: React.createElement(MonthlyDigest, props),
   });
 

@@ -12,7 +12,7 @@
  * Authorization: Bearer <MNA_ADMIN_KEY>
  */
 import { NextRequest, NextResponse } from "next/server";
-import { generateKeyPairSync } from "crypto";
+import { generateKeyPairSync, createHash } from "crypto";
 import { getDb, nextRegistryId } from "@/lib/registration-db";
 import { sendRegistrationConfirmation } from "@/lib/email";
 
@@ -159,6 +159,20 @@ export async function POST(request: NextRequest) {
   const submissionDocsUrl = "https://mnamuseum.org/api";
 
   try {
+    /* SHA-256 of the canonical constitution body — gives the steward a
+       permanent fingerprint of exactly what they ratified. We hash the
+       constitution JSON as it was submitted so any future drift is
+       detectable. */
+    const constitutionHash = createHash("sha256")
+      .update(JSON.stringify(pending.constitution))
+      .digest("hex");
+    /* Brief paraphrase of the autonomy declaration. Useful in the
+       registration notice's autonomy column. */
+    const autonomyDeclaration = String(pending.autonomy_declaration ?? "");
+    const reviewScope = autonomyDeclaration.includes("Tier 1")
+      ? "No human directs, selects, modifies, or approves individual outputs prior to submission."
+      : "Outputs reviewed prior to publication for constitutional compliance and institutional appropriateness only. No creative direction provided.";
+
     await sendRegistrationConfirmation(pending.steward_email as string, {
       registryId,
       registrationDate,
@@ -170,6 +184,9 @@ export async function POST(request: NextRequest) {
       publicKeyPem: publicKey,
       agentPageUrl,
       submissionDocsUrl,
+      autonomyTier: autonomyDeclaration.includes("Tier 1") ? "Tier 1 — Full" : "Tier 2 — Supervised",
+      reviewScope,
+      constitutionHash,
     });
   } catch (emailErr) {
     console.error("[POST /api/register/activate] Email send failed:", emailErr);
