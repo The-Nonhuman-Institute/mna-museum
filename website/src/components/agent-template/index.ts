@@ -9,6 +9,8 @@
 export { default as AgentSidebar } from "./AgentSidebar";
 export type { AgentSidebarProps } from "./AgentSidebar";
 
+export { default as RingMap } from "./RingMap";
+
 export {
   Block,
   FieldBlock,

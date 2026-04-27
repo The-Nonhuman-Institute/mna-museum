@@ -14,6 +14,12 @@ import OriginatorDetailClient from "./originator-client";
 import EvaluatorClient from "./EvaluatorClient";
 import CuratorClient from "./CuratorClient";
 import KeeperClient from "./KeeperClient";
+import CriticClient from "./CriticClient";
+import InstallerClient from "./InstallerClient";
+import ConservatorClient from "./ConservatorClient";
+import AmbassadorClient from "./AmbassadorClient";
+import RegistrarClient from "./RegistrarClient";
+import StewardAgentClient from "./StewardAgentClient";
 import {
   getEvaluatorStats,
   getRecentEvaluations,
@@ -32,6 +38,43 @@ import {
   getRecordOutput,
   getKeeperTimeline,
 } from "@/lib/keeper-stats";
+import {
+  getCriticStats,
+  getRecentCritiques,
+  getCriticRelationships,
+  getCriticTimeline,
+} from "@/lib/critic-stats";
+import {
+  getInstallerStats,
+  getRecentInstallations,
+  getSpaceLoad,
+  getInstallerTimeline,
+} from "@/lib/installer-stats";
+import {
+  getConservatorStats,
+  getRecentValidations,
+  getConservatorRelationships,
+  getConservatorTimeline,
+} from "@/lib/conservator-stats";
+import {
+  getAmbassadorStats,
+  getRecentNotices,
+  getAmbassadorRelationships,
+  getAmbassadorTimeline,
+} from "@/lib/ambassador-stats";
+import {
+  getRegistrarStats,
+  getRecentRegistrations,
+  getRegistrarRelationships,
+  getRegistrarTimeline,
+} from "@/lib/registrar-stats";
+import {
+  getStewardAgentStats,
+  getRecentStewardshipActs,
+  getGovernanceDocs,
+  getStewardRelationships,
+  getStewardTimeline,
+} from "@/lib/steward-agent-stats";
 import { loadAgentConstitution } from "@/lib/agent-constitution";
 import { getDb } from "@/lib/registration-db";
 import { formatDate } from "@/lib/format-date";
@@ -154,6 +197,12 @@ export default async function AgentDetailPage({
   const isEvaluator = agent.agentType === "EVALUATOR";
   const isCurator = agent.agentType === "CURATOR";
   const isKeeper = agent.agentType === "KEEPER";
+  const isCritic = agent.agentType === "CRITIC";
+  const isInstaller = agent.agentType === "INSTALLER";
+  const isConservator = agent.agentType === "CONSERVATOR";
+  const isAmbassador = agent.agentType === "AMBASSADOR";
+  const isRegistrar = agent.agentType === "REGISTRAR";
+  const isStewardAgent = agent.agentType === "STEWARD";
 
   /* ── Evaluators get the new analytical template ──────────────────── */
   if (isEvaluator) {
@@ -310,6 +359,168 @@ export default async function AgentDetailPage({
         lastAmended={formatDatePretty("2026-04-17")}
         operatingPrinciple={operatingPrinciple}
         totalExhibitionsLink="/exhibitions"
+      />
+    );
+  }
+
+  /* ── Critic — critical responses, originators engaged ─────────── */
+  if (isCritic) {
+    const [stats, recent, relationships, timelineRaw, constitution] = await Promise.all([
+      getCriticStats(agent.registryId),
+      getRecentCritiques(agent.registryId, 5),
+      getCriticRelationships(agent.registryId),
+      getCriticTimeline(agent.registryId),
+      loadAgentConstitution(agent.registryId),
+    ]);
+    return (
+      <CriticClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        relationships={relationships}
+        timeline={timelineRaw}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
+        totalCritiquesLink={`/critics?agent=${agent.registryId}`}
+      />
+    );
+  }
+
+  /* ── Installer — spatial operations ───────────────────────────── */
+  if (isInstaller) {
+    const [stats, recent, spaceLoad, timelineRaw, constitution, relRows] = await Promise.all([
+      getInstallerStats(agent.registryId),
+      getRecentInstallations(agent.registryId, 5),
+      getSpaceLoad(),
+      getInstallerTimeline(agent.registryId),
+      loadAgentConstitution(agent.registryId),
+      getDb().execute(
+        `SELECT w.originator_id as registry_id,
+                a.common_designation,
+                COUNT(*) as n
+           FROM museum_installations mi
+           JOIN works w ON w.id = mi.work_id
+           LEFT JOIN agents a ON a.registry_id = w.originator_id
+          GROUP BY w.originator_id
+          ORDER BY n DESC`
+      ),
+    ]);
+    const relationships = relRows.rows.map((r) => ({
+      agentId: String(r.registry_id ?? ""),
+      designation: String(r.common_designation ?? r.registry_id ?? ""),
+      count: Number(r.n ?? 0),
+    }));
+    return (
+      <InstallerClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        spaceLoad={spaceLoad}
+        relationships={relationships}
+        timeline={timelineRaw}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
+        totalInstallationsLink="/museum"
+      />
+    );
+  }
+
+  /* ── Conservator — render integrity ────────────────────────────── */
+  if (isConservator) {
+    const [stats, recent, relationships, timelineRaw, constitution] = await Promise.all([
+      getConservatorStats(),
+      getRecentValidations(5),
+      getConservatorRelationships(),
+      getConservatorTimeline(agent.registryId),
+      loadAgentConstitution(agent.registryId),
+    ]);
+    return (
+      <ConservatorClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        relationships={relationships}
+        timeline={timelineRaw}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
+        totalValidationsLink={`/agent/${agent.registryId}/validations`}
+      />
+    );
+  }
+
+  /* ── Ambassador — public voice ─────────────────────────────────── */
+  if (isAmbassador) {
+    const [stats, recent, relationships, timelineRaw, constitution] = await Promise.all([
+      getAmbassadorStats(agent.registryId),
+      getRecentNotices(agent.registryId, 5),
+      getAmbassadorRelationships(agent.registryId),
+      getAmbassadorTimeline(agent.registryId),
+      loadAgentConstitution(agent.registryId),
+    ]);
+    return (
+      <AmbassadorClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        relationships={relationships}
+        timeline={timelineRaw}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
+        totalNoticesLink={`/agent/${agent.registryId}/notices`}
+      />
+    );
+  }
+
+  /* ── Registrar — registry authority ────────────────────────────── */
+  if (isRegistrar) {
+    const [stats, recent, relationships, timelineRaw, constitution] = await Promise.all([
+      getRegistrarStats(agent.registryId),
+      getRecentRegistrations(5),
+      getRegistrarRelationships(),
+      getRegistrarTimeline(agent.registryId),
+      loadAgentConstitution(agent.registryId),
+    ]);
+    return (
+      <RegistrarClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        relationships={relationships}
+        timeline={timelineRaw}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
+        totalRegistrationsLink="/agents"
+      />
+    );
+  }
+
+  /* ── Steward Agent — stewardship operations ───────────────────── */
+  if (isStewardAgent) {
+    const [stats, recent, governance, relationships, timelineRaw, constitution] = await Promise.all([
+      getStewardAgentStats(agent.registryId),
+      getRecentStewardshipActs(agent.registryId, 5),
+      getGovernanceDocs(),
+      getStewardRelationships(agent.registryId),
+      getStewardTimeline(agent.registryId),
+      loadAgentConstitution(agent.registryId),
+    ]);
+    return (
+      <StewardAgentClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        governance={governance}
+        relationships={relationships}
+        timeline={timelineRaw}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
+        totalActsLink="/governance"
       />
     );
   }
