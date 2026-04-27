@@ -1,19 +1,27 @@
 /**
- * EvaluatorClient — agent profile template for Evaluator Council members.
+ * EvaluatorClient — operative-agent profile for Evaluator Council members.
  *
  * Matches mockups MNA-EV-0001 (Structuralist) and MNA-EV-0003 (Contextualist).
- * Two-column layout: dark sticky sidebar with constitutional identity
- * + light main panel with functional mandate, profile, behavior stats,
- * recent evaluations, and bottom analytical row (timeline / relationship
- * map / citation activity).
- *
- * Server-rendered: receives all data prepared in the page.tsx server
- * component. No client interactivity needed yet.
+ * Layout scaffolding (sidebar, Block / FieldBlock / Panel / Stat / Sparkline)
+ * is shared via @/components/agent-template; this component supplies the
+ * evaluator-specific content: 7-stat verdict-rate row, Recent Evaluations
+ * table, Verdict Pattern by Originator map, Citation Activity panel.
  */
 
 import Link from "next/link";
-import AgentSignature from "@/components/AgentSignature";
-import CiteButton from "@/components/CiteButton";
+import {
+  AgentSidebar,
+  Block,
+  FieldBlock,
+  Panel,
+  ProfileCol,
+  Stat,
+  Legend,
+  formatDateShort,
+  isEmergencePending,
+  pct,
+  summarizeAutonomy,
+} from "@/components/agent-template";
 import type { Agent } from "@/lib/agents";
 import type {
   EvaluatorStats,
@@ -22,7 +30,7 @@ import type {
 } from "@/lib/evaluator-stats";
 import type { AgentConstitutionExtracts } from "@/lib/agent-constitution";
 
-/* ─── Props ────────────────────────────────────────────────────────────── */
+/* ─── Props ─────────────────────────────────────────────────────────────── */
 
 export interface EvaluatorClientProps {
   agent: Agent;
@@ -50,7 +58,7 @@ export interface EvaluatorClientProps {
   totalEvaluationsLink: string;
 }
 
-/* ─── Component ────────────────────────────────────────────────────────── */
+/* ─── Component ─────────────────────────────────────────────────────────── */
 
 export default function EvaluatorClient({
   agent,
@@ -66,131 +74,15 @@ export default function EvaluatorClient({
 }: EvaluatorClientProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)]">
-      {/* ═══ Sidebar (dark) ═══ */}
-      <aside className="bg-ink text-mna-white lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto">
-        <div className="px-7 py-8">
-          {/* Back */}
-          <Link
-            href="/agents"
-            className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/55 hover:text-mna-white transition-colors mb-7"
-          >
-            <span aria-hidden>←</span>
-            <span>Back to Agent Directory</span>
-          </Link>
+      <AgentSidebar
+        agent={agent}
+        constitution={constitution}
+        roleLabel="Evaluation Council"
+        agentTypeLabel="Evaluator"
+        registrationDate={registrationDate}
+        lastAmended={lastAmended}
+      />
 
-          {/* Glyph */}
-          <div className="aspect-square w-full bg-ink border border-mna-white/10 mb-6 flex items-center justify-center">
-            <AgentSignature
-              registryId={agent.registryId}
-              agentType={agent.agentType}
-              constitutionRef={agent.constitutionRef}
-              size={260}
-              className="text-mna-white w-[80%] h-[80%]"
-            />
-          </div>
-
-          {/* Status */}
-          <div className="inline-flex items-center gap-2 mb-3">
-            <span className="inline-block w-[6px] h-[6px] rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.65)]" />
-            <span className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/85">
-              {agent.status}
-            </span>
-          </div>
-
-          {/* Identity */}
-          <p className="text-[18px] md:text-[20px] font-sans tabular-nums text-mna-white mb-1.5">
-            {agent.registryId}
-          </p>
-          <h1 className="font-display font-light text-[30px] md:text-[34px] leading-[1.05] mb-1.5">
-            {agent.designation}
-          </h1>
-          <p className="text-[13px] font-sans text-mna-white/65 mb-7">
-            Evaluation Council
-          </p>
-
-          {/* Core principle */}
-          {constitution.corePrinciple ? (
-            <div className="border-t border-mna-white/15 pt-6 mb-7">
-              <p className="text-[10px] font-sans uppercase tracking-[0.24em] text-mna-white/55 mb-3">
-                Core Principle
-              </p>
-              <p className="font-display italic font-light text-[18px] md:text-[19px] leading-[1.35] text-mna-white">
-                {`"${constitution.corePrinciple.replace(/^"|"$/g, "")}"`}
-              </p>
-            </div>
-          ) : null}
-
-          {/* Meta fields */}
-          <dl className="border-t border-mna-white/15 pt-6 space-y-4 mb-7">
-            <DarkField label="Agent Type" value="Evaluator" />
-            <DarkField label="Common Designation" value={agent.designation} />
-            <DarkField label="Registry ID" value={agent.registryId} />
-            <DarkField label="Constitution Version" value="1.0" />
-            <DarkField label="Registration Date" value={registrationDate} />
-            <DarkField label="Last Amended" value={lastAmended} />
-            <DarkField label="Autonomy Tier" value={agent.autonomyTier} />
-          </dl>
-
-          {/* Hard constraints */}
-          {constitution.hardConstraints.length > 0 ? (
-            <div className="border-t border-mna-white/15 pt-6 mb-7">
-              <p className="text-[10px] font-sans uppercase tracking-[0.24em] text-mna-white/55 mb-3">
-                Hard Constraints
-              </p>
-              <ul className="space-y-3">
-                {constitution.hardConstraints.map((c, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="shrink-0 mt-0.5 inline-flex items-center justify-center w-[14px] h-[14px] rounded-full border border-mna-white/40 text-mna-white/70 text-[8px] leading-none">
-                      ×
-                    </span>
-                    <span className="text-[12px] leading-[1.45] text-mna-white/80">
-                      {c}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {/* CTA */}
-          <Link
-            href={`/agent/${agent.registryId}/constitution`}
-            className="inline-flex items-center justify-between gap-3 w-full border border-mna-white/25 hover:border-mna-white/60 py-3 px-4 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white transition-colors mb-4"
-          >
-            <span>View Full Constitution</span>
-            <span aria-hidden>→</span>
-          </Link>
-
-          {/* Format actions */}
-          <div className="flex items-center gap-5 text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
-            <a
-              href={`/api/agents/${agent.registryId}/constitution?download=1`}
-              className="hover:text-mna-white transition-colors inline-flex items-center gap-1.5"
-            >
-              <span aria-hidden>{`</>`}</span>
-              <span>JSON</span>
-            </a>
-            <a
-              href={`/agents/${agent.registryId}.pdf`}
-              className="hover:text-mna-white transition-colors inline-flex items-center gap-1.5"
-            >
-              <span aria-hidden>↓</span>
-              <span>PDF</span>
-            </a>
-            <CiteButton
-              title={`${agent.registryId}: ${agent.designation}`}
-              documentId={agent.registryId}
-              version="1.0"
-              year={(registrationDate.match(/\d{4}/) ?? [""])[0]}
-              url={`https://mnamuseum.org/agent/${agent.registryId}/constitution`}
-              documentType="Founding Constitution"
-              tone="dark"
-            />
-          </div>
-        </div>
-      </aside>
-
-      {/* ═══ Main (light) ═══ */}
       <section className="bg-warm-paper text-ink min-w-0">
         {/* ── FUNCTIONAL MANDATE ── */}
         <Block label="Functional Mandate">
@@ -211,7 +103,7 @@ export default function EvaluatorClient({
                 moreLabel="View full"
               >
                 <p className="text-[13.5px] leading-[1.7] text-ink/85">
-                  {summarizeAutonomy(constitution.autonomyDeclaration, agent.autonomyTier)}
+                  {summarizeAutonomy(constitution.autonomyDeclaration, agent.autonomyTier, "evaluations")}
                 </p>
               </FieldBlock>
               {constitution.conflictConstraints ? (
@@ -316,7 +208,6 @@ export default function EvaluatorClient({
           }
         >
           <div>
-            {/* Table header */}
             <div className="hidden md:grid grid-cols-[58px_minmax(180px,1.1fr)_minmax(150px,1fr)_120px_120px_minmax(220px,1.6fr)_24px] gap-x-6 py-3 border-b border-ink/15 text-[10px] font-sans uppercase tracking-[0.18em] text-ink/55">
               <span></span>
               <span>Work ID</span>
@@ -326,7 +217,6 @@ export default function EvaluatorClient({
               <span>Rationale (excerpt)</span>
               <span></span>
             </div>
-            {/* Rows */}
             {recent.map((r) => (
               <Link
                 key={r.work_id}
@@ -389,14 +279,9 @@ export default function EvaluatorClient({
           </div>
         </Block>
 
-        {/* ── BOTTOM TRIPLET — Timeline | Relationship | Citation ──
-              Each panel uses the same flex-col envelope: eyebrow label →
-              ruler line → flex-1 content → footer link pinned via mt-auto.
-              All three columns end on the same baseline regardless of the
-              vertical content inside. */}
+        {/* ── BOTTOM TRIPLET ── */}
         <div className="border-t border-ink/15">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12 items-stretch">
-            {/* Constitution Timeline */}
             <Panel
               label="Constitution Timeline"
               footerHref={`/agent/${agent.registryId}/timeline`}
@@ -428,14 +313,13 @@ export default function EvaluatorClient({
                 Every Council member evaluates every submission, so
                 "relationship count" is identical across all four
                 evaluators. The differentiating signal is the verdict
-                mix per originator, which IS unique to each evaluator.
-                Spokes are colored by canon-vs-rejected lean. */}
+                mix per originator, which IS unique to each evaluator. */}
             <Panel
               label="Verdict Pattern by Originator"
               footerHref={`/agent/${agent.registryId}/network`}
               footerLabel="View full network"
             >
-              <RelationshipMap
+              <VerdictPatternMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 relationships={relationships}
               />
@@ -447,7 +331,6 @@ export default function EvaluatorClient({
               </div>
             </Panel>
 
-            {/* Citation Activity */}
             <Panel
               label="Citation Activity"
               footerHref={`/agent/${agent.registryId}/citations`}
@@ -499,203 +382,7 @@ export default function EvaluatorClient({
   );
 }
 
-/* ─── Atoms ────────────────────────────────────────────────────────────── */
-
-function DarkField({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[9.5px] font-sans uppercase tracking-[0.22em] text-mna-white/45 mb-1">
-        {label}
-      </dt>
-      <dd className="text-[13px] text-mna-white">{value}</dd>
-    </div>
-  );
-}
-
-/* Bottom-triplet panel envelope — keeps Timeline / Relationship Map /
-   Citation Activity columns the same height. Eyebrow label and "View all"
-   link share the header row; thin ruler; flex-1 content area below. */
-function Panel({
-  label,
-  children,
-  footerHref,
-  footerLabel,
-}: {
-  label: string;
-  children: React.ReactNode;
-  footerHref: string;
-  footerLabel: string;
-}) {
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-baseline justify-between gap-3 mb-3">
-        <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55">
-          {label}
-        </p>
-        <Link
-          href={footerHref}
-          className="text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors inline-flex items-center gap-1.5"
-        >
-          <span>{footerLabel}</span>
-          <span aria-hidden>→</span>
-        </Link>
-      </div>
-      <div className="border-t border-ink/15 mb-5" />
-      <div className="flex-1">{children}</div>
-    </div>
-  );
-}
-
-function Block({
-  label,
-  labelExtra,
-  right,
-  children,
-}: {
-  label: string;
-  labelExtra?: string;
-  right?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border-t border-ink/15 first:border-t-0">
-      <div className="px-7 md:px-10 pt-9 pb-5 flex flex-wrap items-baseline gap-x-3 gap-y-2 justify-between">
-        <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/65">
-          {label}
-          {labelExtra ? (
-            <span className="ml-2 text-ink/40 normal-case tracking-normal">
-              {labelExtra}
-            </span>
-          ) : null}
-        </p>
-        {right}
-      </div>
-      <div className="mx-7 md:mx-10 border-t border-ink/12" />
-      <div className="px-7 md:px-10 pt-7 pb-12">{children}</div>
-    </section>
-  );
-}
-
-function ProfileCol({
-  label,
-  body,
-  moreHref,
-  moreLabel,
-}: {
-  label: string;
-  body: string | string[];
-  moreHref: string;
-  moreLabel: string;
-}) {
-  return (
-    <FieldBlock label={label} moreHref={moreHref} moreLabel="View all">
-      {Array.isArray(body) ? (
-        <ul className="space-y-2">
-          {body.map((b, i) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <span className="shrink-0 mt-2 w-[5px] h-[5px] rounded-full bg-ink/70" />
-              <span className="text-[13px] leading-[1.55] text-ink/85">{b}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[13px] leading-[1.6] text-ink/85">{body}</p>
-      )}
-    </FieldBlock>
-  );
-}
-
-/* Field-level header: column label on the left, "View full / view all"
-   link on the right. Mirrors the bottom-triplet Panel pattern so a
-   visitor can jump to the full entry without scrolling past the body. */
-function FieldBlock({
-  label,
-  moreHref,
-  moreLabel,
-  children,
-}: {
-  label: string;
-  moreHref?: string;
-  moreLabel?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3 mb-3">
-        <p className="text-[12px] font-sans uppercase tracking-[0.18em] text-ink/55">
-          {label}
-        </p>
-        {moreHref ? (
-          <Link
-            href={moreHref}
-            className="text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors inline-flex items-center gap-1.5 shrink-0"
-          >
-            <span>{moreLabel ?? "View"}</span>
-            <span aria-hidden>→</span>
-          </Link>
-        ) : null}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Stat({
-  value,
-  label,
-  spark,
-}: {
-  value: string;
-  label: string;
-  spark: number[];
-}) {
-  return (
-    <div className="min-w-0">
-      <p className="font-display font-light text-[28px] md:text-[30px] leading-none text-ink mb-2 tabular-nums">
-        {value}
-      </p>
-      <p className="text-[10px] font-sans uppercase tracking-[0.18em] text-ink/55 leading-[1.4] mb-2 max-w-[14ch]">
-        {label}
-      </p>
-      <Sparkline values={spark} />
-    </div>
-  );
-}
-
-function Sparkline({ values }: { values: number[] }) {
-  if (!values || values.length === 0) return null;
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const range = max - min || 1;
-  const W = 80;
-  const H = 16;
-  const step = W / Math.max(values.length - 1, 1);
-  const points = values
-    .map((v, i) => {
-      const x = i * step;
-      const y = H - ((v - min) / range) * H;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      width={W}
-      height={H}
-      preserveAspectRatio="none"
-      className="block"
-      aria-hidden
-    >
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1}
-        opacity={0.6}
-      />
-    </svg>
-  );
-}
+/* ─── Evaluator-specific atoms ──────────────────────────────────────────── */
 
 function VerdictPill({ verdict }: { verdict: string }) {
   const v = verdict.toUpperCase().replace("_", " ");
@@ -719,15 +406,6 @@ function VerdictPill({ verdict }: { verdict: string }) {
   );
 }
 
-function Legend({ dot, label }: { dot: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className={`inline-block w-[6px] h-[6px] rounded-full ${dot}`} />
-      <span>{label}</span>
-    </span>
-  );
-}
-
 function BigStat({ value, label }: { value: string; label: string }) {
   return (
     <div>
@@ -741,9 +419,9 @@ function BigStat({ value, label }: { value: string; label: string }) {
   );
 }
 
-/* ─── Relationship map (radial scatter) ────────────────────────────────── */
+/* ─── Verdict Pattern map (radial scatter, colored by verdict mix) ──────── */
 
-function RelationshipMap({
+function VerdictPatternMap({
   centerLabel,
   relationships,
 }: {
@@ -757,19 +435,12 @@ function RelationshipMap({
     inReviewRate: number;
   }[];
 }) {
-  /* Wider viewBox so the labels — which sit OUTSIDE each dot at a fixed
-     radial offset — never overlap their dots. Padding around the dot
-     ring is generous enough to fit the longest label without clipping
-     the SVG edge. Hover tooltips on each dot reveal the originator's
-     designation and evaluation count. */
   const W = 420;
   const H = 320;
   const cx = W / 2;
   const cy = H / 2;
   const top = relationships.slice(0, 12);
   const maxCount = Math.max(1, ...top.map((r) => r.count));
-  /* Dot ring radius — fixed so all dots sit on the same circle. Label
-     ring sits a uniform distance further out, so labels don't touch dots. */
   const dotR = 100;
   const labelR = dotR + 22;
 
@@ -778,7 +449,7 @@ function RelationshipMap({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="block w-full h-auto"
-        aria-label="Relationship map"
+        aria-label="Verdict pattern by originator"
       >
         {top.map((r, i) => {
           const angle =
@@ -789,12 +460,8 @@ function RelationshipMap({
           const y = cy + dy * dotR;
           const lx = cx + dx * labelR;
           const ly = cy + dy * labelR;
-          /* Text anchor depends on which side of the center the label is.
-             Threshold of 0.3 keeps near-vertical labels centered. */
           const anchor: "start" | "middle" | "end" =
             dx > 0.3 ? "start" : dx < -0.3 ? "end" : "middle";
-          /* Vertical baseline correction so labels above the center sit
-             above their radial point and labels below sit below. */
           const baselineOffset = dy < -0.3 ? -2 : dy > 0.3 ? 10 : 4;
           const dotSize = 4 + (r.count / maxCount) * 3;
           return (
@@ -824,7 +491,6 @@ function RelationshipMap({
             </g>
           );
         })}
-        {/* center node */}
         <circle cx={cx} cy={cy} r={14} fill="#0A0A0A" />
         <text
           x={cx}
@@ -858,55 +524,10 @@ function verdictColor(r: {
   rejectedRate: number;
   inReviewRate: number;
 }): string {
-  /* Color spokes by where this evaluator's verdicts on this originator's
-     works lean. Universal Council coverage means count is uniform across
-     all four evaluators; the verdict pattern is what's distinctive.
-       ≥ 0.65 canon  → emerald (mostly canonized)
-       ≥ 0.65 reject → red (mostly rejected)
-       ≥ 0.65 review → grey (pending verdict)
-       otherwise     → amber (mixed verdicts) */
+  /* ≥ 0.65 canon → emerald, ≥ 0.65 reject → red, ≥ 0.65 review → grey,
+     otherwise amber for mixed verdicts. */
   if (r.canonRate >= 0.65) return "#059669";
   if (r.rejectedRate >= 0.65) return "#DC2626";
   if (r.inReviewRate >= 0.65) return "rgba(10,10,10,0.4)";
   return "#D97706";
-}
-
-/* ─── Helpers ──────────────────────────────────────────────────────────── */
-
-function isEmergencePending(val: string | null | undefined): boolean {
-  return !val || val === "PENDING_EMERGENCE" || val === "[Pending Emergence]";
-}
-
-function pct(n: number): string {
-  if (!isFinite(n) || n <= 0) return "0.0%";
-  return `${(n * 100).toFixed(1)}%`;
-}
-
-function formatDateShort(s: string): string {
-  if (!s) return "—";
-  const d = new Date(s);
-  if (isNaN(d.getTime())) return s;
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function summarizeAutonomy(declaration: string, tier: string): string {
-  /* The full autonomy declaration is a steward's first-person paragraph.
-     For the panel we want a third-person summary. If parsing fails or
-     yields nothing, we fall back to the canonical text from the standard. */
-  if (declaration) {
-    const stripped = declaration
-      .replace(/^I,\s*[^,]+,\s*acting as steward of [^,]+,\s*declare that\s*/i, "")
-      .replace(/^this agent\s*/i, "This agent ");
-    /* Take the first two sentences for the panel — the rest is in the
-       full declaration link. */
-    const sentences = stripped.split(/(?<=[.])\s+/);
-    return (sentences.slice(0, 2).join(" ") || stripped).trim();
-  }
-  return tier.includes("Tier 1")
-    ? "This agent operates with full autonomy. No human directs, selects, modifies, or approves individual outputs prior to submission."
-    : "This agent operates with supervised autonomy. The agent generates all outputs independently in accordance with its constitution. The steward reviews outputs prior to submission as a steward function only.";
 }

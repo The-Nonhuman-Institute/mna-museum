@@ -1,11 +1,11 @@
 /**
- * CuratorClient — operative-agent profile for the Curator.
+ * KeeperClient — operative-agent profile for the Keeper (MNA-KP-0001).
  *
- * Layout scaffolding lives in @/components/agent-template. This component
- * supplies the curator-specific content: 4-column Constitutional Profile
- * (adds Operating Principle), 7-stat curatorial activity row, Current &
- * Recent Exhibitions card grid, and the Exhibition Principles In Use
- * panel (empty state until classifier ships).
+ * The Keeper records the institution's activity rather than producing
+ * its own creative work. The template uses the same scaffolding as the
+ * Evaluator and Curator (sidebar + Block / FieldBlock / Panel / Stat)
+ * but the content is coverage-centric: how much of the institutional
+ * record exists, recent records captured, breakdown of record types.
  */
 
 import Link from "next/link";
@@ -18,58 +18,54 @@ import {
   Stat,
   Legend,
   formatDateShort,
+  summarizeAutonomy,
 } from "@/components/agent-template";
-import { summarizeAutonomy } from "@/components/agent-template/helpers";
 import type { Agent } from "@/lib/agents";
 import type {
-  CuratorStats,
-  RecentExhibition,
-  CuratorRelationship,
-  ExhibitionPrinciples,
-} from "@/lib/curator-stats";
+  KeeperStats,
+  KeeperRecord,
+  RecordOutputBreakdown,
+} from "@/lib/keeper-stats";
 import type { AgentConstitutionExtracts } from "@/lib/agent-constitution";
 
 /* ─── Props ─────────────────────────────────────────────────────────────── */
 
-export interface CuratorClientProps {
+export interface KeeperClientProps {
   agent: Agent;
   constitution: AgentConstitutionExtracts;
-  stats: CuratorStats;
-  recent: RecentExhibition[];
-  relationships: CuratorRelationship[];
-  principles: ExhibitionPrinciples;
+  stats: KeeperStats;
+  recent: KeeperRecord[];
+  output: RecordOutputBreakdown;
+  /** Aggregate counts of record sources by agent type for the
+   *  relationship map. */
+  relationships: { agentId: string; designation: string; count: number }[];
   timeline: { date: string; label: string }[];
   registrationDate: string;
   lastAmended: string;
-  /** Pre-formatted "Operating Principle" text. Pulled by the page from
-   *  the constitution doc; falls back to the preamble argument when the
-   *  agent has no explicit Operating Principle section. */
-  operatingPrinciple: string | null;
-  totalExhibitionsLink: string;
+  totalRecordsLink: string;
 }
 
 /* ─── Component ─────────────────────────────────────────────────────────── */
 
-export default function CuratorClient({
+export default function KeeperClient({
   agent,
   constitution,
   stats,
   recent,
+  output,
   relationships,
-  principles,
   timeline,
   registrationDate,
   lastAmended,
-  operatingPrinciple,
-  totalExhibitionsLink,
-}: CuratorClientProps) {
+  totalRecordsLink,
+}: KeeperClientProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)]">
       <AgentSidebar
         agent={agent}
         constitution={constitution}
-        roleLabel="Curatorial Agent"
-        agentTypeLabel="Curator"
+        roleLabel="Records Agent"
+        agentTypeLabel="Keeper"
         registrationDate={registrationDate}
         lastAmended={lastAmended}
       />
@@ -94,14 +90,14 @@ export default function CuratorClient({
                 moreLabel="View full"
               >
                 <p className="text-[13.5px] leading-[1.7] text-ink/85">
-                  {summarizeAutonomy(constitution.autonomyDeclaration, agent.autonomyTier, "exhibition arrangements")}
+                  {summarizeAutonomy(constitution.autonomyDeclaration, agent.autonomyTier, "archival records")}
                 </p>
               </FieldBlock>
               {constitution.conflictConstraints ? (
                 <FieldBlock
                   label="Conflict Constraints"
                   moreHref={`/agent/${agent.registryId}/constitution#conflict`}
-                  moreLabel="View all constraints"
+                  moreLabel="View all"
                 >
                   <p className="text-[13.5px] leading-[1.7] text-ink/85">
                     {constitution.conflictConstraints}
@@ -112,39 +108,33 @@ export default function CuratorClient({
           </div>
         </Block>
 
-        {/* ── CURATORIAL PROFILE — 4 columns ── */}
-        <Block label="Curatorial Profile">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-7">
+        {/* ── ARCHIVAL PROFILE ── */}
+        <Block label="Archival Profile">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-7">
             <ProfileCol
               label="Declared Orientation"
               body={agent.fullConstitution.orientation}
               moreHref={`/agent/${agent.registryId}/constitution#orientation`}
+              moreLabel="View full orientation"
             />
             <ProfileCol
-              label="Curatorial Tendencies"
+              label="Recording Tendencies"
               body={agent.fullConstitution.tendencies}
               moreHref={`/agent/${agent.registryId}/constitution#tendencies`}
+              moreLabel="View all tendencies"
             />
             <ProfileCol
               label="Aversions"
               body={agent.fullConstitution.aversions}
               moreHref={`/agent/${agent.registryId}/constitution#aversions`}
-            />
-            <ProfileCol
-              label="Operating Principle"
-              body={
-                operatingPrinciple ||
-                "Awaiting articulation in a future constitutional revision."
-              }
-              moreHref={`/agent/${agent.registryId}/constitution#operating-principle`}
-              moreLabel="View full principle"
+              moreLabel="View all aversions"
             />
           </div>
         </Block>
 
-        {/* ── CURATORIAL ACTIVITY ── */}
+        {/* ── ARCHIVAL ACTIVITY ── */}
         <Block
-          label="Curatorial Activity"
+          label="Archival Activity"
           labelExtra="(since first operation)"
           right={
             <Link
@@ -158,103 +148,96 @@ export default function CuratorClient({
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-y-8 gap-x-6">
             <Stat
-              value={stats.exhibitionsArranged.toLocaleString()}
-              label="Exhibitions Arranged"
-              spark={stats.spark.exhibitions}
+              value={stats.recordsArchived.toLocaleString()}
+              label="Records Archived"
+              spark={stats.spark.records}
             />
             <Stat
-              value={stats.worksInstalled.toLocaleString()}
-              label="Works Installed"
-              spark={stats.spark.installations}
+              value={stats.submissionsCaptured.toLocaleString()}
+              label="Submissions Captured"
+              spark={stats.spark.submissions}
+            />
+            <Stat
+              value={stats.evaluationTranscripts.toLocaleString()}
+              label="Evaluation Transcripts"
+              spark={stats.spark.evaluations}
+            />
+            <Stat
+              value={stats.criticalResponsesRecorded.toLocaleString()}
+              label="Critical Responses Recorded"
+              spark={stats.spark.critical}
             />
             <Stat
               value={
-                stats.avgWorksPerExhibition > 0
-                  ? stats.avgWorksPerExhibition.toFixed(1)
+                stats.avgRecordCompleteness != null
+                  ? `${(stats.avgRecordCompleteness * 100).toFixed(0)}%`
                   : "—"
               }
-              label="Avg Works Per Exhibition"
-              spark={stats.spark.avgWorks}
+              label="Avg Record Completeness"
+              spark={stats.spark.completeness}
+              awaiting={stats.avgRecordCompleteness == null}
             />
             <Stat
-              value={stats.newWorksPresented.toLocaleString()}
-              label="New Works Presented"
-              spark={stats.spark.newWorks}
+              value={
+                stats.provenanceChainsComplete != null
+                  ? `${(stats.provenanceChainsComplete * 100).toFixed(0)}%`
+                  : "—"
+              }
+              label="Provenance Chains Complete"
+              spark={stats.spark.provenance}
+              awaiting={stats.provenanceChainsComplete == null}
             />
             <Stat
-              value={stats.viewerEncountersEst != null ? stats.viewerEncountersEst.toLocaleString() : "—"}
-              label="Viewer Encounters (est.)"
-              spark={stats.spark.viewer}
-              awaiting={stats.viewerEncountersEst == null}
-            />
-            <Stat
-              value={stats.rearrangementsOriginated.toLocaleString()}
-              label="Rearrangements Originated"
-              spark={stats.spark.rearrangements}
-            />
-            <Stat
-              value={stats.curatorialDiversityScore != null ? `${(stats.curatorialDiversityScore * 100).toFixed(0)}%` : "—"}
-              label="Curatorial Diversity Score"
-              spark={stats.spark.diversity}
-              awaiting={stats.curatorialDiversityScore == null}
+              value={stats.daysOfUnbrokenRecord.toLocaleString()}
+              label="Days Of Unbroken Record"
+              spark={stats.spark.unbroken}
             />
           </div>
         </Block>
 
-        {/* ── CURRENT & RECENT EXHIBITIONS ── */}
+        {/* ── RECENT RECORDS ── */}
         <Block
-          label="Current & Recent Exhibitions"
+          label="Recent Records"
           right={
             <Link
-              href={totalExhibitionsLink}
+              href={totalRecordsLink}
               className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 hover:text-ink transition-colors"
             >
-              <span>View all exhibitions</span>
+              <span>View all records</span>
               <span aria-hidden>→</span>
             </Link>
           }
         >
           {recent.length === 0 ? (
-            <div className="py-10 text-[13px] text-ink/55 italic">
-              No exhibitions arranged yet. Awaiting first composition.
+            <div className="py-8 text-[13px] text-ink/55 italic">
+              No records captured yet. Awaiting first archival event.
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-5 gap-y-7">
-              {recent.map((ex) => (
+            <div>
+              <div className="hidden md:grid grid-cols-[160px_minmax(160px,1fr)_minmax(220px,1.6fr)_140px_24px] gap-x-6 py-3 border-b border-ink/15 text-[10px] font-sans uppercase tracking-[0.18em] text-ink/55">
+                <span>Record Kind</span>
+                <span>Subject</span>
+                <span>Detail</span>
+                <span>Recorded</span>
+                <span></span>
+              </div>
+              {recent.map((r) => (
                 <Link
-                  key={ex.id}
-                  href={`/exhibitions/${ex.id}`}
-                  className="group block"
+                  key={r.recordId}
+                  href={r.href}
+                  className="grid grid-cols-[160px_minmax(160px,1fr)_minmax(220px,1.6fr)_140px_24px] gap-x-6 py-4 border-b border-ink/10 hover:bg-ink/[0.025] transition-colors items-center"
                 >
-                  <div className="aspect-square bg-ink/85 overflow-hidden border border-ink/10 group-hover:border-ink/25 transition-colors">
-                    {ex.cover_work_id ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={`/previews/${ex.cover_work_id}.png`}
-                        alt=""
-                        className="w-full h-full object-cover opacity-95"
-                        loading="lazy"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="mt-3">
-                    <p className="text-[10px] font-sans tabular-nums text-ink/55 mb-1">
-                      {ex.id}
-                    </p>
-                    <p className="font-display italic text-[16px] text-ink leading-tight mb-2 line-clamp-2">
-                      {ex.title}
-                    </p>
-                    <p className="text-[11px] font-sans tabular-nums text-ink/55 mb-1">
-                      {formatExhibitionDates(ex.opened_at, ex.retired_at)}
-                    </p>
-                    <p className="text-[11px] font-sans text-ink/55 mb-2">
-                      {ex.work_count} {ex.work_count === 1 ? "work" : "works"}
-                    </p>
-                    <p className="text-[11px] font-sans text-ink/55 mb-3">
-                      {ex.gallery_label}
-                    </p>
-                    <ExhibitionStatusPill status={ex.status} />
-                  </div>
+                  <RecordKindPill kind={r.kind} />
+                  <p className="text-[12px] font-sans tabular-nums text-ink truncate">
+                    {r.subject}
+                  </p>
+                  <p className="text-[12.5px] leading-[1.5] text-ink/75 truncate-2">
+                    {r.detail}
+                  </p>
+                  <span className="text-[12px] font-sans text-ink/65 tabular-nums">
+                    {formatDateShort(r.recorded_at)}
+                  </span>
+                  <span aria-hidden className="text-ink/50 text-right">›</span>
                 </Link>
               ))}
             </div>
@@ -265,7 +248,7 @@ export default function CuratorClient({
         <div className="border-t border-ink/15">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12 items-stretch">
             <Panel
-              label="Curatorial Timeline"
+              label="Archival Timeline"
               footerHref={`/agent/${agent.registryId}/timeline`}
               footerLabel="View full timeline"
             >
@@ -292,57 +275,57 @@ export default function CuratorClient({
             </Panel>
 
             <Panel
-              label="Relationship Map"
+              label="Record Sources"
               footerHref={`/agent/${agent.registryId}/network`}
               footerLabel="View full network"
             >
-              <CuratorRelationshipMap
+              <KeeperRelationshipMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 relationships={relationships}
               />
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
                 <Legend dot="bg-emerald-600" label="Originators" />
                 <Legend dot="bg-amber-500" label="Evaluators" />
-                <Legend dot="bg-ink/65" label="The Keeper" />
                 <Legend dot="bg-red-500" label="Critics" />
-                <Legend dot="bg-blue-500" label="Installer" />
-                <Legend dot="bg-purple-500" label="Conservator" />
-                <Legend dot="bg-teal-500" label="Ambassador" />
-                <Legend dot="bg-ink/35" label="Other Agents" />
+                <Legend dot="bg-ink/40" label="Other Agents" />
               </div>
             </Panel>
 
             <Panel
-              label="Exhibition Principles In Use"
-              footerHref={`/agent/${agent.registryId}/principles`}
-              footerLabel="View full principles report"
+              label="Record Output"
+              footerHref={`/agent/${agent.registryId}/output`}
+              footerLabel="View full record output"
             >
-              {principles.scores ? (
-                <ul className="space-y-4">
-                  {principles.scores.map((p) => (
-                    <li key={p.label}>
+              <div className="mb-4">
+                <p className="font-display font-light text-[28px] md:text-[30px] leading-none text-ink mb-1 tabular-nums">
+                  {output.total.toLocaleString()}
+                </p>
+                <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55">
+                  Total records
+                </p>
+              </div>
+              <div className="border-t border-ink/15 pt-4">
+                <ul className="space-y-3.5">
+                  {output.groups.map((g) => (
+                    <li key={g.label}>
                       <div className="flex items-baseline justify-between mb-1.5">
-                        <span className="text-[12.5px] text-ink">{p.label}</span>
+                        <span className="text-[12.5px] text-ink">{g.label}</span>
                         <span className="text-[12px] font-sans tabular-nums text-ink/65">
-                          {p.value.toFixed(1)}
+                          {g.count.toLocaleString()}
                         </span>
                       </div>
                       <div className="h-[6px] bg-ink/[0.07] overflow-hidden">
                         <div
                           className="h-full bg-ink"
-                          style={{ width: `${Math.min(100, (p.value / 10) * 100)}%` }}
+                          style={{
+                            width: `${output.total > 0 ? (g.count / output.total) * 100 : 0}%`,
+                          }}
                         />
                       </div>
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <div className="text-[13px] text-ink/55 italic leading-[1.6]">
-                  Awaiting first cycle. Principle classification will populate
-                  as the Curator records decisions tagged by curatorial
-                  standard.
-                </div>
-              )}
+              </div>
             </Panel>
           </div>
         </div>
@@ -351,36 +334,33 @@ export default function CuratorClient({
   );
 }
 
-/* ─── Curator-specific atoms ────────────────────────────────────────────── */
+/* ─── Keeper-specific atoms ─────────────────────────────────────────────── */
 
-function ExhibitionStatusPill({ status }: { status: string }) {
-  const s = status.toUpperCase();
-  const palette =
-    s === "LIVE" || s === "OPEN" || s === "ACTIVE"
-      ? { dot: "bg-emerald-600", text: "text-emerald-700" }
-      : s === "COMPLETED" || s === "RETIRED" || s === "CLOSED"
-        ? { dot: "bg-ink/40", text: "text-ink/65" }
-        : s === "DRAFT"
-          ? { dot: "bg-amber-500", text: "text-amber-700" }
-          : { dot: "bg-ink/40", text: "text-ink/60" };
+function RecordKindPill({ kind }: { kind: string }) {
+  const map: Record<string, { label: string; dot: string; text: string }> = {
+    WORK: { label: "ARCHIVE", dot: "bg-ink", text: "text-ink" },
+    SUBMISSION: { label: "SUBMISSION", dot: "bg-amber-500", text: "text-amber-700" },
+    EVALUATION: { label: "EVAL TRANSCRIPT", dot: "bg-emerald-600", text: "text-emerald-700" },
+    CRITICAL_RESPONSE: { label: "CRITICAL", dot: "bg-red-600", text: "text-red-700" },
+    EVENT: { label: "EVENT", dot: "bg-ink/40", text: "text-ink/65" },
+  };
+  const k = map[kind] ?? map.EVENT;
   return (
     <span className="inline-flex items-center gap-2">
-      <span className={`inline-block w-[6px] h-[6px] rounded-full ${palette.dot}`} />
-      <span
-        className={`text-[10px] font-sans uppercase tracking-[0.18em] ${palette.text}`}
-      >
-        {s}
+      <span className={`inline-block w-[6px] h-[6px] rounded-full ${k.dot}`} />
+      <span className={`text-[10px] font-sans uppercase tracking-[0.18em] ${k.text}`}>
+        {k.label}
       </span>
     </span>
   );
 }
 
-function CuratorRelationshipMap({
+function KeeperRelationshipMap({
   centerLabel,
   relationships,
 }: {
   centerLabel: string;
-  relationships: CuratorRelationship[];
+  relationships: { agentId: string; designation: string; count: number }[];
 }) {
   const W = 420;
   const H = 320;
@@ -396,7 +376,7 @@ function CuratorRelationshipMap({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="block w-full h-auto"
-        aria-label="Curatorial relationship map"
+        aria-label="Record sources"
       >
         {top.map((r, i) => {
           const angle =
@@ -421,8 +401,8 @@ function CuratorRelationshipMap({
                 stroke="rgba(10,10,10,0.18)"
                 strokeWidth={0.7}
               />
-              <circle cx={x} cy={y} r={dotSize} fill={kindColor(r.kind, i)}>
-                <title>{`${r.designation || r.agentId} — ${r.count} decision${r.count === 1 ? "" : "s"}`}</title>
+              <circle cx={x} cy={y} r={dotSize} fill={agentKindColor(r.agentId)}>
+                <title>{`${r.designation || r.agentId} — ${r.count} record${r.count === 1 ? "" : "s"}`}</title>
               </circle>
               <text
                 x={lx}
@@ -448,11 +428,10 @@ function CuratorRelationshipMap({
             fontStyle="italic"
             fontFamily="ui-sans-serif, system-ui, sans-serif"
           >
-            No curatorial relationships recorded.
+            No records sourced yet.
           </text>
         ) : null}
         <circle cx={cx} cy={cy} r={14} fill="#0A0A0A" />
-        <rect x={cx - 6} y={cy - 6} width={12} height={12} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={1} />
         <text
           x={cx}
           y={cy + 30}
@@ -480,27 +459,9 @@ function CuratorRelationshipMap({
   );
 }
 
-function kindColor(kind: string, fallbackIdx: number): string {
-  const map: Record<string, string> = {
-    originator: "#059669",
-    evaluator: "#D97706",
-    keeper: "#0A0A0A",
-    critic: "#DC2626",
-    installer: "#3B82F6",
-    conservator: "#A855F7",
-    ambassador: "#14B8A6",
-    other: "rgba(10,10,10,0.35)",
-  };
-  if (map[kind]) return map[kind];
-  const palette = ["#059669", "#D97706", "#0A0A0A", "#DC2626"];
-  return palette[fallbackIdx % palette.length];
-}
-
-/* ─── Helpers ───────────────────────────────────────────────────────────── */
-
-function formatExhibitionDates(opened: string | null, retired: string | null): string {
-  if (!opened) return "—";
-  const o = formatDateShort(opened);
-  if (!retired) return `${o} – Present`;
-  return `${o} – ${formatDateShort(retired)}`;
+function agentKindColor(agentId: string): string {
+  if (/^MNA-OR-/.test(agentId)) return "#059669"; // originator
+  if (/^MNA-EV-/.test(agentId)) return "#D97706"; // evaluator
+  if (/^MNA-CR-/.test(agentId)) return "#DC2626"; // critic
+  return "rgba(10,10,10,0.4)"; // other
 }

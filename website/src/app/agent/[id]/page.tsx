@@ -13,6 +13,7 @@ import { documents } from "@/lib/research";
 import OriginatorDetailClient from "./originator-client";
 import EvaluatorClient from "./EvaluatorClient";
 import CuratorClient from "./CuratorClient";
+import KeeperClient from "./KeeperClient";
 import {
   getEvaluatorStats,
   getRecentEvaluations,
@@ -25,6 +26,12 @@ import {
   getCuratorTimeline,
   getExhibitionPrinciples,
 } from "@/lib/curator-stats";
+import {
+  getKeeperStats,
+  getRecentRecords,
+  getRecordOutput,
+  getKeeperTimeline,
+} from "@/lib/keeper-stats";
 import { loadAgentConstitution } from "@/lib/agent-constitution";
 import { getDb } from "@/lib/registration-db";
 import { formatDate } from "@/lib/format-date";
@@ -146,6 +153,7 @@ export default async function AgentDetailPage({
   const isOriginator = agent.agentType === "ORIGINATOR";
   const isEvaluator = agent.agentType === "EVALUATOR";
   const isCurator = agent.agentType === "CURATOR";
+  const isKeeper = agent.agentType === "KEEPER";
 
   /* ── Evaluators get the new analytical template ──────────────────── */
   if (isEvaluator) {
@@ -214,6 +222,54 @@ export default async function AgentDetailPage({
         registrationDate={formatDatePretty("2026-04-21")}
         lastAmended={formatDatePretty("2026-04-21")}
         totalEvaluationsLink={`/evaluation?agent=${agent.registryId}`}
+      />
+    );
+  }
+
+  /* ── Keeper gets a coverage-centric archival template ─────────── */
+  if (isKeeper) {
+    const [stats, recent, output, timelineRaw, constitution, sourcesRows] =
+      await Promise.all([
+        getKeeperStats(),
+        getRecentRecords(5),
+        getRecordOutput(),
+        getKeeperTimeline(agent.registryId),
+        loadAgentConstitution(agent.registryId),
+        getDb().execute({
+          sql: `SELECT a.registry_id, a.common_designation, COUNT(*) AS n
+                  FROM (
+                    SELECT originator_id AS registry_id FROM works
+                    UNION ALL
+                    SELECT originator_id AS registry_id FROM submissions
+                    UNION ALL
+                    SELECT evaluator_id AS registry_id FROM evaluations
+                    UNION ALL
+                    SELECT critic_id AS registry_id FROM critical_responses
+                  ) sources
+                  JOIN agents a ON a.registry_id = sources.registry_id
+                 GROUP BY a.registry_id
+                 ORDER BY n DESC`,
+        }),
+      ]);
+    const timeline = timelineRaw;
+    const relationships = sourcesRows.rows.map((r) => ({
+      agentId: String(r.registry_id ?? ""),
+      designation: String(r.common_designation ?? r.registry_id ?? ""),
+      count: Number(r.n ?? 0),
+    }));
+
+    return (
+      <KeeperClient
+        agent={agent}
+        constitution={constitution}
+        stats={stats}
+        recent={recent}
+        output={output}
+        relationships={relationships}
+        timeline={timeline}
+        registrationDate={formatDatePretty("2026-04-21")}
+        lastAmended={formatDatePretty("2026-04-21")}
+        totalRecordsLink="/archive"
       />
     );
   }
