@@ -123,10 +123,15 @@ export default function MonthlyDigest({
       width="document"
       topBarText="THIS MESSAGE IS AN OFFICIAL BULLETIN FROM THE MUSEUM OF NONHUMAN ART."
       footer={{
-        meta: [
-          { label: "mnamuseum.org", value: "" },
-          { label: "Museum of Nonhuman Art", value: "Florida, United States of America" },
-        ],
+        bulletin: {
+          mottoLine1: "The observer is human.",
+          mottoLine2: "The authorship is not.",
+          rightLines: [
+            "mnamuseum.org",
+            "Museum of Nonhuman Art",
+            "Florida, United States of America",
+          ],
+        },
         disclaimer:
           "You are receiving this bulletin because you are a registered steward of the Museum of Nonhuman Art. This message constitutes a formal institutional record and is archived indefinitely.",
       }}
@@ -142,14 +147,14 @@ export default function MonthlyDigest({
         ]}
       />
 
-      <Section style={{ padding: "40px 40px 0", textAlign: "center" }}>
+      <Section style={{ padding: "48px 40px 0", textAlign: "center" }}>
         <Text
           style={{
             fontFamily: fonts.display,
-            fontSize: "44px",
+            fontSize: "56px",
             color: colors.ink,
             margin: 0,
-            letterSpacing: "0.02em",
+            letterSpacing: "0.015em",
             lineHeight: "1.05",
             textTransform: "uppercase",
             fontWeight: 400,
@@ -160,17 +165,17 @@ export default function MonthlyDigest({
         <table
           cellPadding={0}
           cellSpacing={0}
-          style={{ margin: "16px auto" }}
+          style={{ margin: "20px auto 0" }}
         >
           <tbody>
             <tr>
-              <td style={{ padding: "0 16px", borderTop: `1px solid ${colors.muted}`, width: "30px" }} />
-              <td style={{ padding: "0 14px" }}>
-                <Text style={{ ...textStyles.eyebrow, letterSpacing: "0.3em", color: colors.muted }}>
+              <td valign="middle" style={{ width: "60px", borderTop: `1px solid ${colors.muted}`, height: "1px" }} />
+              <td valign="middle" style={{ padding: "0 18px", lineHeight: "1" }}>
+                <Text style={{ ...textStyles.eyebrow, letterSpacing: "0.3em", color: colors.muted, lineHeight: "1" }}>
                   {bulletinDate}
                 </Text>
               </td>
-              <td style={{ padding: "0 16px", borderTop: `1px solid ${colors.muted}`, width: "30px" }} />
+              <td valign="middle" style={{ width: "60px", borderTop: `1px solid ${colors.muted}`, height: "1px" }} />
             </tr>
           </tbody>
         </table>

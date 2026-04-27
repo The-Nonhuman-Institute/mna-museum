@@ -41,16 +41,16 @@ export default function EmailHeader({
         <tbody>
           <tr>
             {/* Logo + wordmark */}
-            <td valign="middle" style={{ width: variant === "meta-grid" ? "55%" : "100%" }}>
+            <td valign="top" style={{ width: variant === "meta-grid" ? "50%" : "100%" }}>
               <table cellPadding={0} cellSpacing={0}>
                 <tbody>
                   <tr>
-                    <td valign="middle" style={{ paddingRight: "16px" }}>
+                    <td valign="middle" style={{ paddingRight: "18px" }}>
                       <Img
                         src="https://mnamuseum.org/mna-icon-email-black.png"
                         alt="Museum of Nonhuman Art"
-                        width="56"
-                        height="56"
+                        width="64"
+                        height="64"
                         style={{ display: "block" }}
                       />
                     </td>
@@ -58,7 +58,7 @@ export default function EmailHeader({
                       <Text
                         style={{
                           fontFamily: fonts.display,
-                          fontSize: "16px",
+                          fontSize: "20px",
                           lineHeight: "1.15",
                           color: colors.ink,
                           margin: 0,
@@ -88,16 +88,17 @@ export default function EmailHeader({
 
             {/* Optional meta-grid (right side) */}
             {variant === "meta-grid" && meta ? (
-              <td valign="top" style={{ width: "45%", textAlign: "right" }}>
+              <td valign="top" style={{ width: "50%", textAlign: "right" }}>
                 <table cellPadding={0} cellSpacing={0} style={{ display: "inline-table" }}>
                   <tbody>
                     {meta.map((pair, i) => (
                       <tr key={i}>
                         <td
                           style={{
-                            paddingRight: "20px",
+                            paddingRight: "16px",
                             paddingBottom: i < meta.length - 1 ? "6px" : 0,
                             verticalAlign: "top",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           <Text
@@ -111,13 +112,17 @@ export default function EmailHeader({
                             paddingBottom: i < meta.length - 1 ? "6px" : 0,
                             verticalAlign: "top",
                             textAlign: "left",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           <Text
                             style={{
-                              ...textStyles.fieldValue,
-                              fontSize: "11.5px",
                               fontFamily: fonts.sans,
+                              fontSize: "11px",
+                              lineHeight: "1.3",
+                              color: colors.ink,
+                              margin: 0,
+                              fontWeight: 500,
                             }}
                           >
                             {pair.value}
