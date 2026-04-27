@@ -9,6 +9,8 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import fs from "fs";
+import path from "path";
 import { getDb } from "./registration-db";
 import { getResend, FROM, sendMonthlyDigest } from "./email";
 import { getConfirmedSubscribersWithTokens } from "./newsletter";
@@ -84,6 +86,7 @@ interface ExhibitionEvent {
   status: "ACTIVE" | "RETIRED";
   opened_at: string;
   retired_at: string | null;
+  coverWorkId: string | null;
 }
 
 interface CriticEvent {
@@ -181,7 +184,7 @@ async function collectLast30Days(): Promise<CollectedEvents> {
 
   // Exhibitions opened/retired in window
   const exhOpenedRes = await db.execute({
-    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at
+    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at, cover_work_id, work_ids
             FROM exhibitions
            WHERE opened_at >= ?
            ORDER BY opened_at DESC`,
@@ -195,10 +198,11 @@ async function collectLast30Days(): Promise<CollectedEvents> {
     status: (r.status as string) === "RETIRED" ? "RETIRED" : "ACTIVE",
     opened_at: r.opened_at as string,
     retired_at: (r.retired_at as string) || null,
+    coverWorkId: pickCoverWorkId(r.cover_work_id, r.work_ids),
   }));
 
   const exhRetiredRes = await db.execute({
-    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at
+    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at, cover_work_id, work_ids
             FROM exhibitions
            WHERE retired_at IS NOT NULL AND retired_at >= ?
            ORDER BY retired_at DESC`,
@@ -212,6 +216,7 @@ async function collectLast30Days(): Promise<CollectedEvents> {
     status: "RETIRED",
     opened_at: r.opened_at as string,
     retired_at: (r.retired_at as string) || null,
+    coverWorkId: pickCoverWorkId(r.cover_work_id, r.work_ids),
   }));
 
   // Critical responses on canon works
@@ -408,7 +413,60 @@ function monthLabel(date = new Date()): string {
 }
 
 const SITE_ORIGIN =
-  process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://mnamuseum.org";
+  process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://www.mnamuseum.org";
+
+const PUBLIC_DIR = path.join(process.cwd(), "public");
+
+/**
+ * Pick the best available image URL for a work.
+ * Prefers /og/ (frameless, OG-aspect) when it exists; falls back to
+ * /previews/ (framed) when the OG hasn't been generated yet — better
+ * than a broken image. Always uses absolute URLs (email clients require
+ * them).
+ */
+function workImageUrl(workId: string): string {
+  const ogPath = path.join(PUBLIC_DIR, "og", `${workId}.png`);
+  if (fs.existsSync(ogPath)) return `${SITE_ORIGIN}/og/${workId}.png`;
+  const previewPath = path.join(PUBLIC_DIR, "previews", `${workId}.png`);
+  if (fs.existsSync(previewPath)) return `${SITE_ORIGIN}/previews/${workId}.png`;
+  return `${SITE_ORIGIN}/og/${workId}.png`;
+}
+
+function exhibitionImageUrl(
+  exhibitionId: number,
+  coverWorkId: string | null
+): string {
+  const exhOgPath = path.join(
+    PUBLIC_DIR,
+    "og",
+    `exhibition-${exhibitionId}.png`
+  );
+  if (fs.existsSync(exhOgPath))
+    return `${SITE_ORIGIN}/og/exhibition-${exhibitionId}.png`;
+  if (coverWorkId) return workImageUrl(coverWorkId);
+  return `${SITE_ORIGIN}/og/exhibition-${exhibitionId}.png`;
+}
+
+/** Resolve a cover work id from `cover_work_id` or the first id in
+ *  `work_ids` (a JSON-encoded array). Returns null when neither is
+ *  usable. */
+function pickCoverWorkId(
+  coverField: unknown,
+  workIdsField: unknown
+): string | null {
+  if (typeof coverField === "string" && coverField.length > 0) {
+    return coverField;
+  }
+  if (typeof workIdsField === "string" && workIdsField.length > 0) {
+    try {
+      const arr = JSON.parse(workIdsField);
+      if (Array.isArray(arr) && typeof arr[0] === "string") return arr[0];
+    } catch {
+      /* swallow */
+    }
+  }
+  return null;
+}
 
 export async function composeMonthlyDigest(
   _model: "sonnet" | "opus" = "sonnet"
@@ -435,7 +493,7 @@ export async function composeMonthlyDigest(
     originatorDesignation: c.originatorName,
     canonDate: formatDate(c.canonDate),
     consensus: consensusByWork.get(c.workId) ?? "—",
-    imageUrl: `${SITE_ORIGIN}/og/${c.workId}.png`,
+    imageUrl: workImageUrl(c.workId),
     workUrl: `${SITE_ORIGIN}/work/${c.workId}`,
   }));
 
@@ -502,7 +560,7 @@ export async function composeMonthlyDigest(
       subtitle: e.subtitle ?? e.title,
       openingDate: formatDate(e.opened_at),
       curator: "MNA-CU-0001 (The Curator)",
-      imageUrl: `${SITE_ORIGIN}/og/exhibition-${e.id}.png`,
+      imageUrl: exhibitionImageUrl(e.id, e.coverWorkId),
       url: `${SITE_ORIGIN}/exhibitions/${e.id}`,
     }));
 

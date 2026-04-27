@@ -567,24 +567,28 @@ function UpdateEntry({
         borderBottom: last ? "none" : `1px solid ${colors.borderSoft}`,
       }}
     >
-      <table cellPadding={0} cellSpacing={0}>
+      <table cellPadding={0} cellSpacing={0} width="100%">
         <tbody>
           <tr>
-            <td
-              valign="top"
-              style={{
-                width: "32px",
-                height: "32px",
-                backgroundColor: colors.ink,
-                color: "#FFFFFF",
-                textAlign: "center",
-                fontSize: "13px",
-                borderRadius: "999px",
-              }}
-            >
-              {icon}
+            <td valign="top" style={{ width: "36px", paddingRight: "10px" }}>
+              <div
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  backgroundColor: colors.ink,
+                  color: "#FFFFFF",
+                  textAlign: "center",
+                  fontSize: "14px",
+                  lineHeight: "32px",
+                  borderRadius: "16px",
+                  display: "block",
+                  fontFamily: fonts.sans,
+                }}
+              >
+                {icon}
+              </div>
             </td>
-            <td valign="top" style={{ paddingLeft: "10px" }}>
+            <td valign="top">
               <Text
                 style={{
                   ...textStyles.fieldLabel,

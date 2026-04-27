@@ -201,7 +201,7 @@ function LogoBlock() {
         <tr>
           <td valign="middle" style={{ paddingRight: "12px" }}>
             <Img
-              src="https://mnamuseum.org/mna-icon-email.png"
+              src="https://www.mnamuseum.org/mna-icon-email.png"
               alt=""
               width="36"
               height="36"
