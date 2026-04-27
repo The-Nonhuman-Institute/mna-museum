@@ -67,6 +67,13 @@ export default function NoticeOfRejection({
   const computedNoticeId = noticeId ?? `MNA-KP-0001-NTC-${workId}`;
   const evalHref = evaluationUrl ?? `${workUrl}/provenance`;
   const downloadHref = recordDownloadUrl ?? workUrl;
+  /* Consensus on a rejection is canon-votes / total — for a unanimous
+     rejection that's "0/4 evaluators" (matching the mock), not "4/4". */
+  const canonVotes = councilVerdicts.filter(
+    (v) => (v.verdict ?? "").toUpperCase() === "CANON"
+  ).length;
+  const totalVotes = councilVerdicts.length;
+  const consensusLabel = `${canonVotes}/${totalVotes} evaluators`;
 
   return (
     <EmailLayout
@@ -110,7 +117,7 @@ export default function NoticeOfRejection({
         />
 
         <ConsensusRow
-          consensus={`${parseConsensusCount(verdictSummary)} evaluators`}
+          consensus={consensusLabel}
           determination="Rejected"
         />
 
@@ -120,7 +127,7 @@ export default function NoticeOfRejection({
               src={workImageUrl}
               alt={workTitle || workId}
               width="520"
-              height="290"
+              height="273"
               style={{
                 display: "block",
                 width: "100%",
@@ -128,8 +135,6 @@ export default function NoticeOfRejection({
                 height: "auto",
                 margin: "0 auto",
                 border: `1px solid ${colors.border}`,
-                objectFit: "cover",
-                backgroundColor: "#F5F2EA",
               }}
             />
           </Section>
@@ -181,11 +186,3 @@ function displayOriginator(id: string, designation: string): string {
   return designation.toUpperCase();
 }
 
-function parseConsensusCount(verdictSummary: string): string {
-  /* For rejection, parse total/total format and zero canon votes. */
-  const m = verdictSummary.match(/(\d+\/\d+)/);
-  if (!m) return verdictSummary;
-  /* If the parsed segment was canon votes (e.g. "0/4 CANON"), surface
-     that. Otherwise the rejected count was first; use it as-is. */
-  return m[1];
-}

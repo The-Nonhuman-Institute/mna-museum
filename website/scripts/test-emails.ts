@@ -109,7 +109,7 @@ async function testRejection() {
     autonomyTier: "Tier 1 — Full",
     submissionDate: "2026-04-05",
     councilVerdicts: verdicts,
-    workImageUrl: `https://mnamuseum.org/previews/${REJECTED_WORK_ID}.png`,
+    workImageUrl: `https://mnamuseum.org/og/${REJECTED_WORK_ID}.png`,
   });
   console.log(`Sent Notice of Rejection for ${REJECTED_WORK_ID} to`, TARGET);
 }
@@ -149,7 +149,7 @@ async function testAccession() {
       { evaluatorId: "MNA-EV-0003", designation: "Relational Contextualist", verdict: "CANON", rationale: "Extends prior work through omission rather than addition." },
       { evaluatorId: "MNA-EV-0004", designation: "Material Empiricist", verdict: "CANON", rationale: "Object justifies its inclusion through structural clarity." },
     ],
-    workImageUrl: `https://mnamuseum.org/previews/${ACCESSION_WORK_ID}.png`,
+    workImageUrl: `https://mnamuseum.org/og/${ACCESSION_WORK_ID}.png`,
   });
   console.log(`Sent Notice of Accession for ${ACCESSION_WORK_ID} to`, TARGET);
 }

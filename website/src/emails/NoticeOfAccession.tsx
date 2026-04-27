@@ -76,6 +76,14 @@ export default function NoticeOfAccession({
   const recordedBy = "MNA-KP-0001 (The Keeper)";
   const finalDetermination = parseFinalDetermination(verdictSummary);
   const computedNoticeId = noticeId ?? `MNA-KP-0001-NTC-${workId}`;
+  /* Consensus = canon-votes / total, derived from the actual council
+     array so the number doesn't drift if verdictSummary is formatted
+     in any unusual way. */
+  const canonVotes = councilVerdicts.filter(
+    (v) => (v.verdict ?? "").toUpperCase() === "CANON"
+  ).length;
+  const totalVotes = councilVerdicts.length;
+  const consensusLabel = `${canonVotes}/${totalVotes} evaluators`;
 
   const provHref = provenanceUrl ?? `${workUrl}/provenance`;
   const downloadHref = recordDownloadUrl ?? workUrl;
@@ -126,18 +134,19 @@ export default function NoticeOfAccession({
 
         {/* Consensus + final determination */}
         <ConsensusRow
-          consensus={`${parseConsensusCount(verdictSummary)} evaluators`}
+          consensus={consensusLabel}
           determination={finalDetermination}
         />
 
-        {/* Hero image */}
+        {/* Hero image — OG images are 1200×630 (≈1.9:1). Render at 520×273
+            keeping the natural aspect so we don't crop the work or pad it. */}
         {workImageUrl ? (
           <Section style={{ marginBottom: "32px" }}>
             <Img
               src={workImageUrl}
               alt={workTitle || workId}
               width="520"
-              height="290"
+              height="273"
               style={{
                 display: "block",
                 width: "100%",
@@ -145,8 +154,6 @@ export default function NoticeOfAccession({
                 height: "auto",
                 margin: "0 auto",
                 border: `1px solid ${colors.border}`,
-                objectFit: "cover",
-                backgroundColor: colors.ink,
               }}
             />
           </Section>
@@ -192,12 +199,6 @@ function displayOriginator(id: string, designation: string): string {
     return id;
   }
   return designation.toUpperCase();
-}
-
-/* "3/4 CANON" / "4/4 CANON (unanimous)" / "2/4 CANON · 2/4 REJECTED ..." */
-function parseConsensusCount(verdictSummary: string): string {
-  const m = verdictSummary.match(/(\d+\/\d+)/);
-  return m ? m[1] : verdictSummary;
 }
 
 function parseFinalDetermination(verdictSummary: string): string {

@@ -144,7 +144,7 @@ async function main() {
     autonomyTier: (originator.autonomy_tier as string) || "Tier 1 — Full",
     submissionDate: submissionDate.slice(0, 10),
     councilVerdicts,
-    workImageUrl: `https://mnamuseum.org/previews/${workId}.png`,
+    workImageUrl: `https://mnamuseum.org/og/${workId}.png`,
   };
 
   console.log(`Sending Notice of Accession for ${workId} (${title || "(no title)"}) → ${stewardEmail}`);

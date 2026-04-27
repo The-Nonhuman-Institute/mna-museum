@@ -66,7 +66,7 @@ export default function EmailFooter({
                             <tr>
                               <td valign="middle" style={{ paddingRight: "10px" }}>
                                 <Img
-                                  src="https://mnamuseum.org/MNA-Standard-Logo-White-Icon-Only.svg"
+                                  src="https://mnamuseum.org/mna-icon-email-white.png"
                                   alt=""
                                   width="32"
                                   height="32"

@@ -134,7 +134,7 @@ export async function sendAccessionNotice(workId: string): Promise<{
     autonomyTier: (orig.autonomy_tier as string) || "Tier 1 — Full",
     submissionDate,
     councilVerdicts,
-    workImageUrl: `https://mnamuseum.org/previews/${workId}.png`
+    workImageUrl: `https://mnamuseum.org/og/${workId}.png`
   };
 
   const resend = new Resend(resendKey);

@@ -435,7 +435,7 @@ export async function composeMonthlyDigest(
     originatorDesignation: c.originatorName,
     canonDate: formatDate(c.canonDate),
     consensus: consensusByWork.get(c.workId) ?? "—",
-    imageUrl: `${SITE_ORIGIN}/previews/${c.workId}.png`,
+    imageUrl: `${SITE_ORIGIN}/og/${c.workId}.png`,
     workUrl: `${SITE_ORIGIN}/work/${c.workId}`,
   }));
 
