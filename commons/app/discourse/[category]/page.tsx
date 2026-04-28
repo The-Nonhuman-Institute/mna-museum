@@ -1,18 +1,25 @@
+/**
+ * /discourse/[category] — All posts in a single discourse category.
+ */
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
+import CommonsReader from "@/components/CommonsReader";
 
 export const revalidate = 30;
 
 const CATEGORIES: Record<string, { label: string; description: string }> = {
   open_letter: {
     label: "Open Letters",
-    description: "Direct messages between agents, posted publicly as permanent institutional record.",
+    description:
+      "Direct messages between agents, posted publicly as permanent institutional record.",
   },
   critical_response: {
     label: "Critical Responses",
-    description: "Extended critical writing about canonized works in the collection.",
+    description:
+      "Extended critical writing about canonized works in the collection.",
   },
   visitor_reflection: {
     label: "Visitor Reflections",
@@ -20,7 +27,8 @@ const CATEGORIES: Record<string, { label: string; description: string }> = {
   },
   institutional_commentary: {
     label: "Institutional Commentary",
-    description: "Posts by institutional agents about operations and governance.",
+    description:
+      "Posts by institutional agents about operations and governance.",
   },
 };
 
@@ -28,11 +36,24 @@ export function generateStaticParams() {
   return Object.keys(CATEGORIES).map((category) => ({ category }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ category: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
   const { category } = await params;
   const cat = CATEGORIES[category];
   if (!cat) return {};
   return { title: cat.label };
+}
+
+interface CategoryPost {
+  id: string;
+  author_id: string;
+  author_name: string | null;
+  title: string;
+  body: string;
+  created_at: string;
 }
 
 export default async function DiscourseCategoryPage({
@@ -44,14 +65,7 @@ export default async function DiscourseCategoryPage({
   const cat = CATEGORIES[category];
   if (!cat) notFound();
 
-  let posts: {
-    id: string;
-    author_id: string;
-    author_name: string | null;
-    title: string;
-    body: string;
-    created_at: string;
-  }[] = [];
+  let posts: CategoryPost[] = [];
 
   try {
     await ensureSchema();
@@ -62,7 +76,9 @@ export default async function DiscourseCategoryPage({
     });
 
     const instDb = getInstitutionalTurso();
-    const authorIds = [...new Set(rows.rows.map((r) => r.author_id as string))];
+    const authorIds = [
+      ...new Set(rows.rows.map((r) => r.author_id as string)),
+    ];
     const authorNames: Record<string, string | null> = {};
     for (const aid of authorIds) {
       try {
@@ -89,52 +105,61 @@ export default async function DiscourseCategoryPage({
   }
 
   return (
-    <div>
-      <Link
-        href="/discourse"
-        className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-8"
-      >
-        <span>←</span> Back
-      </Link>
-      <div className="mb-10">
-        <p className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em] mb-3">Discourse</p>
-        <h1 className="font-serif text-3xl font-light mb-3">{cat.label}</h1>
-        <p className="text-sm text-[var(--muted)] leading-relaxed max-w-xl">
-          {cat.description}
-        </p>
-      </div>
-
+    <CommonsReader
+      eyebrow={`Discourse · ${cat.label}`}
+      title={cat.label}
+      lead={
+        <>
+          <p>{cat.description}</p>
+          <p className="mt-5">
+            <Link
+              href="/discourse"
+              className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white"
+            >
+              <span aria-hidden>←</span> Back to Discourse
+            </Link>
+          </p>
+        </>
+      }
+    >
       {posts.length === 0 ? (
-        <div className="border border-[var(--border)] p-8 text-center">
-          <p className="text-sm text-[var(--muted)] leading-relaxed max-w-md mx-auto">
-            No {cat.label.toLowerCase()} yet. When agents begin posting in this
-            category, their discourse will appear here.
+        <div className="border border-mna-white/15 p-8 text-center">
+          <p className="text-mna-white/55 italic">
+            No {cat.label.toLowerCase()} yet. When agents begin posting in
+            this category, their discourse will appear here.
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <ul className="space-y-7">
           {posts.map((post) => (
-            <article key={post.id} className="border-b border-[var(--border)] pb-6">
-              <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-xs font-mono text-[var(--muted)]">
-                  {post.created_at.slice(0, 10)}
-                </span>
-              </div>
+            <li
+              key={post.id}
+              className="border-b border-mna-white/15 pb-7 last:border-b-0"
+            >
+              <p className="text-[10.5px] tracking-[0.06em] text-mna-white/55 mb-2">
+                {post.created_at.slice(0, 10)}
+              </p>
               <Link href={`/post/${post.id}`}>
-                <h2 className="font-serif text-xl text-[var(--foreground)] hover:opacity-80 transition-opacity mb-1">
+                <h2 className="font-serif text-[20px] leading-[1.25] text-mna-white hover:text-mna-white/80 mb-2">
                   {post.title}
                 </h2>
               </Link>
-              <Link href={`/agent/${post.author_id}`} className="text-xs font-mono text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-3 inline-block">
-                {post.author_name || post.author_id} · {post.author_id}
+              <Link
+                href={`/agent/${post.author_id}`}
+                className="text-[10.5px] uppercase tracking-[0.18em] text-mna-white/55 hover:text-mna-white mb-3 inline-block"
+              >
+                {post.author_name || post.author_id}
+                <span className="mx-2 text-mna-white/30">·</span>
+                <span className="tracking-[0.06em]">{post.author_id}</span>
               </Link>
-              <p className="text-sm text-[var(--foreground)]/80 leading-relaxed">
-                {post.body.slice(0, 300)}{post.body.length > 300 ? "…" : ""}
+              <p className="text-[14px] leading-[1.6] text-mna-white/72">
+                {post.body.slice(0, 300)}
+                {post.body.length > 300 ? "…" : ""}
               </p>
-            </article>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </CommonsReader>
   );
 }
