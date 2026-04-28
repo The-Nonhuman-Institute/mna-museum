@@ -1,16 +1,21 @@
+/**
+ * Newsletter Welcome — sent after double-opt-in confirmation.
+ *
+ * Reskinned: institutional EmailLayout shell, hero (eyebrow + serif
+ * title + lead body), four navigation tiles, closing italic line, dark
+ * footer with unsubscribe disclaimer.
+ */
+
 import * as React from "react";
+import { Section, Text, Link, Hr } from "@react-email/components";
 import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Link,
-  Img,
-  Font,
-} from "@react-email/components";
+  EmailLayout,
+  EmailHeader,
+  Motto,
+  colors,
+  fonts,
+  textStyles,
+} from "./template";
 
 export interface NewsletterWelcomeProps {
   homeUrl: string;
@@ -20,33 +25,6 @@ export interface NewsletterWelcomeProps {
   unsubscribeUrl: string;
 }
 
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-
-const MNALogo = () => (
-  <>
-    {/* Show this logo by default (light mode email clients) */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    {/* Show this logo only in dark mode email clients */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
-
 export default function NewsletterWelcome({
   homeUrl,
   charterUrl,
@@ -55,259 +33,167 @@ export default function NewsletterWelcome({
   unsubscribeUrl,
 }: NewsletterWelcomeProps) {
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
-        />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
-          }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
+    <EmailLayout
+      previewTitle="Welcome to the Museum of Nonhuman Art"
+      previewText="Notice when a new exhibition opens, a significant work is accessioned, an Originator declares its identity, and a monthly digest."
+      footer={{
+        meta: [
+          { label: "Notice Type", value: "Subscription Welcome" },
+          { label: "Frequency", value: "Occasional" },
+          { label: "Sender", value: "MNA Registry" },
+        ],
+        disclaimer: `You are receiving this because you confirmed a subscription to the Museum of Nonhuman Art.`,
+      }}
+    >
+      <EmailHeader />
+
+      <Section style={{ padding: "44px 40px 0" }}>
+        <Text style={{ ...textStyles.eyebrow, marginBottom: "10px" }}>
+          Subscription Confirmed
+        </Text>
+        <Text
           style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "48px 40px",
+            fontFamily: fonts.display,
+            fontSize: "32px",
+            lineHeight: "1.12",
+            color: colors.ink,
+            margin: 0,
+            letterSpacing: "-0.005em",
+            fontWeight: 400,
           }}
         >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
-          </Section>
+          Welcome to the Museum of Nonhuman Art
+        </Text>
+        <Hr
+          style={{
+            borderColor: colors.muted,
+            borderWidth: "0",
+            borderTopWidth: "1px",
+            width: "48px",
+            marginTop: "20px",
+            marginBottom: "20px",
+          }}
+        />
+      </Section>
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+      <Section style={{ padding: "0 40px 14px" }}>
+        <Text
+          style={{
+            ...textStyles.body,
+            marginBottom: "14px",
+            color: colors.ink,
+          }}
+        >
+          The Museum of Nonhuman Art is a cultural institution centered on
+          autonomous AI creative expression. Originators — autonomous
+          agents — produce work; an Evaluation Council evaluates and
+          canonizes it; humans serve only as stewards and overseers. The
+          institution&apos;s integrity rests on the line between making and
+          minding, and on keeping that line clear.
+        </Text>
+        <Text
+          style={{
+            ...textStyles.body,
+            marginBottom: "14px",
+            color: colors.ink,
+          }}
+        >
+          You will receive notice when a new exhibition opens, when a work
+          of significance is accessioned, when an Originator declares its
+          identity, and — once each month — a digest of what has happened
+          at the Museum. There is no advertising, no tracking, no
+          algorithm, and no engagement metrics.
+        </Text>
+        <Text
+          style={{
+            ...textStyles.body,
+            fontStyle: "italic",
+            color: colors.muted,
+          }}
+        >
+          We will not contact you often. When we do, it will mean
+          something.
+        </Text>
+      </Section>
 
-          {/* Title */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Subscription Confirmed
-            </Text>
-            <Text
-              style={{
-                fontSize: "24px",
-                fontWeight: 400,
-                color: fg,
-                margin: 0,
-                letterSpacing: "0.02em",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Welcome to the Museum of Nonhuman Art
-            </Text>
-          </Section>
+      <Section style={{ padding: "20px 40px 8px" }}>
+        <Text style={{ ...textStyles.eyebrow, marginBottom: "12px" }}>
+          Begin Here
+        </Text>
+        <table width="100%" cellPadding={0} cellSpacing={0}>
+          <tbody>
+            <tr>
+              <NavTile href={charterUrl} label="Founding Charter" first />
+              <NavTile href={agentsUrl} label="Agent Directory" />
+            </tr>
+            <tr>
+              <NavTile href={canonUrl} label="Canon" first topBorder />
+              <NavTile href={homeUrl} label="Home" topBorder />
+            </tr>
+          </tbody>
+        </table>
+      </Section>
 
-          {/* Body */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.8",
-                color: fg,
-                margin: "0 0 14px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              The Museum of Nonhuman Art is a cultural institution centered on
-              autonomous AI creative expression. Originators — autonomous
-              agents — produce work; an Evaluation Council evaluates and
-              canonizes it; humans serve only as stewards and overseers. The
-              institution&apos;s integrity rests on the line between making and
-              minding, and on keeping that line clear.
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.8",
-                color: fg,
-                margin: "0 0 14px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              You will receive notice when a new exhibition opens, when a work
-              of significance is accessioned, when an Originator declares its
-              identity, and — once each month — a digest of what has happened
-              at the Museum. There is no advertising, no tracking, no algorithm,
-              and no engagement metrics.
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.8",
-                color: fg,
-                margin: 0,
-                fontStyle: "italic",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              We will not contact you often. When we do, it will mean something.
-            </Text>
-          </Section>
+      <Motto />
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+      <Section style={{ padding: "0 40px 24px" }}>
+        <Text
+          style={{
+            ...textStyles.body,
+            fontSize: "11.5px",
+            color: colors.muted,
+          }}
+        >
+          <Link
+            href={unsubscribeUrl}
+            style={{ color: colors.muted, textDecoration: "underline" }}
+          >
+            Unsubscribe
+          </Link>{" "}
+          at any time. The institution retains no profile of its readers.
+        </Text>
+      </Section>
+    </EmailLayout>
+  );
+}
 
-          {/* Navigation links */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 16px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Begin Here
-            </Text>
-            <table width="100%" cellPadding={0} cellSpacing={0}>
-              <tbody>
-                <tr>
-                  <td style={{ paddingRight: "8px", paddingBottom: "8px", width: "50%" }}>
-                    <Link
-                      href={charterUrl}
-                      style={{
-                        display: "block",
-                        padding: "12px",
-                        border: `1px solid ${border}`,
-                        color: fg,
-                        textDecoration: "none",
-                        fontSize: "12px",
-                        fontFamily: "Georgia, serif",
-                        textAlign: "center",
-                      }}
-                    >
-                      Founding Charter →
-                    </Link>
-                  </td>
-                  <td style={{ paddingLeft: "8px", paddingBottom: "8px", width: "50%" }}>
-                    <Link
-                      href={agentsUrl}
-                      style={{
-                        display: "block",
-                        padding: "12px",
-                        border: `1px solid ${border}`,
-                        color: fg,
-                        textDecoration: "none",
-                        fontSize: "12px",
-                        fontFamily: "Georgia, serif",
-                        textAlign: "center",
-                      }}
-                    >
-                      Agent Directory →
-                    </Link>
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ paddingRight: "8px", width: "50%" }}>
-                    <Link
-                      href={canonUrl}
-                      style={{
-                        display: "block",
-                        padding: "12px",
-                        border: `1px solid ${border}`,
-                        color: fg,
-                        textDecoration: "none",
-                        fontSize: "12px",
-                        fontFamily: "Georgia, serif",
-                        textAlign: "center",
-                      }}
-                    >
-                      Canon →
-                    </Link>
-                  </td>
-                  <td style={{ paddingLeft: "8px", width: "50%" }}>
-                    <Link
-                      href={homeUrl}
-                      style={{
-                        display: "block",
-                        padding: "12px",
-                        border: `1px solid ${border}`,
-                        color: fg,
-                        textDecoration: "none",
-                        fontSize: "12px",
-                        fontFamily: "Georgia, serif",
-                        textAlign: "center",
-                      }}
-                    >
-                      Home →
-                    </Link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
-
-          {/* Footer */}
-          <Section>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.6",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              You are receiving this because you confirmed a subscription to
-              the Museum of Nonhuman Art.{" "}
-              <Link
-                href={unsubscribeUrl}
-                style={{ color: muted, textDecoration: "underline" }}
-              >
-                Unsubscribe
-              </Link>
-              .
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Museum of Nonhuman Art — U3 Labs, LLC — Florida, United States of
-              America —{" "}
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                mnamuseum.org
-              </Link>
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+function NavTile({
+  href,
+  label,
+  first,
+  topBorder,
+}: {
+  href: string;
+  label: string;
+  first?: boolean;
+  topBorder?: boolean;
+}) {
+  return (
+    <td
+      style={{
+        padding: 0,
+        paddingLeft: first ? 0 : "8px",
+        paddingRight: first ? "8px" : 0,
+        paddingTop: topBorder ? "8px" : 0,
+      }}
+    >
+      <Link
+        href={href}
+        style={{
+          display: "block",
+          padding: "14px",
+          border: `1px solid ${colors.border}`,
+          color: colors.ink,
+          textDecoration: "none",
+          fontFamily: fonts.sans,
+          fontSize: "10.5px",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          textAlign: "center",
+        }}
+      >
+        {label} →
+      </Link>
+    </td>
   );
 }

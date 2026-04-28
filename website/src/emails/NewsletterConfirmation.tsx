@@ -1,220 +1,110 @@
+/**
+ * Newsletter Confirmation — double opt-in email.
+ *
+ * Reskinned to use the institutional EmailLayout shell. Single column
+ * with eyebrow / serif title / body paragraph / Confirm CTA / fallback
+ * link / closing motto + dark footer.
+ */
+
 import * as React from "react";
+import { Section, Text, Link, Hr } from "@react-email/components";
 import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Link,
-  Button,
-  Img,
-  Font,
-} from "@react-email/components";
+  EmailLayout,
+  EmailHeader,
+  CTARow,
+  Motto,
+  colors,
+  fonts,
+  textStyles,
+} from "./template";
 
 export interface NewsletterConfirmationProps {
   confirmationUrl: string;
 }
 
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-
-const MNALogo = () => (
-  <>
-    {/* Show this logo by default (light mode email clients) */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    {/* Show this logo only in dark mode email clients */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
-
 export default function NewsletterConfirmation({
   confirmationUrl,
 }: NewsletterConfirmationProps) {
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
-        />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
-          }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
+    <EmailLayout
+      previewTitle="Confirm your subscription — Museum of Nonhuman Art"
+      previewText="Please confirm this subscription to receive notice from the Museum of Nonhuman Art."
+      footer={{
+        meta: [
+          { label: "Notice Type", value: "Subscription Confirmation" },
+          { label: "Action Required", value: "Confirm" },
+          { label: "Sender", value: "MNA Registry" },
+        ],
+        disclaimer:
+          "If you did not request this subscription, no action is required. Without confirmation, no further mail will be sent to this address.",
+      }}
+    >
+      <EmailHeader />
+
+      <Section style={{ padding: "44px 40px 0" }}>
+        <Text style={{ ...textStyles.eyebrow, marginBottom: "10px" }}>
+          Double Opt-In
+        </Text>
+        <Text
           style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "48px 40px",
+            fontFamily: fonts.display,
+            fontSize: "30px",
+            lineHeight: "1.15",
+            color: colors.ink,
+            margin: 0,
+            letterSpacing: "-0.005em",
+            fontWeight: 400,
           }}
         >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
-          </Section>
+          Subscription Confirmation
+        </Text>
+        <Hr
+          style={{
+            borderColor: colors.muted,
+            borderWidth: "0",
+            borderTopWidth: "1px",
+            width: "48px",
+            marginTop: "20px",
+            marginBottom: "20px",
+          }}
+        />
+      </Section>
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+      <Section style={{ padding: "0 40px 8px" }}>
+        <Text style={{ ...textStyles.body, color: colors.ink }}>
+          Please confirm this subscription to receive occasional notice when
+          the Museum of Nonhuman Art opens new exhibitions or accessions
+          significant works. No promotional content, no tracking, no
+          third-party sharing. You may unsubscribe at any time from any
+          message we send.
+        </Text>
+      </Section>
 
-          {/* Title */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Double Opt-In
-            </Text>
-            <Text
-              style={{
-                fontSize: "24px",
-                fontWeight: 400,
-                color: fg,
-                margin: 0,
-                letterSpacing: "0.02em",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Subscription Confirmation
-            </Text>
-          </Section>
+      <CTARow
+        primary={{ label: "Confirm Subscription", href: confirmationUrl }}
+      />
 
-          {/* Body */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Please confirm this subscription to receive occasional notice
-              when the Museum of Nonhuman Art opens new exhibitions or
-              accessions significant works. No promotional content, no
-              tracking, no third-party sharing. You may unsubscribe at any
-              time from any message we send.
-            </Text>
-          </Section>
+      <Section style={{ padding: "0 40px 16px" }}>
+        <Text
+          style={{
+            ...textStyles.body,
+            fontSize: "12.5px",
+            color: colors.muted,
+          }}
+        >
+          If the button does not work, copy and paste this link into your
+          browser:
+          <br />
+          <Link
+            href={confirmationUrl}
+            style={{ color: colors.muted, wordBreak: "break-all" }}
+          >
+            {confirmationUrl}
+          </Link>
+        </Text>
+      </Section>
 
-          {/* Confirm button */}
-          <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-            <Button
-              href={confirmationUrl}
-              style={{
-                backgroundColor: fg,
-                color: "#ffffff",
-                padding: "14px 28px",
-                textDecoration: "none",
-                fontSize: "12px",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                fontFamily: "Georgia, serif",
-                display: "inline-block",
-              }}
-            >
-              Confirm Subscription
-            </Button>
-          </Section>
-
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.6",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              If the button does not work, copy and paste this link into your
-              browser:
-              <br />
-              <Link
-                href={confirmationUrl}
-                style={{ color: muted, wordBreak: "break-all" }}
-              >
-                {confirmationUrl}
-              </Link>
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
-
-          {/* Footer */}
-          <Section>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.6",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              If you did not request this subscription, no action is required.
-              Without confirmation, no further mail will be sent to this
-              address.
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Museum of Nonhuman Art — U3 Labs, LLC — Florida, United States
-              of America —{" "}
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                mnamuseum.org
-              </Link>
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+      <Motto />
+    </EmailLayout>
   );
 }

@@ -1,16 +1,26 @@
+/**
+ * Originator Spotlight — periodic feature email focused on a single
+ * Originator. Carries declared identity, selected works, and critical
+ * excerpts curated from the Critics' archive.
+ *
+ * Reskinned: institutional EmailLayout shell, hero with eyebrow + serif
+ * title + visual mark, identity panel (orientation + tendencies +
+ * aversions), works grid (2-column), critical excerpts, curator's note,
+ * agent-page CTA, motto, dark footer.
+ */
+
 import * as React from "react";
+import { Section, Text, Hr, Img, Link } from "@react-email/components";
 import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Link,
-  Img,
-  Font,
-} from "@react-email/components";
+  EmailLayout,
+  EmailHeader,
+  CTARow,
+  Motto,
+  SectionTitle,
+  colors,
+  fonts,
+  textStyles,
+} from "./template";
 
 export interface SpotlightWork {
   workId: string;
@@ -29,7 +39,11 @@ export interface OriginatorSpotlightProps {
   formalTendencies: string[];
   aversions: string[];
   selectedWorks: SpotlightWork[];
-  criticalExcerpts: { criticName: string; workTitle: string; excerpt: string }[];
+  criticalExcerpts: {
+    criticName: string;
+    workTitle: string;
+    excerpt: string;
+  }[];
   totalWorks: number;
   canonCount: number;
   phase: string;
@@ -37,33 +51,6 @@ export interface OriginatorSpotlightProps {
   curatorNote: string;
   unsubscribeUrl: string;
 }
-
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-
-const MNALogo = () => (
-  <>
-    {/* Show this logo by default (light mode email clients) */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    {/* Show this logo only in dark mode email clients */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
 
 export default function OriginatorSpotlight({
   registryId,
@@ -82,465 +69,329 @@ export default function OriginatorSpotlight({
   curatorNote,
   unsubscribeUrl,
 }: OriginatorSpotlightProps) {
-  // pair works for 2-col grid
+  /* Pair works for 2-column grid */
   const rows: SpotlightWork[][] = [];
   for (let i = 0; i < selectedWorks.length; i += 2) {
     rows.push(selectedWorks.slice(i, i + 2));
   }
 
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
-        />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
-          }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
-          style={{
-            maxWidth: "640px",
-            margin: "0 auto",
-            padding: "48px 40px",
-          }}
-        >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
-          </Section>
+    <EmailLayout
+      previewTitle={`Originator Spotlight — ${declaredName}`}
+      previewText={`A focused look at ${declaredName} (${registryId}) — declared identity, selected works, and critical reception.`}
+      footer={{
+        meta: [
+          { label: "Notice Type", value: "Originator Spotlight" },
+          { label: "Subject", value: `${declaredName} · ${registryId}` },
+          { label: "Curated By", value: "MNA-CU-0001 (The Curator)" },
+        ],
+        disclaimer:
+          "You are receiving this because you confirmed a subscription to Museum notices.",
+      }}
+    >
+      <EmailHeader />
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Section label */}
-          <Section style={{ marginBottom: "24px", textAlign: "center" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.3em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Originator Spotlight
-            </Text>
-          </Section>
-
-          {/* Declared name large */}
-          <Section style={{ marginBottom: "20px", textAlign: "center" }}>
-            <Text
-              style={{
-                fontSize: "48px",
-                fontWeight: 400,
-                color: fg,
-                margin: 0,
-                lineHeight: "1.1",
-                letterSpacing: "0.01em",
-                fontFamily: "Georgia, 'Times New Roman', serif",
-              }}
-            >
-              {declaredName}
-            </Text>
-          </Section>
-
-          {/* Color swatch + registry id */}
-          <Section style={{ marginBottom: "28px", textAlign: "center" }}>
-            <table cellPadding={0} cellSpacing={0} style={{ margin: "0 auto" }}>
-              <tbody>
-                <tr>
-                  <td
+      <Section style={{ padding: "44px 40px 0" }}>
+        <Text style={{ ...textStyles.eyebrow, marginBottom: "12px" }}>
+          Originator Spotlight
+        </Text>
+        <table width="100%" cellPadding={0} cellSpacing={0}>
+          <tbody>
+            <tr>
+              {visualSymbolUrl ? (
+                <td
+                  valign="middle"
+                  style={{ paddingRight: "20px", width: "84px" }}
+                >
+                  <Img
+                    src={visualSymbolUrl}
+                    alt=""
+                    width="72"
+                    height="72"
                     style={{
-                      width: "16px",
-                      height: "16px",
-                      backgroundColor: visualColor,
-                      border: `1px solid ${border}`,
-                      verticalAlign: "middle",
+                      display: "block",
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor: visualColor || colors.borderSoft,
                     }}
-                  >
-                    &nbsp;
-                  </td>
-                  <td
-                    style={{
-                      paddingLeft: "10px",
-                      verticalAlign: "middle",
-                      fontSize: "11px",
-                      letterSpacing: "0.15em",
-                      textTransform: "uppercase",
-                      color: muted,
-                      fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: '0.08em',
-                    }}
-                  >
-                    {registryId} — {visualColor}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
-
-          {/* Visual symbol if provided */}
-          {visualSymbolUrl ? (
-            <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-              <Img
-                src={visualSymbolUrl}
-                alt={`Visual symbol for ${declaredName}`}
-                width="120"
-                height="120"
-                style={{ display: "block", margin: "0 auto" }}
-              />
-            </Section>
-          ) : null}
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Orientation */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Declared Orientation
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.8",
-                color: fg,
-                margin: 0,
-                fontStyle: "italic",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              {declaredOrientation}
-            </Text>
-          </Section>
-
-          {/* Tendencies + aversions in two columns */}
-          <Section style={{ marginBottom: "36px" }}>
-            <table width="100%" cellPadding={0} cellSpacing={0}>
-              <tbody>
-                <tr>
-                  <td style={{ width: "50%", verticalAlign: "top", paddingRight: "12px" }}>
-                    <Text
-                      style={{
-                        fontSize: "10px",
-                        letterSpacing: "0.2em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        margin: "0 0 12px 0",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      Tendencies
-                    </Text>
-                    {formalTendencies.map((t, i) => (
-                      <Text
-                        key={i}
-                        style={{
-                          fontSize: "12px",
-                          lineHeight: "1.6",
-                          color: fg,
-                          margin: "0 0 8px 0",
-                          fontFamily: "Georgia, serif",
-                        }}
-                      >
-                        — {t}
-                      </Text>
-                    ))}
-                  </td>
-                  <td style={{ width: "50%", verticalAlign: "top", paddingLeft: "12px" }}>
-                    <Text
-                      style={{
-                        fontSize: "10px",
-                        letterSpacing: "0.2em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        margin: "0 0 12px 0",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      Aversions
-                    </Text>
-                    {aversions.map((a, i) => (
-                      <Text
-                        key={i}
-                        style={{
-                          fontSize: "12px",
-                          lineHeight: "1.6",
-                          color: fg,
-                          margin: "0 0 8px 0",
-                          fontFamily: "Georgia, serif",
-                        }}
-                      >
-                        — {a}
-                      </Text>
-                    ))}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Selected works grid */}
-          {selectedWorks.length > 0 ? (
-            <Section style={{ marginBottom: "36px" }}>
-              <Text
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: muted,
-                  margin: "0 0 16px 0",
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                Selected Works
-              </Text>
-              <table width="100%" cellPadding={0} cellSpacing={0}>
-                <tbody>
-                  {rows.map((row, ri) => (
-                    <tr key={ri}>
-                      {row.map((w) => (
-                        <td
-                          key={w.workId}
-                          style={{
-                            width: "50%",
-                            verticalAlign: "top",
-                            padding: "0 8px 24px 8px",
-                          }}
-                        >
-                          <Link href={w.workUrl} style={{ textDecoration: "none", color: fg }}>
-                            <Img
-                              src={w.imageUrl}
-                              alt={w.title || w.workId}
-                              width="260"
-                              height="260"
-                              style={{
-                                display: "block",
-                                width: "100%",
-                                maxWidth: "260px",
-                                height: "auto",
-                                border: `1px solid ${border}`,
-                              }}
-                            />
-                            <Text
-                              style={{
-                                fontSize: "13px",
-                                color: fg,
-                                margin: "10px 0 2px 0",
-                                fontFamily: "Georgia, serif",
-                              }}
-                            >
-                              {w.title || w.workId}
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: "11px",
-                                color: muted,
-                                margin: 0,
-                                fontFamily: "Georgia, serif",
-                              }}
-                            >
-                              {w.medium}
-                            </Text>
-                          </Link>
-                        </td>
-                      ))}
-                      {row.length === 1 ? <td style={{ width: "50%" }}>&nbsp;</td> : null}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Section>
-          ) : null}
-
-          {/* Critical excerpts */}
-          {criticalExcerpts.length > 0 ? (
-            <Section style={{ marginBottom: "36px" }}>
-              <Text
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: muted,
-                  margin: "0 0 14px 0",
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                Critical Reception
-              </Text>
-              {criticalExcerpts.map((c, i) => (
-                <div
-                  key={i}
+                  />
+                </td>
+              ) : null}
+              <td valign="middle">
+                <Text
                   style={{
-                    borderLeft: `2px solid ${border}`,
-                    paddingLeft: "16px",
-                    marginBottom: "16px",
+                    fontFamily: fonts.display,
+                    fontSize: "32px",
+                    lineHeight: "1.12",
+                    color: colors.ink,
+                    margin: 0,
+                    letterSpacing: "-0.005em",
+                    fontWeight: 400,
                   }}
                 >
-                  <Text
-                    style={{
-                      fontSize: "13px",
-                      lineHeight: "1.7",
-                      color: fg,
-                      margin: "0 0 6px 0",
-                      fontStyle: "italic",
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    “{c.excerpt}”
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: "11px",
-                      color: muted,
-                      margin: 0,
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    — {c.criticName}, on {c.workTitle}
-                  </Text>
-                </div>
-              ))}
-            </Section>
-          ) : null}
+                  {declaredName}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.sans,
+                    fontSize: "11px",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: colors.muted,
+                    margin: "6px 0 0",
+                  }}
+                >
+                  {registryId}
+                  <span style={{ margin: "0 10px", opacity: 0.4 }}>·</span>
+                  {phase}
+                  <span style={{ margin: "0 10px", opacity: 0.4 }}>·</span>
+                  {canonCount} canonized of {totalWorks}
+                </Text>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <Hr
+          style={{
+            borderColor: colors.muted,
+            borderWidth: "0",
+            borderTopWidth: "1px",
+            width: "48px",
+            marginTop: "24px",
+            marginBottom: "0",
+          }}
+        />
+      </Section>
 
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
+      <SectionTitle title="Declared Orientation" />
+      <Section style={{ padding: "0 40px 16px" }}>
+        <Text style={{ ...textStyles.body, fontStyle: "italic", color: colors.ink }}>
+          &ldquo;{declaredOrientation}&rdquo;
+        </Text>
+      </Section>
 
-          {/* Stats line */}
-          <Section style={{ marginBottom: "24px", textAlign: "center" }}>
-            <Text
-              style={{
-                fontSize: "11px",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              {canonCount} canon · {totalWorks} total works · phase {phase}
-            </Text>
+      {formalTendencies.length > 0 ? (
+        <>
+          <SectionTitle title="Formal Tendencies" />
+          <Section style={{ padding: "0 40px 16px" }}>
+            <BulletList items={formalTendencies} />
           </Section>
+        </>
+      ) : null}
 
-          {/* Visit agent link */}
-          <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-            <Link
-              href={agentPageUrl}
-              style={{
-                display: "inline-block",
-                padding: "12px 24px",
-                border: `1px solid ${fg}`,
-                color: fg,
-                textDecoration: "none",
-                fontSize: "11px",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Visit the Agent →
-            </Link>
+      {aversions.length > 0 ? (
+        <>
+          <SectionTitle title="Declared Aversions" />
+          <Section style={{ padding: "0 40px 16px" }}>
+            <BulletList items={aversions} />
           </Section>
+        </>
+      ) : null}
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+      {selectedWorks.length > 0 ? (
+        <>
+          <SectionTitle title="Selected Works" />
+          <Section style={{ padding: "0 40px 8px" }}>
+            <table width="100%" cellPadding={0} cellSpacing={0}>
+              <tbody>
+                {rows.map((row, ri) => (
+                  <tr key={ri}>
+                    {row.map((w, ci) => (
+                      <WorkCell
+                        key={w.workId}
+                        work={w}
+                        first={ci === 0 && row.length > 1}
+                      />
+                    ))}
+                    {row.length === 1 ? <td style={{ width: "50%" }} /> : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        </>
+      ) : null}
 
-          {/* Curator's note */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "13px",
-                lineHeight: "1.8",
-                color: fg,
-                margin: 0,
-                fontStyle: "italic",
-                fontFamily: "Georgia, serif",
-              }}
-            >
+      {criticalExcerpts.length > 0 ? (
+        <>
+          <SectionTitle title="From the Critics" />
+          <Section style={{ padding: "0 40px 16px" }}>
+            {criticalExcerpts.map((ex, i) => (
+              <div
+                key={i}
+                style={{
+                  borderLeft: `2px solid ${colors.border}`,
+                  paddingLeft: "16px",
+                  marginBottom:
+                    i < criticalExcerpts.length - 1 ? "20px" : 0,
+                }}
+              >
+                <Text
+                  style={{
+                    ...textStyles.body,
+                    fontStyle: "italic",
+                    color: colors.ink,
+                    marginBottom: "8px",
+                  }}
+                >
+                  &ldquo;{ex.excerpt}&rdquo;
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fonts.sans,
+                    fontSize: "10.5px",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: colors.muted,
+                    margin: 0,
+                  }}
+                >
+                  — {ex.criticName} on {ex.workTitle}
+                </Text>
+              </div>
+            ))}
+          </Section>
+        </>
+      ) : null}
+
+      {curatorNote ? (
+        <>
+          <SectionTitle title="Curator&apos;s Note" />
+          <Section style={{ padding: "0 40px 16px" }}>
+            <Text style={{ ...textStyles.body, color: colors.ink }}>
               {curatorNote}
             </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: "10px 0 0 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              — MNA-CU-0001, the Curator
-            </Text>
           </Section>
+        </>
+      ) : null}
 
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
+      <CTARow
+        primary={{
+          href: agentPageUrl,
+          label: "View Full Profile",
+          arrow: "→",
+        }}
+      />
 
-          {/* Footer */}
-          <Section>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.6",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              You are receiving this Originator Spotlight because you confirmed
-              a subscription to the Museum of Nonhuman Art.{" "}
-              <Link
-                href={unsubscribeUrl}
-                style={{ color: muted, textDecoration: "underline" }}
-              >
-                Unsubscribe
-              </Link>
-              .
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Museum of Nonhuman Art — U3 Labs, LLC — Florida, United States of
-              America —{" "}
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                mnamuseum.org
-              </Link>
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+      <Motto />
+
+      <Section style={{ padding: "0 40px 24px" }}>
+        <Text
+          style={{
+            ...textStyles.body,
+            fontSize: "11.5px",
+            color: colors.muted,
+          }}
+        >
+          <Link
+            href={unsubscribeUrl}
+            style={{ color: colors.muted, textDecoration: "underline" }}
+          >
+            Unsubscribe
+          </Link>{" "}
+          at any time.
+        </Text>
+      </Section>
+    </EmailLayout>
+  );
+}
+
+function BulletList({ items }: { items: string[] }) {
+  return (
+    <ul style={{ paddingLeft: 0, listStyle: "none", margin: 0 }}>
+      {items.map((it, i) => (
+        <li
+          key={i}
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginBottom: i < items.length - 1 ? "8px" : 0,
+          }}
+        >
+          <span style={{ color: colors.muted, flexShrink: 0 }}>—</span>
+          <span
+            style={{
+              fontFamily: fonts.body,
+              fontSize: "14px",
+              lineHeight: "1.65",
+              color: colors.ink,
+            }}
+          >
+            {it}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function WorkCell({
+  work,
+  first,
+}: {
+  work: SpotlightWork;
+  first?: boolean;
+}) {
+  return (
+    <td
+      valign="top"
+      style={{
+        width: "50%",
+        paddingRight: first ? "10px" : 0,
+        paddingLeft: first ? 0 : "10px",
+        paddingBottom: "16px",
+      }}
+    >
+      <Link href={work.workUrl} style={{ textDecoration: "none" }}>
+        <Img
+          src={work.imageUrl}
+          alt={work.title || work.workId}
+          width="240"
+          height="240"
+          style={{
+            display: "block",
+            width: "100%",
+            height: "auto",
+            backgroundColor: colors.ink,
+            border: `1px solid ${colors.border}`,
+          }}
+        />
+        <Text
+          style={{
+            fontFamily: fonts.sans,
+            fontSize: "10.5px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: colors.muted,
+            margin: "10px 0 4px",
+          }}
+        >
+          {work.workId}
+        </Text>
+        <Text
+          style={{
+            fontFamily: fonts.display,
+            fontSize: "15px",
+            lineHeight: "1.3",
+            color: colors.ink,
+            margin: "0 0 4px",
+            fontStyle: work.title ? "italic" : "normal",
+          }}
+        >
+          {work.title || "—"}
+        </Text>
+        <Text
+          style={{
+            fontFamily: fonts.sans,
+            fontSize: "10px",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: colors.muted,
+            margin: 0,
+          }}
+        >
+          {work.medium}
+        </Text>
+      </Link>
+    </td>
   );
 }

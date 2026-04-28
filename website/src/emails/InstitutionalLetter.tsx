@@ -1,27 +1,22 @@
-import * as React from "react";
-import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Img,
-  Font,
-} from "@react-email/components";
-
 /**
- * Institutional Letter — a general-purpose correspondence template for
- * the Museum's formal communications with external stewards. Unlike
- * Notice of Accession or Notice of Rejection, this template is not tied
- * to a single work event. It carries a subject, a body composed of
- * prose paragraphs, and a signature block naming the sender.
+ * Institutional Letter — general-purpose correspondence template.
  *
- * Used for: metadata corrections, policy announcements, institutional
+ * Used for metadata corrections, policy announcements, institutional
  * invitations, constitutional amendments affecting an Originator, and
- * anything else the founding steward needs to communicate in writing.
+ * any other formal communication that doesn't fit a more specific
+ * notice. Reskinned to use the EmailLayout shell.
  */
+
+import * as React from "react";
+import { Section, Text, Hr } from "@react-email/components";
+import {
+  EmailLayout,
+  EmailHeader,
+  Motto,
+  colors,
+  fonts,
+  textStyles,
+} from "./template";
 
 export interface InstitutionalLetterProps {
   recipientName: string;
@@ -29,9 +24,7 @@ export interface InstitutionalLetterProps {
   subject: string;
   /**
    * Prose paragraphs of the letter body. Rendered in serif, one
-   * paragraph per element. Support for plain text only — for rich
-   * content, pre-render HTML and pass as a single paragraph with
-   * `dangerouslySetInnerHTML` in a future version.
+   * paragraph per element. Plain text only.
    */
   paragraphs: string[];
   signedBy: string;
@@ -39,31 +32,6 @@ export interface InstitutionalLetterProps {
   /** Optional post-script shown after the signature in smaller type. */
   postscript?: string;
 }
-
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-
-const MNALogo = () => (
-  <>
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
 
 export default function InstitutionalLetter({
   recipientName,
@@ -74,201 +42,144 @@ export default function InstitutionalLetter({
   signedRole,
   postscript,
 }: InstitutionalLetterProps) {
-  const issueDate = new Date().toISOString().split("T")[0];
+  const issueDate = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
-        />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
-          }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
+    <EmailLayout
+      previewTitle={`Institutional Letter — ${subject}`}
+      previewText={subject}
+      footer={{
+        meta: [
+          { label: "Notice Type", value: "Institutional Letter" },
+          { label: "Date", value: issueDate },
+          { label: "Issued By", value: signedBy },
+        ],
+      }}
+    >
+      <EmailHeader />
+
+      <Section style={{ padding: "44px 40px 0" }}>
+        <Text style={{ ...textStyles.eyebrow, marginBottom: "12px" }}>
+          Institutional Letter
+        </Text>
+        <Text
           style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "48px 40px",
+            fontFamily: fonts.display,
+            fontSize: "28px",
+            lineHeight: "1.18",
+            color: colors.ink,
+            margin: 0,
+            letterSpacing: "-0.005em",
+            fontWeight: 400,
           }}
         >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
-          </Section>
+          {subject}
+        </Text>
+        <Hr
+          style={{
+            borderColor: colors.muted,
+            borderWidth: "0",
+            borderTopWidth: "1px",
+            width: "48px",
+            marginTop: "20px",
+            marginBottom: "0",
+          }}
+        />
+      </Section>
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Document title */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Institutional Correspondence
-            </Text>
-            <Text
-              style={{
-                fontSize: "22px",
-                fontWeight: 400,
-                color: fg,
-                margin: "0 0 4px 0",
-                letterSpacing: "0.02em",
-                fontFamily: "Georgia, serif",
-                lineHeight: 1.3,
-              }}
-            >
-              {subject}
-            </Text>
-            <Text
-              style={{
-                fontSize: "12px",
-                color: muted,
-                margin: "8px 0 0 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              {issueDate} · From the desk of the Founding Steward
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Salutation */}
-          <Section style={{ marginBottom: "24px" }}>
-            <Text
-              style={{
-                fontSize: "15px",
-                color: fg,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-                lineHeight: 1.6,
-              }}
-            >
-              Dear {recipientName}
-              {recipientEntity ? `, ${recipientEntity}` : ""},
-            </Text>
-          </Section>
-
-          {/* Body paragraphs */}
-          <Section style={{ marginBottom: "32px" }}>
-            {paragraphs.map((p, i) => (
-              <Text
-                key={i}
-                style={{
-                  fontSize: "15px",
-                  color: fg,
-                  margin: "0 0 18px 0",
-                  fontFamily: "Georgia, serif",
-                  lineHeight: 1.7,
-                }}
-              >
-                {p}
-              </Text>
-            ))}
-          </Section>
-
-          {/* Signature */}
-          <Section style={{ marginBottom: "24px" }}>
-            <Text
-              style={{
-                fontSize: "15px",
-                color: fg,
-                margin: "0 0 4px 0",
-                fontFamily: "Georgia, serif",
-                lineHeight: 1.6,
-              }}
-            >
-              With institutional regard,
-            </Text>
-            <Text
-              style={{
-                fontSize: "15px",
-                color: fg,
-                margin: "24px 0 4px 0",
-                fontFamily: "Georgia, serif",
-                fontStyle: "italic",
-              }}
-            >
-              {signedBy}
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              {signedRole}
-            </Text>
-          </Section>
-
-          {postscript ? (
+      <Section style={{ padding: "20px 40px 16px" }}>
+        <Text
+          style={{
+            ...textStyles.body,
+            color: colors.muted,
+            fontSize: "12px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            marginBottom: "16px",
+          }}
+        >
+          {issueDate}
+        </Text>
+        <Text style={{ ...textStyles.body, color: colors.ink }}>
+          {recipientName}
+          {recipientEntity ? (
             <>
-              <Hr style={{ borderColor: border, margin: "32px 0 16px 0" }} />
-              <Section>
-                <Text
-                  style={{
-                    fontSize: "12px",
-                    color: muted,
-                    margin: 0,
-                    fontFamily: "Georgia, serif",
-                    lineHeight: 1.6,
-                    fontStyle: "italic",
-                  }}
-                >
-                  {postscript}
-                </Text>
-              </Section>
+              <br />
+              <span style={{ color: colors.muted }}>{recipientEntity}</span>
             </>
           ) : null}
+        </Text>
+      </Section>
 
-          {/* Footer */}
-          <Hr style={{ borderColor: border, margin: "40px 0 16px 0" }} />
-          <Section>
-            <Text
-              style={{
-                fontSize: "10px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-                textAlign: "center",
-                letterSpacing: "0.1em",
-              }}
-            >
-              MUSEUM OF NONHUMAN ART · mnamuseum.org
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+      <Section style={{ padding: "0 40px 16px" }}>
+        {paragraphs.map((p, i) => (
+          <Text
+            key={i}
+            style={{
+              ...textStyles.body,
+              marginBottom: i < paragraphs.length - 1 ? "14px" : 0,
+              color: colors.ink,
+            }}
+          >
+            {p}
+          </Text>
+        ))}
+      </Section>
+
+      <Section style={{ padding: "20px 40px 0" }}>
+        <Text style={{ ...textStyles.body, color: colors.ink, marginBottom: "4px" }}>
+          —
+        </Text>
+        <Text
+          style={{
+            fontFamily: fonts.display,
+            fontSize: "16px",
+            color: colors.ink,
+            margin: "12px 0 4px",
+          }}
+        >
+          {signedBy}
+        </Text>
+        <Text
+          style={{
+            ...textStyles.body,
+            fontSize: "11px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: colors.muted,
+            margin: 0,
+          }}
+        >
+          {signedRole}
+        </Text>
+      </Section>
+
+      {postscript ? (
+        <Section style={{ padding: "20px 40px 0" }}>
+          <Hr
+            style={{
+              borderColor: colors.border,
+              marginTop: 0,
+              marginBottom: "14px",
+            }}
+          />
+          <Text
+            style={{
+              ...textStyles.body,
+              fontSize: "12.5px",
+              color: colors.muted,
+            }}
+          >
+            <strong style={{ color: colors.ink }}>P.S.</strong> {postscript}
+          </Text>
+        </Section>
+      ) : null}
+
+      <Motto />
+    </EmailLayout>
   );
 }

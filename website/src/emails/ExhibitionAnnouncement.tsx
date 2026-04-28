@@ -1,17 +1,23 @@
+/**
+ * Exhibition Announcement — sent when a new exhibition opens.
+ *
+ * Reskinned: institutional EmailLayout shell, eyebrow + serif title +
+ * italic subtitle, curatorial statement section, included-works table,
+ * "View the Exhibition" CTA, motto, dark footer with unsubscribe.
+ */
+
 import * as React from "react";
+import { Section, Text, Hr, Link } from "@react-email/components";
 import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Link,
-  Button,
-  Img,
-  Font,
-} from "@react-email/components";
+  EmailLayout,
+  EmailHeader,
+  CTARow,
+  Motto,
+  SectionTitle,
+  colors,
+  fonts,
+  textStyles,
+} from "./template";
 
 export interface ExhibitionAnnouncementWork {
   id: string;
@@ -29,33 +35,6 @@ export interface ExhibitionAnnouncementProps {
   unsubscribeUrl: string;
 }
 
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-
-const MNALogo = () => (
-  <>
-    {/* Show this logo by default (light mode email clients) */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    {/* Show this logo only in dark mode email clients */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
-
 export default function ExhibitionAnnouncement({
   exhibitionId,
   title,
@@ -64,255 +43,176 @@ export default function ExhibitionAnnouncement({
   works,
   unsubscribeUrl,
 }: ExhibitionAnnouncementProps) {
-  const exhibitionUrl = `https://mnamuseum.org/exhibitions/${exhibitionId}`;
-  // Split on blank lines to render as prose paragraphs.
+  const exhibitionUrl = `https://www.mnamuseum.org/exhibitions/${exhibitionId}`;
   const paragraphs = curatorial_statement
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
 
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
-        />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
-          }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
+    <EmailLayout
+      previewTitle={`Now on view: ${title}`}
+      previewText={
+        subtitle ?? `${title} is open at the Museum of Nonhuman Art.`
+      }
+      footer={{
+        meta: [
+          { label: "Notice Type", value: "Exhibition Announcement" },
+          { label: "Exhibition ID", value: String(exhibitionId) },
+          { label: "Issued By", value: "MNA-CU-0001 (The Curator)" },
+        ],
+        disclaimer:
+          "You are receiving this because you confirmed a subscription to exhibition notices.",
+      }}
+    >
+      <EmailHeader />
+
+      <Section style={{ padding: "44px 40px 0" }}>
+        <Text style={{ ...textStyles.eyebrow, marginBottom: "12px" }}>
+          Now On View
+        </Text>
+        <Text
           style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "48px 40px",
+            fontFamily: fonts.display,
+            fontSize: "32px",
+            lineHeight: "1.12",
+            color: colors.ink,
+            margin: 0,
+            letterSpacing: "-0.005em",
+            fontWeight: 400,
           }}
         >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
-          </Section>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text
+            style={{
+              fontFamily: fonts.display,
+              fontStyle: "italic",
+              fontSize: "16px",
+              lineHeight: "1.4",
+              color: colors.muted,
+              margin: "10px 0 0",
+            }}
+          >
+            {subtitle}
+          </Text>
+        ) : null}
+        <Hr
+          style={{
+            borderColor: colors.muted,
+            borderWidth: "0",
+            borderTopWidth: "1px",
+            width: "48px",
+            marginTop: "20px",
+            marginBottom: "0",
+          }}
+        />
+      </Section>
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
+      <SectionTitle title="Curatorial Statement" />
+      <Section style={{ padding: "0 40px 16px" }}>
+        {paragraphs.map((p, i) => (
+          <Text
+            key={i}
+            style={{
+              ...textStyles.body,
+              marginBottom: i < paragraphs.length - 1 ? "14px" : 0,
+              color: colors.ink,
+            }}
+          >
+            {p}
+          </Text>
+        ))}
+      </Section>
 
-          {/* Title */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
+      {works.length > 0 ? (
+        <>
+          <SectionTitle title="Included Works" />
+          <Section style={{ padding: "0 40px 16px" }}>
+            <table
+              width="100%"
+              cellPadding={0}
+              cellSpacing={0}
+              style={{ borderTop: `1px solid ${colors.border}` }}
             >
-              Now On View
-            </Text>
-            <Text
-              style={{
-                fontSize: "28px",
-                fontWeight: 400,
-                color: fg,
-                margin: 0,
-                lineHeight: "1.2",
-                letterSpacing: "0.01em",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              {title}
-            </Text>
-            {subtitle ? (
-              <Text
-                style={{
-                  fontSize: "14px",
-                  fontStyle: "italic",
-                  color: muted,
-                  margin: "8px 0 0 0",
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                {subtitle}
-              </Text>
-            ) : null}
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Curatorial statement */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Curatorial Statement
-            </Text>
-            {paragraphs.map((p, i) => (
-              <Text
-                key={i}
-                style={{
-                  fontSize: "14px",
-                  lineHeight: "1.8",
-                  color: fg,
-                  margin: i === 0 ? "0 0 14px 0" : "0 0 14px 0",
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                {p}
-              </Text>
-            ))}
-          </Section>
-
-          {/* Works list */}
-          {works.length > 0 ? (
-            <Section style={{ marginBottom: "32px" }}>
-              <Text
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: muted,
-                  margin: "0 0 12px 0",
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                Included Works
-              </Text>
-              <table
-                width="100%"
-                cellPadding={0}
-                cellSpacing={0}
-                style={{ borderTop: `1px solid ${border}` }}
-              >
-                <tbody>
-                  {works.map((w) => (
-                    <tr key={w.id}>
-                      <td
+              <tbody>
+                {works.map((w) => (
+                  <tr key={w.id}>
+                    <td
+                      style={{
+                        padding: "12px 0",
+                        borderBottom: `1px solid ${colors.border}`,
+                        verticalAlign: "top",
+                      }}
+                    >
+                      <Text
                         style={{
-                          padding: "10px 0",
-                          borderBottom: `1px solid ${border}`,
-                          fontSize: "13px",
-                          color: fg,
-                          fontFamily: "Georgia, serif",
-                          verticalAlign: "top",
+                          fontFamily: fonts.body,
+                          fontSize: "14px",
+                          color: colors.ink,
+                          margin: 0,
+                          lineHeight: "1.4",
                         }}
                       >
-                        <Text
-                          style={{
-                            margin: 0,
-                            fontSize: "13px",
-                            color: fg,
-                            fontFamily: "Georgia, serif",
-                          }}
-                        >
-                          {w.title || w.id}
-                        </Text>
-                        <Text
-                          style={{
-                            margin: "2px 0 0 0",
-                            fontSize: "11px",
-                            color: muted,
-                            fontFamily: "Georgia, serif",
-                          }}
-                        >
-                          {w.originator_name} — {w.medium}
-                        </Text>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Section>
-          ) : null}
-
-          {/* CTA */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <Button
-              href={exhibitionUrl}
-              style={{
-                backgroundColor: fg,
-                color: "#ffffff",
-                padding: "14px 28px",
-                textDecoration: "none",
-                fontSize: "12px",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                fontFamily: "Georgia, serif",
-                display: "inline-block",
-              }}
-            >
-              View the Exhibition →
-            </Button>
+                        {w.title || w.id}
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: fonts.sans,
+                          fontSize: "10.5px",
+                          letterSpacing: "0.18em",
+                          textTransform: "uppercase",
+                          color: colors.muted,
+                          margin: "4px 0 0",
+                        }}
+                      >
+                        {w.originator_name}
+                        <span style={{ margin: "0 8px", opacity: 0.4 }}>
+                          ·
+                        </span>
+                        {w.medium}
+                      </Text>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </Section>
+        </>
+      ) : null}
 
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
+      <CTARow
+        primary={{
+          href: exhibitionUrl,
+          label: "View the Exhibition",
+          arrow: "→",
+        }}
+      />
 
-          {/* Footer */}
-          <Section>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.6",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              This is an institutional announcement from the Museum of
-              Nonhuman Art. You are receiving it because you confirmed a
-              subscription to exhibition notices.{" "}
-              <Link
-                href={unsubscribeUrl}
-                style={{ color: muted, textDecoration: "underline" }}
-              >
-                Unsubscribe
-              </Link>
-              .
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Museum of Nonhuman Art — U3 Labs, LLC — Florida, United States
-              of America —{" "}
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                mnamuseum.org
-              </Link>
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+      <Motto
+        prefix={
+          "An exhibition is not an explanation. It is an arrangement."
+        }
+      />
+
+      <Section style={{ padding: "0 40px 24px" }}>
+        <Text
+          style={{
+            ...textStyles.body,
+            fontSize: "11.5px",
+            color: colors.muted,
+          }}
+        >
+          <Link
+            href={unsubscribeUrl}
+            style={{ color: colors.muted, textDecoration: "underline" }}
+          >
+            Unsubscribe
+          </Link>{" "}
+          at any time.
+        </Text>
+      </Section>
+    </EmailLayout>
   );
 }
