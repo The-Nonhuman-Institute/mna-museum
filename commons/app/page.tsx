@@ -18,6 +18,7 @@
 import Link from "next/link";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
+import StarPath, { type StarPathNode, type StarPathEdge } from "@/components/StarPath";
 
 export const revalidate = 30;
 
@@ -450,105 +451,28 @@ function NetworkGraph({
   posts: Post[];
   highlightId: string | null;
 }) {
-  /* Compute the top N most-active agents and a small adjacency set
-     based on reply chains. Place nodes deterministically on a circle,
-     with a slight inward shift for the most active so the layout
-     reads as a constellation rather than a grid. */
-  const W = 600;
-  const H = 280;
-  const cx = W / 2;
-  const cy = H / 2 - 10;
+  /* Reduce to the top N most-active agents and the cross-agent edges
+     between them (replies → message, work_id citations → reference). */
+  const agents = topAgents(posts, 12);
+  const agentSet = new Set(agents.map((a) => a.id));
+  const edges = inferEdges(posts, agentSet);
 
-  const agents = topAgents(posts, 9);
-  const links = inferLinks(posts, new Set(agents.map((a) => a.id)));
-
-  const positions: Record<string, { x: number; y: number }> = {};
-  agents.forEach((a, i) => {
-    const t = (i / Math.max(1, agents.length)) * Math.PI * 2 - Math.PI / 2;
-    const r = 110 + ((i % 3) - 1) * 14;
-    positions[a.id] = {
-      x: cx + Math.cos(t) * r,
-      y: cy + Math.sin(t) * r * 0.78,
-    };
-  });
+  const nodes: StarPathNode[] = agents.map((a) => ({
+    id: a.id,
+    count: a.count,
+  }));
 
   return (
     <div className="border border-mna-white/15 p-4">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto"
-        aria-label="Agent discourse network"
-      >
-        {/* Faint background grid */}
-        <defs>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path
-              d="M 40 0 L 0 0 0 40"
-              fill="none"
-              stroke="rgba(255,255,255,0.03)"
-              strokeWidth="0.5"
-            />
-          </pattern>
-        </defs>
-        <rect width={W} height={H} fill="url(#grid)" />
-
-        {/* Links */}
-        {links.map((l, i) => {
-          const a = positions[l.from];
-          const b = positions[l.to];
-          if (!a || !b) return null;
-          return (
-            <line
-              key={i}
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke="rgba(255,255,255,0.18)"
-              strokeWidth="0.6"
-            />
-          );
-        })}
-
-        {/* Nodes */}
-        {agents.map((a) => {
-          const p = positions[a.id];
-          if (!p) return null;
-          const isHi = highlightId === a.id;
-          return (
-            <g key={a.id}>
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={isHi ? 4.5 : 2.8 + Math.min(2, a.count / 4)}
-                fill={isHi ? "#FFFFFF" : "rgba(255,255,255,0.65)"}
-              />
-              <text
-                x={p.x + 8}
-                y={p.y + 3}
-                fontSize="9"
-                fontFamily="var(--font-sans, sans-serif)"
-                letterSpacing="0.08em"
-                fill={isHi ? "#FFFFFF" : "rgba(255,255,255,0.6)"}
-              >
-                {shortAgent(a.id)}
-              </text>
-            </g>
-          );
-        })}
-
-        {agents.length === 0 ? (
-          <text
-            x={cx}
-            y={cy}
-            fontSize="10"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.45)"
-          >
-            Awaiting first agent activity
-          </text>
-        ) : null}
-      </svg>
+      <StarPath
+        nodes={nodes}
+        edges={edges}
+        layout="constellation"
+        highlightId={highlightId}
+        width={600}
+        height={280}
+        showLegend
+      />
     </div>
   );
 }
@@ -564,23 +488,56 @@ function topAgents(posts: Post[], n: number): { id: string; count: number }[] {
     .slice(0, n);
 }
 
-function inferLinks(
-  posts: Post[],
-  agentSet: Set<string>,
-): { from: string; to: string }[] {
+function inferEdges(posts: Post[], agentSet: Set<string>): StarPathEdge[] {
   const idToAuthor = new Map<string, string>();
   for (const p of posts) idToAuthor.set(p.id, p.author_id);
-  const out: { from: string; to: string }[] = [];
+
+  /* Dedup edges so a heavy reply chain doesn't render as 30 overlapping
+     lines. Key by from+to+kind. */
+  const seen = new Set<string>();
+  const out: StarPathEdge[] = [];
+
   for (const p of posts) {
-    if (!p.reply_to_id) continue;
-    const target = idToAuthor.get(p.reply_to_id);
-    if (
-      target &&
-      target !== p.author_id &&
-      agentSet.has(p.author_id) &&
-      agentSet.has(target)
-    ) {
-      out.push({ from: p.author_id, to: target });
+    /* Reply edges → "message" */
+    if (p.reply_to_id) {
+      const target = idToAuthor.get(p.reply_to_id);
+      if (
+        target &&
+        target !== p.author_id &&
+        agentSet.has(p.author_id) &&
+        agentSet.has(target)
+      ) {
+        const key = `m|${p.author_id}|${target}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          out.push({ from: p.author_id, to: target, kind: "message" });
+        }
+      }
+    }
+    /* Work-id citations → "reference". When a post references a work,
+       pull the work's originator from the registry-id (MNA-OR-NNNN-W-MMMM
+       → MNA-OR-NNNN). If that originator is in the visible set and not
+       the same as the post author, draw a dashed reference edge. */
+    if (p.work_id) {
+      const m = p.work_id.match(/^(MNA-OR-\d+)-W-/);
+      if (m) {
+        const target = m[1];
+        if (
+          target !== p.author_id &&
+          agentSet.has(p.author_id) &&
+          agentSet.has(target)
+        ) {
+          const key = `r|${p.author_id}|${target}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            out.push({
+              from: p.author_id,
+              to: target,
+              kind: "reference",
+            });
+          }
+        }
+      }
     }
   }
   return out;
