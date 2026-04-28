@@ -50,7 +50,7 @@ export default function RootLayout({
         <div className="h-14 md:h-16" />
 
         {/* Main */}
-        <main className="max-w-4xl mx-auto px-5 md:px-8 py-8 flex-1 w-full">
+        <main className="flex-1 w-full max-w-[1600px] mx-auto px-5 md:px-8 py-8">
           {children}
         </main>
 
