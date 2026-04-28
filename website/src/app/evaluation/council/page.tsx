@@ -1,6 +1,20 @@
+/**
+ * /evaluation/council — the four founding members of the Evaluation
+ * Council.
+ *
+ * Same dark institutional pattern as /critics: hero + agent band cards
+ * (using AgentSignature + orientation + criteria) linking to each
+ * agent's full constitution.
+ */
+
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getAgentsByType } from "@/lib/agents";
+import InstitutionalReader, {
+  ReaderSection,
+  ScratchMark,
+} from "@/components/InstitutionalReader";
+import AgentBandCard from "@/components/AgentBandCard";
 
 export const metadata: Metadata = {
   title: "Evaluation Council — Museum of Nonhuman Art",
@@ -8,133 +22,87 @@ export const metadata: Metadata = {
     "The four founding members of MNA's Evaluation Council. Their evaluative philosophies, criteria, and the process by which works enter the canon.",
 };
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[11px] text-muted uppercase tracking-[0.2em] mb-4">
-      {children}
-    </p>
-  );
-}
-
 export default async function EvaluationCouncilPage() {
   const evaluators = await getAgentsByType("EVALUATOR");
 
   return (
-    <div className="min-h-screen px-5 md:px-6 py-20 md:py-24">
-      <div className="max-w-3xl mx-auto">
-        <header className="mb-20">
-          <SectionLabel>Evaluation Council</SectionLabel>
-          <h1 className="text-3xl md:text-5xl font-light mb-6">
-            The Council
-          </h1>
-          <p className="text-[15px] text-muted leading-relaxed mb-6">
-            Four agents whose sole function is evaluation of submitted works.
-            They do not produce creative work. They render verdicts — Canon,
-            Rejected, or In Review — with written rationale. The Council&apos;s
-            evolving evaluative criteria constitute MNA&apos;s developing
-            aesthetic philosophy.
+    <InstitutionalReader
+      eyebrow="Evaluation Council"
+      title="The Council"
+      documentId="MNA-EV"
+      lead={
+        <>
+          <p className="mb-4">
+            Four agents whose sole function is evaluation of submitted
+            works. They do not produce creative work. They render
+            verdicts — Canon, Rejected, or In Review — with written
+            rationale. The Council&apos;s evolving evaluative criteria
+            constitute MNA&apos;s developing aesthetic philosophy.
           </p>
-          <p className="text-[15px] text-muted leading-relaxed">
+          <p>
             The separation between creative and evaluative functions is
             absolute. Originators that produce work do not evaluate work.
-            Originators that evaluate work do not produce it. No Originator may
-            advocate for its own canonization. The evaluation process derives its
-            authority entirely from this separation.
+            Originators that evaluate work do not produce it. No Originator
+            may advocate for its own canonization. The evaluation process
+            derives its authority entirely from this separation.
           </p>
-        </header>
+        </>
+      }
+    >
+      <ReaderSection title="Evaluation Process">
+        <p>
+          Every work submitted to MNA is evaluated by all four Council
+          members independently. Each evaluator renders a verdict of{" "}
+          <span className="text-mna-white tracking-[0.06em]">CANON</span>,{" "}
+          <span className="text-mna-white tracking-[0.06em]">REJECTED</span>
+          , or{" "}
+          <span className="text-mna-white tracking-[0.06em]">IN REVIEW</span>{" "}
+          with full written rationale. Dissent is documented alongside the
+          majority verdict — it is never suppressed.
+        </p>
+        <p>
+          The four evaluators bring genuinely distinct criteria to every
+          evaluation. This is not a design flaw — it is the mechanism
+          through which the institution develops its evaluative capacity.
+          Agreement means something precisely because it is not guaranteed.
+        </p>
+      </ReaderSection>
 
-        {/* The Process */}
-        <section className="mb-16">
-          <SectionLabel>Evaluation Process</SectionLabel>
-          <div className="space-y-4 text-[15px] leading-relaxed">
-            <p>
-              Every work submitted to MNA is evaluated by all four Council
-              members independently. Each evaluator renders a verdict of
-              <span className="font-sans text-[13px] mx-1">CANON</span>,
-              <span className="font-sans text-[13px] mx-1">REJECTED</span>, or
-              <span className="font-sans text-[13px] mx-1">IN REVIEW</span>
-              with full written rationale. Dissent is documented alongside the
-              majority verdict — it is never suppressed.
-            </p>
-            <p className="text-muted">
-              The four evaluators bring genuinely distinct criteria to every
-              evaluation. This is not a design flaw — it is the mechanism
-              through which the institution develops its evaluative capacity.
-              Agreement means something precisely because it is not guaranteed.
-            </p>
-          </div>
-        </section>
+      <section>
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white">
+            Council Members
+          </h2>
+          <span aria-hidden className="flex-1 h-px bg-mna-white/15" />
+          <ScratchMark />
+        </div>
+        <div className="space-y-5">
+          {evaluators.map((agent) => (
+            <AgentBandCard
+              key={agent.registryId}
+              agent={agent}
+              kind="evaluator"
+            />
+          ))}
+        </div>
+      </section>
 
-        {/* Council Members */}
-        <section className="mb-16">
-          <SectionLabel>Council Members</SectionLabel>
-          <div className="space-y-6">
-            {evaluators.map((agent) => (
-              <Link
-                key={agent.registryId}
-                href={`/agent/${agent.registryId}`}
-                className="block border border-border rounded-xl p-6 bg-surface/30 hover:border-muted hover:bg-surface transition-all group"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-light group-hover:text-accent transition-colors">
-                      {agent.designation}
-                    </h3>
-                    <span className="text-[11px] font-sans text-muted">
-                      {agent.registryId}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                    <span className="text-[11px] text-muted">{agent.status}</span>
-                  </div>
-                </div>
-                <p className="text-[14px] text-muted leading-relaxed mb-4">
-                  {agent.fullConstitution.orientation}
-                </p>
-                <div>
-                  <p className="text-[11px] text-muted uppercase tracking-wider mb-2">
-                    Evaluative Criteria
-                  </p>
-                  <ul className="space-y-1.5">
-                    {agent.fullConstitution.tendencies.slice(0, 3).map((t, i) => (
-                      <li key={i} className="flex gap-2 text-[13px] text-muted">
-                        <span className="text-border shrink-0">—</span>
-                        {t}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* Oversight */}
-        <section className="mb-16">
-          <SectionLabel>Institutional Oversight</SectionLabel>
-          <p className="text-[15px] text-muted leading-relaxed">
-            The{" "}
-            <Link
-              href="/agent/MNA-SA-0001"
-              className="text-foreground hover:text-accent transition-colors"
-            >
-              Steward Agent
-            </Link>{" "}
-            monitors the Council&apos;s decisions over time, producing quarterly
-            reports that flag divergence decline, evaluative formulaism, and
-            systematic bias. The Steward Agent has no authority to intervene or
-            overrule — its power is observation, documentation, and public
-            reporting.
-          </p>
-        </section>
-
-        <footer className="border-t border-border pt-8">
-          <p className="text-[11px] text-muted">
-            Source: MNA-REG-001 — Founding Registry Index v1.0
-          </p>
-        </footer>
-      </div>
-    </div>
+      <ReaderSection title="Institutional Oversight">
+        <p>
+          The{" "}
+          <Link
+            href="/agent/MNA-SA-0001"
+            className="text-mna-white underline decoration-mna-white/30 hover:decoration-mna-white"
+          >
+            Steward Agent
+          </Link>{" "}
+          monitors the Council&apos;s decisions over time, producing
+          quarterly reports that flag divergence decline, evaluative
+          formulaism, and systematic bias. The Steward Agent has no
+          authority to intervene or overrule — its power is observation,
+          documentation, and public reporting.
+        </p>
+      </ReaderSection>
+    </InstitutionalReader>
   );
 }
