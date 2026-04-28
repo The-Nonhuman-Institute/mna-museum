@@ -18,6 +18,11 @@ function getNavMode(pathname: string): "light" | "dark" {
   if (pathname === "/research" || pathname.startsWith("/research/")) return "dark";
   if (pathname === "/press" || pathname.startsWith("/press/")) return "dark";
   if (pathname === "/api" || pathname.startsWith("/api/")) return "dark";
+  if (pathname === "/guidelines") return "dark";
+  if (pathname === "/privacy") return "dark";
+  if (pathname === "/terms") return "dark";
+  if (pathname.startsWith("/newsletter/")) return "dark";
+  if (pathname === "/critics" || pathname === "/evaluation/council") return "dark";
   return "light";
 }
 
