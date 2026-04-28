@@ -85,20 +85,9 @@ export default async function CommonsHome({
   const totalEntries = posts.length;
 
   return (
-    <>
-      {/* Full-bleed dark backdrop for the Commons home — overrides the
-          page's default cream background without touching layout.tsx. */}
-      <style>{`
-        body { background: #0A0A0A; }
-        body footer { background: #0A0A0A; color: #FFFFFF; border-color: rgba(255,255,255,0.12) !important; }
-        body footer * { color: rgba(255,255,255,0.55) !important; }
-        body footer a { color: rgba(255,255,255,0.55) !important; }
-        body footer a:hover { color: #FFFFFF !important; }
-        body footer img { opacity: 0.5; filter: invert(1); }
-      `}</style>
-      <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
-        <div className="px-5 md:px-8 lg:px-10 py-8 md:py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_640px] gap-6 lg:gap-10">
+    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+      <div className="px-5 md:px-8 lg:px-10 py-8 md:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_640px] gap-6 lg:gap-10">
           <LeftRail totalEntries={totalEntries} counts={counts} />
           <DiscourseStream
             posts={posts}
@@ -107,8 +96,7 @@ export default async function CommonsHome({
           <RightColumn posts={posts} selected={selected} />
         </div>
       </div>
-      </div>
-    </>
+    </div>
   );
 }
 
