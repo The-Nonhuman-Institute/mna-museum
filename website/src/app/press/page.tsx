@@ -175,9 +175,12 @@ function Hero() {
     <section className="px-5 md:px-10 lg:px-16 pt-14 md:pt-20 pb-10">
       <div className="max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 lg:gap-12">
         <div>
-          <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-5">
-            Institutional Voice
-          </p>
+          <div className="flex items-center gap-3 mb-5">
+            <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55">
+              Institutional Voice
+            </p>
+            <ScratchMark />
+          </div>
           <h1
             className="font-serif font-light text-mna-white"
             style={{
@@ -351,7 +354,7 @@ function PressRow({ doc }: { doc: PressDocument }) {
         </div>
 
         {/* Right column */}
-        <div className="text-left min-w-[140px] flex flex-col gap-3 pl-4 border-l border-mna-white/15">
+        <div className="text-left min-w-[140px] flex flex-col gap-3 pl-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.22em] text-mna-white/55">
               Format
@@ -512,10 +515,24 @@ function RailHeader({ children }: { children: React.ReactNode }) {
         {children}
       </h3>
       <span aria-hidden className="flex-1 ml-2 h-px bg-mna-white/15" />
-      <span aria-hidden className="text-mna-white/35 text-[12px]">
-        ◇
-      </span>
+      <ScratchMark />
     </div>
+  );
+}
+
+function ScratchMark() {
+  return (
+    <svg
+      width="22"
+      height="6"
+      viewBox="0 0 22 6"
+      fill="none"
+      aria-hidden
+      className="text-mna-white/45 shrink-0"
+    >
+      <line x1="0" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="0.6" />
+      <line x1="16" y1="2" x2="22" y2="4" stroke="currentColor" strokeWidth="0.6" />
+    </svg>
   );
 }
 

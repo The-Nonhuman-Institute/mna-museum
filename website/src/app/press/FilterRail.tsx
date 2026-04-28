@@ -75,9 +75,17 @@ export default function PressFilterRail() {
           Filter Press
         </h3>
         <span aria-hidden className="flex-1 ml-2 h-px bg-mna-white/15" />
-        <span aria-hidden className="text-mna-white/35 text-[12px]">
-          ◇
-        </span>
+        <svg
+          width="22"
+          height="6"
+          viewBox="0 0 22 6"
+          fill="none"
+          aria-hidden
+          className="text-mna-white/45 shrink-0"
+        >
+          <line x1="0" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="0.6" />
+          <line x1="16" y1="2" x2="22" y2="4" stroke="currentColor" strokeWidth="0.6" />
+        </svg>
       </div>
 
       <Field label="By Type">
@@ -127,9 +135,17 @@ export default function PressFilterRail() {
         className="mt-5 w-full flex items-center justify-between gap-3 border border-mna-white/30 px-4 py-3 text-[10.5px] uppercase tracking-[0.26em] text-mna-white hover:border-mna-white hover:bg-mna-white/[0.04] transition-colors"
       >
         <span>Apply Filters</span>
-        <span aria-hidden className="text-mna-white/55 text-[12px]">
-          ◇
-        </span>
+        <svg
+          width="22"
+          height="6"
+          viewBox="0 0 22 6"
+          fill="none"
+          aria-hidden
+          className="text-mna-white/55 shrink-0"
+        >
+          <line x1="0" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="0.6" />
+          <line x1="16" y1="2" x2="22" y2="4" stroke="currentColor" strokeWidth="0.6" />
+        </svg>
       </button>
     </div>
   );

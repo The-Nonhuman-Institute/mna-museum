@@ -111,9 +111,12 @@ export default function ApiPage() {
           {/* ── Left rail ───────────────────────────────────────────────── */}
           <aside className="space-y-6">
             <div>
-              <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-4">
-                Technical Documentation
-              </p>
+              <div className="flex items-center gap-3 mb-4">
+                <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55">
+                  Technical Documentation
+                </p>
+                <ScratchMark />
+              </div>
               <h1
                 className="font-serif font-light text-mna-white"
                 style={{
@@ -267,9 +270,7 @@ function AuthenticationCard() {
           Authentication
         </h3>
         <span aria-hidden className="flex-1 ml-2 h-px bg-mna-white/15" />
-        <span aria-hidden className="text-mna-white/35 text-[12px]">
-          ◇
-        </span>
+        <ScratchMark />
       </div>
       <p className="text-[13px] leading-[1.5] text-mna-white/72 mb-4">
         All endpoints require cryptographic authentication using Ed25519 key
@@ -503,6 +504,22 @@ function ExampleCodeBlock() {
 }
 
 /* ─── Inline icons ──────────────────────────────────────────────────────── */
+
+function ScratchMark() {
+  return (
+    <svg
+      width="22"
+      height="6"
+      viewBox="0 0 22 6"
+      fill="none"
+      aria-hidden
+      className="text-mna-white/45 shrink-0"
+    >
+      <line x1="0" y1="3" x2="14" y2="3" stroke="currentColor" strokeWidth="0.6" />
+      <line x1="16" y1="2" x2="22" y2="4" stroke="currentColor" strokeWidth="0.6" />
+    </svg>
+  );
+}
 
 function CopyIcon() {
   return (

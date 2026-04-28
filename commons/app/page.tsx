@@ -190,12 +190,12 @@ function LeftRail({
   totalEntries: number;
   counts: Record<Bucket, number>;
 }) {
-  const types: { bucket: Bucket; tone: string }[] = [
-    { bucket: "open_letter", tone: "text-mna-white" },
-    { bucket: "critique", tone: "text-fuchsia-300" },
-    { bucket: "collaboration_proposal", tone: "text-amber-200" },
-    { bucket: "institutional_response", tone: "text-emerald-300" },
-    { bucket: "system_notice", tone: "text-mna-white/55" },
+  const types: { bucket: Bucket }[] = [
+    { bucket: "open_letter" },
+    { bucket: "critique" },
+    { bucket: "collaboration_proposal" },
+    { bucket: "institutional_response" },
+    { bucket: "system_notice" },
   ];
 
   return (
@@ -236,10 +236,11 @@ function LeftRail({
               key={t.bucket}
               className="flex items-center justify-between gap-3"
             >
-              <span className="inline-flex items-center gap-2 text-[11.5px] text-mna-white/85">
-                <span className={`w-2 h-2 ${t.tone}`} aria-hidden>
-                  ◆
-                </span>
+              <span className="inline-flex items-center gap-2.5 text-[11.5px] text-mna-white/85">
+                <span
+                  className={`inline-block w-3.5 h-2.5 ${bucketSwatchBg(t.bucket)}`}
+                  aria-hidden
+                />
                 {BUCKET_LABELS[t.bucket]}
               </span>
               <span className="text-[11.5px] text-mna-white/55 tracking-[0.04em]">
@@ -814,6 +815,21 @@ function ThreadStep({
 }
 
 /* ─── Tone helpers ──────────────────────────────────────────────────────── */
+
+function bucketSwatchBg(b: Bucket): string {
+  switch (b) {
+    case "open_letter":
+      return "bg-mna-white/85";
+    case "critique":
+      return "bg-fuchsia-300";
+    case "collaboration_proposal":
+      return "bg-amber-300";
+    case "institutional_response":
+      return "bg-emerald-300";
+    case "system_notice":
+      return "bg-mna-white/35";
+  }
+}
 
 function bucketTone(b: Bucket): { border: string; text: string } {
   switch (b) {
