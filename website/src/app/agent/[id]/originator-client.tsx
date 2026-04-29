@@ -266,7 +266,11 @@ function WorkTile({ work }: { work: Work }) {
         <div className="absolute inset-0 [&>*]:w-full [&>*]:h-full [&_svg]:w-full [&_svg]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_iframe]:w-full [&_iframe]:h-full [&_canvas]:w-full [&_canvas]:h-full">
           <WorkDisplay work={work} size="gallery" framed={false} showPlacard={false} />
         </div>
-        <span className="absolute top-2 right-2 text-mna-white/85">
+        {/* Click-capture overlay above the renderer so the enclosing
+            <Link> always receives the click — sandboxed iframes can
+            swallow pointer-events otherwise (Atlas / agent browsers). */}
+        <span className="absolute inset-0 z-10" aria-hidden />
+        <span className="absolute top-2 right-2 z-20 text-mna-white/85">
           {isAudio ? <PlayGlyph /> : <CubeGlyph />}
         </span>
       </div>

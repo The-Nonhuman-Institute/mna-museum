@@ -356,6 +356,7 @@ function RejectedBand({ rejected }: { rejected: Work[] }) {
                         showPlacard={false}
                       />
                     </div>
+                    <span className="absolute inset-0 z-10" aria-hidden />
                   </div>
                   <p className="text-[10px] font-sans uppercase tracking-[0.06em] text-bone/55 mb-1.5 truncate">
                     {w.id}

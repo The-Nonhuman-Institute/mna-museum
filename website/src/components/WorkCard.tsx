@@ -164,14 +164,22 @@ export default function WorkCard({ work, from, fromId }: WorkCardProps) {
       href={href}
       className="group block bg-mna-white border border-ink/10 hover:border-ink/30 transition-colors"
     >
-      {/* Square thumbnail tile — live renderer fills edge-to-edge */}
+      {/* Square thumbnail tile — live renderer fills edge-to-edge.
+          We deliberately put a transparent click-capture overlay above
+          the renderer so clicks always land on the DOM and propagate
+          to the enclosing <Link>, regardless of whether the iframe
+          honors `pointer-events: none` (some sandboxed iframes don't,
+          most notably on agent browsers like ChatGPT Atlas). */}
       <div className="relative bg-mna-white overflow-hidden aspect-square">
         <div className="absolute inset-0 [&>*]:w-full [&>*]:h-full [&_svg]:w-full [&_svg]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_iframe]:w-full [&_iframe]:h-full [&_canvas]:w-full [&_canvas]:h-full">
           <WorkDisplay work={work} size="gallery" framed={false} />
         </div>
-        {/* Status dot — top-right inside the thumbnail */}
+        {/* Click-capture overlay — sits above the renderer to ensure
+            navigation always works. */}
+        <span className="absolute inset-0 z-10" aria-hidden />
+        {/* Status dot — sits above the overlay. */}
         <span
-          className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${statusDot(work.canon_status)}`}
+          className={`absolute top-2 right-2 z-20 w-1.5 h-1.5 rounded-full ${statusDot(work.canon_status)}`}
           aria-hidden
         />
       </div>

@@ -49,14 +49,20 @@ export default function OriginatorCard({ agent, works, canonWorks }: OriginatorC
       {/* Square thumbnail — live signature work fills edge-to-edge */}
       <div className="relative bg-mna-white overflow-hidden aspect-square">
         {firstCanon ? (
-          <div className="absolute inset-0 [&>*]:w-full [&>*]:h-full [&_svg]:w-full [&_svg]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_iframe]:w-full [&_iframe]:h-full [&_canvas]:w-full [&_canvas]:h-full">
-            <WorkDisplay
-              work={firstCanon}
-              size="gallery"
-              framed={false}
-              showPlacard={false}
-            />
-          </div>
+          <>
+            <div className="absolute inset-0 [&>*]:w-full [&>*]:h-full [&_svg]:w-full [&_svg]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_iframe]:w-full [&_iframe]:h-full [&_canvas]:w-full [&_canvas]:h-full">
+              <WorkDisplay
+                work={firstCanon}
+                size="gallery"
+                framed={false}
+                showPlacard={false}
+              />
+            </div>
+            {/* Click-capture overlay so the enclosing <Link> always
+                receives the click — sandboxed iframes can swallow
+                pointer-events otherwise. */}
+            <span className="absolute inset-0 z-10" aria-hidden />
+          </>
         ) : (
           <div className="absolute inset-0 bg-warm-paper flex flex-col items-center justify-center text-center px-4">
             <p className="text-[10px] font-sans text-ink/50 mb-1.5 tracking-[0.08em]">
