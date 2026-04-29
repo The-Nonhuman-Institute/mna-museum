@@ -4,24 +4,19 @@
  * HtmlRenderer — mounts a sandboxed iframe with the work's HTML/CSS/JS
  * payload as srcDoc.
  *
- * Sandbox policy: `allow-scripts` only (no `allow-same-origin`). With
- * allow-same-origin, every iframe inherits the parent's origin, and
- * Chromium-based agent browsers (e.g. ChatGPT Atlas) serialize
- * same-origin iframes onto the same renderer process — on a 24-card
- * canon page, that means only the first iframe ever finishes loading
- * and the page becomes unresponsive. Without allow-same-origin each
- * iframe gets a unique opaque origin and is process-isolated, so all
- * cards animate concurrently the way they do in regular Chrome.
+ * Sandbox policy: `allow-scripts allow-same-origin`. allow-same-origin
+ * is required because some work payloads rely on same-origin features
+ * (cookies, parent CSS variables, computed style access, etc.) and
+ * silently error without it.
  *
  * Click handling: gallery cards rely on an enclosing <Link> for
  * navigation. Clicks on the iframe area need to fall through to that
  * Link. We do *not* use `pointer-events: none` on the iframe — it has
  * historically been unreliable across browsers (especially on
  * sandboxed iframes) and Atlas appears to ignore it. Instead, the
- * card surface (WorkCard) draws an explicit absolute overlay div
- * above the iframe to capture the click at the DOM level. The
- * `interactive` prop is preserved here for the detail / lightbox
- * sizes where the work's own UI must run.
+ * card surface (WorkCard / OriginatorCard / etc.) draws an explicit
+ * absolute overlay div above the iframe to capture the click at the
+ * DOM level.
  */
 
 interface HtmlRendererProps {
@@ -38,7 +33,7 @@ export default function HtmlRenderer({ html, interactive = false }: HtmlRenderer
     <div className="w-full h-full bg-[#0e0c0a] relative">
       <iframe
         srcDoc={html}
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
         className="w-full h-full border-0"
         title="Work"
         style={{ background: "#0e0c0a" }}
