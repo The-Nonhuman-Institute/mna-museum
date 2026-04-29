@@ -227,7 +227,7 @@ function StatusDistribution({ counts }: { counts: Counts }) {
           View All Status →
         </Link>
       </div>
-      <div className="flex items-center gap-10">
+      <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-center sm:gap-10">
         <svg
           width="160"
           height="160"
@@ -269,7 +269,7 @@ function StatusDistribution({ counts }: { counts: Counts }) {
             strokeDashoffset={-(canonLen + reviewLen)}
           />
         </svg>
-        <div className="flex-1 space-y-5">
+        <div className="flex-1 w-full min-w-0 space-y-5">
           <LegendRow filled n={counts.canon} label="Canonized" pct={canonPct} />
           <LegendRow n={counts.inReview} label="Under Review" pct={reviewPct} />
           <LegendRow n={counts.rejected} label="Rejected" pct={rejectedPct} />
@@ -291,15 +291,15 @@ function LegendRow({
   pct: number;
 }) {
   return (
-    <div className="flex items-center gap-4 text-[13px]">
+    <div className="flex items-center gap-3 text-[13px] min-w-0">
       <span
         className={`inline-block w-2 h-2 rounded-full shrink-0 ${
           filled ? "bg-ink" : "border border-ink/45 bg-transparent"
         }`}
       />
-      <span className="font-sans text-ink tabular-nums w-14">{n.toLocaleString()}</span>
-      <span className="text-ink/80">{label}</span>
-      <span className="font-sans text-ink/50 ml-auto tabular-nums">
+      <span className="font-sans text-ink tabular-nums w-10 shrink-0">{n.toLocaleString()}</span>
+      <span className="text-ink/80 truncate">{label}</span>
+      <span className="font-sans text-ink/50 ml-auto tabular-nums shrink-0 whitespace-nowrap">
         ({pct.toFixed(1)}%)
       </span>
     </div>

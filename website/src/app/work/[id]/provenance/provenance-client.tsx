@@ -176,7 +176,12 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(work.evaluations[0] ? [work.evaluations[0].evaluator_id] : []),
   );
-  const [delibOpen, setDelibOpen] = useState(false);
+  /* When a Registrar tiebreaker exists, the deliberation section
+     contains the institutional record of how the deadlock was
+     resolved — not supplementary notes. Open by default. */
+  const [delibOpen, setDelibOpen] = useState(
+    () => Boolean(work.registrar_decision),
+  );
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const toggle = (id: string) => {
@@ -349,6 +354,15 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
                   <p className="text-[11px] font-sans uppercase tracking-[0.18em] text-mna-white/70 mb-1">
                     Consensus: {canonVotes} / {totalVotes}
                   </p>
+                  {work.registrar_decision ? (
+                    <p className="text-[11px] font-sans uppercase tracking-[0.18em] text-amber-300 mb-1 flex items-center gap-2">
+                      <span
+                        className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400"
+                        aria-hidden
+                      />
+                      Tie Broken by Registrar
+                    </p>
+                  ) : null}
                   <p className="text-[11px] font-sans uppercase tracking-[0.18em] text-mna-white/60">
                     Date: {formatDateLong(work.canon_date).toUpperCase()}
                   </p>
@@ -465,19 +479,37 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
             </section>
           )}
 
-          {/* Council Deliberation Notes / Registrar Decision */}
+          {/* Registrar Tiebreaker — surfaced only when the Council was
+              deadlocked and the Registrar broke the tie under the
+              authority granted by MNA-PP-001. */}
           {work.registrar_decision && (
             <section className="border-b border-mna-white/15">
               <AccordionRow
                 isOpen={delibOpen}
                 onToggle={() => setDelibOpen((o) => !o)}
                 header={
-                  <p className="text-[11px] font-sans uppercase tracking-[0.26em] text-mna-white/85">
-                    Council Deliberation Notes
-                  </p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span
+                      className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"
+                      aria-hidden
+                    />
+                    <p className="text-[11px] font-sans uppercase tracking-[0.26em] text-mna-white/85">
+                      Registrar Tiebreaker
+                    </p>
+                    <span className="text-[10px] font-sans uppercase tracking-[0.22em] text-amber-300/85">
+                      Council Deadlock Resolved
+                    </span>
+                  </div>
                 }
               >
                 <div className="pt-2">
+                  <p className="text-[12px] text-mna-white/65 leading-relaxed mb-5 max-w-3xl">
+                    The Evaluation Council reached a {canonVotes}:
+                    {totalVotes - canonVotes} deadlock on this work. Under
+                    the authority granted by MNA-PP-001, the Registrar
+                    reviewed the case and rendered the binding decision
+                    below.
+                  </p>
                   <div className="flex flex-wrap items-center gap-2 mb-4">
                     <span className="font-display italic text-[17px] text-mna-white">
                       The Registrar
@@ -485,7 +517,7 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
                     <span className="text-[10px] font-sans text-mna-white/55">
                       MNA-RG-0001
                     </span>
-                    <span className="text-[9px] font-sans uppercase tracking-[0.22em] text-mna-white/80 border border-mna-white/20 px-2 py-0.5">
+                    <span className="text-[9px] font-sans uppercase tracking-[0.22em] text-amber-200 border border-amber-300/45 px-2 py-0.5">
                       {work.registrar_decision.decision}
                     </span>
                   </div>
