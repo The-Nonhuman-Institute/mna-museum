@@ -615,7 +615,7 @@ export async function generateAudioWaveformImage(
   // Work ID centered
   ctx.fillStyle = shareColors.fg;
   ctx.globalAlpha = 0.3;
-  ctx.font = "600 40px monospace";
+  ctx.font = "600 40px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(work.id, LOGICAL / 2, centerY + WORK_AREA_H * 0.4);
   ctx.globalAlpha = 1;
@@ -717,7 +717,7 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
           const centerY = PAD + WORK_AREA_H / 2;
           ctx.fillStyle = colors.fg;
           ctx.globalAlpha = 0.7;
-          ctx.font = "600 42px monospace";
+          ctx.font = "600 42px Inter, system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(work.id, LOGICAL / 2, centerY - 20);
           ctx.globalAlpha = 0.3;
@@ -732,7 +732,7 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
         const centerY = PAD + WORK_AREA_H / 2;
         ctx.fillStyle = colors.fg;
         ctx.globalAlpha = 0.7;
-        ctx.font = "600 42px monospace";
+        ctx.font = "600 42px Inter, system-ui, sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(work.id, LOGICAL / 2, centerY - 15);
         ctx.globalAlpha = 0.3;
@@ -744,7 +744,7 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
   } catch {
     // Fallback
     ctx.fillStyle = colors.fg;
-    ctx.font = "32px monospace";
+    ctx.font = "32px Inter, system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(work.id, LOGICAL / 2, LOGICAL / 2);
   }

@@ -8,11 +8,33 @@ import { formatDate } from "@/lib/format-date";
 
 interface WorkLightboxProps {
   work: Work;
-  children: React.ReactNode;
+  /** Uncontrolled trigger: when provided, clicking it opens the lightbox
+   *  and the component manages its own open state. Styling applied is
+   *  minimal — add your own hover treatment on the trigger. */
+  children?: React.ReactNode;
+  /** Optional controlled state. If `open` is provided the component is
+   *  fully controlled and must pair with `onOpenChange`. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Visual treatment on the trigger wrapper. Defaults to cursor + subtle
+   *  hover scale; pass "none" to disable so the consumer can style freely. */
+  triggerStyle?: "default" | "none";
 }
 
-export default function WorkLightbox({ work, children }: WorkLightboxProps) {
-  const [open, setOpen] = useState(false);
+export default function WorkLightbox({
+  work,
+  children,
+  open: controlledOpen,
+  onOpenChange,
+  triggerStyle = "default",
+}: WorkLightboxProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (isControlled) onOpenChange?.(v);
+    else setInternalOpen(v);
+  };
 
   useEffect(() => {
     if (open) {
@@ -33,14 +55,18 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  const triggerClass =
+    triggerStyle === "none"
+      ? ""
+      : "cursor-pointer transition-transform hover:scale-[1.02]";
+
   return (
     <>
-      <div
-        onClick={() => setOpen(true)}
-        className="cursor-pointer transition-transform hover:scale-[1.02]"
-      >
-        {children}
-      </div>
+      {children ? (
+        <div onClick={() => setOpen(true)} className={triggerClass}>
+          {children}
+        </div>
+      ) : null}
 
       {open && (
         <div className="fixed inset-0 z-[100] bg-[#0a0908]/95 overflow-y-auto">
@@ -55,12 +81,12 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
           <div className="min-h-screen flex flex-col items-center justify-start px-5 md:px-8 py-16 md:py-20">
             {/* Large framed work */}
             <div className="mb-10 flex justify-center">
-              <WorkDisplay work={work} size="lightbox" showPlacard={false} />
+              <WorkDisplay work={work} size="lightbox" showPlacard={false} framed={false} />
             </div>
 
             {/* Provenance — WCAG compliant colors */}
             <div className="w-full max-w-2xl text-center mb-10">
-              <p className="text-[12px] font-mono text-[#a09a90] mb-1">
+              <p className="text-[12px] font-sans text-[#a09a90] mb-1">
                 {work.id}
               </p>
               <p className="text-[15px] text-[#d0ccc6] mb-1">
@@ -123,14 +149,14 @@ export default function WorkLightbox({ work, children }: WorkLightboxProps) {
                           <span className="text-[14px] font-serif text-[#d0ccc6]">
                             {ev.evaluator_name}
                           </span>
-                          <span className="text-[10px] font-mono text-[#8a8680]">
+                          <span className="text-[10px] font-sans text-[#8a8680]">
                             {ev.evaluator_id}
                           </span>
-                          <span className="text-[10px] font-mono text-[#a09a90] border border-[#3a3530] px-1.5 py-0.5">
+                          <span className="text-[10px] font-sans text-[#a09a90] border border-[#3a3530] px-1.5 py-0.5">
                             {ev.verdict}
                           </span>
                           {ev.is_dissent === 1 && (
-                            <span className="text-[10px] font-mono text-[#c49a6c] border border-[#6a5540] px-1.5 py-0.5">
+                            <span className="text-[10px] font-sans text-[#c49a6c] border border-[#6a5540] px-1.5 py-0.5">
                               Dissent
                             </span>
                           )}

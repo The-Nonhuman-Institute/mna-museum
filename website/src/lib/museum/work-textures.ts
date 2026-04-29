@@ -76,7 +76,7 @@ function renderText(payload: string, bg: string, fg: string, aspect: number): HT
   let maxLineW = 0;
 
   while (fontSize > 12) {
-    ctx.font = `${fontSize}px monospace`;
+    ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
     lineHeight = fontSize * 1.5;
     totalH = lines.length * lineHeight;
     maxLineW = Math.max(...lines.map((l) => ctx.measureText(l).width));
@@ -85,7 +85,7 @@ function renderText(payload: string, bg: string, fg: string, aspect: number): HT
     fontSize--;
   }
 
-  ctx.font = `${fontSize}px monospace`;
+  ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
   const startY = Math.max(margin, (h - totalH) / 2);
 
   // Determine alignment based on content shape
@@ -114,7 +114,7 @@ function renderAscii(payload: string, bg: string, fg: string, aspect: number): H
   const fontH = Math.floor((h * 0.9) / (lines.length * 1.2));
   const fontSize = Math.min(fontW, fontH, 20);
 
-  ctx.font = `${fontSize}px monospace`;
+  ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
   ctx.fillStyle = fg;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
@@ -277,7 +277,7 @@ function renderAudioPlaceholder(aspect: number): HTMLCanvasElement {
   ctx.stroke();
 
   ctx.fillStyle = "#4a9060";
-  ctx.font = `${Math.max(12, w * 0.03)}px monospace`;
+  ctx.font = `${Math.max(12, w * 0.03)}px Inter, system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.fillText("AUDIO SYNTHESIS", w / 2, h * 0.88);
   return canvas;
@@ -350,7 +350,7 @@ function renderSceneJson(payload: string, aspect: number): HTMLCanvasElement {
       ctx.fillStyle = "#0c0c0c";
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = "#6a6560";
-      ctx.font = "14px monospace";
+      ctx.font = "14px Inter, system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("3D SCULPTURE", w / 2, h / 2);
     }

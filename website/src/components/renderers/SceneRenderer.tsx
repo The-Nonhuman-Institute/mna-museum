@@ -77,7 +77,7 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
         if (!scene!) {
           // Complete parse failure — show fallback
           if (container) {
-            container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0e0c0a"><span style="color:#3a3530;font-size:10px;font-family:monospace">Unable to render</span></div>';
+            container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0e0c0a"><span style="color:#3a3530;font-size:10px;letter-spacing:0.08em">Unable to render</span></div>';
           }
           return;
         }
@@ -231,6 +231,7 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
   return (
     <div
       ref={containerRef}
+      className="pointer-events-none"
       style={{ width: "100%", height: "100%" }}
     />
   );

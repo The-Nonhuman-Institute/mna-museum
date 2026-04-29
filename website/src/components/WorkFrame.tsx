@@ -70,12 +70,12 @@ export default function WorkFrame({
               <div className="aspect-square bg-[#1a1815] flex items-center justify-center min-w-[120px]">
                 <div className="text-center">
                   {workId && (
-                    <p className="text-[9px] font-mono text-[#4a4540] mb-1">
+                    <p className="text-[9px] font-sans text-[#4a4540] mb-1">
                       {workId}
                     </p>
                   )}
                   {originatorId && (
-                    <p className="text-[9px] font-mono text-[#4a4540]">
+                    <p className="text-[9px] font-sans text-[#4a4540]">
                       {originatorId}
                     </p>
                   )}
@@ -99,7 +99,7 @@ export default function WorkFrame({
       {(workId || originatorId) && (
         <div className="mt-3 text-center">
           {workId && (
-            <p className="text-[10px] font-mono text-muted">{workId}</p>
+            <p className="text-[10px] font-sans text-muted">{workId}</p>
           )}
           {originatorId && (
             <p className="text-[10px] text-muted">{originatorId}</p>

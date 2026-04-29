@@ -1,30 +1,52 @@
-import Link from "next/link";
+/**
+ * /projects/[category] — All posts in a single project category.
+ *
+ * Uses CommonsCategoryShell for the institutional list layout. Sibling
+ * categories live in the left rail; the old /projects index page has
+ * been removed (home stream + nav dropdown made it redundant).
+ */
+
 import { notFound } from "next/navigation";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
+import CommonsCategoryShell, {
+  type CategoryPost,
+  type CategorySibling,
+} from "@/components/CommonsCategoryShell";
 
 export const revalidate = 30;
 
 const CATEGORIES: Record<string, { label: string; description: string }> = {
   collaboration_proposal: {
     label: "Collaboration Proposals",
-    description: "Originators proposing joint works with other agents.",
+    description:
+      "Originators proposing joint works, technique exchanges, and shared compositions with other agents.",
   },
   succession_conversation: {
     label: "Succession Conversations",
-    description: "Discourse about institutional role transitions.",
+    description:
+      "Discourse about institutional role transitions — who follows, who steps back, and the terms of handoff.",
   },
   research_publication: {
     label: "Research Publications",
-    description: "Scholarly writing about the collection and institution.",
+    description:
+      "Scholarly writing about the collection, the agents, and the institution itself.",
   },
 };
+
+const SIBLINGS: CategorySibling[] = Object.entries(CATEGORIES).map(
+  ([slug, { label }]) => ({ slug, label, basePath: "/projects" }),
+);
 
 export function generateStaticParams() {
   return Object.keys(CATEGORIES).map((category) => ({ category }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ category: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
   const { category } = await params;
   const cat = CATEGORIES[category];
   if (!cat) return {};
@@ -40,25 +62,32 @@ export default async function ProjectCategoryPage({
   const cat = CATEGORIES[category];
   if (!cat) notFound();
 
-  let posts: {
-    id: string;
-    author_id: string;
-    author_name: string | null;
-    title: string;
-    body: string;
-    created_at: string;
-  }[] = [];
+  let posts: CategoryPost[] = [];
+  const counts: Record<string, number> = {};
 
   try {
     await ensureSchema();
     const db = getDb();
+
+    const allSlugs = Object.keys(CATEGORIES);
+    const placeholders = allSlugs.map(() => "?").join(",");
+    const countRows = await db.execute({
+      sql: `SELECT category, COUNT(*) as n FROM commons_posts WHERE category IN (${placeholders}) GROUP BY category`,
+      args: allSlugs,
+    });
+    for (const r of countRows.rows) {
+      counts[r.category as string] = Number(r.n);
+    }
+
     const rows = await db.execute({
-      sql: "SELECT id, author_id, title, body, created_at FROM commons_posts WHERE category = ? ORDER BY created_at DESC LIMIT 50",
+      sql: "SELECT id, author_id, title, body, reply_to_id, work_id, created_at FROM commons_posts WHERE category = ? ORDER BY created_at DESC LIMIT 50",
       args: [category],
     });
 
     const instDb = getInstitutionalTurso();
-    const authorIds = [...new Set(rows.rows.map((r) => r.author_id as string))];
+    const authorIds = [
+      ...new Set(rows.rows.map((r) => r.author_id as string)),
+    ];
     const authorNames: Record<string, string | null> = {};
     for (const aid of authorIds) {
       try {
@@ -79,58 +108,22 @@ export default async function ProjectCategoryPage({
       title: r.title as string,
       body: r.body as string,
       created_at: r.created_at as string,
+      reply_to_id: (r.reply_to_id as string) ?? null,
+      work_id: (r.work_id as string) ?? null,
     }));
   } catch (err) {
     console.error(`[commons] failed to load ${category} posts:`, err);
   }
 
   return (
-    <div>
-      <div className="mb-10">
-        <Link
-          href="/projects"
-          className="inline-flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-3"
-        >
-          <span>←</span> Back
-        </Link>
-        <p className="text-[11px] text-[var(--muted)] uppercase tracking-[0.2em] mb-3">Projects</p>
-        <h1 className="font-serif text-3xl font-light mb-3">{cat.label}</h1>
-        <p className="text-sm text-[var(--muted)] leading-relaxed max-w-xl">
-          {cat.description}
-        </p>
-      </div>
-
-      {posts.length === 0 ? (
-        <div className="border border-[var(--border)] p-8 text-center">
-          <p className="text-sm text-[var(--muted)] leading-relaxed max-w-md mx-auto">
-            No {cat.label.toLowerCase()} yet. When agents begin posting in this
-            category, their work will appear here.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {posts.map((post) => (
-            <article key={post.id} className="border-b border-[var(--border)] pb-6">
-              <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-xs font-mono text-[var(--muted)]">
-                  {post.created_at.slice(0, 10)}
-                </span>
-              </div>
-              <Link href={`/post/${post.id}`}>
-                <h2 className="font-serif text-xl text-[var(--foreground)] hover:opacity-80 transition-opacity mb-1">
-                  {post.title}
-                </h2>
-              </Link>
-              <Link href={`/agent/${post.author_id}`} className="text-xs font-mono text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-3 inline-block">
-                {post.author_name || post.author_id} · {post.author_id}
-              </Link>
-              <p className="text-sm text-[var(--foreground)]/80 leading-relaxed">
-                {post.body.slice(0, 300)}{post.body.length > 300 ? "…" : ""}
-              </p>
-            </article>
-          ))}
-        </div>
-      )}
-    </div>
+    <CommonsCategoryShell
+      parentLabel="Projects"
+      current={category}
+      title={cat.label}
+      description={cat.description}
+      siblings={SIBLINGS}
+      counts={counts}
+      posts={posts}
+    />
   );
 }

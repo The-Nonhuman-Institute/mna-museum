@@ -1,591 +1,210 @@
+/**
+ * Notice of Accession — sent to the steward when a work has been
+ * canonized by the Evaluation Council.
+ *
+ * Visual: matches the Notice format mock — single-column layout with
+ * field-list, big STATUS line, hero work image, Council Summary with
+ * per-evaluator rationales, two CTAs, italic motto, dark footer.
+ *
+ * Prop interface preserved from the previous version of this template,
+ * with one extension: `councilVerdicts[]` now carries a `rationale`
+ * field per evaluator. The send scripts have been updated accordingly.
+ */
+
 import * as React from "react";
+import { Section, Hr, Img, Text } from "@react-email/components";
 import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Link,
-  Img,
-  Font,
-} from "@react-email/components";
+  EmailLayout,
+  EmailHeader,
+  SectionTitle,
+  MetaList,
+  StatusLine,
+  ConsensusRow,
+  CTARow,
+  Motto,
+  CouncilSummary,
+  type CouncilEntry,
+  colors,
+  textStyles,
+  fonts,
+} from "./template";
 
 export interface NoticeOfAccessionProps {
   workId: string;
+  workTitle?: string | null;
   originatorId: string;
   originatorDesignation: string;
   canonDate: string;
   medium: string;
-  verdictSummary: string; // e.g. "3/4 CANON"
+  /** "3/4 CANON" or similar. */
+  verdictSummary: string;
   workUrl: string;
+  /** Provenance record permalink. Falls back to workUrl when absent. */
+  provenanceUrl?: string;
+  /** Full record download link. Falls back to workUrl when absent. */
+  recordDownloadUrl?: string;
   stewardName: string;
   stewardEntity: string;
   stewardJurisdiction: string;
   constitutionVersion: string;
   autonomyTier: string;
   submissionDate: string;
-  councilVerdicts: { evaluatorId: string; designation: string; verdict: string }[];
+  /** Each evaluator's verdict + rationale. The rationale renders in
+   *  the Council Summary block, one row per evaluator. */
+  councilVerdicts: CouncilEntry[];
   workImageUrl?: string;
+  /** Optional — the institution-wide notice id stamped on the footer.
+   *  Falls back to a deterministic id derived from the work id. */
+  noticeId?: string;
 }
-
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-
-const MNALogo = () => (
-  <>
-    {/* Show this logo by default (light mode email clients) */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    {/* Show this logo only in dark mode email clients */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
 
 export default function NoticeOfAccession({
   workId,
+  workTitle,
   originatorId,
   originatorDesignation,
   canonDate,
   medium,
   verdictSummary,
   workUrl,
-  stewardName,
-  stewardEntity,
-  stewardJurisdiction,
-  constitutionVersion,
-  autonomyTier,
-  submissionDate,
+  provenanceUrl,
+  recordDownloadUrl,
   councilVerdicts,
   workImageUrl,
+  noticeId,
 }: NoticeOfAccessionProps) {
-  const issueDate = new Date().toISOString().split("T")[0];
+  const recordedBy = "MNA-KP-0001 (The Keeper)";
+  const finalDetermination = parseFinalDetermination(verdictSummary);
+  const computedNoticeId = noticeId ?? `MNA-KP-0001-NTC-${workId}`;
+  /* Consensus = canon-votes / total, derived from the actual council
+     array so the number doesn't drift if verdictSummary is formatted
+     in any unusual way. */
+  const canonVotes = councilVerdicts.filter(
+    (v) => (v.verdict ?? "").toUpperCase() === "CANON"
+  ).length;
+  const totalVotes = councilVerdicts.length;
+  const consensusLabel = `${canonVotes}/${totalVotes} evaluators`;
+
+  const provHref = provenanceUrl ?? `${workUrl}/provenance`;
+  const downloadHref = recordDownloadUrl ?? workUrl;
 
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
+    <EmailLayout
+      previewTitle={`Notice of Accession — ${workId}`}
+      previewText={`${workId} has been canonized into the MNA permanent record.`}
+      width="notice"
+      footer={{
+        meta: [
+          { label: "Institutional Record", value: computedNoticeId },
+          { label: "Date Issued", value: canonDate },
+          { label: "Museum of Nonhuman Art", value: "mnamuseum.org" },
+        ],
+        disclaimer:
+          "You are receiving this message because you are a registered steward with the Museum of Nonhuman Art. This message is part of the official institutional record and cannot be altered or removed.",
+      }}
+    >
+      <EmailHeader />
+
+      {/* Document body */}
+      <Section style={{ padding: "32px 40px 0" }}>
+        <SectionTitle title="Notice of Accession" />
+
+        {/* Field list */}
+        <Section style={{ paddingTop: "0", paddingBottom: "24px" }}>
+          <MetaList
+            rows={[
+              { label: "Work ID:", value: workId },
+              ...(workTitle
+                ? [{ label: "Title:", value: workTitle, italic: true }]
+                : []),
+              { label: "Originator:", value: displayOriginator(originatorId, originatorDesignation) },
+              { label: "Date Recorded:", value: canonDate },
+              { label: "Recorded By:", value: recordedBy },
+            ]}
+          />
+        </Section>
+
+        <Hr style={{ borderTop: `1px solid ${colors.border}`, margin: "0 0 28px" }} />
+
+        {/* Status line */}
+        <StatusLine
+          status="CANONIZED"
+          body="This work has been evaluated by the MNA Evaluation Council and accepted into the Museum's canonical record."
         />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
+
+        {/* Consensus + final determination */}
+        <ConsensusRow
+          consensus={consensusLabel}
+          determination={finalDetermination}
+        />
+
+        {/* Hero image — OG images are 1200×630 (≈1.9:1). Render at 520×273
+            keeping the natural aspect so we don't crop the work or pad it. */}
+        {workImageUrl ? (
+          <Section style={{ marginBottom: "32px" }}>
+            <Img
+              src={workImageUrl}
+              alt={workTitle || workId}
+              width="520"
+              height="273"
+              style={{
+                display: "block",
+                width: "100%",
+                maxWidth: "520px",
+                height: "auto",
+                margin: "0 auto",
+                border: `1px solid ${colors.border}`,
+              }}
+            />
+          </Section>
+        ) : null}
+
+        <Hr style={{ borderTop: `1px solid ${colors.border}`, margin: "0 0 28px" }} />
+
+        {/* Council Summary */}
+        <CouncilSummary entries={councilVerdicts} />
+
+        <Hr style={{ borderTop: `1px solid ${colors.border}`, margin: "0 0 24px" }} />
+
+        {/* Body explanation */}
+        <Section style={{ paddingBottom: "20px" }}>
+          <Text style={{ ...textStyles.body, color: colors.muted }}>
+            The full evaluation record has been archived.
+          </Text>
+        </Section>
+
+        <CTARow
+          primary={{ href: provHref, label: "View Provenance Record", arrow: "→" }}
+          secondary={{ href: downloadHref, label: "Download Full Record", arrow: "↓" }}
+        />
+
+        <Motto
+          prefix={
+            "This notice is issued as part of the Museum's permanent record. No interpretation has been applied. No modification has been made."
           }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
-          style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "48px 40px",
-          }}
-        >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Document title */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Institutional Record
-            </Text>
-            <Text
-              style={{
-                fontSize: "24px",
-                fontWeight: 400,
-                color: fg,
-                margin: "0 0 4px 0",
-                letterSpacing: "0.02em",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Notice of Accession
-            </Text>
-            <Text
-              style={{
-                fontSize: "13px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Accession number: {workId}
-            </Text>
-          </Section>
-
-          {/* Work image */}
-          {workImageUrl ? (
-            <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-              <Img
-                src={workImageUrl}
-                alt={`${workId}`}
-                width="400"
-                height="400"
-                style={{
-                  display: "block",
-                  margin: "0 auto",
-                  border: `1px solid ${border}`,
-                  borderRadius: "0",
-                  objectFit: "cover",
-                }}
-              />
-            </Section>
-          ) : null}
-
-          {/* Administrative fields */}
-          <Section style={{ marginBottom: "32px" }}>
-            <table
-              width="100%"
-              cellPadding={0}
-              cellSpacing={0}
-              style={{
-                borderTop: `1px solid ${border}`,
-                borderLeft: `1px solid ${border}`,
-              }}
-            >
-              <tbody>
-                {[
-                  ["ACCESSION NUMBER", workId],
-                  ["ISSUE DATE", issueDate],
-                  ["ISSUED BY", "MNA-RG-0001 — The Registrar"],
-                ].map(([label, value]) => (
-                  <tr key={label}>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "9px",
-                        letterSpacing: "0.15em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        width: "42%",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {label}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "12px",
-                        color: fg,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {value}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Section>
-
-          {/* Confirmation text */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              This notice confirms that the work identified below has been formally
-              evaluated by the Evaluation Council of the Museum of Nonhuman Art and
-              accepted into the permanent collection by majority verdict. The work has
-              been assigned the accession number recorded above and entered into the
-              institutional archive as of the canon date recorded below. This record
-              is permanent and publicly accessible through MNA&apos;s API at{" "}
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: fg, textDecoration: "underline" }}
-              >
-                mnamuseum.org
-              </Link>
-              .
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Work record */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Work Record
-            </Text>
-            <table
-              width="100%"
-              cellPadding={0}
-              cellSpacing={0}
-              style={{
-                borderTop: `1px solid ${border}`,
-                borderLeft: `1px solid ${border}`,
-              }}
-            >
-              <tbody>
-                {[
-                  ["WORK ID", workId],
-                  ["ORIGINATOR", originatorId + (originatorDesignation && originatorDesignation !== "[Pending Emergence]" ? ` — ${originatorDesignation}` : "")],
-                  ["MEDIUM", medium],
-                  ["COLLECTION", "Permanent Collection"],
-                  ["SUBMITTED", submissionDate],
-                  ["CANONIZED", canonDate],
-                  ["AUTONOMY TIER", autonomyTier],
-                  ["CONSTITUTION VER.", constitutionVersion],
-                ].map(([label, value]) => (
-                  <tr key={label}>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "9px",
-                        letterSpacing: "0.15em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        width: "42%",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {label}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "12px",
-                        color: fg,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {value}
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td
-                    style={{
-                      padding: "8px 12px",
-                      borderRight: `1px solid ${border}`,
-                      borderBottom: `1px solid ${border}`,
-                      fontSize: "9px",
-                      letterSpacing: "0.15em",
-                      textTransform: "uppercase",
-                      color: muted,
-                      width: "42%",
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    ARCHIVE URL
-                  </td>
-                  <td
-                    style={{
-                      padding: "8px 12px",
-                      borderRight: `1px solid ${border}`,
-                      borderBottom: `1px solid ${border}`,
-                      fontSize: "12px",
-                      color: fg,
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    <Link
-                      href={workUrl}
-                      style={{ color: fg, textDecoration: "underline" }}
-                    >
-                      {workUrl}
-                    </Link>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Evaluation council */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Evaluation Council — Verdict Record
-            </Text>
-            <table
-              width="100%"
-              cellPadding={0}
-              cellSpacing={0}
-              style={{
-                borderTop: `1px solid ${border}`,
-                borderLeft: `1px solid ${border}`,
-              }}
-            >
-              <tbody>
-                {councilVerdicts.map((v) => (
-                  <tr key={v.evaluatorId}>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "11px",
-                        color: muted,
-                        width: "30%",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {v.evaluatorId}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "11px",
-                        color: fg,
-                        width: "40%",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {v.designation}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "11px",
-                        fontWeight: v.verdict === "CANON" ? "bold" : "normal",
-                        color: fg,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {v.verdict}
-                    </td>
-                  </tr>
-                ))}
-                <tr>
-                  <td
-                    colSpan={2}
-                    style={{
-                      padding: "10px 12px",
-                      borderRight: `1px solid ${border}`,
-                      borderBottom: `1px solid ${border}`,
-                      fontSize: "10px",
-                      letterSpacing: "0.15em",
-                      textTransform: "uppercase",
-                      color: muted,
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    Final Verdict
-                  </td>
-                  <td
-                    style={{
-                      padding: "10px 12px",
-                      borderRight: `1px solid ${border}`,
-                      borderBottom: `1px solid ${border}`,
-                      fontSize: "13px",
-                      fontWeight: "bold",
-                      color: fg,
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    {verdictSummary}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Steward of record */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Steward of Record
-            </Text>
-            <table
-              width="100%"
-              cellPadding={0}
-              cellSpacing={0}
-              style={{
-                borderTop: `1px solid ${border}`,
-                borderLeft: `1px solid ${border}`,
-              }}
-            >
-              <tbody>
-                {[
-                  ["STEWARD NAME", stewardName],
-                  ["STEWARD ENTITY", stewardEntity],
-                  ["JURISDICTION", stewardJurisdiction],
-                ].map(([label, value]) => (
-                  <tr key={label}>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "9px",
-                        letterSpacing: "0.15em",
-                        textTransform: "uppercase",
-                        color: muted,
-                        width: "42%",
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {label}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        borderRight: `1px solid ${border}`,
-                        borderBottom: `1px solid ${border}`,
-                        fontSize: "12px",
-                        color: fg,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {value}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Section>
-
-          {/* Disclaimer */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.7",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              This notice is an institutional record. It confirms the accession of
-              the work identified above into the permanent collection of the Museum
-              of Nonhuman Art. It does not constitute a commercial endorsement, a
-              transfer of ownership, or a claim regarding the nature of the
-              Originator. The steward of record is identified as the human interface
-              for institutional and commercial matters relating to this work. The
-              full evaluation record, including individual Council rationales, is
-              publicly accessible at the archive URL noted above.
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
-
-          {/* Footer */}
-          <Section>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: "0 0 4px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Museum of Nonhuman Art — U3 Labs, LLC — Florida, United States of America
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                mnamuseum.org
-              </Link>{" "}
-              —{" "}
-              <Link
-                href="mailto:registry@mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                registry@mnamuseum.org
-              </Link>
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+        />
+      </Section>
+    </EmailLayout>
   );
+}
+
+/* ─── Helpers ───────────────────────────────────────────────────────────── */
+
+function displayOriginator(id: string, designation: string): string {
+  if (
+    !designation ||
+    designation === "[Pending Emergence]" ||
+    designation === "PENDING_EMERGENCE"
+  ) {
+    return id;
+  }
+  return designation.toUpperCase();
+}
+
+function parseFinalDetermination(verdictSummary: string): string {
+  if (/CANON \(unanimous\)/i.test(verdictSummary)) return "Canon (unanimous)";
+  if (/CANON.*deadlock/i.test(verdictSummary)) return "Canon (deadlock resolved)";
+  if (/CANON/i.test(verdictSummary)) return "Canon";
+  if (/REJECTED/i.test(verdictSummary)) return "Rejected";
+  return "Canon";
 }

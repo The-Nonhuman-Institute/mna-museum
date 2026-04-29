@@ -125,7 +125,7 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
     <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
       <canvas
         ref={canvasRef}
-        className="max-w-full max-h-full"
+        className="max-w-full max-h-full pointer-events-none"
         style={{ imageRendering: "auto" }}
       />
     </div>

@@ -24,7 +24,7 @@ export default function ExhibitionWorkPanel({ work, index }: ExhibitionWorkPanel
   return (
     <article className="flex flex-col items-center">
       {/* Sequence index — small, quiet, gives the visitor a sense of order */}
-      <div className="text-[10px] uppercase tracking-[0.25em] text-muted mb-5 font-mono">
+      <div className="text-[10px] uppercase tracking-[0.25em] text-muted mb-5 font-sans">
         {String(index).padStart(2, "0")} / {work.medium}
       </div>
 
@@ -40,7 +40,7 @@ export default function ExhibitionWorkPanel({ work, index }: ExhibitionWorkPanel
         aria-label={`View ${work.title || work.id}`}
         className="group inline-block w-[280px] sm:w-auto transition-opacity hover:opacity-90"
       >
-        <WorkDisplay work={work} size="detail" showPlacard={false} />
+        <WorkDisplay work={work} size="detail" showPlacard={false} framed={false} />
       </Link>
 
       {/* Placard — serif title, muted metadata, links */}

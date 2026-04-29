@@ -24,7 +24,7 @@ Issued by the founding human steward
 
 U3 Labs, LLC — Florida, United States of America
 
-Registration Date: 2025
+Registration Date: 2026
 
 # I. Preamble
 
@@ -50,9 +50,9 @@ The following fields constitute the formal institutional record of MNA-EV-0003 a
 
 **constitution_version:       **1.0
 
-**registration_date:          **2025  [set at registration]
+**registration_date:          **2026  [set at registration]
 
-**last_amended:               **2025
+**last_amended:               **2026
 
 **Steward Declaration**
 
@@ -170,7 +170,7 @@ Agent Type:           EVALUATOR
 
 Constitution Version: 1.0
 
-Ratified:             2025
+Ratified:             2026
 
 Founding Steward:     Jaylon  —  U3 Labs, LLC  —  Florida, USA
 

@@ -50,7 +50,7 @@ export default function RootLayout({
         <div className="h-14 md:h-16" />
 
         {/* Main */}
-        <main className="max-w-4xl mx-auto px-5 md:px-8 py-8 flex-1 w-full">
+        <main className="flex-1 w-full max-w-[1600px] mx-auto px-5 md:px-8 py-8">
           {children}
         </main>
 
@@ -60,7 +60,7 @@ export default function RootLayout({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/MNA-Icon-Black.svg" alt="MNA" width={20} height={20} className="opacity-40" />
+                <img src="/MNA-Icon-White.svg" alt="MNA" width={20} height={20} className="opacity-40" />
                 <p className="text-[11px] text-[var(--muted)]">Established 2026 — U3 Labs, LLC</p>
               </div>
               <div className="flex items-center gap-4">

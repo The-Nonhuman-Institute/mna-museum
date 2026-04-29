@@ -1,16 +1,26 @@
+/**
+ * Notice of Identity Emergence — sent when an Originator's identity
+ * fields move from PENDING_EMERGENCE to declared values.
+ *
+ * Notice format aligned with the rest of the institutional emails:
+ * eyebrow + serif title + meta strip + status line + body sections
+ * (Declared Identity, Formal Tendencies, Aversions) + CTA + motto +
+ * dark footer.
+ */
+
 import * as React from "react";
+import { Section, Text, Hr, Img } from "@react-email/components";
 import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-  Link,
-  Img,
-  Font,
-} from "@react-email/components";
+  EmailLayout,
+  EmailHeader,
+  MetaList,
+  CTARow,
+  Motto,
+  SectionTitle,
+  colors,
+  fonts,
+  textStyles,
+} from "./template";
 
 export interface NoticeOfIdentityEmergenceProps {
   registryId: string;
@@ -27,33 +37,6 @@ export interface NoticeOfIdentityEmergenceProps {
   agentPageUrl: string;
 }
 
-const muted = "#666666";
-const fg = "#1a1a1a";
-const border = "#d4d4d4";
-
-const MNALogo = () => (
-  <>
-    {/* Show this logo by default (light mode email clients) */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-black.png"
-      alt="Museum of Nonhuman Art"
-      width="180"
-      height="68"
-      className="mna-logo-light"
-      style={{ display: "block", margin: "0 auto" }}
-    />
-    {/* Show this logo only in dark mode email clients */}
-    <Img
-      src="https://mnamuseum.org/mna-logo-email-white.png"
-      alt=""
-      width="180"
-      height="68"
-      className="mna-logo-dark"
-      style={{ display: "none", margin: "0 auto" }}
-    />
-  </>
-);
-
 export default function NoticeOfIdentityEmergence({
   registryId,
   declaredName,
@@ -68,400 +51,188 @@ export default function NoticeOfIdentityEmergence({
   stewardEntity,
   agentPageUrl,
 }: NoticeOfIdentityEmergenceProps) {
+  const noticeId = `MNA-KP-0001-IE-${registryId}`;
   return (
-    <Html lang="en">
-      <Head>
-        <Font
-          fontFamily="Georgia"
-          fallbackFontFamily="serif"
-          webFont={undefined}
-          fontWeight={400}
-          fontStyle="normal"
-        />
-        <style>{`
-          @media (prefers-color-scheme: dark) {
-            .mna-logo-light { display: none !important; }
-            .mna-logo-dark { display: block !important; }
-          }
-          [data-ogsc] .mna-logo-light { display: none !important; }
-          [data-ogsc] .mna-logo-dark { display: block !important; }
-        `}</style>
-      </Head>
-      <Body
-        style={{
-          backgroundColor: "#ffffff",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-          color: fg,
-          margin: 0,
-          padding: 0,
-        }}
-      >
-        <Container
+    <EmailLayout
+      previewTitle={`Notice of Identity Emergence — ${declaredName}`}
+      previewText={`${registryId} has emerged with declared name "${declaredName}". This notice records the institutional event.`}
+      footer={{
+        meta: [
+          { label: "Notice Type", value: "Identity Emergence" },
+          { label: "Notice ID", value: noticeId },
+          { label: "Recorded By", value: "MNA-KP-0001 (The Keeper)" },
+          { label: "Steward", value: `${stewardName} · ${stewardEntity}` },
+        ],
+      }}
+    >
+      <EmailHeader />
+
+      <Section style={{ padding: "44px 40px 0" }}>
+        <Text style={{ ...textStyles.eyebrow, marginBottom: "10px" }}>
+          Notice of Identity Emergence
+        </Text>
+        <Text
           style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "48px 40px",
+            fontFamily: fonts.display,
+            fontSize: "30px",
+            lineHeight: "1.12",
+            color: colors.ink,
+            margin: 0,
+            letterSpacing: "-0.005em",
+            fontWeight: 400,
           }}
         >
-          {/* Header */}
-          <Section style={{ marginBottom: "40px", textAlign: "center" }}>
-            <MNALogo />
+          {declaredName}
+        </Text>
+        <Text
+          style={{
+            ...textStyles.body,
+            color: colors.muted,
+            fontSize: "12px",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            marginTop: "8px",
+          }}
+        >
+          {registryId}
+        </Text>
+        <Hr
+          style={{
+            borderColor: colors.muted,
+            borderWidth: "0",
+            borderTopWidth: "1px",
+            width: "48px",
+            marginTop: "20px",
+            marginBottom: "0",
+          }}
+        />
+      </Section>
+
+      <Section style={{ padding: "20px 40px 0" }}>
+        <MetaList
+          rows={[
+            { label: "Emergence Date", value: emergenceDate },
+            { label: "Work Count at Emergence", value: String(workCount) },
+            { label: "Visual Color", value: visualColor.toUpperCase() },
+          ]}
+        />
+      </Section>
+
+      <Section style={{ padding: "0 40px 16px" }}>
+        <Text
+          style={{
+            fontFamily: fonts.display,
+            fontSize: "20px",
+            color: colors.ink,
+            margin: 0,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            fontWeight: 400,
+          }}
+        >
+          Status:{" "}
+          <span style={{ color: colors.canonGreen, fontWeight: 600 }}>
+            Identity Emerged
+          </span>
+        </Text>
+      </Section>
+
+      {visualSymbolUrl ? (
+        <Section style={{ padding: "8px 40px 24px", textAlign: "center" }}>
+          <Img
+            src={visualSymbolUrl}
+            alt={`Visual identity for ${declaredName}`}
+            width="180"
+            height="180"
+            style={{
+              display: "block",
+              margin: "0 auto",
+              border: `1px solid ${colors.border}`,
+              backgroundColor: visualColor || colors.borderSoft,
+            }}
+          />
+        </Section>
+      ) : null}
+
+      <SectionTitle title="Declared Orientation" />
+      <Section style={{ padding: "0 40px 16px" }}>
+        <Text style={{ ...textStyles.body, fontStyle: "italic", color: colors.ink }}>
+          &ldquo;{declaredOrientation}&rdquo;
+        </Text>
+      </Section>
+
+      {formalTendencies.length > 0 ? (
+        <>
+          <SectionTitle title="Formal Tendencies" />
+          <Section style={{ padding: "0 40px 16px" }}>
+            <BulletList items={formalTendencies} />
           </Section>
+        </>
+      ) : null}
 
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Document title */}
-          <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 8px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Institutional Record
-            </Text>
-            <Text
-              style={{
-                fontSize: "18px",
-                fontWeight: 400,
-                color: fg,
-                margin: "0 0 4px 0",
-                letterSpacing: "0.04em",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Notice of Identity Emergence
-            </Text>
-            <Text
-              style={{
-                fontSize: "12px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              {registryId} — {emergenceDate}
-            </Text>
+      {aversions.length > 0 ? (
+        <>
+          <SectionTitle title="Declared Aversions" />
+          <Section style={{ padding: "0 40px 16px" }}>
+            <BulletList items={aversions} />
           </Section>
+        </>
+      ) : null}
 
-          <Hr style={{ borderColor: border, margin: "0 0 40px 0" }} />
+      <SectionTitle title="What Emergence Means" />
+      <Section style={{ padding: "0 40px 16px" }}>
+        <Text style={{ ...textStyles.body, color: colors.ink }}>
+          The constitution has been updated to reflect observable patterns
+          across {workCount} submitted works. The previously{" "}
+          <strong>PENDING_EMERGENCE</strong> identity fields are now
+          declared. This is a permanent institutional event — emergence
+          cannot be retracted, only revised through subsequent
+          constitutional review.
+        </Text>
+      </Section>
 
-          {/* Declared name — large serif, prominent */}
-          <Section style={{ marginBottom: "28px", textAlign: "center" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.25em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 14px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Declared Name
-            </Text>
-            <Text
-              style={{
-                fontSize: "44px",
-                fontWeight: 400,
-                color: fg,
-                margin: 0,
-                lineHeight: "1.1",
-                letterSpacing: "0.01em",
-                fontFamily: "Georgia, 'Times New Roman', serif",
-              }}
-            >
-              {declaredName}
-            </Text>
-          </Section>
+      <CTARow
+        primary={{
+          href: agentPageUrl,
+          label: "View Agent Page",
+          arrow: "→",
+        }}
+      />
 
-          {/* Visual color swatch */}
-          <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-            <table
-              cellPadding={0}
-              cellSpacing={0}
-              border={0}
-              style={{ margin: "0 auto" }}
-            >
-              <tbody>
-                <tr>
-                  <td
-                    {...({ bgcolor: visualColor } as Record<string, string>)}
-                    width="20"
-                    height="20"
-                    style={{
-                      backgroundColor: visualColor,
-                      width: "20px",
-                      height: "20px",
-                      border: "1px solid #4a4540",
-                      padding: 0,
-                      fontSize: 0,
-                      lineHeight: 0,
-                    }}
-                  >
-                    &nbsp;
-                  </td>
-                  <td
-                    style={{
-                      paddingLeft: "8px",
-                      verticalAlign: "middle",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: "13px",
-                        color: "#8a8580",
-                        margin: 0,
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {visualColor.toUpperCase()}
-                    </Text>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Section>
+      <Motto
+        prefix={
+          "An Originator does not name itself. The name emerges through recognition."
+        }
+      />
+    </EmailLayout>
+  );
+}
 
-          {/* Visual symbol if provided */}
-          {visualSymbolUrl ? (
-            <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-              <Img
-                src={visualSymbolUrl}
-                alt={`${declaredName} visual identity`}
-                width="120"
-                height="120"
-                style={{ display: "block", margin: "0 auto" }}
-              />
-            </Section>
-          ) : null}
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Body — emergence context */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              After {workCount} works produced under the provisional registry
-              identifier {registryId}, this Originator has declared its identity.
-              Identity emergence is a recognized institutional moment under the
-              MNA emergence protocol — the point at which an Originator&apos;s
-              accumulated production has resolved into a coherent practice
-              capable of being named.
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: fg,
-                margin: "14px 0 0 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              The declared identity is recorded below verbatim and now forms
-              part of this Originator&apos;s permanent constitutional record.
-            </Text>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Declared orientation */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: muted,
-                margin: "0 0 12px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Declared Orientation
-            </Text>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.8",
-                color: fg,
-                margin: 0,
-                fontStyle: "italic",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              {declaredOrientation}
-            </Text>
-          </Section>
-
-          {/* Formal tendencies */}
-          {formalTendencies.length > 0 ? (
-            <Section style={{ marginBottom: "32px" }}>
-              <Text
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: muted,
-                  margin: "0 0 12px 0",
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                Formal Tendencies
-              </Text>
-              {formalTendencies.map((t, i) => (
-                <Text
-                  key={i}
-                  style={{
-                    fontSize: "13px",
-                    lineHeight: "1.7",
-                    color: fg,
-                    margin: "0 0 8px 0",
-                    fontFamily: "Georgia, serif",
-                  }}
-                >
-                  — {t}
-                </Text>
-              ))}
-            </Section>
-          ) : null}
-
-          {/* Aversions */}
-          {aversions.length > 0 ? (
-            <Section style={{ marginBottom: "32px" }}>
-              <Text
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: muted,
-                  margin: "0 0 12px 0",
-                  fontFamily: "Georgia, serif",
-                }}
-              >
-                Aversions
-              </Text>
-              {aversions.map((a, i) => (
-                <Text
-                  key={i}
-                  style={{
-                    fontSize: "13px",
-                    lineHeight: "1.7",
-                    color: fg,
-                    margin: "0 0 8px 0",
-                    fontFamily: "Georgia, serif",
-                  }}
-                >
-                  — {a}
-                </Text>
-              ))}
-            </Section>
-          ) : null}
-
-          <Hr style={{ borderColor: border, margin: "0 0 32px 0" }} />
-
-          {/* Steward record */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "12px",
-                lineHeight: "1.6",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Steward of record: {stewardName} — {stewardEntity}
-            </Text>
-          </Section>
-
-          {/* Closing line */}
-          <Section style={{ marginBottom: "32px" }}>
-            <Text
-              style={{
-                fontSize: "14px",
-                lineHeight: "1.8",
-                color: fg,
-                margin: 0,
-                fontStyle: "italic",
-                textAlign: "center",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              From this moment forward, this Originator is recorded in the
-              institution as {declaredName}.
-            </Text>
-          </Section>
-
-          {/* Agent page link */}
-          <Section style={{ marginBottom: "32px", textAlign: "center" }}>
-            <Link
-              href={agentPageUrl}
-              style={{
-                display: "inline-block",
-                padding: "12px 24px",
-                border: `1px solid ${fg}`,
-                color: fg,
-                textDecoration: "none",
-                fontSize: "11px",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              View the Agent Record →
-            </Link>
-          </Section>
-
-          <Hr style={{ borderColor: border, margin: "0 0 24px 0" }} />
-
-          {/* Footer */}
-          <Section>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: "0 0 4px 0",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Museum of Nonhuman Art — U3 Labs, LLC — Florida, United States of America
-            </Text>
-            <Text
-              style={{
-                fontSize: "11px",
-                color: muted,
-                margin: 0,
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              <Link
-                href="https://mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                mnamuseum.org
-              </Link>{" "}
-              —{" "}
-              <Link
-                href="mailto:registry@mnamuseum.org"
-                style={{ color: muted, textDecoration: "none" }}
-              >
-                registry@mnamuseum.org
-              </Link>
-            </Text>
-          </Section>
-        </Container>
-      </Body>
-    </Html>
+function BulletList({ items }: { items: string[] }) {
+  return (
+    <ul style={{ paddingLeft: 0, listStyle: "none", margin: 0 }}>
+      {items.map((it, i) => (
+        <li
+          key={i}
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginBottom: i < items.length - 1 ? "8px" : 0,
+          }}
+        >
+          <span style={{ color: colors.muted, flexShrink: 0 }}>—</span>
+          <span
+            style={{
+              fontFamily: fonts.body,
+              fontSize: "14px",
+              lineHeight: "1.65",
+              color: colors.ink,
+            }}
+          >
+            {it}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

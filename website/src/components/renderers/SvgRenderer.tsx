@@ -29,7 +29,7 @@ export default function SvgRenderer({ svg }: SvgRendererProps) {
   if (svgStart < 0 || svgEnd <= svgStart) {
     return (
       <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
-        <p className="text-[#3a3530] text-[10px] font-mono">Unable to render</p>
+        <p className="text-[#3a3530] text-[10px] font-sans">Unable to render</p>
       </div>
     );
   }
@@ -39,7 +39,7 @@ export default function SvgRenderer({ svg }: SvgRendererProps) {
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center p-2"
+      className="w-full h-full flex items-center justify-center p-2 [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto"
       dangerouslySetInnerHTML={{ __html: cleanSvg }}
       style={{
         backgroundColor: svgBg,

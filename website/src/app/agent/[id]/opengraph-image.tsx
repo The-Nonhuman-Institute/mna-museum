@@ -122,13 +122,13 @@ export default async function AgentOGImage({
           {agent.designation || agent.registryId}
         </div>
 
-        {/* ── Registry ID (mono) ─────────────────────────────────────── */}
+        {/* ── Registry ID ─────────────────────────────────────────────── */}
         <div
           style={{
             display: "flex",
             fontSize: 16,
             color: "#8a8680",
-            fontFamily: "ui-monospace, monospace",
+            letterSpacing: "0.12em",
             marginBottom: 28,
           }}
         >

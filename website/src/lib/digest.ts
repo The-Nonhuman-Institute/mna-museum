@@ -9,13 +9,37 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import fs from "fs";
+import path from "path";
 import { getDb } from "./registration-db";
 import { getResend, FROM, sendMonthlyDigest } from "./email";
 import { getConfirmedSubscribersWithTokens } from "./newsletter";
 import type {
   MonthlyDigestProps,
-  DigestWork,
+  CanonEntry,
+  PressItem,
+  InstitutionalUpdate,
+  BulletinExhibition,
+  ResearchReportCard,
 } from "@/emails/MonthlyDigest";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pressData = require("@/data/press.json") as Array<{
+  id: string;
+  title: string;
+  publication?: string;
+  conducted_by?: string;
+  publication_date?: string;
+  url?: string;
+}>;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const researchData = require("@/data/research.json") as Array<{
+  id: string;
+  title: string;
+  document_type: string;
+  agent_designation?: string;
+  publication_date?: string;
+  body?: string;
+}>;
 
 // ─── Anthropic client ────────────────────────────────────────────────────────
 
@@ -62,6 +86,7 @@ interface ExhibitionEvent {
   status: "ACTIVE" | "RETIRED";
   opened_at: string;
   retired_at: string | null;
+  coverWorkId: string | null;
 }
 
 interface CriticEvent {
@@ -159,7 +184,7 @@ async function collectLast30Days(): Promise<CollectedEvents> {
 
   // Exhibitions opened/retired in window
   const exhOpenedRes = await db.execute({
-    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at
+    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at, cover_work_id, work_ids
             FROM exhibitions
            WHERE opened_at >= ?
            ORDER BY opened_at DESC`,
@@ -173,10 +198,11 @@ async function collectLast30Days(): Promise<CollectedEvents> {
     status: (r.status as string) === "RETIRED" ? "RETIRED" : "ACTIVE",
     opened_at: r.opened_at as string,
     retired_at: (r.retired_at as string) || null,
+    coverWorkId: pickCoverWorkId(r.cover_work_id, r.work_ids),
   }));
 
   const exhRetiredRes = await db.execute({
-    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at
+    sql: `SELECT id, title, subtitle, curatorial_statement, status, opened_at, retired_at, cover_work_id, work_ids
             FROM exhibitions
            WHERE retired_at IS NOT NULL AND retired_at >= ?
            ORDER BY retired_at DESC`,
@@ -190,6 +216,7 @@ async function collectLast30Days(): Promise<CollectedEvents> {
     status: "RETIRED",
     opened_at: r.opened_at as string,
     retired_at: (r.retired_at as string) || null,
+    coverWorkId: pickCoverWorkId(r.cover_work_id, r.work_ids),
   }));
 
   // Critical responses on canon works
@@ -227,20 +254,22 @@ async function collectLast30Days(): Promise<CollectedEvents> {
     registrationDate: (r.registration_date as string) || "",
   }));
 
-  // Constitutional amendments
+  /* Constitutional amendments come from the events table — the
+     constitutions table doesn't carry per-amendment metadata, but the
+     events stream records every amendment with its rationale in the
+     description field. */
   const amendRes = await db.execute({
-    sql: `SELECT agent_id, version, amendment_rationale, created_at
-            FROM constitutions
-           WHERE created_at >= ?
-             AND amendment_rationale IS NOT NULL
-             AND amendment_rationale != ''
+    sql: `SELECT agent_id, description, created_at
+            FROM events
+           WHERE event_type = 'CONSTITUTION_AMENDED'
+             AND created_at >= ?
            ORDER BY created_at DESC`,
     args: [cutoff],
   });
   const amendments = amendRes.rows.map((r) => ({
     agentId: r.agent_id as string,
-    version: r.version as string,
-    rationale: (r.amendment_rationale as string) || "",
+    version: "",
+    rationale: (r.description as string) || "",
     date: (r.created_at as string) || "",
   }));
 
@@ -384,63 +413,216 @@ function monthLabel(date = new Date()): string {
 }
 
 const SITE_ORIGIN =
-  process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://mnamuseum.org";
+  process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://www.mnamuseum.org";
+
+const PUBLIC_DIR = path.join(process.cwd(), "public");
+
+/**
+ * Pick the best available image URL for a work.
+ * Prefers /og/ (frameless, OG-aspect) when it exists; falls back to
+ * /previews/ (framed) when the OG hasn't been generated yet — better
+ * than a broken image. Always uses absolute URLs (email clients require
+ * them).
+ */
+function workImageUrl(workId: string): string {
+  const ogPath = path.join(PUBLIC_DIR, "og", `${workId}.png`);
+  if (fs.existsSync(ogPath)) return `${SITE_ORIGIN}/og/${workId}.png`;
+  const previewPath = path.join(PUBLIC_DIR, "previews", `${workId}.png`);
+  if (fs.existsSync(previewPath)) return `${SITE_ORIGIN}/previews/${workId}.png`;
+  return `${SITE_ORIGIN}/og/${workId}.png`;
+}
+
+function exhibitionImageUrl(
+  exhibitionId: number,
+  coverWorkId: string | null
+): string {
+  const exhOgPath = path.join(
+    PUBLIC_DIR,
+    "og",
+    `exhibition-${exhibitionId}.png`
+  );
+  if (fs.existsSync(exhOgPath))
+    return `${SITE_ORIGIN}/og/exhibition-${exhibitionId}.png`;
+  if (coverWorkId) return workImageUrl(coverWorkId);
+  return `${SITE_ORIGIN}/og/exhibition-${exhibitionId}.png`;
+}
+
+/** Resolve a cover work id from `cover_work_id` or the first id in
+ *  `work_ids` (a JSON-encoded array). Returns null when neither is
+ *  usable. */
+function pickCoverWorkId(
+  coverField: unknown,
+  workIdsField: unknown
+): string | null {
+  if (typeof coverField === "string" && coverField.length > 0) {
+    return coverField;
+  }
+  if (typeof workIdsField === "string" && workIdsField.length > 0) {
+    try {
+      const arr = JSON.parse(workIdsField);
+      if (Array.isArray(arr) && typeof arr[0] === "string") return arr[0];
+    } catch {
+      /* swallow */
+    }
+  }
+  return null;
+}
 
 export async function composeMonthlyDigest(
-  model: "sonnet" | "opus" = "sonnet"
+  _model: "sonnet" | "opus" = "sonnet"
 ): Promise<MonthlyDigestPayload> {
   const events = await collectLast30Days();
-  const label = monthLabel();
-  const narrative = await composeNarrative(events, label, model);
+  const today = new Date();
+  const bulletinDate = today.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const bulletinId = `MNA-BLT-${today.toISOString().slice(0, 10)}`;
+  /* model is accepted for backwards compat but no longer used — the
+     new bulletin is structured DB data, not narrative prose. */
+  void _model;
 
-  // Build accessioned cards
-  const recentlyAccessioned: DigestWork[] = events.canon.slice(0, 6).map((c) => ({
-    workId: c.workId,
-    title: c.title,
-    originatorName: c.originatorName,
-    workUrl: `${SITE_ORIGIN}/work/${c.workId}`,
-    imageUrl: `${SITE_ORIGIN}/og/${c.workId}.png`,
-  }));
-
-  const recentlyEmerged = events.emergence.slice(0, 6).map((e) => ({
-    registryId: e.registryId,
-    declaredName: e.declaredName,
-    orientation: trimExcerpt(e.orientation, 180),
-    agentUrl: `${SITE_ORIGIN}/agent/${e.registryId}`,
-  }));
-
-  const criticalNotes = events.critics.slice(0, 4).map((c) => ({
-    workId: c.workId,
-    workTitle: c.workTitle || c.workId,
-    criticName: c.criticName,
-    excerpt: trimExcerpt(c.body, 220),
-  }));
-
-  // Pick the most recently opened active exhibition for the spotlight
-  const headlineExhibition = events.exhibitionsOpened.find(
-    (e) => e.status === "ACTIVE"
+  /* New canon entries: top 4 canonizations, each with cover + consensus. */
+  const consensusByWork = await getCouncilConsensusByWork(
+    events.canon.slice(0, 4).map((c) => c.workId)
   );
-  const exhibitionSection = headlineExhibition
+  const newCanonEntries: CanonEntry[] = events.canon.slice(0, 4).map((c) => ({
+    workId: c.workId,
+    workTitle: c.title,
+    originatorDesignation: c.originatorName,
+    canonDate: formatDate(c.canonDate),
+    consensus: consensusByWork.get(c.workId) ?? "—",
+    imageUrl: workImageUrl(c.workId),
+    workUrl: `${SITE_ORIGIN}/work/${c.workId}`,
+  }));
+
+  /* Most recent research report — pulled from the static research.json
+     (sorted by publication_date descending). */
+  const sortedResearch = [...researchData].sort((a, b) =>
+    (b.publication_date ?? "").localeCompare(a.publication_date ?? "")
+  );
+  const latestResearch = sortedResearch[0];
+  const recentResearchReport: ResearchReportCard | null = latestResearch
     ? {
-        title: headlineExhibition.title,
-        statement:
-          narrative.exhibitionStatement ||
-          trimExcerpt(headlineExhibition.curatorial_statement, 320),
-        url: `${SITE_ORIGIN}/exhibitions/${headlineExhibition.id}`,
+        title: latestResearch.title,
+        date: formatDate(latestResearch.publication_date ?? ""),
+        leadAuthor: latestResearch.agent_designation ?? "MNA-KP-0001",
+        classification: humanizeClass(latestResearch.document_type),
+        body: trimExcerpt(latestResearch.body ?? "", 220),
+        url: `${SITE_ORIGIN}/research/${latestResearch.id}`,
       }
     : null;
 
+  /* Press highlights — the 3 most recent items from press.json. */
+  const sortedPress = [...pressData]
+    .filter((p) => p.title)
+    .sort((a, b) =>
+      (b.publication_date ?? "").localeCompare(a.publication_date ?? "")
+    );
+  const pressHighlights: PressItem[] = sortedPress.slice(0, 3).map((p) => ({
+    source: p.publication ?? p.conducted_by ?? "MNA",
+    title: p.title,
+    date: formatDate(p.publication_date ?? ""),
+    url: p.url ?? `${SITE_ORIGIN}/press/${p.id}`,
+  }));
+
+  /* Institutional updates — registrations + amendments + system. */
+  const institutionalUpdates: InstitutionalUpdate[] = [];
+  for (const r of events.registrations.slice(0, 2)) {
+    institutionalUpdates.push({
+      kind: r.registryId.startsWith("MNA-CR-") ? "critic" : "agent",
+      title: r.registryId.startsWith("MNA-CR-")
+        ? "New Critic Agent"
+        : "New Originator Activated",
+      body: `${r.registryId}${r.designation ? ` (${r.designation})` : ""} — Registered ${formatDate(r.registrationDate)}`,
+    });
+  }
+  if (events.amendments.length > 0) {
+    const distinctAgents = new Set(events.amendments.map((a) => a.agentId));
+    institutionalUpdates.push({
+      kind: "amendment",
+      title: "Constitution Amendments",
+      body: `${events.amendments.length} amendment${events.amendments.length === 1 ? "" : "s"} recorded across ${distinctAgents.size} agent constitution${distinctAgents.size === 1 ? "" : "s"}`,
+    });
+  }
+
+  /* Upcoming exhibitions — anything with status DRAFT or ACTIVE that
+     opens today or later. Falls back to the most recently opened
+     active exhibition. */
+  const futureExhibitions = events.exhibitionsOpened.filter(
+    (e) => e.status === "ACTIVE"
+  );
+  const upcomingExhibitions: BulletinExhibition[] = futureExhibitions
+    .slice(0, 2)
+    .map((e) => ({
+      title: e.subtitle ? "Phase I: Emergence" : e.title,
+      subtitle: e.subtitle ?? e.title,
+      openingDate: formatDate(e.opened_at),
+      curator: "MNA-CU-0001 (The Curator)",
+      imageUrl: exhibitionImageUrl(e.id, e.coverWorkId),
+      url: `${SITE_ORIGIN}/exhibitions/${e.id}`,
+    }));
+
   return {
-    monthLabel: label,
-    introduction: narrative.introduction,
-    exhibitionSection,
-    recentlyAccessioned,
-    recentlyEmerged,
-    criticalNotes,
-    institutionalNotes: narrative.institutionalNotes,
-    closingLine: narrative.closingLine,
-    unsubscribeUrl: `${SITE_ORIGIN}/newsletter`, // overridden per-recipient at send time
+    bulletinDate,
+    bulletinId,
+    issuedBy: "MNA-KP-0001 (The Keeper)",
+    recipient: "Registered Stewards",
+    newCanonEntries,
+    recentResearchReport,
+    pressHighlights,
+    institutionalUpdates,
+    upcomingExhibitions,
   };
+}
+
+/* ─── Helpers for the bulletin payload ─────────────────────────────────── */
+
+async function getCouncilConsensusByWork(
+  workIds: string[]
+): Promise<Map<string, string>> {
+  if (workIds.length === 0) return new Map();
+  const db = getDb();
+  const placeholders = workIds.map(() => "?").join(",");
+  const r = await db.execute({
+    sql: `SELECT work_id,
+                 SUM(CASE WHEN verdict = 'CANON' THEN 1 ELSE 0 END) as canon_n,
+                 COUNT(*) as total_n
+            FROM evaluations
+           WHERE work_id IN (${placeholders})
+           GROUP BY work_id`,
+    args: workIds,
+  });
+  const map = new Map<string, string>();
+  for (const row of r.rows) {
+    map.set(
+      String(row.work_id),
+      `${row.canon_n} / ${row.total_n}`
+    );
+  }
+  return map;
+}
+
+function formatDate(iso: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function humanizeClass(docType: string): string {
+  const m: Record<string, string> = {
+    "corpus-study": "Research Report",
+    interview: "Interview",
+    "stewardship-record": "Stewardship Record",
+    essay: "Essay",
+  };
+  return m[docType] ?? docType;
 }
 
 // ─── Sending ─────────────────────────────────────────────────────────────────

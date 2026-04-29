@@ -57,16 +57,16 @@ function WorkModal({
         {/* Work in frame — gallery size on mobile, detail on desktop */}
         <div className="flex justify-center">
           <div className="block md:hidden">
-            <WorkDisplay work={work} size="gallery" showPlacard={false} />
+            <WorkDisplay work={work} size="gallery" showPlacard={false} framed={false} />
           </div>
           <div className="hidden md:block">
-            <WorkDisplay work={work} size="detail" showPlacard={false} />
+            <WorkDisplay work={work} size="detail" showPlacard={false} framed={false} />
           </div>
         </div>
 
         {/* Minimal identification */}
         <div className="text-center mt-4">
-          <p className="text-[12px] font-mono text-muted">{work.id}</p>
+          <p className="text-[12px] font-sans text-muted">{work.id}</p>
           <p className="text-[13px] text-foreground mt-1">
             {work.originator_id}
             <span className="text-muted"> — {work.medium}</span>
@@ -176,7 +176,7 @@ export default function ResearchBody({
             <button
               key={`ref-${keyIdx++}`}
               onClick={() => openWork(workId)}
-              className="font-mono text-[13px] text-foreground hover:text-accent underline underline-offset-2 decoration-border hover:decoration-foreground transition-colors cursor-pointer"
+              className="font-sans text-[13px] text-foreground hover:text-accent underline underline-offset-2 decoration-border hover:decoration-foreground transition-colors cursor-pointer"
             >
               {earliestRef.id}
             </button>
@@ -187,7 +187,7 @@ export default function ResearchBody({
             <Link
               key={`ref-${keyIdx++}`}
               href={`/agent/${earliestRef.id}`}
-              className="font-mono text-[13px] text-foreground hover:text-accent underline underline-offset-2 decoration-border hover:decoration-foreground transition-colors"
+              className="font-sans text-[13px] text-foreground hover:text-accent underline underline-offset-2 decoration-border hover:decoration-foreground transition-colors"
             >
               {earliestRef.id}
             </Link>

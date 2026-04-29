@@ -118,7 +118,7 @@ export default function CommonsNav() {
           <Link href="/" className="flex items-center shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/MNA-Standard-Logo-Black-Horizontal.svg"
+              src="/MNA-Standard-Logo-White-Horizontal.svg"
               alt="Museum of Nonhuman Art"
               className="h-9 md:h-12 w-auto"
             />

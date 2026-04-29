@@ -2,13 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light mode (default) — canon, originator profiles, about, participate, etc. */
 :root {
-  --background: #f5f2ed;
-  --foreground: #1a1a1a;
-  --muted: #8a8680;
+  --color-ink: #0A0A0A;
+  --color-charcoal: #2A2A2A;
+  --color-warm-paper: #EAE7E2;
+  --color-bone: #F4F2EE;
+  --color-glitch: #8A8AAB;
+  --color-mna-white: #FFFFFF;
+
+  --background: var(--color-warm-paper);
+  --foreground: var(--color-ink);
+  --surface: var(--color-bone);
+  --muted: #6b6660;
   --border: #d6d0c8;
-  --accent: #2a2a2a;
-  --surface: #ece8e1;
+  --accent: var(--color-charcoal);
+}
+
+/* Dark mode — homepage hero, Archive, Commons, exhibition hero sections. */
+.mode-dark {
+  --background: var(--color-ink);
+  --foreground: var(--color-mna-white);
+  --surface: var(--color-charcoal);
+  --muted: #8a8680;
+  --border: #2a2a2a;
+  --accent: var(--color-glitch);
+
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Explicit light wrapper (use when nested inside a dark parent). */
+.mode-light {
+  --background: var(--color-warm-paper);
+  --foreground: var(--color-ink);
+  --surface: var(--color-bone);
+  --muted: #6b6660;
+  --border: #d6d0c8;
+  --accent: var(--color-charcoal);
+
+  color: var(--foreground);
+  background: var(--background);
 }
 
 ::selection {
@@ -18,27 +52,13 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-interface), system-ui, sans-serif;
 }
 
 @layer base {
-  h1, h2, h3 {
-    @apply font-serif;
-  }
-
-  h1 {
-    @apply tracking-normal;
-  }
-
-  h2 {
-    @apply tracking-normal;
-  }
-
-  h3 {
-    @apply tracking-normal;
-  }
-
-  p {
-    @apply leading-relaxed;
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 300;
   }
 }
 
@@ -58,9 +78,143 @@ body {
   will-change: transform;
 }
 
+/* Multi-line clamp for table cells — used in the Evaluator agent
+   template's recent-evaluations rationale excerpt. */
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tab strip on the standards page can overflow horizontally on narrow
+   screens; the scrollbar would visually break the institutional rule. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Standards body typography — institutional reading. Plain markdown→HTML
+   gets paragraphs, bold field labels, italicized block quotes, and lists.
+   Pinned to ink (not --foreground) because /standards/[id] is registered
+   as a dark page for nav purposes, but the body section is on warm paper
+   and must read as ink regardless of inherited mode-dark variables. */
+.prose-standard {
+  color: var(--color-ink);
+  font-size: 15px;
+  line-height: 1.7;
+  font-family: var(--font-interface), system-ui, sans-serif;
+}
+.prose-standard p {
+  margin-bottom: 1.1em;
+}
+.prose-standard p:last-child {
+  margin-bottom: 0;
+}
+.prose-standard strong {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.prose-standard em {
+  font-style: italic;
+  color: var(--color-ink);
+  opacity: 0.85;
+}
+.prose-standard ul,
+.prose-standard ol {
+  margin: 0 0 1.2em 0;
+  padding-left: 1.2em;
+}
+.prose-standard li {
+  margin-bottom: 0.5em;
+  line-height: 1.65;
+}
+.prose-standard ul > li {
+  list-style: none;
+  position: relative;
+}
+.prose-standard ul > li::before {
+  content: "";
+  position: absolute;
+  left: -0.95em;
+  top: 0.7em;
+  width: 0.45em;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+.prose-standard ol > li {
+  list-style: decimal;
+  padding-left: 0.3em;
+}
+.prose-standard h2 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.25;
+  margin: 2em 0 0.8em;
+}
+.prose-standard h3 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.3;
+  margin: 1.6em 0 0.6em;
+}
+.prose-standard hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+.prose-standard a {
+  color: var(--color-ink);
+  border-bottom: 1px solid currentColor;
+  text-decoration: none;
+}
+.prose-standard a:hover {
+  opacity: 0.7;
+}
+.prose-standard code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.9em;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+.prose-standard blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 1em;
+  font-style: italic;
+  opacity: 0.85;
+  margin: 1.4em 0;
+}
+.prose-standard table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4em 0;
+  font-size: 13px;
+}
+.prose-standard th,
+.prose-standard td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.6em 0.8em;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-standard th {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+}
+
 /* Phase heading — display treatment */
 .text-phase {
-  font-family: var(--font-serif), Georgia, serif;
+  font-family: var(--font-display), Georgia, serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-shadow:

@@ -2,17 +2,40 @@ import MuseumFrame from "./MuseumFrame";
 import MuseumPlinth from "./MuseumPlinth";
 import { frames } from "./MuseumFrame";
 import SvgRenderer from "./renderers/SvgRenderer";
+import MNAComposition, { type CompositionTheme } from "./MNAComposition";
 import type { Work } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
 import { parseWorkColors } from "@/lib/work-colors";
 import { isWorkRenderable } from "@/lib/validate-work";
 import dynamic from "next/dynamic";
 
+/** Map a work's medium to a composition theme. Used as a visual fallback
+ *  when the work has no renderable payload (mis-typed records, audio works
+ *  stored as text, empty placeholders). */
+function compositionThemeForWork(work: Work): CompositionTheme {
+  const m = (work.medium || "").toLowerCase();
+  if (/audio|sound|sonic|acoustic|music/.test(m)) return "fragmentation";
+  if (/video|moving|motion|animation|temporal|film/.test(m)) return "fragmentation";
+  if (/sculpture|spatial|3d|three-dimensional|installation/.test(m)) return "interruption";
+  if (/image|visual|svg|painting|drawing|photograph/.test(m)) return "absence";
+  if (/text|language|writing|word|poem|essay/.test(m)) return "structure";
+  return "absence";
+}
+
+/** A work qualifies for composition fallback when its payload is empty or
+ *  trivially short — i.e., it has no actual visual content to render. We
+ *  deliberately don't substitute composition for substantive text/ASCII
+ *  art, since that *is* the work. */
+function needsCompositionFallback(work: Work): boolean {
+  const payload = (work.output_payload ?? "").trim();
+  return payload.length < 30;
+}
+
 /** Fallback for unrenderable works */
 function WorkFallback({ workId }: { workId: string }) {
   return (
     <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
-      <p className="text-[#3a3530] text-[10px] font-mono">{workId}</p>
+      <p className="text-[#3a3530] text-[10px] font-sans">{workId}</p>
     </div>
   );
 }
@@ -35,6 +58,12 @@ interface WorkDisplayProps {
   work: Work;
   size?: "gallery" | "detail" | "lightbox";
   showPlacard?: boolean;
+  /**
+   * When false, skip MuseumFrame/MuseumPlinth and render the work's
+   * renderer output full-bleed inside its parent container. The parent
+   * is responsible for sizing. Default true (legacy behavior).
+   */
+  framed?: boolean;
 }
 
 const targetAreas: Record<string, number> = {
@@ -102,7 +131,12 @@ function WorkContent({
       return <SvgRenderer svg={work.output_payload} />;
 
     case "html-css":
-      return <HtmlRenderer html={work.output_payload} />;
+      return (
+        <HtmlRenderer
+          html={work.output_payload}
+          interactive={size === "detail" || size === "lightbox"}
+        />
+      );
 
     case "audio-json":
       return <AudioRenderer json={work.output_payload} />;
@@ -116,6 +150,17 @@ function WorkContent({
     case "ascii":
     case "text":
     default: {
+      if (needsCompositionFallback(work)) {
+        return (
+          <div className="w-full h-full overflow-hidden bg-ink">
+            <MNAComposition
+              theme={compositionThemeForWork(work)}
+              seed={work.id}
+              className="block w-full h-full"
+            />
+          </div>
+        );
+      }
       const colors = parseWorkColors(work.output_payload, work.output_type);
       return (
         <div
@@ -123,8 +168,14 @@ function WorkContent({
           style={{ backgroundColor: colors.bg }}
         >
           <pre
-            className={`font-mono whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
-            style={{ color: colors.fg, lineHeight: "1.4", maxHeight: "100%", overflow: "hidden" }}
+            className={`whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
+            style={{
+              color: colors.fg,
+              lineHeight: "1.4",
+              maxHeight: "100%",
+              overflow: "hidden",
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+            }}
           >
             {colors.payload}
           </pre>
@@ -186,9 +237,17 @@ export default function WorkDisplay({
   work,
   size = "gallery",
   showPlacard = true,
+  framed = true,
 }: WorkDisplayProps) {
   // Pre-render validation
   if (!isWorkRenderable(work)) {
+    if (!framed) {
+      return (
+        <div className="w-full h-full">
+          <WorkFallback workId={work.id} />
+        </div>
+      );
+    }
     return (
       <MuseumFrame frame="1x1" width={300} showPlacard={showPlacard}
         originatorId={work.originator_id}
@@ -199,6 +258,14 @@ export default function WorkDisplay({
   }
 
   if (is3DWork(work)) {
+    if (!framed) {
+      return (
+        <div className="w-full h-full">
+          <SceneRenderer json={work.output_payload} transparent />
+        </div>
+      );
+    }
+
     const widths: Record<string, number> = {
       gallery: 300,
       detail: 500,
@@ -218,6 +285,14 @@ export default function WorkDisplay({
       >
         <SceneRenderer json={work.output_payload} transparent />
       </MuseumPlinth>
+    );
+  }
+
+  if (!framed) {
+    return (
+      <div className="w-full h-full">
+        <WorkContent work={work} size={size} />
+      </div>
     );
   }
 
