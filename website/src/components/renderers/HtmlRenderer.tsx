@@ -21,27 +21,10 @@ import { useEffect, useMemo, useState } from "react";
  * iframes — fast enough to feel like the gallery coming on row by
  * row, slow enough to clear browser caps.
  *
- * Sandbox policy. `allow-scripts` only — no allow-same-origin. With
- * allow-same-origin, every work iframe inherits the parent's origin
- * and runs in the parent's renderer process; on /canon (24 cards)
- * that means 24 iframes share one process, accumulate memory in one
- * heap, and saturate the parent's main thread. Atlas / Firefox /
- * weaker mobile devices die from this — animations stop, then
- * navigation locks, then the whole tab crashes.
- *
- * Without allow-same-origin each iframe gets a unique opaque origin
- * and (on browsers that honor cross-origin process isolation, which
- * includes all major Chromium and Firefox builds) is process-
- * isolated. Memory pressure is distributed; parent's main thread
- * stays free for input events and chrome rendering.
- *
- * Trade-off: a work payload that depends on same-origin features
- * (parent CSS variables, parent.location, document.cookie, fetches
- * to relative URLs against the parent origin) will silently fail
- * inside its iframe. If a canonized work renders blank in a card,
- * its payload needs same-origin and should be authored to be self-
- * contained instead — that's an originator-side fix, not a renderer
- * concern.
+ * Sandbox policy. `allow-scripts allow-same-origin`. allow-same-origin
+ * is required because some work payloads rely on same-origin features
+ * (cookies, parent CSS variables, computed-style access) and silently
+ * error without it.
  *
  * Click handling. Gallery cards rely on an enclosing <Link> for
  * navigation. The iframe element does not receive `pointer-events:
@@ -89,7 +72,7 @@ export default function HtmlRenderer({ html, interactive = false }: HtmlRenderer
     <div className="w-full h-full bg-[#0e0c0a] relative">
       <iframe
         srcDoc={srcDoc}
-        sandbox="allow-scripts"
+        sandbox="allow-scripts allow-same-origin"
         className="w-full h-full border-0"
         title="Work"
         style={{ background: "#0e0c0a" }}
