@@ -133,7 +133,7 @@ function WorkContent({
     case "html-css":
       return (
         <HtmlRenderer
-          workId={work.id}
+          html={work.output_payload}
           interactive={size === "detail" || size === "lightbox"}
         />
       );
