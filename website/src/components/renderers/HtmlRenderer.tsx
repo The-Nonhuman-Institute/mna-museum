@@ -33,7 +33,7 @@ import { useEffect, useMemo, useState } from "react";
  * overlay above the iframe to capture clicks at the DOM level.
  */
 
-const STAGGER_MS = 80;
+const STAGGER_MS = 150;
 const QUEUE_SIZE = 24;
 let mountSlotCounter = 0;
 
