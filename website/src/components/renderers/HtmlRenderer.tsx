@@ -20,8 +20,12 @@ interface HtmlRendererProps {
  * which saturates and blocks header-nav clicks. Mounting only what's visible
  * keeps the active loop count bounded to roughly the viewport.
  *
- * Sandbox: `allow-scripts allow-same-origin`. allow-same-origin is kept
- * because some work payloads need same-origin features.
+ * Sandbox: `allow-scripts` only. Dropping allow-same-origin gives each
+ * iframe an opaque origin and a separate renderer process, so heavy init
+ * scripts in one iframe can't block the parent's main thread (page nav,
+ * scroll, click handling). Some payloads that rely on same-origin features
+ * (parent CSS vars, cookies) won't get them — acceptable tradeoff for a
+ * page that stays responsive.
  */
 export default function HtmlRenderer({ html, interactive = false }: HtmlRendererProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -58,7 +62,7 @@ export default function HtmlRenderer({ html, interactive = false }: HtmlRenderer
       {mounted ? (
         <iframe
           srcDoc={html}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
           className="w-full h-full border-0"
           title="Work"
           style={{ background: "#0e0c0a" }}
