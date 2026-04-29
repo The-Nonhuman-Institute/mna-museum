@@ -163,19 +163,6 @@ export default function WorkCard({ work, from, fromId }: WorkCardProps) {
     <Link
       href={href}
       className="group block bg-mna-white border border-ink/10 hover:border-ink/30 transition-colors"
-      /* content-visibility: auto lets the browser skip layout/paint/
-         composite work for off-screen cards. With 24 cards on
-         /canon, only 6–10 are above the fold at any moment; the rest
-         can be skipped until they scroll near the viewport. This
-         frees enough main-thread budget on Firefox and Atlas (where
-         allow-same-origin iframes share the parent's renderer
-         process) to keep all cards animating without saturating the
-         event loop. contain-intrinsic-size keeps layout stable while
-         the card is being skipped. */
-      style={{
-        contentVisibility: "auto",
-        containIntrinsicSize: "240px 360px",
-      }}
     >
       {/* Square thumbnail tile — live renderer fills edge-to-edge.
           We deliberately put a transparent click-capture overlay above
