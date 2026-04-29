@@ -3,6 +3,7 @@ import MuseumPlinth from "./MuseumPlinth";
 import { frames } from "./MuseumFrame";
 import SvgRenderer from "./renderers/SvgRenderer";
 import MNAComposition, { type CompositionTheme } from "./MNAComposition";
+import LazyLiveMount from "./LazyLiveMount";
 import type { Work } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
 import { parseWorkColors } from "@/lib/work-colors";
@@ -72,6 +73,28 @@ const HEAVY_OUTPUT_TYPES = new Set([
   "canvas-json",
   "scene-json",
 ]);
+
+/* Build the live renderer node for a heavy output type. Used as the
+   `live` slot in <LazyLiveMount> for gallery-size cards. */
+function renderLive(work: Work, size: string): React.ReactNode {
+  switch (work.output_type) {
+    case "html-css":
+      return (
+        <HtmlRenderer
+          html={work.output_payload}
+          interactive={size === "detail" || size === "lightbox"}
+        />
+      );
+    case "audio-json":
+      return <AudioRenderer json={work.output_payload} />;
+    case "canvas-json":
+      return <CanvasRenderer json={work.output_payload} />;
+    case "scene-json":
+      return <SceneRenderer json={work.output_payload} />;
+    default:
+      return null;
+  }
+}
 
 function StaticPreview({ work }: { work: Work }) {
   return (
@@ -177,11 +200,16 @@ function WorkContent({
   work: Work;
   size: string;
 }) {
-  /* Gallery-size cards on list pages substitute the static preview
-     for any heavy renderer. See HEAVY_OUTPUT_TYPES note above for
-     why. */
+  /* Gallery-size cards lazy-mount their live renderer when the card
+     scrolls into view, with the static preview as the initial state.
+     See HEAVY_OUTPUT_TYPES note above for why. */
   if (size === "gallery" && HEAVY_OUTPUT_TYPES.has(work.output_type)) {
-    return <StaticPreview work={work} />;
+    return (
+      <LazyLiveMount
+        preview={<StaticPreview work={work} />}
+        live={renderLive(work, size)}
+      />
+    );
   }
 
   switch (work.output_type) {
@@ -316,12 +344,15 @@ export default function WorkDisplay({
   }
 
   if (is3DWork(work)) {
-    /* Gallery-size 3D works also fall back to the static preview —
-       see HEAVY_OUTPUT_TYPES note. Each SceneRenderer creates a
-       WebGL context, and the per-page context limit is small. */
+    /* Gallery-size 3D works lazy-mount the WebGL context — see
+       HEAVY_OUTPUT_TYPES note. Each SceneRenderer creates a WebGL
+       context, and the per-page context limit is small. */
     const sceneNode =
       size === "gallery" ? (
-        <StaticPreview work={work} />
+        <LazyLiveMount
+          preview={<StaticPreview work={work} />}
+          live={<SceneRenderer json={work.output_payload} transparent />}
+        />
       ) : (
         <SceneRenderer json={work.output_payload} transparent />
       );
