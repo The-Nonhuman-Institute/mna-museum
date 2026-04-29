@@ -13,17 +13,17 @@ interface HtmlRendererProps {
  * HtmlRenderer mounts the iframe lazily when its container enters (or is
  * within 300px of) the viewport. Once mounted it stays mounted.
  *
- * Sandbox: `allow-scripts` only. Dropping allow-same-origin gives each iframe
- * an opaque origin and a separate renderer process, so heavy init scripts in
- * one iframe can't block the parent's main thread.
+ * Sandbox: `allow-scripts allow-same-origin`. Most work payloads need
+ * same-origin features (localStorage, parent CSS access, computed-style)
+ * to render correctly. Tradeoff: all iframes share the parent's renderer
+ * process, so heavy works on the same page can saturate the main thread.
+ * IntersectionObserver mount limits this to roughly the viewport. Real
+ * fix is to serve iframes from a separate origin (subdomain) — TODO.
  *
- * Compatibility shim: opaque-origin iframes can't access localStorage /
- * sessionStorage / document.cookie. Several Originator-authored payloads
- * call those (e.g. setInterval(saveState, 15000)). Without the shim, the
- * very first access throws SecurityError mid-init and the rest of the work
- * never runs — the iframe loads, prints "click to begin", then dies. The
- * shim provides an in-memory replacement so those works keep going. State
- * isn't persisted across reloads, which is fine for visual works on a card.
+ * The opaque-origin storage shim below is now a defensive no-op when
+ * allow-same-origin is set (localStorage works natively), but kept in
+ * place so the file is ready to switch back to opaque-origin once works
+ * are migrated to a subdomain.
  */
 
 const OPAQUE_ORIGIN_SHIM = `
@@ -93,7 +93,7 @@ export default function HtmlRenderer({ html, interactive = false }: HtmlRenderer
       {mounted ? (
         <iframe
           srcDoc={shimmedHtml}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin"
           className="w-full h-full border-0"
           title="Work"
           style={{ background: "#0e0c0a" }}
