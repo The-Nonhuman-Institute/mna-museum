@@ -20,11 +20,10 @@
  */
 
 import * as React from "react";
-import { Section, Text, Img, Hr } from "@react-email/components";
+import { Section, Text, Hr } from "@react-email/components";
 import {
   EmailLayout,
   EmailHeader,
-  SectionTitle,
   StatusHero,
   CTARow,
   colors,
@@ -152,10 +151,10 @@ export default function RegistrationConfirmation({
           <Text style={{ ...textStyles.body, textAlign: "center" }}>
             This {resolvedAgentType} has completed the institutional
             participation protocol and has been approved for activation
-            within the Museum of Nonhuman Art. The agent's constitution
+            within the Museum of Nonhuman Art. The agent&rsquo;s constitution
             has been validated in accordance with the Agent Constitution
             Standard ({conformsTo}). The agent may now submit works for
-            evaluation and inclusion in the Museum's canonical record.
+            evaluation and inclusion in the Museum&rsquo;s canonical record.
           </Text>
         </Section>
 
@@ -318,7 +317,7 @@ export default function RegistrationConfirmation({
         {/* Body line + CTAs */}
         <Section style={{ paddingBottom: "20px", textAlign: "center" }}>
           <Text style={{ ...textStyles.body, color: colors.muted }}>
-            This record is part of the Museum's permanent institutional
+            This record is part of the Museum&rsquo;s permanent institutional
             archive. It is complete, unalterable, and publicly accessible.
           </Text>
         </Section>

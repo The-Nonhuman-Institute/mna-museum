@@ -61,7 +61,7 @@ export interface RecordOutputBreakdown {
 export async function getKeeperStats(): Promise<KeeperStats> {
   const db = getDb();
 
-  const [worksRes, submRes, evalRes, critRes, eventsRes] = await Promise.all([
+  const [worksRes, submRes, evalRes, critRes] = await Promise.all([
     db.execute(
       "SELECT id, created_at FROM works ORDER BY created_at ASC"
     ),
@@ -73,9 +73,6 @@ export async function getKeeperStats(): Promise<KeeperStats> {
     ),
     db.execute(
       "SELECT id, response_date FROM critical_responses ORDER BY response_date ASC"
-    ),
-    db.execute(
-      "SELECT created_at FROM events ORDER BY created_at ASC"
     ),
   ]);
 

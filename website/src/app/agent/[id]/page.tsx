@@ -79,17 +79,6 @@ import { loadAgentConstitution } from "@/lib/agent-constitution";
 import { getDb } from "@/lib/registration-db";
 import { formatDate } from "@/lib/format-date";
 
-let pressData: {
-  registry_id: string;
-  title: string;
-  document_type?: string;
-  type?: string;
-}[] = [];
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  pressData = require("@/data/press.json");
-} catch {}
-
 export const dynamicParams = true;
 export const revalidate = 60;
 

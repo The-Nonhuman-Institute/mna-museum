@@ -26,7 +26,6 @@ import {
   type CouncilEntry,
   colors,
   textStyles,
-  fonts,
 } from "./template";
 
 export interface NoticeOfAccessionProps {
@@ -64,7 +63,6 @@ export default function NoticeOfAccession({
   originatorId,
   originatorDesignation,
   canonDate,
-  medium,
   verdictSummary,
   workUrl,
   provenanceUrl,

@@ -60,7 +60,6 @@ interface StandardClientProps {
 export default function StandardClient({
   meta,
   fields,
-  epigraph,
   subtitle,
   tabs,
   siblings,

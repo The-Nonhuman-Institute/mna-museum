@@ -55,7 +55,6 @@ export default function NoticeOfRejection({
   originatorId,
   originatorDesignation,
   rejectionDate,
-  verdictSummary,
   workUrl,
   evaluationUrl,
   recordDownloadUrl,
@@ -156,7 +155,7 @@ export default function NoticeOfRejection({
           >
             This evaluation is final. The work remains part of the
             institutional record as a submitted work and may be resubmitted
-            if the originator's practice evolves.
+            if the originator&rsquo;s practice evolves.
           </Text>
         </Section>
 

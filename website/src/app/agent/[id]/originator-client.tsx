@@ -327,7 +327,6 @@ export default function OriginatorDetailClient({
   const [sort, setSort] = useState<SortOrder>("newest");
 
   /* ── Derived stats ── */
-  const rejected = works.filter((w) => w.canon_status === "REJECTED").length;
   const canonRate =
     works.length > 0 ? (canonWorks.length / works.length) * 100 : 0;
   const avgReviewScore = useMemo(() => {

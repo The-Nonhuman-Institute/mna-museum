@@ -160,7 +160,6 @@ function Hero({
   const previewUrl = previewSrc(cover, haveIdx);
   const titleMain = featured ? titleWithoutPhase(featured.title) : "No Exhibitions Yet";
   const subtitle = featured?.subtitle ?? null;
-  const phase = phaseLabel ?? "—";
   const year = featured ? yearOf(featured.opened_at) : yearOf(null);
 
   return (

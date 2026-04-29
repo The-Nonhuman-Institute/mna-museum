@@ -308,7 +308,7 @@ interface NarrativeOutput {
   institutionalNotes: string[];
 }
 
-async function composeNarrative(
+async function _composeNarrative(
   events: CollectedEvents,
   monthLabel: string,
   model: "sonnet" | "opus"
@@ -408,7 +408,7 @@ function trimExcerpt(body: string, maxLen = 200): string {
   return clean.slice(0, maxLen - 1).trimEnd() + "…";
 }
 
-function monthLabel(date = new Date()): string {
+function _monthLabel(date = new Date()): string {
   return date.toLocaleString("en-US", { month: "long", year: "numeric" });
 }
 

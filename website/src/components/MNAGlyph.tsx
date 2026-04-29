@@ -459,7 +459,6 @@ function starburstLong(seed: number, color: string): React.ReactNode {
 
 function gridSquare(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const k = knobs(seed);
   const divisions = 2 + (seed % 4); // 2,3,4,5
   const sz = 44 + rand() * 6;
   const x = 50 - sz / 2;
@@ -741,7 +740,6 @@ function targetingRing(seed: number, color: string): React.ReactNode {
 
 function threshold(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const k = knobs(seed);
   const gates = 1 + (seed % 3); // 1,2,3
   const halfWidth = 18 + rand() * 8;  // varies per seed
   const halfHeight = 22 + rand() * 8;
@@ -932,7 +930,6 @@ function constellation(seed: number, color: string): React.ReactNode {
 
 function latticeWeave(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const k = knobs(seed);
   const divisions = 3 + (seed % 3); // 3, 4, 5
   const sz = 46 + rand() * 10;
   const x0 = 50 - sz / 2;
@@ -979,7 +976,6 @@ function latticeWeave(seed: number, color: string): React.ReactNode {
 
 function dendrite(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const k = knobs(seed);
   const mode = seed % 3;
   const MAX_DEPTH = 3 + (seed % 3); // 3..5
   const INITIAL_LEN = 10 + rand() * 8;
@@ -1167,7 +1163,6 @@ function waveform(seed: number, color: string): React.ReactNode {
 
 function orbitDiagram(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const k = knobs(seed);
   const orbits = 2 + (seed % 3); // 2,3,4
   const tilt = ((seed >> 4) % 60) - 30; // -30..30 deg
   const elems: React.ReactNode[] = [];
@@ -1381,7 +1376,6 @@ function halftone(seed: number, color: string): React.ReactNode {
 
 function glitch(seed: number, color: string): React.ReactNode {
   const rand = mulberry32(seed);
-  const k = knobs(seed);
   const shape = seed % 3; // 0=circle, 1=square, 2=diamond
   const R = 26 + rand() * 6;
   const cy = 50;

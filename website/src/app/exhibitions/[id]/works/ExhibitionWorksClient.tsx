@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { Exhibition } from "@/lib/exhibitions";
 import type { Work } from "@/lib/collection";
 import {
@@ -691,7 +691,7 @@ function ArrangementCanvas({
   visibleMap: Map<string, boolean>;
   zoom: number;
   hovered: string | null;
-  setHovered: (id: string | null) => void;
+  setHovered: Dispatch<SetStateAction<string | null>>;
   exhibitionId: number;
 }) {
   return (

@@ -215,7 +215,7 @@ function extractFirstParagraphUnder(
   headingRe: RegExp
 ): string | null {
   let inSection = false;
-  let para: string[] = [];
+  const para: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     const t = lines[i].trim();
     if (headingRe.test(t)) {

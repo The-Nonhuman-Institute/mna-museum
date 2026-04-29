@@ -46,19 +46,6 @@ function formatLong(iso: string | undefined | null): string {
   });
 }
 
-function formatShort(iso: string | undefined | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso ?? "—";
-  return d
-    .toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
-    .toUpperCase();
-}
-
 function excerpt(body: string, max = 170): string {
   const cleaned = body
     .replace(/^#+\s+.*$/gm, "")

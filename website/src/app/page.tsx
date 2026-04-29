@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getSummary, getCanonWorks } from "@/lib/collection";
+import { getSummary } from "@/lib/collection";
 import { getAllAgents } from "@/lib/agents";
 import { getActiveExhibition, getAllExhibitions } from "@/lib/exhibitions";
 import ExhibitionCarousel from "@/components/ExhibitionCarousel";
@@ -64,9 +64,8 @@ function countUniqueOriginators(workIds: string[]): number {
 }
 
 export default async function Home() {
-  const [summary, allCanon, agents, activeExhibition, allExhibitions] = await Promise.all([
+  const [summary, agents, activeExhibition, allExhibitions] = await Promise.all([
     getSummary(),
-    getCanonWorks(),
     getAllAgents(),
     getActiveExhibition(),
     getAllExhibitions(),

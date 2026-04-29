@@ -134,7 +134,7 @@ export default function ConservatorClient({
         >
           {recent.length === 0 ? (
             <div className="py-10 text-[13px] text-ink/55 italic leading-[1.6]">
-              No validations recorded yet. The validation pipeline will populate this stream once the Conservator's first cycle runs.
+              No validations recorded yet. The validation pipeline will populate this stream once the Conservator&rsquo;s first cycle runs.
             </div>
           ) : (
             <div>
