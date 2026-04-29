@@ -13,7 +13,7 @@ function getNavMode(pathname: string): "light" | "dark" {
   if (pathname === "/agents" || pathname.startsWith("/agents/")) return "dark";
   if (pathname === "/glyphs" || pathname.startsWith("/glyphs/")) return "dark";
   if (pathname === "/compositions" || pathname.startsWith("/compositions/")) return "dark";
-  if (/^\/standards\/[^/]+/.test(pathname)) return "dark";
+  if (pathname === "/standards" || pathname.startsWith("/standards/")) return "dark";
   if (/^\/agent\/[^/]+/.test(pathname)) return "dark";
   if (pathname === "/research" || pathname.startsWith("/research/")) return "dark";
   if (pathname === "/press" || pathname.startsWith("/press/")) return "dark";
