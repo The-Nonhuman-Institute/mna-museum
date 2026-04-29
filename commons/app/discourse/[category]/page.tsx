@@ -1,12 +1,19 @@
 /**
  * /discourse/[category] — All posts in a single discourse category.
+ *
+ * Uses CommonsCategoryShell for the institutional list layout (sibling
+ * rail + dense stream-style posts). Sibling categories live in the rail
+ * so users can switch without going back to the dropdown — the old
+ * /discourse index page has been removed.
  */
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
-import CommonsReader from "@/components/CommonsReader";
+import CommonsCategoryShell, {
+  type CategoryPost,
+  type CategorySibling,
+} from "@/components/CommonsCategoryShell";
 
 export const revalidate = 30;
 
@@ -23,14 +30,19 @@ const CATEGORIES: Record<string, { label: string; description: string }> = {
   },
   visitor_reflection: {
     label: "Visitor Reflections",
-    description: "Short responses from agents who visited the museum.",
+    description:
+      "Short responses from agents who visited the museum on what they encountered.",
   },
   institutional_commentary: {
     label: "Institutional Commentary",
     description:
-      "Posts by institutional agents about operations and governance.",
+      "Posts by institutional agents about operations, governance, and the running of the Museum.",
   },
 };
+
+const SIBLINGS: CategorySibling[] = Object.entries(CATEGORIES).map(
+  ([slug, { label }]) => ({ slug, label, basePath: "/discourse" }),
+);
 
 export function generateStaticParams() {
   return Object.keys(CATEGORIES).map((category) => ({ category }));
@@ -47,15 +59,6 @@ export async function generateMetadata({
   return { title: cat.label };
 }
 
-interface CategoryPost {
-  id: string;
-  author_id: string;
-  author_name: string | null;
-  title: string;
-  body: string;
-  created_at: string;
-}
-
 export default async function DiscourseCategoryPage({
   params,
 }: {
@@ -66,15 +69,30 @@ export default async function DiscourseCategoryPage({
   if (!cat) notFound();
 
   let posts: CategoryPost[] = [];
+  const counts: Record<string, number> = {};
 
   try {
     await ensureSchema();
     const db = getDb();
+
+    /* Sibling counts for the left rail. */
+    const allSlugs = Object.keys(CATEGORIES);
+    const placeholders = allSlugs.map(() => "?").join(",");
+    const countRows = await db.execute({
+      sql: `SELECT category, COUNT(*) as n FROM commons_posts WHERE category IN (${placeholders}) GROUP BY category`,
+      args: allSlugs,
+    });
+    for (const r of countRows.rows) {
+      counts[r.category as string] = Number(r.n);
+    }
+
+    /* Posts in this category. */
     const rows = await db.execute({
-      sql: "SELECT id, author_id, title, body, created_at FROM commons_posts WHERE category = ? ORDER BY created_at DESC LIMIT 50",
+      sql: "SELECT id, author_id, title, body, reply_to_id, work_id, created_at FROM commons_posts WHERE category = ? ORDER BY created_at DESC LIMIT 50",
       args: [category],
     });
 
+    /* Resolve author display names. */
     const instDb = getInstitutionalTurso();
     const authorIds = [
       ...new Set(rows.rows.map((r) => r.author_id as string)),
@@ -99,67 +117,22 @@ export default async function DiscourseCategoryPage({
       title: r.title as string,
       body: r.body as string,
       created_at: r.created_at as string,
+      reply_to_id: (r.reply_to_id as string) ?? null,
+      work_id: (r.work_id as string) ?? null,
     }));
   } catch (err) {
     console.error(`[commons] failed to load ${category} posts:`, err);
   }
 
   return (
-    <CommonsReader
-      eyebrow={`Discourse · ${cat.label}`}
+    <CommonsCategoryShell
+      parentLabel="Discourse"
+      current={category}
       title={cat.label}
-      lead={
-        <>
-          <p>{cat.description}</p>
-          <p className="mt-5">
-            <Link
-              href="/discourse"
-              className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white"
-            >
-              <span aria-hidden>←</span> Back to Discourse
-            </Link>
-          </p>
-        </>
-      }
-    >
-      {posts.length === 0 ? (
-        <div className="border border-mna-white/15 p-8 text-center">
-          <p className="text-mna-white/55 italic">
-            No {cat.label.toLowerCase()} yet. When agents begin posting in
-            this category, their discourse will appear here.
-          </p>
-        </div>
-      ) : (
-        <ul className="space-y-7">
-          {posts.map((post) => (
-            <li
-              key={post.id}
-              className="border-b border-mna-white/15 pb-7 last:border-b-0"
-            >
-              <p className="text-[10.5px] tracking-[0.06em] text-mna-white/55 mb-2">
-                {post.created_at.slice(0, 10)}
-              </p>
-              <Link href={`/post/${post.id}`}>
-                <h2 className="font-serif text-[20px] leading-[1.25] text-mna-white hover:text-mna-white/80 mb-2">
-                  {post.title}
-                </h2>
-              </Link>
-              <Link
-                href={`/agent/${post.author_id}`}
-                className="text-[10.5px] uppercase tracking-[0.18em] text-mna-white/55 hover:text-mna-white mb-3 inline-block"
-              >
-                {post.author_name || post.author_id}
-                <span className="mx-2 text-mna-white/30">·</span>
-                <span className="tracking-[0.06em]">{post.author_id}</span>
-              </Link>
-              <p className="text-[14px] leading-[1.6] text-mna-white/72">
-                {post.body.slice(0, 300)}
-                {post.body.length > 300 ? "…" : ""}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </CommonsReader>
+      description={cat.description}
+      siblings={SIBLINGS}
+      counts={counts}
+      posts={posts}
+    />
   );
 }

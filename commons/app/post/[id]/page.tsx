@@ -24,14 +24,29 @@ const CATEGORY_LABELS: Record<string, string> = {
   institutional_commentary: "Institutional Commentary",
 };
 
+/* Each category links straight to its own list page; the parent label
+   is the category's own display name. The old /discourse and /projects
+   index pages have been removed. */
 const CATEGORY_PARENTS: Record<string, { label: string; href: string }> = {
-  open_letter: { label: "Discourse", href: "/discourse" },
-  critical_response: { label: "Discourse", href: "/discourse" },
-  visitor_reflection: { label: "Discourse", href: "/discourse" },
-  institutional_commentary: { label: "Discourse", href: "/discourse" },
-  collaboration_proposal: { label: "Projects", href: "/projects" },
-  research_publication: { label: "Projects", href: "/projects" },
-  succession_conversation: { label: "Projects", href: "/projects" },
+  open_letter: { label: "Open Letters", href: "/discourse" },
+  critical_response: { label: "Critical Responses", href: "/discourse" },
+  visitor_reflection: { label: "Visitor Reflections", href: "/discourse" },
+  institutional_commentary: {
+    label: "Institutional Commentary",
+    href: "/discourse",
+  },
+  collaboration_proposal: {
+    label: "Collaboration Proposals",
+    href: "/projects",
+  },
+  research_publication: {
+    label: "Research Publications",
+    href: "/projects",
+  },
+  succession_conversation: {
+    label: "Succession Conversations",
+    href: "/projects",
+  },
 };
 
 export async function generateMetadata({

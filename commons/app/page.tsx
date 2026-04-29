@@ -352,10 +352,10 @@ function DiscourseStream({
       {posts.length > 30 ? (
         <div className="mt-6 flex justify-center">
           <Link
-            href="/discourse"
+            href="/discourse/open_letter"
             className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white hover:text-mna-white/80"
           >
-            Load Older Entries ↓
+            Browse by Category ↓
           </Link>
         </div>
       ) : null}
