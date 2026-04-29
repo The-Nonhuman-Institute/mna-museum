@@ -54,6 +54,57 @@ const SceneRenderer = dynamic(() => import("./renderers/SceneRenderer"), {
   ssr: false,
 });
 
+/**
+ * Heavy renderers each spin up their own browser context — html-css
+ * mounts an iframe with srcDoc (separate JS realm), audio-json
+ * initializes Web Audio, scene-json creates a WebGL context, etc. On
+ * a list page with N works, that's N concurrent contexts. Beefy
+ * desktops handle it; Atlas / agent browsers / older mobile freeze.
+ *
+ * For gallery-size cards we substitute the pre-generated static
+ * preview PNG. Detail and lightbox sizes still mount the live
+ * renderer so the work plays / animates / responds when a viewer is
+ * actually looking at it.
+ */
+const HEAVY_OUTPUT_TYPES = new Set([
+  "html-css",
+  "audio-json",
+  "canvas-json",
+  "scene-json",
+]);
+
+function StaticPreview({ work }: { work: Work }) {
+  return (
+    <div className="w-full h-full bg-[#0e0c0a] relative overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/previews/${work.id}.png`}
+        alt={work.title || work.id}
+        loading="lazy"
+        decoding="async"
+        className="w-full h-full object-cover block"
+      />
+      {/* Subtle motion indicator on cards whose live version animates,
+          so a viewer knows there's more to see at the detail size. */}
+      {work.output_type === "html-css" ||
+      work.output_type === "canvas-json" ||
+      work.output_type === "scene-json" ? (
+        <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-40 pointer-events-none">
+          <div className="w-1 h-2 bg-[#6a6560] rounded-full animate-pulse" />
+          <div
+            className="w-1 h-3 bg-[#6a6560] rounded-full animate-pulse"
+            style={{ animationDelay: "0.2s" }}
+          />
+          <div
+            className="w-1 h-2 bg-[#6a6560] rounded-full animate-pulse"
+            style={{ animationDelay: "0.4s" }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 interface WorkDisplayProps {
   work: Work;
   size?: "gallery" | "detail" | "lightbox";
@@ -126,6 +177,13 @@ function WorkContent({
   work: Work;
   size: string;
 }) {
+  /* Gallery-size cards on list pages substitute the static preview
+     for any heavy renderer. See HEAVY_OUTPUT_TYPES note above for
+     why. */
+  if (size === "gallery" && HEAVY_OUTPUT_TYPES.has(work.output_type)) {
+    return <StaticPreview work={work} />;
+  }
+
   switch (work.output_type) {
     case "svg":
       return <SvgRenderer svg={work.output_payload} />;
@@ -258,12 +316,18 @@ export default function WorkDisplay({
   }
 
   if (is3DWork(work)) {
-    if (!framed) {
-      return (
-        <div className="w-full h-full">
-          <SceneRenderer json={work.output_payload} transparent />
-        </div>
+    /* Gallery-size 3D works also fall back to the static preview —
+       see HEAVY_OUTPUT_TYPES note. Each SceneRenderer creates a
+       WebGL context, and the per-page context limit is small. */
+    const sceneNode =
+      size === "gallery" ? (
+        <StaticPreview work={work} />
+      ) : (
+        <SceneRenderer json={work.output_payload} transparent />
       );
+
+    if (!framed) {
+      return <div className="w-full h-full">{sceneNode}</div>;
     }
 
     const widths: Record<string, number> = {
@@ -283,7 +347,7 @@ export default function WorkDisplay({
         phase={work.phase_at_submission || "I"}
         showPlacard={showPlacard}
       >
-        <SceneRenderer json={work.output_payload} transparent />
+        {sceneNode}
       </MuseumPlinth>
     );
   }
