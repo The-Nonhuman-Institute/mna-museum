@@ -1,41 +1,45 @@
 "use client";
 
 /**
- * HtmlRenderer — mounts a sandboxed iframe with the work's HTML/CSS/JS
- * payload as srcDoc.
+ * HtmlRenderer — mounts a sandboxed iframe loading the work's payload
+ * from /work/[id]/embed.
  *
- * Sandbox policy: `allow-scripts allow-same-origin`. allow-same-origin
- * is required because some work payloads rely on same-origin features
- * (cookies, parent CSS variables, computed style access, etc.) and
- * silently error without it.
+ * Why URL instead of srcDoc: srcDoc-based iframes hit per-page caps
+ * and serialized loading on some Chromium variants (notably ChatGPT
+ * Atlas) — 24 srcDoc iframes on /canon meant most never animated.
+ * Real URLs are first-class browser resources: HTTP caching,
+ * parallel fetch, normal per-iframe process model. All 24 cards
+ * initialize and animate concurrently.
  *
- * Click handling: gallery cards rely on an enclosing <Link> for
- * navigation. Clicks on the iframe area need to fall through to that
- * Link. We do *not* use `pointer-events: none` on the iframe — it has
- * historically been unreliable across browsers (especially on
- * sandboxed iframes) and Atlas appears to ignore it. Instead, the
- * card surface (WorkCard / OriginatorCard / etc.) draws an explicit
- * absolute overlay div above the iframe to capture the click at the
- * DOM level.
+ * Sandbox: allow-scripts allow-same-origin. Some work payloads rely
+ * on same-origin features (cookies, parent CSS variables, computed
+ * style access). The embed route also returns a CSP `sandbox` header
+ * with the same policy — defense in depth.
+ *
+ * Click handling: the iframe element itself does not block events.
+ * Card surfaces (WorkCard / OriginatorCard / etc.) draw an explicit
+ * absolute overlay above the iframe to capture clicks at the DOM
+ * level so they bubble to the enclosing <Link>. Detail and lightbox
+ * sizes have no overlay so the work's own UI receives input.
  */
 
 interface HtmlRendererProps {
-  html: string;
-  /** Reserved for detail/lightbox sizes — does not currently change
-   *  any iframe attribute, but kept on the API so callers can declare
-   *  intent. The card-level click overlay (in WorkCard) is what
+  /** Stable work id, used to construct the iframe src URL. */
+  workId: string;
+  /** Reserved for detail/lightbox sizes — kept on the API so callers
+   *  can declare intent. The card-level click overlay is what
    *  actually controls click capture vs pass-through. */
   interactive?: boolean;
 }
 
-export default function HtmlRenderer({ html, interactive = false }: HtmlRendererProps) {
+export default function HtmlRenderer({ workId, interactive = false }: HtmlRendererProps) {
   return (
     <div className="w-full h-full bg-[#0e0c0a] relative">
       <iframe
-        srcDoc={html}
+        src={`/work/${workId}/embed`}
         sandbox="allow-scripts allow-same-origin"
         className="w-full h-full border-0"
-        title="Work"
+        title={`Work ${workId}`}
         style={{ background: "#0e0c0a" }}
       />
       {/* Motion indicator for animated works — only on non-interactive
