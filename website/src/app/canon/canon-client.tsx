@@ -900,6 +900,7 @@ function SignalView({
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
   // Container width set by ResizeObserver so we can scale inner timeline
   // without locking it to a fixed px count up front.
   const [viewportWidth, setViewportWidth] = useState(1200);
@@ -913,6 +914,123 @@ function SignalView({
     });
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  // Pinch-zoom (trackpad two-finger pinch fires wheel + ctrlKey; same for
+  // Cmd/Ctrl + scroll wheel on mouse). Native listener so we can
+  // preventDefault — React's onWheel is passive in modern React.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    function onWheel(e: WheelEvent) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const scrollerEl = scrollerRef.current;
+      if (!scrollerEl) return;
+
+      const rect = scrollerEl.getBoundingClientRect();
+      const cursorXInViewport = e.clientX - rect.left;
+      const oldScrollLeft = scrollerEl.scrollLeft;
+      const clamped = Math.max(-50, Math.min(50, e.deltaY));
+
+      setZoom((current) => {
+        const factor = Math.exp(-clamped * 0.012);
+        const next = Math.max(1, Math.min(8, current * factor));
+        if (next === current) return current;
+
+        const oldInner = Math.max(
+          scrollerEl.clientWidth,
+          scrollerEl.clientWidth * current,
+        );
+        const newInner = Math.max(
+          scrollerEl.clientWidth,
+          scrollerEl.clientWidth * next,
+        );
+        const cursorInTimeline = oldScrollLeft + cursorXInViewport;
+        const ratio = cursorInTimeline / oldInner;
+
+        requestAnimationFrame(() => {
+          if (!scrollerRef.current) return;
+          scrollerRef.current.scrollLeft =
+            ratio * newInner - cursorXInViewport;
+        });
+        return next;
+      });
+    }
+
+    scroller.addEventListener("wheel", onWheel, { passive: false });
+    return () => scroller.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // Drag-to-pan. Mousedown on empty canvas → grab + scroll-with-drag.
+  // Mousedown on a thumbnail link is left alone so clicks still navigate.
+  // After a real drag (>4px movement), we suppress the next click so the
+  // browser doesn't fire navigation when releasing over a link.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    let active = false;
+    let movedFar = false;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    let startScrollTop = 0;
+
+    function onMouseDown(e: MouseEvent) {
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("a, button")) return;
+      const el = scrollerRef.current;
+      if (!el) return;
+      active = true;
+      movedFar = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      startScrollLeft = el.scrollLeft;
+      startScrollTop = el.scrollTop;
+      setIsDragging(true);
+      e.preventDefault();
+    }
+
+    function onMouseMove(e: MouseEvent) {
+      if (!active) return;
+      const el = scrollerRef.current;
+      if (!el) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!movedFar && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        movedFar = true;
+      }
+      el.scrollLeft = startScrollLeft - dx;
+      el.scrollTop = startScrollTop - dy;
+    }
+
+    function onMouseUp() {
+      if (!active) return;
+      active = false;
+      setIsDragging(false);
+      if (movedFar) {
+        // Suppress the click that fires after this mouseup, so dragging
+        // off-canvas onto a link doesn't navigate.
+        const handler = (ev: MouseEvent) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          window.removeEventListener("click", handler, true);
+        };
+        window.addEventListener("click", handler, true);
+      }
+    }
+
+    scroller.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      scroller.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
   }, []);
 
   const minTime = useMemo(
@@ -1005,6 +1123,50 @@ function SignalView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minTime, maxTime, innerWidth]);
 
+  const canonCount = events.filter((e) => e.status === "canon").length;
+  const rejectedCount = events.filter((e) => e.status === "rejected").length;
+
+  // Layout geometry (in px). The middle band holds the date labels and
+  // is never entered by thumbnails. Inner canvas height grows to fit
+  // however tall the stacks need to be — viewport scrolls vertically
+  // when content exceeds it (drag-pan works in both axes).
+  const VIEWPORT_HEIGHT = 600;
+  const AXIS_BAND = 70; // px reserved for date labels + tick marks
+  const THUMB = 38;
+  const REJECT_THUMB = 30;
+  const ROW_GAP = 4;
+  const PADDING_Y = 28;
+
+  const maxCanonRow = placed.reduce(
+    (m, p) => (p.status === "canon" && p.row > m ? p.row : m),
+    0,
+  );
+  const maxRejectRow = placed.reduce(
+    (m, p) => (p.status === "rejected" && p.row > m ? p.row : m),
+    0,
+  );
+  const canonStackHeight =
+    (maxCanonRow + 1) * (THUMB + ROW_GAP) + PADDING_Y;
+  const rejectStackHeight =
+    (maxRejectRow + 1) * (REJECT_THUMB + ROW_GAP) + PADDING_Y;
+  const computedHeight =
+    canonStackHeight + AXIS_BAND + rejectStackHeight;
+  const innerHeight = Math.max(VIEWPORT_HEIGHT, computedHeight);
+  const CANON_BAND_BOTTOM = innerHeight - rejectStackHeight - AXIS_BAND;
+  const REJECT_BAND_TOP = CANON_BAND_BOTTOM + AXIS_BAND;
+
+  // Center the axis vertically in the viewport on first paint and after
+  // structural changes (filter, zoom). Skips while user is dragging.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || isDragging) return;
+    scroller.scrollTop = Math.max(
+      0,
+      CANON_BAND_BOTTOM + AXIS_BAND / 2 - scroller.clientHeight / 2,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phaseFilter, query, innerHeight]);
+
   if (events.length === 0) {
     return (
       <div className="border border-ink/15 p-16 text-center">
@@ -1014,19 +1176,6 @@ function SignalView({
       </div>
     );
   }
-
-  const canonCount = events.filter((e) => e.status === "canon").length;
-  const rejectedCount = events.filter((e) => e.status === "rejected").length;
-
-  // Layout geometry (in px). The middle band holds the date labels and
-  // is never entered by thumbnails.
-  const TOTAL_HEIGHT = 600;
-  const AXIS_BAND = 70; // px reserved for date labels + tick marks
-  const CANON_BAND_BOTTOM = (TOTAL_HEIGHT - AXIS_BAND) / 2;
-  const REJECT_BAND_TOP = CANON_BAND_BOTTOM + AXIS_BAND;
-  const THUMB = 38;
-  const REJECT_THUMB = 30;
-  const ROW_GAP = 4;
 
   return (
     <div>
@@ -1078,15 +1227,16 @@ function SignalView({
           </button>
         </div>
 
-        {/* Scroller — owns horizontal overflow */}
+        {/* Scroller — owns both overflow axes; user drags or scrolls
+            in either direction. Cursor flips to grabbing during drag. */}
         <div
           ref={scrollerRef}
-          className="overflow-x-auto overflow-y-hidden"
-          style={{ height: TOTAL_HEIGHT }}
+          className={`overflow-auto select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+          style={{ height: VIEWPORT_HEIGHT }}
         >
           <div
             className="relative"
-            style={{ width: innerWidth, height: TOTAL_HEIGHT }}
+            style={{ width: innerWidth, height: innerHeight }}
           >
             {/* Top axis line (above date band) */}
             <div
@@ -1177,7 +1327,7 @@ function SignalView({
       </div>
 
       <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/45 mt-3">
-        Pan to scrub through time · + / − to zoom · Click a thumbnail to read the work
+        Drag to pan · Pinch or ⌘-scroll to zoom · Click a thumbnail to read the work
       </p>
     </div>
   );
