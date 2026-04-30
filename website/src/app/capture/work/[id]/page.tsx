@@ -33,7 +33,9 @@ export default async function CaptureWorkPage({
         #capture-target img { object-fit: cover; }
       `}</style>
       <div id="capture-target">
-        <WorkDisplay work={work} size="gallery" framed={false} showPlacard={false} />
+        {/* size="detail" keeps live rendering — gallery is now preview-PNG.
+            CSS in #capture-target overrides any intrinsic size to 1000×1000. */}
+        <WorkDisplay work={work} size="detail" framed={false} showPlacard={false} />
       </div>
     </>
   );

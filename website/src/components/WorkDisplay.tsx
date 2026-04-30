@@ -233,12 +233,59 @@ function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "sla
   return "block";
 }
 
+/** Gallery thumbnails use a curated preview PNG — never a live iframe.
+ *  Originator-authored works often look black/empty at thumbnail scale
+ *  (intentional darkness, gesture-required animations, slow openings),
+ *  and rendering 24+ live iframes simultaneously also saturates the
+ *  parent renderer process. Live rendering is reserved for detail and
+ *  lightbox views where the work is the focus and the page is dedicated
+ *  to it. The render pipeline (system/scripts) writes one PNG per canon
+ *  work into /public/previews/{id}.png, chosen at a moment of visual
+ *  peak via smart animation capture. */
+function GalleryPreview({ work }: { work: Work }) {
+  return (
+    <div className="w-full h-full bg-[#0e0c0a] overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/previews/${work.id}.png`}
+        alt={work.title || work.id}
+        className="w-full h-full object-cover"
+        loading="lazy"
+      />
+    </div>
+  );
+}
+
 export default function WorkDisplay({
   work,
   size = "gallery",
   showPlacard = true,
   framed = true,
 }: WorkDisplayProps) {
+  // Gallery thumbnails always use the curated preview image. We bypass
+  // renderable-validation, 3D-plinth selection, and composition fallback
+  // for this path — the preview pipeline has already produced a frame.
+  if (size === "gallery") {
+    if (!framed) {
+      return <GalleryPreview work={work} />;
+    }
+    const frameType = selectFrameForWork(work);
+    const width = calculateWidth(frameType, size);
+    return (
+      <MuseumFrame
+        frame={frameType}
+        width={width}
+        originatorId={work.originator_id}
+        originatorName={work.originator_name}
+        phase={work.phase_at_submission || "I"}
+        showPlacard={showPlacard}
+      >
+        <GalleryPreview work={work} />
+      </MuseumFrame>
+    );
+  }
+
+  // Detail / lightbox — live render below.
   // Pre-render validation
   if (!isWorkRenderable(work)) {
     if (!framed) {
