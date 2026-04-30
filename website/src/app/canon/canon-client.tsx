@@ -898,14 +898,15 @@ function SignalView({
     );
   }, [canon, rejected, phaseFilter, query]);
 
-  const scrollerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   // Container width set by ResizeObserver so we can scale inner timeline
   // without locking it to a fixed px count up front.
   const [viewportWidth, setViewportWidth] = useState(1200);
   useEffect(() => {
-    const el = scrollerRef.current;
+    const el = viewportRef.current;
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -916,95 +917,89 @@ function SignalView({
     return () => ro.disconnect();
   }, []);
 
-  // Pinch-zoom (trackpad two-finger pinch fires wheel + ctrlKey; same for
-  // Cmd/Ctrl + scroll wheel on mouse). Native listener so we can
-  // preventDefault — React's onWheel is passive in modern React.
+  // Free-range pan + pinch-zoom on the canvas.
+  //
+  // Trackpad two-finger pan (no modifier) → moves the canvas in any direction.
+  // Trackpad pinch (ctrlKey) or Cmd+scroll → zooms with cursor as focal point.
+  // Native wheel listener with passive:false so we can preventDefault and
+  // override the browser's default zoom + scroll behaviors.
   useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
 
     function onWheel(e: WheelEvent) {
-      if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
-      const scrollerEl = scrollerRef.current;
-      if (!scrollerEl) return;
+      if (e.ctrlKey || e.metaKey) {
+        // Pinch-zoom — focal point at cursor stays anchored
+        const view = viewportRef.current;
+        if (!view) return;
+        const rect = view.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        const clamped = Math.max(-50, Math.min(50, e.deltaY));
 
-      const rect = scrollerEl.getBoundingClientRect();
-      const cursorXInViewport = e.clientX - rect.left;
-      const oldScrollLeft = scrollerEl.scrollLeft;
-      const clamped = Math.max(-50, Math.min(50, e.deltaY));
-
-      setZoom((current) => {
-        const factor = Math.exp(-clamped * 0.012);
-        const next = Math.max(1, Math.min(8, current * factor));
-        if (next === current) return current;
-
-        const oldInner = Math.max(
-          scrollerEl.clientWidth,
-          scrollerEl.clientWidth * current,
-        );
-        const newInner = Math.max(
-          scrollerEl.clientWidth,
-          scrollerEl.clientWidth * next,
-        );
-        const cursorInTimeline = oldScrollLeft + cursorXInViewport;
-        const ratio = cursorInTimeline / oldInner;
-
-        requestAnimationFrame(() => {
-          if (!scrollerRef.current) return;
-          scrollerRef.current.scrollLeft =
-            ratio * newInner - cursorXInViewport;
+        setZoom((currentZoom) => {
+          const factor = Math.exp(-clamped * 0.012);
+          const next = Math.max(0.4, Math.min(8, currentZoom * factor));
+          if (next === currentZoom) return currentZoom;
+          // Adjust pan so the point under the cursor stays put.
+          // contentX/Y at cursor = (cursorX - panX) * (innerOld / innerNew),
+          // simplified for the linear case where the canvas grows uniformly:
+          const ratio = next / currentZoom;
+          setPan((currentPan) => ({
+            x: cursorX - (cursorX - currentPan.x) * ratio,
+            y: cursorY - (cursorY - currentPan.y) * ratio,
+          }));
+          return next;
         });
-        return next;
-      });
+      } else {
+        // Two-finger pan
+        setPan((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
+      }
     }
 
-    scroller.addEventListener("wheel", onWheel, { passive: false });
-    return () => scroller.removeEventListener("wheel", onWheel);
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", onWheel);
   }, []);
 
-  // Drag-to-pan. Mousedown on empty canvas → grab + scroll-with-drag.
-  // Mousedown on a thumbnail link is left alone so clicks still navigate.
-  // After a real drag (>4px movement), we suppress the next click so the
-  // browser doesn't fire navigation when releasing over a link.
+  // Drag-to-pan. Mousedown on the canvas (not on a thumbnail or button)
+  // grabs the canvas; mousemove translates pan; mouseup releases. Real
+  // drags (>4px) suppress the next click so dragging off-canvas onto a
+  // link doesn't accidentally navigate.
   useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
 
     let active = false;
     let movedFar = false;
-    let startX = 0;
-    let startY = 0;
-    let startScrollLeft = 0;
-    let startScrollTop = 0;
+    let startClientX = 0;
+    let startClientY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
 
     function onMouseDown(e: MouseEvent) {
       if (e.button !== 0) return;
       const target = e.target as HTMLElement;
       if (target.closest("a, button")) return;
-      const el = scrollerRef.current;
-      if (!el) return;
       active = true;
       movedFar = false;
-      startX = e.clientX;
-      startY = e.clientY;
-      startScrollLeft = el.scrollLeft;
-      startScrollTop = el.scrollTop;
+      startClientX = e.clientX;
+      startClientY = e.clientY;
+      // Read latest pan from state via ref (closure-safe)
+      startPanX = panRef.current.x;
+      startPanY = panRef.current.y;
       setIsDragging(true);
       e.preventDefault();
     }
 
     function onMouseMove(e: MouseEvent) {
       if (!active) return;
-      const el = scrollerRef.current;
-      if (!el) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
+      const dx = e.clientX - startClientX;
+      const dy = e.clientY - startClientY;
       if (!movedFar && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
         movedFar = true;
       }
-      el.scrollLeft = startScrollLeft - dx;
-      el.scrollTop = startScrollTop - dy;
+      setPan({ x: startPanX + dx, y: startPanY + dy });
     }
 
     function onMouseUp() {
@@ -1012,8 +1007,6 @@ function SignalView({
       active = false;
       setIsDragging(false);
       if (movedFar) {
-        // Suppress the click that fires after this mouseup, so dragging
-        // off-canvas onto a link doesn't navigate.
         const handler = (ev: MouseEvent) => {
           ev.stopPropagation();
           ev.preventDefault();
@@ -1023,15 +1016,22 @@ function SignalView({
       }
     }
 
-    scroller.addEventListener("mousedown", onMouseDown);
+    viewport.addEventListener("mousedown", onMouseDown);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
     return () => {
-      scroller.removeEventListener("mousedown", onMouseDown);
+      viewport.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
   }, []);
+
+  // Keep a ref of the latest pan so the drag handler reads it correctly
+  // without re-binding listeners on every pan change.
+  const panRef = useRef(pan);
+  useEffect(() => {
+    panRef.current = pan;
+  }, [pan]);
 
   const minTime = useMemo(
     () => (events[0] ? new Date(events[0].work.canon_date!).getTime() : 0),
@@ -1058,27 +1058,43 @@ function SignalView({
     return ((t - minTime) / (maxTime - minTime)) * usableWidth + PAD;
   };
 
-  // Zoom controls — preserve focal point centered in the viewport.
+  // Zoom buttons — focal point is the visible center of the viewport.
   function changeZoom(next: number) {
-    const target = Math.max(1, Math.min(8, next));
-    const scroller = scrollerRef.current;
-    if (!scroller) {
+    const target = Math.max(0.4, Math.min(8, next));
+    const view = viewportRef.current;
+    if (!view) {
       setZoom(target);
       return;
     }
-    const focalRatio =
-      (scroller.scrollLeft + scroller.clientWidth / 2) /
-      Math.max(1, innerWidth);
-    setZoom(target);
+    const cursorX = view.clientWidth / 2;
+    const cursorY = view.clientHeight / 2;
+    setZoom((currentZoom) => {
+      if (target === currentZoom) return currentZoom;
+      const ratio = target / currentZoom;
+      setPan((currentPan) => ({
+        x: cursorX - (cursorX - currentPan.x) * ratio,
+        y: cursorY - (cursorY - currentPan.y) * ratio,
+      }));
+      return target;
+    });
+  }
+
+  // Reset view — recenter at zoom 1 and align axis to viewport middle.
+  function resetView() {
+    const view = viewportRef.current;
+    setZoom(1);
+    if (!view) {
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    // Use a frame so layout updates with zoom=1 before we measure.
     requestAnimationFrame(() => {
-      if (!scrollerRef.current) return;
-      const newInner = Math.max(
-        scrollerRef.current.clientWidth,
-        scrollerRef.current.clientWidth * target,
-      );
-      const newCenter = focalRatio * newInner;
-      scrollerRef.current.scrollLeft =
-        newCenter - scrollerRef.current.clientWidth / 2;
+      const v = viewportRef.current;
+      if (!v) return;
+      setPan({
+        x: v.clientWidth / 2 - innerWidth / 2,
+        y: VIEWPORT_HEIGHT / 2 - (CANON_BAND_BOTTOM + AXIS_BAND / 2),
+      });
     });
   }
 
@@ -1155,17 +1171,17 @@ function SignalView({
   const CANON_BAND_BOTTOM = innerHeight - rejectStackHeight - AXIS_BAND;
   const REJECT_BAND_TOP = CANON_BAND_BOTTOM + AXIS_BAND;
 
-  // Center the axis vertically in the viewport on first paint and after
-  // structural changes (filter, zoom). Skips while user is dragging.
+  // Auto-center the canvas: on initial viewport measurement, and when
+  // filters change (since the data being displayed changed). Doesn't
+  // fire on user pan, so manual position is preserved.
   useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller || isDragging) return;
-    scroller.scrollTop = Math.max(
-      0,
-      CANON_BAND_BOTTOM + AXIS_BAND / 2 - scroller.clientHeight / 2,
-    );
+    if (viewportWidth < 100) return;
+    const targetX = viewportWidth / 2 - innerWidth / 2;
+    const targetY =
+      VIEWPORT_HEIGHT / 2 - (CANON_BAND_BOTTOM + AXIS_BAND / 2);
+    setPan({ x: targetX, y: targetY });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phaseFilter, query, innerHeight]);
+  }, [phaseFilter, query, viewportWidth]);
 
   if (events.length === 0) {
     return (
@@ -1202,19 +1218,19 @@ function SignalView({
       </div>
 
       <div className="relative bg-bone border border-ink/15">
-        {/* Zoom controls — top-right, floating over scroller */}
+        {/* Canvas controls — top-right, floating over viewport */}
         <div className="absolute top-3 right-3 z-30 flex items-stretch border border-ink/20 bg-bone/95 backdrop-blur-sm">
           <button
             type="button"
-            onClick={() => changeZoom(Math.max(1, zoom / 2))}
-            disabled={zoom <= 1}
+            onClick={() => changeZoom(Math.max(0.4, zoom / 2))}
+            disabled={zoom <= 0.4}
             className="px-3 py-1.5 text-[14px] font-sans text-ink/65 hover:text-ink disabled:opacity-30 disabled:hover:text-ink/65 transition-colors"
             aria-label="Zoom out"
           >
             −
           </button>
           <span className="flex items-center px-3 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 border-l border-r border-ink/20 tabular-nums">
-            {zoom.toFixed(zoom % 1 === 0 ? 0 : 1)}×
+            {(zoom * 100).toFixed(0)}%
           </span>
           <button
             type="button"
@@ -1225,18 +1241,33 @@ function SignalView({
           >
             +
           </button>
+          <button
+            type="button"
+            onClick={resetView}
+            className="px-3 py-1.5 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/65 hover:text-ink border-l border-ink/20 transition-colors"
+            aria-label="Reset view"
+          >
+            Reset
+          </button>
         </div>
 
-        {/* Scroller — owns both overflow axes; user drags or scrolls
-            in either direction. Cursor flips to grabbing during drag. */}
+        {/* Viewport — overflow hidden; canvas inside is transform-translated
+            so the user can pan freely in any direction past content edges,
+            FigJam-style. Cursor flips to grabbing during drag. */}
         <div
-          ref={scrollerRef}
-          className={`overflow-auto select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
-          style={{ height: VIEWPORT_HEIGHT }}
+          ref={viewportRef}
+          className={`overflow-hidden select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+          style={{ height: VIEWPORT_HEIGHT, touchAction: "none" }}
         >
           <div
             className="relative"
-            style={{ width: innerWidth, height: innerHeight }}
+            style={{
+              width: innerWidth,
+              height: innerHeight,
+              transform: `translate(${pan.x}px, ${pan.y}px)`,
+              transformOrigin: "0 0",
+              willChange: "transform",
+            }}
           >
             {/* Top axis line (above date band) */}
             <div
@@ -1327,7 +1358,7 @@ function SignalView({
       </div>
 
       <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/45 mt-3">
-        Drag to pan · Pinch or ⌘-scroll to zoom · Click a thumbnail to read the work
+        Drag or two-finger scroll to pan · Pinch or ⌘-scroll to zoom · Click a thumbnail to read the work
       </p>
     </div>
   );
