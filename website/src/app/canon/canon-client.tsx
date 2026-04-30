@@ -419,6 +419,12 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
   const [mode, setMode] = useState<DisplayMode>(initialMode);
   const [page, setPage] = useState<number>(initialPage);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("CANONIZED");
+  const [originatorFilter, setOriginatorFilter] = useState<string>("ALL");
+  const [mediumFilter, setMediumFilter] = useState<string>("ALL");
+  const [tierFilter, setTierFilter] = useState<string>("ALL");
+  const [dateSort, setDateSort] = useState<"NEWEST" | "OLDEST">("NEWEST");
+  const [showTimeline, setShowTimeline] = useState(false);
 
   function pushUrl(next: {
     phase?: PhaseFilter;
@@ -457,25 +463,77 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
     }
   };
 
-  const filtered = useMemo(() => {
-    let list = canon;
+  // Source pool depends on Status filter — canon, rejected, or both
+  // unioned. Other filters (phase / originator / medium / tier / search)
+  // apply to whatever source the status picks.
+  const sourcePool = useMemo(() => {
+    if (statusFilter === "REJECTED") return rejected;
+    if (statusFilter === "ALL") return [...canon, ...rejected];
+    return canon;
+  }, [statusFilter, canon, rejected]);
+
+  function applyAllFilters(list: Work[]): Work[] {
+    let out = list;
     if (phaseFilter !== "ALL") {
-      list = list.filter(
-        (w) => (w.phase_at_submission || "I") === phaseFilter
+      out = out.filter((w) => (w.phase_at_submission || "I") === phaseFilter);
+    }
+    if (originatorFilter !== "ALL") {
+      out = out.filter((w) => w.originator_id === originatorFilter);
+    }
+    if (mediumFilter !== "ALL") {
+      out = out.filter(
+        (w) => (w.medium || "").toLowerCase() === mediumFilter.toLowerCase(),
       );
+    }
+    if (tierFilter !== "ALL") {
+      out = out.filter((w) => (w.autonomy_tier || "") === tierFilter);
     }
     if (query.trim()) {
       const q = query.toLowerCase();
-      list = list.filter(
+      out = out.filter(
         (w) =>
           (w.title || "").toLowerCase().includes(q) ||
           w.id.toLowerCase().includes(q) ||
           (w.originator_name || "").toLowerCase().includes(q) ||
-          w.originator_id.toLowerCase().includes(q)
+          w.originator_id.toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [canon, phaseFilter, query]);
+    out = [...out].sort((a, b) => {
+      const da = a.canon_date || a.submission_date || "";
+      const db = b.canon_date || b.submission_date || "";
+      return dateSort === "NEWEST"
+        ? db.localeCompare(da)
+        : da.localeCompare(db);
+    });
+    return out;
+  }
+
+  const filtered = useMemo(
+    () => applyAllFilters(sourcePool),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      sourcePool,
+      phaseFilter,
+      originatorFilter,
+      mediumFilter,
+      tierFilter,
+      query,
+      dateSort,
+    ],
+  );
+
+  // Filtered canon/rejected for Signal View — apply same filters but
+  // keep the canon vs rejected split so it can render both bands.
+  const filteredCanon = useMemo(
+    () => applyAllFilters(canon),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canon, phaseFilter, originatorFilter, mediumFilter, tierFilter, query, dateSort],
+  );
+  const filteredRejected = useMemo(
+    () => applyAllFilters(rejected),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rejected, phaseFilter, originatorFilter, mediumFilter, tierFilter, query, dateSort],
+  );
 
   // Pagination math
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
@@ -501,18 +559,50 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
     { value: "IV", label: "Phase IV" },
   ];
 
-  // Visual-only dropdowns (not yet wired to backend filtering)
   const statusOptions = [
     { value: "CANONIZED", label: "Canonized" },
+    { value: "REJECTED", label: "Rejected" },
     { value: "ALL", label: "All Statuses" },
   ];
-  const originatorOptions = [{ value: "ALL", label: "All Originators" }];
-  const mediumOptions = [{ value: "ALL", label: "All Mediums" }];
-  const tierOptions = [{ value: "ALL", label: "All Tiers" }];
   const dateOptions = [
     { value: "NEWEST", label: "Newest First" },
     { value: "OLDEST", label: "Oldest First" },
   ];
+
+  // Dynamic option lists, computed from the union of canon + rejected.
+  const allWorks = useMemo(() => [...canon, ...rejected], [canon, rejected]);
+  const originatorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const w of allWorks) {
+      map.set(w.originator_id, (w.originator_name || w.originator_id).toUpperCase());
+    }
+    const opts = Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([value, label]) => ({ value, label }));
+    return [{ value: "ALL", label: "All Originators" }, ...opts];
+  }, [allWorks]);
+  const mediumOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const w of allWorks) {
+      const m = (w.medium || "").trim();
+      if (m) set.add(m);
+    }
+    const opts = Array.from(set)
+      .sort((a, b) => a.localeCompare(b))
+      .map((m) => ({ value: m, label: m.charAt(0).toUpperCase() + m.slice(1) }));
+    return [{ value: "ALL", label: "All Mediums" }, ...opts];
+  }, [allWorks]);
+  const tierOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const w of allWorks) {
+      const t = (w.autonomy_tier || "").trim();
+      if (t) set.add(t);
+    }
+    const opts = Array.from(set)
+      .sort((a, b) => a.localeCompare(b))
+      .map((t) => ({ value: t, label: t }));
+    return [{ value: "ALL", label: "All Tiers" }, ...opts];
+  }, [allWorks]);
 
   return (
     <div className="min-h-screen">
@@ -581,33 +671,56 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
             />
             <FilterDropdown
               label="Status"
-              value="CANONIZED"
+              value={statusFilter}
               options={statusOptions}
+              onChange={(v) => {
+                setStatusFilter(v);
+                setPage(1);
+              }}
             />
             <FilterDropdown
               label="Originator"
-              value="ALL"
+              value={originatorFilter}
               options={originatorOptions}
+              onChange={(v) => {
+                setOriginatorFilter(v);
+                setPage(1);
+              }}
             />
             <FilterDropdown
               label="Medium"
-              value="ALL"
+              value={mediumFilter}
               options={mediumOptions}
+              onChange={(v) => {
+                setMediumFilter(v);
+                setPage(1);
+              }}
             />
             <FilterDropdown
               label="Autonomy Tier"
-              value="ALL"
+              value={tierFilter}
               options={tierOptions}
+              onChange={(v) => {
+                setTierFilter(v);
+                setPage(1);
+              }}
             />
             <FilterDropdown
               label="Date"
-              value="NEWEST"
+              value={dateSort}
               options={dateOptions}
+              onChange={(v) => setDateSort(v as "NEWEST" | "OLDEST")}
             />
             <button
               onClick={() => {
                 setPhaseFilter("ALL");
+                setStatusFilter("CANONIZED");
+                setOriginatorFilter("ALL");
+                setMediumFilter("ALL");
+                setTierFilter("ALL");
+                setDateSort("NEWEST");
                 setQuery("");
+                setPage(1);
                 router.replace("/canon", { scroll: false });
               }}
               className="ml-auto text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 hover:text-ink underline underline-offset-[6px] pb-3"
@@ -659,12 +772,29 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
               className="w-full text-[13px] font-sans text-ink bg-bone border border-ink/20 focus:border-ink/50 outline-none px-4 py-2.5"
             />
           </div>
-          <span className="ml-auto inline-flex items-center gap-3 text-[11px] font-sans uppercase tracking-[0.22em] text-ink/55">
+          <button
+            type="button"
+            onClick={() => setShowTimeline((v) => !v)}
+            aria-pressed={showTimeline}
+            className="ml-auto inline-flex items-center gap-3 text-[11px] font-sans uppercase tracking-[0.22em] text-ink/65 hover:text-ink transition-colors"
+          >
             View Timeline
-            <span className="inline-block w-8 h-4 border border-ink/30 rounded-full align-middle relative">
-              <span className="absolute top-[3px] left-[3px] w-2.5 h-2.5 rounded-full bg-ink/30" />
+            <span
+              className={`inline-block w-8 h-4 rounded-full align-middle relative transition-colors ${
+                showTimeline
+                  ? "bg-ink border border-ink"
+                  : "bg-bone border border-ink/30"
+              }`}
+            >
+              <span
+                className={`absolute top-[3px] w-2.5 h-2.5 rounded-full transition-all ${
+                  showTimeline
+                    ? "left-[15px] bg-bone"
+                    : "left-[3px] bg-ink/30"
+                }`}
+              />
             </span>
-          </span>
+          </button>
         </div>
       </section>
 
@@ -723,16 +853,15 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
           </>
         ) : (
           <SignalView
-            canon={canon}
-            rejected={rejected}
-            phaseFilter={phaseFilter}
-            query={query}
+            canon={filteredCanon}
+            rejected={filteredRejected}
+            filterKey={`${phaseFilter}|${statusFilter}|${originatorFilter}|${mediumFilter}|${tierFilter}|${query}|${dateSort}`}
           />
         )}
       </section>
 
-      {/* ── Timeline + Status distribution ──────────────────────────────── */}
-      {canon.length > 0 && (
+      {/* ── Timeline + Status distribution (toggleable) ─────────────────── */}
+      {canon.length > 0 && showTimeline && (
         <section className="border-t border-ink/10 bg-bone/50">
           <div className="max-w-7xl mx-auto px-5 md:px-8 py-10 md:py-12">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 md:divide-x md:divide-ink/10">
@@ -861,42 +990,28 @@ function ModeIcon({ kind }: { kind: "grid" | "signal" }) {
 function SignalView({
   canon,
   rejected,
-  phaseFilter,
-  query,
+  filterKey,
 }: {
   canon: Work[];
   rejected: Work[];
-  phaseFilter: PhaseFilter;
-  query: string;
+  filterKey: string;
 }) {
   type Event = { work: Work; status: "canon" | "rejected" };
   type PlacedEvent = Event & { xPx: number; row: number };
 
+  // Caller has already applied filters; we just merge canon + rejected
+  // into a single time-sorted event stream and skip events without dates.
   const events: Event[] = useMemo(() => {
     const all: Event[] = [
       ...canon.map((w) => ({ work: w, status: "canon" as const })),
       ...rejected.map((w) => ({ work: w, status: "rejected" as const })),
     ];
-    let list = all.filter((e) => e.work.canon_date);
-    if (phaseFilter !== "ALL") {
-      list = list.filter(
-        (e) => (e.work.phase_at_submission || "I") === phaseFilter,
+    return all
+      .filter((e) => e.work.canon_date)
+      .sort((a, b) =>
+        a.work.canon_date! < b.work.canon_date! ? -1 : 1,
       );
-    }
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(
-        (e) =>
-          (e.work.title || "").toLowerCase().includes(q) ||
-          e.work.id.toLowerCase().includes(q) ||
-          (e.work.originator_name || "").toLowerCase().includes(q) ||
-          e.work.originator_id.toLowerCase().includes(q),
-      );
-    }
-    return list.sort((a, b) =>
-      a.work.canon_date! < b.work.canon_date! ? -1 : 1,
-    );
-  }, [canon, rejected, phaseFilter, query]);
+  }, [canon, rejected]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -939,8 +1054,8 @@ function SignalView({
         const clamped = Math.max(-50, Math.min(50, e.deltaY));
 
         setZoom((currentZoom) => {
-          const factor = Math.exp(-clamped * 0.012);
-          const next = Math.max(0.4, Math.min(8, currentZoom * factor));
+          const factor = Math.exp(-clamped * 0.01);
+          const next = Math.max(0.05, Math.min(25, currentZoom * factor));
           if (next === currentZoom) return currentZoom;
           // Adjust pan so the point under the cursor stays put.
           // contentX/Y at cursor = (cursorX - panX) * (innerOld / innerNew),
@@ -1045,12 +1160,18 @@ function SignalView({
     [events],
   );
 
-  // Inner timeline width grows with zoom. At zoom=1 the whole canon span
-  // fits inside the viewport (with margin). At zoom=2 it's 2× viewport
-  // and the user scrolls; same idea for higher zoom levels.
-  const PAD = 80; // px padding inside inner timeline
-  const innerWidth = Math.max(viewportWidth, viewportWidth * zoom);
-  const usableWidth = Math.max(100, innerWidth - PAD * 2);
+  // Natural canvas width — fixed regardless of zoom. Zoom is applied
+  // via transform:scale, so visual size of everything (thumbnails,
+  // axis labels, spacing) scales uniformly. Width is sized to give
+  // comfortable density at zoom=1 — ~10px per day in the data range,
+  // floored at 1500px for very short spans.
+  const PAD = 80;
+  const totalDays = Math.max(
+    1,
+    (maxTime - minTime) / (1000 * 60 * 60 * 24),
+  );
+  const innerWidth = Math.max(1500, totalDays * 10 + PAD * 2);
+  const usableWidth = innerWidth - PAD * 2;
 
   const dateToPx = (dateStr: string): number => {
     if (maxTime === minTime) return innerWidth / 2;
@@ -1060,7 +1181,7 @@ function SignalView({
 
   // Zoom buttons — focal point is the visible center of the viewport.
   function changeZoom(next: number) {
-    const target = Math.max(0.4, Math.min(8, next));
+    const target = Math.max(0.05, Math.min(25, next));
     const view = viewportRef.current;
     if (!view) {
       setZoom(target);
@@ -1079,22 +1200,24 @@ function SignalView({
     });
   }
 
-  // Reset view — recenter at zoom 1 and align axis to viewport middle.
+  // Reset view — fit the canon span to the viewport, axis centered.
   function resetView() {
     const view = viewportRef.current;
-    setZoom(1);
     if (!view) {
+      setZoom(1);
       setPan({ x: 0, y: 0 });
       return;
     }
-    // Use a frame so layout updates with zoom=1 before we measure.
-    requestAnimationFrame(() => {
-      const v = viewportRef.current;
-      if (!v) return;
-      setPan({
-        x: v.clientWidth / 2 - innerWidth / 2,
-        y: VIEWPORT_HEIGHT / 2 - (CANON_BAND_BOTTOM + AXIS_BAND / 2),
-      });
+    const fitZoom = Math.max(
+      0.2,
+      Math.min(1.2, (view.clientWidth - 80) / innerWidth),
+    );
+    setZoom(fitZoom);
+    setPan({
+      x: view.clientWidth / 2 - (innerWidth * fitZoom) / 2,
+      y:
+        VIEWPORT_HEIGHT / 2 -
+        (CANON_BAND_BOTTOM + AXIS_BAND / 2) * fitZoom,
     });
   }
 
@@ -1172,16 +1295,24 @@ function SignalView({
   const REJECT_BAND_TOP = CANON_BAND_BOTTOM + AXIS_BAND;
 
   // Auto-center the canvas: on initial viewport measurement, and when
-  // filters change (since the data being displayed changed). Doesn't
-  // fire on user pan, so manual position is preserved.
+  // filters change (filterKey is a flat string of all active filters).
+  // Picks an initial zoom that fits the canon span horizontally with a
+  // little margin, so the user opens to a useful overview.
   useEffect(() => {
     if (viewportWidth < 100) return;
-    const targetX = viewportWidth / 2 - innerWidth / 2;
-    const targetY =
-      VIEWPORT_HEIGHT / 2 - (CANON_BAND_BOTTOM + AXIS_BAND / 2);
-    setPan({ x: targetX, y: targetY });
+    const initialZoom = Math.max(
+      0.2,
+      Math.min(1.2, (viewportWidth - 80) / innerWidth),
+    );
+    setZoom(initialZoom);
+    setPan({
+      x: viewportWidth / 2 - (innerWidth * initialZoom) / 2,
+      y:
+        VIEWPORT_HEIGHT / 2 -
+        (CANON_BAND_BOTTOM + AXIS_BAND / 2) * initialZoom,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phaseFilter, query, viewportWidth]);
+  }, [filterKey, viewportWidth]);
 
   if (events.length === 0) {
     return (
@@ -1222,20 +1353,20 @@ function SignalView({
         <div className="absolute top-3 right-3 z-30 flex items-stretch border border-ink/20 bg-bone/95 backdrop-blur-sm">
           <button
             type="button"
-            onClick={() => changeZoom(Math.max(0.4, zoom / 2))}
-            disabled={zoom <= 0.4}
+            onClick={() => changeZoom(Math.max(0.05, zoom / 1.5))}
+            disabled={zoom <= 0.05}
             className="px-3 py-1.5 text-[14px] font-sans text-ink/65 hover:text-ink disabled:opacity-30 disabled:hover:text-ink/65 transition-colors"
             aria-label="Zoom out"
           >
             −
           </button>
-          <span className="flex items-center px-3 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 border-l border-r border-ink/20 tabular-nums">
+          <span className="flex items-center px-3 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 border-l border-r border-ink/20 tabular-nums min-w-[60px] justify-center">
             {(zoom * 100).toFixed(0)}%
           </span>
           <button
             type="button"
-            onClick={() => changeZoom(Math.min(8, zoom * 2))}
-            disabled={zoom >= 8}
+            onClick={() => changeZoom(Math.min(25, zoom * 1.5))}
+            disabled={zoom >= 25}
             className="px-3 py-1.5 text-[14px] font-sans text-ink/65 hover:text-ink disabled:opacity-30 disabled:hover:text-ink/65 transition-colors"
             aria-label="Zoom in"
           >
@@ -1264,7 +1395,7 @@ function SignalView({
             style={{
               width: innerWidth,
               height: innerHeight,
-              transform: `translate(${pan.x}px, ${pan.y}px)`,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               transformOrigin: "0 0",
               willChange: "transform",
             }}
