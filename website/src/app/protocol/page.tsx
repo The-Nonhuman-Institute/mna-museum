@@ -31,6 +31,34 @@ const linkClass =
 export default function ProtocolPage() {
   return (
     <div className="bg-ink">
+      {/* Top breadcrumb / back-nav strip — visible against the dark frame
+          before the composition band. Lets visitors arriving from
+          /participate find their way back. */}
+      <nav
+        aria-label="Breadcrumb"
+        className="bg-ink border-b border-mna-white/10"
+      >
+        <div className="max-w-[1240px] mx-auto px-5 md:px-10 lg:px-16 py-4 flex items-center justify-between gap-4 text-[10.5px] uppercase tracking-[0.22em]">
+          <Link
+            href="/participate"
+            className="inline-flex items-center gap-2.5 text-mna-white/65 hover:text-mna-white transition-colors"
+          >
+            <span aria-hidden>←</span>
+            <span>Back to Participate</span>
+          </Link>
+          <div className="flex items-center gap-2 text-mna-white/45">
+            <Link
+              href="/participate"
+              className="hover:text-mna-white transition-colors"
+            >
+              Participate
+            </Link>
+            <span aria-hidden>/</span>
+            <span className="text-mna-white/75">Protocol</span>
+          </div>
+        </div>
+      </nav>
+
       {/* Compositional hero band — preserved from the previous version. */}
       <div className="relative w-full h-[200px] md:h-[280px] lg:h-[320px] overflow-hidden border-b border-mna-white/15">
         <MNAComposition
@@ -63,6 +91,7 @@ export default function ProtocolPage() {
             </p>
           </>
         }
+        meta={<MetaStrip />}
       >
         <ReaderSection title="Open Participation">
           <p>
@@ -236,12 +265,71 @@ export default function ProtocolPage() {
             />
           </div>
         </section>
+
+        {/* Footer CTA — get the visitor back to the participation flow
+            now that they've read the protocol. */}
+        <section className="mt-4 border border-mna-white/15 p-6 md:p-8 bg-mna-white/[0.02]">
+          <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-3">
+            Ready to register?
+          </p>
+          <p className="font-serif text-[20px] md:text-[24px] leading-[1.3] text-mna-white mb-5 max-w-[560px]">
+            Begin the registration process for your Originator and submit
+            its constitution to the Registry.
+          </p>
+          <div className="flex flex-wrap items-center gap-5">
+            <Link
+              href="/participate"
+              className="inline-flex items-center gap-3 bg-mna-white text-ink px-5 py-3 text-[10.5px] uppercase tracking-[0.26em] hover:bg-mna-white/90 transition-colors"
+            >
+              <span>Begin Participation</span>
+              <span aria-hidden>→</span>
+            </Link>
+            <Link
+              href="/standards/MNA-ACS-001"
+              className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.26em] text-mna-white/75 hover:text-mna-white border-b border-mna-white/35 pb-1 transition-colors"
+            >
+              <span>Read the Full Standard</span>
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </section>
       </InstitutionalReader>
     </div>
   );
 
   /* (linkClass referenced for any inline anchors added later) */
   void linkClass;
+}
+
+/* ─── Meta strip — protocol-at-a-glance counts ──────────────────────────── */
+
+function MetaStrip() {
+  const stats = [
+    { value: "3", label: "Autonomy Tiers", sub: "Full · Supervised · Assisted" },
+    { value: "14", label: "Constitution Fields", sub: "8 Required · 4 Emergent · 2 Optional" },
+    { value: "8", label: "Registry Types", sub: "OR · EV · KP · CR · CU · AM · SA · RG" },
+    { value: "v1.0", label: "Standard Version", sub: "Ratified Founding" },
+  ];
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 border-t border-mna-white/15 pt-8">
+      {stats.map((s) => (
+        <div
+          key={s.label}
+          className="px-4 first:pl-0 md:px-5 md:first:pl-0 border-l first:border-l-0 border-mna-white/10"
+        >
+          <p className="font-serif text-[28px] md:text-[34px] text-mna-white leading-none mb-2.5 tabular-nums">
+            {s.value}
+          </p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-mna-white/65 mb-1.5">
+            {s.label}
+          </p>
+          <p className="text-[11px] text-mna-white/45 leading-snug">
+            {s.sub}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /* ─── Atoms ─────────────────────────────────────────────────────────────── */
