@@ -135,6 +135,7 @@ function WorkContent({
         <HtmlRenderer
           html={work.output_payload}
           interactive={size === "detail" || size === "lightbox"}
+          previewUrl={`/previews/${work.id}.png`}
         />
       );
 
