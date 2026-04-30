@@ -27,6 +27,23 @@ interface CanonClientProps {
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
+/** Resolve the visible label for an Originator. Until an Originator emerges
+ *  (declares its full identity), the institution refers to it by registry
+ *  ID rather than by a placeholder string like "PENDING_EMERGENCE" or
+ *  "[Pending Emergence]". This keeps presentation consistent regardless
+ *  of whether the placeholder field is filled or left empty. */
+function originatorLabel(name: string | null | undefined, id: string): string {
+  const n = (name || "").trim();
+  if (
+    n &&
+    n.toUpperCase() !== "PENDING_EMERGENCE" &&
+    n !== "[Pending Emergence]"
+  ) {
+    return n.toUpperCase();
+  }
+  return id;
+}
+
 /** "2026-04-24" → "APR 24, 2026" */
 function formatDateMono(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
@@ -365,7 +382,7 @@ function RejectedBand({ rejected }: { rejected: Work[] }) {
                     {w.title || "Untitled"}
                   </p>
                   <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-bone/55 mb-3 truncate">
-                    by {w.originator_name || w.originator_id}
+                    by {originatorLabel(w.originator_name, w.originator_id)}
                   </p>
                   <div className="flex items-center gap-2 text-[11px] font-sans text-bone/60 mb-2 pt-2 border-t border-bone/10">
                     <span>Rejected</span>
@@ -574,7 +591,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
   const originatorOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const w of allWorks) {
-      map.set(w.originator_id, (w.originator_name || w.originator_id).toUpperCase());
+      map.set(w.originator_id, originatorLabel(w.originator_name, w.originator_id));
     }
     const opts = Array.from(map.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -1148,17 +1165,32 @@ function SignalView({
     panRef.current = pan;
   }, [pan]);
 
+  // Fixed timeline range — Jan 1, 2026 (institution founding) running
+  // forward to a rolling future horizon. Verdicts plot at their actual
+  // dates within this span; empty stretches before the first verdict
+  // and after the most recent are intentional, showing the institution's
+  // pulse against its full chronological context.
   const minTime = useMemo(
-    () => (events[0] ? new Date(events[0].work.canon_date!).getTime() : 0),
-    [events],
+    () => new Date("2026-01-01T00:00:00Z").getTime(),
+    [],
   );
-  const maxTime = useMemo(
-    () =>
+  const maxTime = useMemo(() => {
+    // Latest of: most recent verdict + 30 days, OR today + 6 months.
+    // Whichever pushes the right edge further into the future. Memoized
+    // on event count so it's stable per render but advances over time as
+    // new verdicts arrive.
+    const latestVerdict =
       events[events.length - 1]
         ? new Date(events[events.length - 1].work.canon_date!).getTime()
-        : 0,
-    [events],
-  );
+        : 0;
+    const sixMonthsOut =
+      Date.now() + 6 * 30 * 24 * 60 * 60 * 1000;
+    return Math.max(
+      latestVerdict + 30 * 24 * 60 * 60 * 1000,
+      sixMonthsOut,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events.length]);
 
   // Natural canvas width — fixed regardless of zoom. Zoom is applied
   // via transform:scale, so visual size of everything (thumbnails,
@@ -1455,7 +1487,7 @@ function SignalView({
                     transform: "translate(-50%, -50%)",
                     zIndex: isCanon ? 2 : 1,
                   }}
-                  aria-label={`${e.work.title || e.work.id} by ${e.work.originator_name || e.work.originator_id}`}
+                  aria-label={`${e.work.title || e.work.id} by ${originatorLabel(e.work.originator_name, e.work.originator_id)}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -1477,7 +1509,7 @@ function SignalView({
                       {e.work.title || "Untitled"}
                     </span>
                     <span className="block text-[10px] font-sans uppercase tracking-[0.18em] text-bone/65 mt-0.5">
-                      {e.work.originator_name || e.work.originator_id} ·{" "}
+                      {originatorLabel(e.work.originator_name, e.work.originator_id)} ·{" "}
                       {formatDate(e.work.canon_date!)}
                     </span>
                   </span>
