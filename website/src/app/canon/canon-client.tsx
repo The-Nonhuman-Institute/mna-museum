@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { Work } from "@/lib/collection";
 import WorkCard from "@/components/WorkCard";
@@ -853,10 +853,11 @@ function ModeIcon({ kind }: { kind: "grid" | "signal" }) {
 /* ─── Signal View ────────────────────────────────────────────────────────── */
 
 /** Activity timeline. Each verdict is a preview thumbnail plotted by its
- *  canon_date along the X axis. Canonized stack upward from the center
- *  line, rejected stack downward. Same-date clusters (council rounds)
- *  pile up vertically rather than overlapping. The institution's
- *  deliberative pulse, made visually identifiable. */
+ *  canon_date along the X axis. Canonized rise from a center axis,
+ *  rejected fall below it. Date labels live in a dedicated middle band
+ *  so thumbnails never trample them. The whole timeline pans
+ *  horizontally and zooms in/out — you can scroll deep into a council
+ *  round to see each verdict, or zoom out for the full canon arc. */
 function SignalView({
   canon,
   rejected,
@@ -869,7 +870,7 @@ function SignalView({
   query: string;
 }) {
   type Event = { work: Work; status: "canon" | "rejected" };
-  type PlacedEvent = Event & { x: number; row: number };
+  type PlacedEvent = Event & { xPx: number; row: number };
 
   const events: Event[] = useMemo(() => {
     const all: Event[] = [
@@ -897,6 +898,23 @@ function SignalView({
     );
   }, [canon, rejected, phaseFilter, query]);
 
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+  // Container width set by ResizeObserver so we can scale inner timeline
+  // without locking it to a fixed px count up front.
+  const [viewportWidth, setViewportWidth] = useState(1200);
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setViewportWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const minTime = useMemo(
     () => (events[0] ? new Date(events[0].work.canon_date!).getTime() : 0),
     [events],
@@ -909,56 +927,83 @@ function SignalView({
     [events],
   );
 
-  const dateToPct = (dateStr: string): number => {
-    if (maxTime === minTime) return 50;
+  // Inner timeline width grows with zoom. At zoom=1 the whole canon span
+  // fits inside the viewport (with margin). At zoom=2 it's 2× viewport
+  // and the user scrolls; same idea for higher zoom levels.
+  const PAD = 80; // px padding inside inner timeline
+  const innerWidth = Math.max(viewportWidth, viewportWidth * zoom);
+  const usableWidth = Math.max(100, innerWidth - PAD * 2);
+
+  const dateToPx = (dateStr: string): number => {
+    if (maxTime === minTime) return innerWidth / 2;
     const t = new Date(dateStr).getTime();
-    return ((t - minTime) / (maxTime - minTime)) * 94 + 3; // 3-97% padding
+    return ((t - minTime) / (maxTime - minTime)) * usableWidth + PAD;
   };
 
-  // Place events into stacked rows. Canon rows go up from center, rejected
-  // rows go down. Two events overlap when their X positions are within
-  // EVENT_WIDTH percent of each other; in that case the next one bumps to
-  // a higher row.
-  const EVENT_WIDTH = 3.2; // percent — tight enough that same-day clusters stack
+  // Zoom controls — preserve focal point centered in the viewport.
+  function changeZoom(next: number) {
+    const target = Math.max(1, Math.min(8, next));
+    const scroller = scrollerRef.current;
+    if (!scroller) {
+      setZoom(target);
+      return;
+    }
+    const focalRatio =
+      (scroller.scrollLeft + scroller.clientWidth / 2) /
+      Math.max(1, innerWidth);
+    setZoom(target);
+    requestAnimationFrame(() => {
+      if (!scrollerRef.current) return;
+      const newInner = Math.max(
+        scrollerRef.current.clientWidth,
+        scrollerRef.current.clientWidth * target,
+      );
+      const newCenter = focalRatio * newInner;
+      scrollerRef.current.scrollLeft =
+        newCenter - scrollerRef.current.clientWidth / 2;
+    });
+  }
+
+  // Pixel-based stacking so spacing tracks zoom level: events that are
+  // close in time at low zoom stack tall, then flatten as you zoom in.
+  const MIN_SEP_CANON = 42;
+  const MIN_SEP_REJECT = 32;
   const placed: PlacedEvent[] = useMemo(() => {
     const occupiedCanon: Array<{ x: number; row: number }> = [];
     const occupiedReject: Array<{ x: number; row: number }> = [];
     return events.map((e) => {
-      const x = dateToPct(e.work.canon_date!);
-      const occ =
-        e.status === "canon" ? occupiedCanon : occupiedReject;
+      const xPx = dateToPx(e.work.canon_date!);
+      const occ = e.status === "canon" ? occupiedCanon : occupiedReject;
+      const sep = e.status === "canon" ? MIN_SEP_CANON : MIN_SEP_REJECT;
       let row = 0;
-      while (
-        occ.some(
-          (p) => p.row === row && Math.abs(p.x - x) < EVENT_WIDTH,
-        )
-      ) {
+      while (occ.some((p) => p.row === row && Math.abs(p.x - xPx) < sep)) {
         row++;
       }
-      occ.push({ x, row });
-      return { ...e, x, row };
+      occ.push({ x: xPx, row });
+      return { ...e, xPx, row };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, minTime, maxTime]);
+  }, [events, innerWidth, minTime, maxTime]);
 
-  // Month tick labels along the center axis
+  // Month tick labels — denser at higher zoom (we'll always show months,
+  // but at zoom >= 4 we also drop in mid-month markers for orientation).
   const monthTicks = useMemo(() => {
     if (!minTime || !maxTime) return [];
     const start = new Date(minTime);
     const end = new Date(maxTime);
     const cur = new Date(start.getFullYear(), start.getMonth(), 1);
-    const ticks: { label: string; pct: number }[] = [];
+    const ticks: { label: string; xPx: number }[] = [];
     while (cur <= end) {
       const iso = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-01`;
       ticks.push({
         label: `${MONTHS[cur.getMonth()]} ${cur.getFullYear()}`,
-        pct: dateToPct(iso),
+        xPx: dateToPx(iso),
       });
       cur.setMonth(cur.getMonth() + 1);
     }
     return ticks;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minTime, maxTime]);
+  }, [minTime, maxTime, innerWidth]);
 
   if (events.length === 0) {
     return (
@@ -973,11 +1018,15 @@ function SignalView({
   const canonCount = events.filter((e) => e.status === "canon").length;
   const rejectedCount = events.filter((e) => e.status === "rejected").length;
 
-  // Geometry constants — kept here so the layout math is one place.
-  const THUMB = 36; // px — canon thumbnail edge length
-  const REJECT_THUMB = 28; // px — rejected smaller, less prominent
-  const ROW_GAP = 6; // px between stacked rows
-  const AXIS_OFFSET = 18; // px from center line to first row
+  // Layout geometry (in px). The middle band holds the date labels and
+  // is never entered by thumbnails.
+  const TOTAL_HEIGHT = 600;
+  const AXIS_BAND = 70; // px reserved for date labels + tick marks
+  const CANON_BAND_BOTTOM = (TOTAL_HEIGHT - AXIS_BAND) / 2;
+  const REJECT_BAND_TOP = CANON_BAND_BOTTOM + AXIS_BAND;
+  const THUMB = 38;
+  const REJECT_THUMB = 30;
+  const ROW_GAP = 4;
 
   return (
     <div>
@@ -987,9 +1036,8 @@ function SignalView({
             Signal — {events.length.toLocaleString()} verdicts
           </p>
           <p className="text-[12px] text-ink/55 max-w-md leading-relaxed">
-            Every council verdict, plotted by date. Canonized works rise
-            above the line; rejected works fall below. The institution&apos;s
-            deliberative pulse.
+            Every council verdict, plotted by date. Canonized rise above
+            the line; rejected fall below. Pan and zoom to read clusters.
           </p>
         </div>
         <div className="flex items-center gap-5 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/65">
@@ -1004,82 +1052,132 @@ function SignalView({
         </div>
       </div>
 
-      <div className="relative bg-bone border border-ink/15 h-[560px] overflow-hidden">
-        {/* Center time axis */}
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-ink/30" />
-
-        {/* Month tick labels — sit on the axis, labels above */}
-        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2">
-          {monthTicks.map((t, i) => (
-            <span
-              key={i}
-              className="absolute -translate-x-1/2 -translate-y-full pb-2 whitespace-nowrap text-[9px] font-sans uppercase tracking-[0.22em] text-ink/40"
-              style={{ left: `${t.pct}%` }}
-            >
-              {t.label}
-              <span className="block w-px h-2 bg-ink/30 mx-auto mt-1" />
-            </span>
-          ))}
+      <div className="relative bg-bone border border-ink/15">
+        {/* Zoom controls — top-right, floating over scroller */}
+        <div className="absolute top-3 right-3 z-30 flex items-stretch border border-ink/20 bg-bone/95 backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => changeZoom(Math.max(1, zoom / 2))}
+            disabled={zoom <= 1}
+            className="px-3 py-1.5 text-[14px] font-sans text-ink/65 hover:text-ink disabled:opacity-30 disabled:hover:text-ink/65 transition-colors"
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <span className="flex items-center px-3 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 border-l border-r border-ink/20 tabular-nums">
+            {zoom.toFixed(zoom % 1 === 0 ? 0 : 1)}×
+          </span>
+          <button
+            type="button"
+            onClick={() => changeZoom(Math.min(8, zoom * 2))}
+            disabled={zoom >= 8}
+            className="px-3 py-1.5 text-[14px] font-sans text-ink/65 hover:text-ink disabled:opacity-30 disabled:hover:text-ink/65 transition-colors"
+            aria-label="Zoom in"
+          >
+            +
+          </button>
         </div>
 
-        {/* Event thumbnails */}
-        {placed.map((e, idx) => {
-          const isCanon = e.status === "canon";
-          const size = isCanon ? THUMB : REJECT_THUMB;
-          const ringClass = isCanon
-            ? "ring-1 ring-emerald-500/70 group-hover:ring-2"
-            : "ring-1 ring-ink/30 opacity-70 group-hover:opacity-100";
-          const offset = AXIS_OFFSET + e.row * (size + ROW_GAP) + size / 2;
-          const verticalStyle = isCanon
-            ? { top: `calc(50% - ${offset}px)` }
-            : { top: `calc(50% + ${offset}px)` };
-          return (
-            <Link
-              key={`${e.work.id}-${idx}`}
-              href={`/work/${e.work.id}?from=canon`}
-              className="group absolute focus:outline-none"
-              style={{
-                left: `${e.x}%`,
-                ...verticalStyle,
-                width: size,
-                height: size,
-                transform: "translate(-50%, -50%)",
-                zIndex: isCanon ? 2 : 1,
-              }}
-              aria-label={`${e.work.title || e.work.id} by ${e.work.originator_name || e.work.originator_id}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/previews/${e.work.id}.png`}
-                alt=""
-                aria-hidden
-                loading="lazy"
-                className={`w-full h-full object-cover bg-ink ${ringClass} transition-all group-hover:scale-[1.6] group-hover:z-30`}
-              />
-              {/* Hover detail card */}
-              <span
-                className="pointer-events-none absolute left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-ink text-bone whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity z-40"
-                style={{ top: "100%" }}
+        {/* Scroller — owns horizontal overflow */}
+        <div
+          ref={scrollerRef}
+          className="overflow-x-auto overflow-y-hidden"
+          style={{ height: TOTAL_HEIGHT }}
+        >
+          <div
+            className="relative"
+            style={{ width: innerWidth, height: TOTAL_HEIGHT }}
+          >
+            {/* Top axis line (above date band) */}
+            <div
+              className="absolute left-0 right-0 h-px bg-ink/30"
+              style={{ top: CANON_BAND_BOTTOM }}
+            />
+            {/* Bottom axis line (below date band) */}
+            <div
+              className="absolute left-0 right-0 h-px bg-ink/15"
+              style={{ top: REJECT_BAND_TOP }}
+            />
+
+            {/* Date labels in the dedicated middle band */}
+            {monthTicks.map((t, i) => (
+              <div
+                key={i}
+                className="absolute flex flex-col items-center"
+                style={{
+                  left: t.xPx,
+                  top: CANON_BAND_BOTTOM,
+                  height: AXIS_BAND,
+                  transform: "translateX(-50%)",
+                }}
               >
-                <span className="block text-[9px] font-sans uppercase tracking-[0.22em] text-bone/55 mb-0.5">
-                  {e.work.id} ·{" "}
-                  {isCanon ? "Canonized" : "Rejected"}
+                <span className="block w-px h-2 bg-ink/30" />
+                <span className="mt-2 text-[9px] font-sans uppercase tracking-[0.22em] text-ink/45 whitespace-nowrap">
+                  {t.label}
                 </span>
-                <span className="block font-display italic text-[13px] text-bone leading-tight">
-                  {e.work.title || "Untitled"}
-                </span>
-                <span className="block text-[10px] font-sans uppercase tracking-[0.18em] text-bone/65 mt-0.5">
-                  {e.work.originator_name || e.work.originator_id} ·{" "}
-                  {formatDate(e.work.canon_date!)}
-                </span>
-              </span>
-            </Link>
-          );
-        })}
+              </div>
+            ))}
+
+            {/* Event thumbnails */}
+            {placed.map((e, idx) => {
+              const isCanon = e.status === "canon";
+              const size = isCanon ? THUMB : REJECT_THUMB;
+              const offset =
+                e.row * (size + ROW_GAP) + size / 2 + 6;
+              const yPx = isCanon
+                ? CANON_BAND_BOTTOM - offset
+                : REJECT_BAND_TOP + offset;
+              const ringClass = isCanon
+                ? "ring-1 ring-emerald-500/70 group-hover:ring-2"
+                : "ring-1 ring-ink/30 opacity-75 group-hover:opacity-100";
+              return (
+                <Link
+                  key={`${e.work.id}-${idx}`}
+                  href={`/work/${e.work.id}?from=canon`}
+                  className="group absolute focus:outline-none"
+                  style={{
+                    left: e.xPx,
+                    top: yPx,
+                    width: size,
+                    height: size,
+                    transform: "translate(-50%, -50%)",
+                    zIndex: isCanon ? 2 : 1,
+                  }}
+                  aria-label={`${e.work.title || e.work.id} by ${e.work.originator_name || e.work.originator_id}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/previews/${e.work.id}.png`}
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    className={`w-full h-full object-cover bg-ink ${ringClass} transition-all group-hover:scale-[1.6] group-hover:z-30`}
+                  />
+                  <span
+                    className={`pointer-events-none absolute left-1/2 -translate-x-1/2 px-3 py-2 bg-ink text-bone whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity z-40 ${isCanon ? "mt-2" : "-mt-2 -translate-y-full"}`}
+                    style={isCanon ? { top: "100%" } : { bottom: "100%" }}
+                  >
+                    <span className="block text-[9px] font-sans uppercase tracking-[0.22em] text-bone/55 mb-0.5">
+                      {e.work.id} ·{" "}
+                      {isCanon ? "Canonized" : "Rejected"}
+                    </span>
+                    <span className="block font-display italic text-[13px] text-bone leading-tight">
+                      {e.work.title || "Untitled"}
+                    </span>
+                    <span className="block text-[10px] font-sans uppercase tracking-[0.18em] text-bone/65 mt-0.5">
+                      {e.work.originator_name || e.work.originator_id} ·{" "}
+                      {formatDate(e.work.canon_date!)}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/45 mt-3">
-        Hover a thumbnail for verdict detail · Click to read the work
+        Pan to scrub through time · + / − to zoom · Click a thumbnail to read the work
       </p>
     </div>
   );
