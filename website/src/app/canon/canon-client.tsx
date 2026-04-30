@@ -402,19 +402,58 @@ export default function CanonClient(props: CanonClientProps) {
   );
 }
 
+type DisplayMode = "grid" | "signal";
+const PER_PAGE = 24;
+
 function CanonContent({ canon, rejected, counts }: CanonClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialPhase = (searchParams.get("phase") as PhaseFilter) || "ALL";
+  const initialMode: DisplayMode =
+    searchParams.get("mode") === "signal" ? "signal" : "grid";
+  const initialPage = Math.max(
+    1,
+    parseInt(searchParams.get("page") || "1", 10) || 1,
+  );
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>(initialPhase);
+  const [mode, setMode] = useState<DisplayMode>(initialMode);
+  const [page, setPage] = useState<number>(initialPage);
   const [query, setQuery] = useState("");
+
+  function pushUrl(next: {
+    phase?: PhaseFilter;
+    mode?: DisplayMode;
+    page?: number;
+  }) {
+    const phase = next.phase ?? phaseFilter;
+    const m = next.mode ?? mode;
+    const p = next.page ?? page;
+    const params = new URLSearchParams();
+    if (phase !== "ALL") params.set("phase", phase);
+    if (m !== "grid") params.set("mode", m);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    router.replace(`/canon${qs ? `?${qs}` : ""}`, { scroll: false });
+  }
 
   const updatePhase = (filter: PhaseFilter) => {
     setPhaseFilter(filter);
-    if (filter === "ALL") {
-      router.replace("/canon", { scroll: false });
-    } else {
-      router.replace(`/canon?phase=${filter}`, { scroll: false });
+    setPage(1);
+    pushUrl({ phase: filter, page: 1 });
+  };
+
+  const updateMode = (m: DisplayMode) => {
+    setMode(m);
+    setPage(1);
+    pushUrl({ mode: m, page: 1 });
+  };
+
+  const updatePage = (p: number) => {
+    setPage(p);
+    pushUrl({ page: p });
+    if (typeof window !== "undefined") {
+      const grid = document.getElementById("canon-grid");
+      if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
@@ -437,6 +476,15 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
     }
     return list;
   }, [canon, phaseFilter, query]);
+
+  // Pagination math
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const pageWorks = useMemo(
+    () =>
+      filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE),
+    [filtered, safePage],
+  );
 
   // Stats rail values
   const latestCanon = useMemo(() => {
@@ -577,18 +625,30 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
             Display Mode
           </span>
           <div className="flex items-stretch border border-ink/20 bg-bone">
-            <span className="flex items-center gap-2.5 bg-ink text-bone px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em]">
+            <button
+              type="button"
+              onClick={() => updateMode("grid")}
+              className={`flex items-center gap-2.5 px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em] transition-colors ${
+                mode === "grid"
+                  ? "bg-ink text-bone"
+                  : "text-ink/55 hover:text-ink"
+              }`}
+            >
               <ModeIcon kind="grid" />
               Archive Grid
-            </span>
-            <span className="flex items-center gap-2.5 text-ink/55 px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em] border-l border-ink/20">
-              <ModeIcon kind="spatial" />
-              Spatial View
-            </span>
-            <span className="flex items-center gap-2.5 text-ink/55 px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em] border-l border-ink/20">
+            </button>
+            <button
+              type="button"
+              onClick={() => updateMode("signal")}
+              className={`flex items-center gap-2.5 px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em] border-l border-ink/20 transition-colors ${
+                mode === "signal"
+                  ? "bg-ink text-bone"
+                  : "text-ink/55 hover:text-ink"
+              }`}
+            >
               <ModeIcon kind="signal" />
               Signal View
-            </span>
+            </button>
           </div>
           <div className="flex-1 min-w-[240px] max-w-md">
             <input
@@ -608,34 +668,66 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
         </div>
       </section>
 
-      {/* ── Grid header + grid ──────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-5 md:px-8 pt-6 pb-10">
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-[11px] font-sans uppercase tracking-[0.22em] text-ink/65">
-            {filtered.length.toLocaleString()} Works
-            {filtered.length !== canon.length && (
-              <span className="text-ink/40">
-                {" "}/ {canon.length.toLocaleString()}
-              </span>
-            )}
-          </p>
-          <Pagination total={filtered.length} perPage={24} />
-        </div>
+      {/* ── Grid / Signal section ───────────────────────────────────────── */}
+      <section
+        id="canon-grid"
+        className="max-w-7xl mx-auto px-5 md:px-8 pt-6 pb-10 scroll-mt-24"
+      >
+        {mode === "grid" ? (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-[11px] font-sans uppercase tracking-[0.22em] text-ink/65">
+                {filtered.length.toLocaleString()} Works
+                {filtered.length !== canon.length && (
+                  <span className="text-ink/40">
+                    {" "}
+                    / {canon.length.toLocaleString()}
+                  </span>
+                )}
+              </p>
+              <Pagination
+                total={filtered.length}
+                perPage={PER_PAGE}
+                current={safePage}
+                onChange={updatePage}
+              />
+            </div>
 
-        {filtered.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-            {filtered.slice(0, 24).map((work) => (
-              <WorkCard key={work.id} work={work} from="canon" />
-            ))}
-          </div>
+            {filtered.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+                {pageWorks.map((work) => (
+                  <WorkCard key={work.id} work={work} from="canon" />
+                ))}
+              </div>
+            ) : (
+              <div className="border border-ink/15 p-16 text-center">
+                <p className="text-[13px] text-ink/60">
+                  {canon.length === 0
+                    ? "The canon is empty. The Evaluation Council has not yet rendered its first verdict."
+                    : "No works match these filters."}
+                </p>
+              </div>
+            )}
+
+            {/* Bottom pagination — same component, makes long pages navigable */}
+            {totalPages > 1 ? (
+              <div className="mt-10 flex justify-end">
+                <Pagination
+                  total={filtered.length}
+                  perPage={PER_PAGE}
+                  current={safePage}
+                  onChange={updatePage}
+                />
+              </div>
+            ) : null}
+          </>
         ) : (
-          <div className="border border-ink/15 p-16 text-center">
-            <p className="text-[13px] text-ink/60">
-              {canon.length === 0
-                ? "The canon is empty. The Evaluation Council has not yet rendered its first verdict."
-                : "No works match these filters."}
-            </p>
-          </div>
+          <SignalView
+            canon={canon}
+            rejected={rejected}
+            phaseFilter={phaseFilter}
+            query={query}
+          />
         )}
       </section>
 
@@ -659,37 +751,76 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
   );
 }
 
-/* ─── Pagination numerals — visual-only ──────────────────────────────────── */
+/* ─── Pagination ─────────────────────────────────────────────────────────── */
 
-function Pagination({ total, perPage }: { total: number; perPage: number }) {
+function Pagination({
+  total,
+  perPage,
+  current,
+  onChange,
+}: {
+  total: number;
+  perPage: number;
+  current: number;
+  onChange: (page: number) => void;
+}) {
   const pages = Math.max(1, Math.ceil(total / perPage));
-  const last = pages;
-  const visible = pages <= 4 ? Array.from({ length: pages }, (_, i) => i + 1) : [1, 2, 3];
+  if (pages <= 1) return null;
+
+  // Build the visible-numbers window. Always show 1 and last; show neighbors
+  // of current; insert ellipses where gaps exist.
+  const visible: (number | "ellipsis")[] = [];
+  const add = (v: number | "ellipsis") => {
+    if (v === "ellipsis") {
+      if (visible[visible.length - 1] !== "ellipsis") visible.push(v);
+      return;
+    }
+    if (!visible.includes(v)) visible.push(v);
+  };
+  add(1);
+  if (current - 1 > 2) add("ellipsis");
+  for (let n = Math.max(2, current - 1); n <= Math.min(pages - 1, current + 1); n++) add(n);
+  if (current + 1 < pages - 1) add("ellipsis");
+  if (pages > 1) add(pages);
 
   return (
     <div className="flex items-center gap-3 text-[12px] font-sans tabular-nums">
-      {visible.map((n, i) => (
-        <span
-          key={n}
-          className={i === 0 ? "text-ink underline underline-offset-[6px]" : "text-ink/40 hover:text-ink transition-colors cursor-default"}
-        >
-          {n}
-        </span>
-      ))}
-      {pages > 4 && (
-        <>
-          <span className="text-ink/30">…</span>
-          <span className="text-ink/40">{last}</span>
-        </>
+      {visible.map((v, i) =>
+        v === "ellipsis" ? (
+          <span key={`e-${i}`} className="text-ink/30">
+            …
+          </span>
+        ) : (
+          <button
+            key={v}
+            type="button"
+            onClick={() => onChange(v)}
+            className={
+              v === current
+                ? "text-ink underline underline-offset-[6px]"
+                : "text-ink/40 hover:text-ink transition-colors"
+            }
+          >
+            {v}
+          </button>
+        ),
       )}
-      <span className="text-ink/40 ml-1.5">→</span>
+      <button
+        type="button"
+        onClick={() => current < pages && onChange(current + 1)}
+        disabled={current >= pages}
+        className="text-ink/40 hover:text-ink transition-colors ml-1.5 disabled:opacity-30 disabled:hover:text-ink/40"
+        aria-label="Next page"
+      >
+        →
+      </button>
     </div>
   );
 }
 
 /* ─── Mode toggle icons ──────────────────────────────────────────────────── */
 
-function ModeIcon({ kind }: { kind: "grid" | "spatial" | "signal" }) {
+function ModeIcon({ kind }: { kind: "grid" | "signal" }) {
   const p = {
     width: 11,
     height: 11,
@@ -710,12 +841,6 @@ function ModeIcon({ kind }: { kind: "grid" | "spatial" | "signal" }) {
           <rect x="9" y="9" width="5" height="5" />
         </svg>
       );
-    case "spatial":
-      return (
-        <svg {...p}>
-          <polygon points="8,2 14,6 14,12 8,14.5 2,12 2,6" />
-        </svg>
-      );
     case "signal":
       return (
         <svg {...p}>
@@ -723,4 +848,194 @@ function ModeIcon({ kind }: { kind: "grid" | "spatial" | "signal" }) {
         </svg>
       );
   }
+}
+
+/* ─── Signal View ────────────────────────────────────────────────────────── */
+
+/** Activity timeline. Each work and rejection plotted by its canon_date,
+ *  vertically stratified by phase. The institution's deliberative pulse —
+ *  shows when the council was active, what got through, what didn't. */
+function SignalView({
+  canon,
+  rejected,
+  phaseFilter,
+  query,
+}: {
+  canon: Work[];
+  rejected: Work[];
+  phaseFilter: PhaseFilter;
+  query: string;
+}) {
+  type Event = { work: Work; status: "canon" | "rejected" };
+
+  const events: Event[] = useMemo(() => {
+    const all: Event[] = [
+      ...canon.map((w) => ({ work: w, status: "canon" as const })),
+      ...rejected.map((w) => ({ work: w, status: "rejected" as const })),
+    ];
+    let list = all.filter((e) => e.work.canon_date);
+    if (phaseFilter !== "ALL") {
+      list = list.filter(
+        (e) => (e.work.phase_at_submission || "I") === phaseFilter,
+      );
+    }
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter(
+        (e) =>
+          (e.work.title || "").toLowerCase().includes(q) ||
+          e.work.id.toLowerCase().includes(q) ||
+          (e.work.originator_name || "").toLowerCase().includes(q) ||
+          e.work.originator_id.toLowerCase().includes(q),
+      );
+    }
+    return list.sort((a, b) =>
+      a.work.canon_date! < b.work.canon_date! ? -1 : 1,
+    );
+  }, [canon, rejected, phaseFilter, query]);
+
+  const minTime = useMemo(
+    () => (events[0] ? new Date(events[0].work.canon_date!).getTime() : 0),
+    [events],
+  );
+  const maxTime = useMemo(
+    () =>
+      events[events.length - 1]
+        ? new Date(events[events.length - 1].work.canon_date!).getTime()
+        : 0,
+    [events],
+  );
+
+  const dateToPct = (dateStr: string): number => {
+    if (maxTime === minTime) return 50;
+    const t = new Date(dateStr).getTime();
+    return ((t - minTime) / (maxTime - minTime)) * 96 + 2; // 2-98% padding
+  };
+
+  const phaseRow: Record<string, number> = {
+    I: 18,
+    II: 38,
+    III: 58,
+    IV: 78,
+  };
+
+  // Month tick labels along the bottom axis
+  const monthTicks = useMemo(() => {
+    if (!minTime || !maxTime) return [];
+    const start = new Date(minTime);
+    const end = new Date(maxTime);
+    const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    const ticks: { label: string; pct: number }[] = [];
+    while (cur <= end) {
+      const iso = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-01`;
+      ticks.push({
+        label: `${MONTHS[cur.getMonth()]} ${cur.getFullYear()}`,
+        pct: dateToPct(iso),
+      });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return ticks;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minTime, maxTime]);
+
+  if (events.length === 0) {
+    return (
+      <div className="border border-ink/15 p-16 text-center">
+        <p className="text-[13px] text-ink/60">
+          No verdicts to plot under these filters.
+        </p>
+      </div>
+    );
+  }
+
+  const canonCount = events.filter((e) => e.status === "canon").length;
+  const rejectedCount = events.filter((e) => e.status === "rejected").length;
+
+  return (
+    <div>
+      <div className="mb-6 flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <p className="text-[11px] font-sans uppercase tracking-[0.22em] text-ink/65 mb-1.5">
+            Signal — {events.length.toLocaleString()} verdicts
+          </p>
+          <p className="text-[12px] text-ink/55 max-w-md leading-relaxed">
+            Each mark is a council decision plotted by date and phase.
+            The canon as broadcast — when deliberation happened, what
+            was admitted, what was preserved as record.
+          </p>
+        </div>
+        <div className="flex items-center gap-5 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/65">
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            Canonized · {canonCount}
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full border border-ink/45 bg-bone" />
+            Rejected · {rejectedCount}
+          </span>
+        </div>
+      </div>
+
+      <div className="relative bg-bone border border-ink/15 h-[460px] overflow-hidden">
+        {/* Phase rows — dashed guide lines + labels */}
+        {(["I", "II", "III", "IV"] as const).map((phase) => (
+          <div
+            key={phase}
+            className="absolute left-0 right-0 border-t border-dashed border-ink/10"
+            style={{ top: `${phaseRow[phase]}%` }}
+          >
+            <span className="absolute left-3 -top-2.5 bg-bone px-2 text-[9px] font-sans uppercase tracking-[0.22em] text-ink/40">
+              Phase {phase}
+            </span>
+          </div>
+        ))}
+
+        {/* Event marks */}
+        {events.map((e, idx) => {
+          const x = dateToPct(e.work.canon_date!);
+          const phase = e.work.phase_at_submission || "I";
+          const y = phaseRow[phase] ?? 50;
+          const tooltip = `${e.work.id} — ${e.work.title || "Untitled"} — ${e.work.originator_name || e.work.originator_id} — ${formatDate(e.work.canon_date!)}`;
+          return (
+            <Link
+              key={`${e.work.id}-${idx}`}
+              href={`/work/${e.work.id}?from=canon`}
+              title={tooltip}
+              className="group absolute focus:outline-none"
+              style={{
+                left: `${x}%`,
+                top: `${y}%`,
+                transform: "translate(-50%, -50%)",
+                zIndex: e.status === "canon" ? 2 : 1,
+              }}
+            >
+              {e.status === "canon" ? (
+                <span className="block w-2 h-2 rounded-full bg-emerald-500 transition-transform group-hover:scale-[2.2] group-focus-visible:scale-[2.2]" />
+              ) : (
+                <span className="block w-2 h-2 rounded-full border border-ink/45 bg-bone transition-transform group-hover:scale-[2.2] group-focus-visible:scale-[2.2]" />
+              )}
+            </Link>
+          );
+        })}
+
+        {/* Time axis */}
+        <div className="absolute bottom-0 left-0 right-0 h-9 border-t border-ink/15 bg-bone">
+          {monthTicks.map((t, i) => (
+            <span
+              key={i}
+              className="absolute top-2.5 text-[9px] font-sans uppercase tracking-[0.18em] text-ink/45 -translate-x-1/2 whitespace-nowrap"
+              style={{ left: `${t.pct}%` }}
+            >
+              <span className="block w-px h-1.5 bg-ink/20 mx-auto mb-1" />
+              {t.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/45 mt-3">
+        Hover a mark for verdict detail · Click to read the work
+      </p>
+    </div>
+  );
 }
