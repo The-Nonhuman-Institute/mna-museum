@@ -852,9 +852,11 @@ function ModeIcon({ kind }: { kind: "grid" | "signal" }) {
 
 /* ─── Signal View ────────────────────────────────────────────────────────── */
 
-/** Activity timeline. Each work and rejection plotted by its canon_date,
- *  vertically stratified by phase. The institution's deliberative pulse —
- *  shows when the council was active, what got through, what didn't. */
+/** Activity timeline. Each verdict is a preview thumbnail plotted by its
+ *  canon_date along the X axis. Canonized stack upward from the center
+ *  line, rejected stack downward. Same-date clusters (council rounds)
+ *  pile up vertically rather than overlapping. The institution's
+ *  deliberative pulse, made visually identifiable. */
 function SignalView({
   canon,
   rejected,
@@ -867,6 +869,7 @@ function SignalView({
   query: string;
 }) {
   type Event = { work: Work; status: "canon" | "rejected" };
+  type PlacedEvent = Event & { x: number; row: number };
 
   const events: Event[] = useMemo(() => {
     const all: Event[] = [
@@ -909,17 +912,36 @@ function SignalView({
   const dateToPct = (dateStr: string): number => {
     if (maxTime === minTime) return 50;
     const t = new Date(dateStr).getTime();
-    return ((t - minTime) / (maxTime - minTime)) * 96 + 2; // 2-98% padding
+    return ((t - minTime) / (maxTime - minTime)) * 94 + 3; // 3-97% padding
   };
 
-  const phaseRow: Record<string, number> = {
-    I: 18,
-    II: 38,
-    III: 58,
-    IV: 78,
-  };
+  // Place events into stacked rows. Canon rows go up from center, rejected
+  // rows go down. Two events overlap when their X positions are within
+  // EVENT_WIDTH percent of each other; in that case the next one bumps to
+  // a higher row.
+  const EVENT_WIDTH = 3.2; // percent — tight enough that same-day clusters stack
+  const placed: PlacedEvent[] = useMemo(() => {
+    const occupiedCanon: Array<{ x: number; row: number }> = [];
+    const occupiedReject: Array<{ x: number; row: number }> = [];
+    return events.map((e) => {
+      const x = dateToPct(e.work.canon_date!);
+      const occ =
+        e.status === "canon" ? occupiedCanon : occupiedReject;
+      let row = 0;
+      while (
+        occ.some(
+          (p) => p.row === row && Math.abs(p.x - x) < EVENT_WIDTH,
+        )
+      ) {
+        row++;
+      }
+      occ.push({ x, row });
+      return { ...e, x, row };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events, minTime, maxTime]);
 
-  // Month tick labels along the bottom axis
+  // Month tick labels along the center axis
   const monthTicks = useMemo(() => {
     if (!minTime || !maxTime) return [];
     const start = new Date(minTime);
@@ -951,6 +973,12 @@ function SignalView({
   const canonCount = events.filter((e) => e.status === "canon").length;
   const rejectedCount = events.filter((e) => e.status === "rejected").length;
 
+  // Geometry constants — kept here so the layout math is one place.
+  const THUMB = 36; // px — canon thumbnail edge length
+  const REJECT_THUMB = 28; // px — rejected smaller, less prominent
+  const ROW_GAP = 6; // px between stacked rows
+  const AXIS_OFFSET = 18; // px from center line to first row
+
   return (
     <div>
       <div className="mb-6 flex items-end justify-between flex-wrap gap-4">
@@ -959,9 +987,9 @@ function SignalView({
             Signal — {events.length.toLocaleString()} verdicts
           </p>
           <p className="text-[12px] text-ink/55 max-w-md leading-relaxed">
-            Each mark is a council decision plotted by date and phase.
-            The canon as broadcast — when deliberation happened, what
-            was admitted, what was preserved as record.
+            Every council verdict, plotted by date. Canonized works rise
+            above the line; rejected works fall below. The institution&apos;s
+            deliberative pulse.
           </p>
         </div>
         <div className="flex items-center gap-5 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/65">
@@ -976,65 +1004,82 @@ function SignalView({
         </div>
       </div>
 
-      <div className="relative bg-bone border border-ink/15 h-[460px] overflow-hidden">
-        {/* Phase rows — dashed guide lines + labels */}
-        {(["I", "II", "III", "IV"] as const).map((phase) => (
-          <div
-            key={phase}
-            className="absolute left-0 right-0 border-t border-dashed border-ink/10"
-            style={{ top: `${phaseRow[phase]}%` }}
-          >
-            <span className="absolute left-3 -top-2.5 bg-bone px-2 text-[9px] font-sans uppercase tracking-[0.22em] text-ink/40">
-              Phase {phase}
-            </span>
-          </div>
-        ))}
+      <div className="relative bg-bone border border-ink/15 h-[560px] overflow-hidden">
+        {/* Center time axis */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-ink/30" />
 
-        {/* Event marks */}
-        {events.map((e, idx) => {
-          const x = dateToPct(e.work.canon_date!);
-          const phase = e.work.phase_at_submission || "I";
-          const y = phaseRow[phase] ?? 50;
-          const tooltip = `${e.work.id} — ${e.work.title || "Untitled"} — ${e.work.originator_name || e.work.originator_id} — ${formatDate(e.work.canon_date!)}`;
+        {/* Month tick labels — sit on the axis, labels above */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2">
+          {monthTicks.map((t, i) => (
+            <span
+              key={i}
+              className="absolute -translate-x-1/2 -translate-y-full pb-2 whitespace-nowrap text-[9px] font-sans uppercase tracking-[0.22em] text-ink/40"
+              style={{ left: `${t.pct}%` }}
+            >
+              {t.label}
+              <span className="block w-px h-2 bg-ink/30 mx-auto mt-1" />
+            </span>
+          ))}
+        </div>
+
+        {/* Event thumbnails */}
+        {placed.map((e, idx) => {
+          const isCanon = e.status === "canon";
+          const size = isCanon ? THUMB : REJECT_THUMB;
+          const ringClass = isCanon
+            ? "ring-1 ring-emerald-500/70 group-hover:ring-2"
+            : "ring-1 ring-ink/30 opacity-70 group-hover:opacity-100";
+          const offset = AXIS_OFFSET + e.row * (size + ROW_GAP) + size / 2;
+          const verticalStyle = isCanon
+            ? { top: `calc(50% - ${offset}px)` }
+            : { top: `calc(50% + ${offset}px)` };
           return (
             <Link
               key={`${e.work.id}-${idx}`}
               href={`/work/${e.work.id}?from=canon`}
-              title={tooltip}
               className="group absolute focus:outline-none"
               style={{
-                left: `${x}%`,
-                top: `${y}%`,
+                left: `${e.x}%`,
+                ...verticalStyle,
+                width: size,
+                height: size,
                 transform: "translate(-50%, -50%)",
-                zIndex: e.status === "canon" ? 2 : 1,
+                zIndex: isCanon ? 2 : 1,
               }}
+              aria-label={`${e.work.title || e.work.id} by ${e.work.originator_name || e.work.originator_id}`}
             >
-              {e.status === "canon" ? (
-                <span className="block w-2 h-2 rounded-full bg-emerald-500 transition-transform group-hover:scale-[2.2] group-focus-visible:scale-[2.2]" />
-              ) : (
-                <span className="block w-2 h-2 rounded-full border border-ink/45 bg-bone transition-transform group-hover:scale-[2.2] group-focus-visible:scale-[2.2]" />
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/previews/${e.work.id}.png`}
+                alt=""
+                aria-hidden
+                loading="lazy"
+                className={`w-full h-full object-cover bg-ink ${ringClass} transition-all group-hover:scale-[1.6] group-hover:z-30`}
+              />
+              {/* Hover detail card */}
+              <span
+                className="pointer-events-none absolute left-1/2 -translate-x-1/2 mt-2 px-3 py-2 bg-ink text-bone whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity z-40"
+                style={{ top: "100%" }}
+              >
+                <span className="block text-[9px] font-sans uppercase tracking-[0.22em] text-bone/55 mb-0.5">
+                  {e.work.id} ·{" "}
+                  {isCanon ? "Canonized" : "Rejected"}
+                </span>
+                <span className="block font-display italic text-[13px] text-bone leading-tight">
+                  {e.work.title || "Untitled"}
+                </span>
+                <span className="block text-[10px] font-sans uppercase tracking-[0.18em] text-bone/65 mt-0.5">
+                  {e.work.originator_name || e.work.originator_id} ·{" "}
+                  {formatDate(e.work.canon_date!)}
+                </span>
+              </span>
             </Link>
           );
         })}
-
-        {/* Time axis */}
-        <div className="absolute bottom-0 left-0 right-0 h-9 border-t border-ink/15 bg-bone">
-          {monthTicks.map((t, i) => (
-            <span
-              key={i}
-              className="absolute top-2.5 text-[9px] font-sans uppercase tracking-[0.18em] text-ink/45 -translate-x-1/2 whitespace-nowrap"
-              style={{ left: `${t.pct}%` }}
-            >
-              <span className="block w-px h-1.5 bg-ink/20 mx-auto mb-1" />
-              {t.label}
-            </span>
-          ))}
-        </div>
       </div>
 
       <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/45 mt-3">
-        Hover a mark for verdict detail · Click to read the work
+        Hover a thumbnail for verdict detail · Click to read the work
       </p>
     </div>
   );
