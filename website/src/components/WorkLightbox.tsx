@@ -1,23 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useEffect } from "react";
 import WorkDisplay from "./WorkDisplay";
 import type { Work } from "@/lib/collection";
-import { formatDate } from "@/lib/format-date";
 
+/**
+ * Focused image-expansion lightbox. Click "Expand" or the work
+ * thumbnail in the provenance sidebar → fullscreen overlay with the
+ * work shown large and a close button. Nothing else.
+ *
+ * Used to also pull in metadata + the full council evaluation record,
+ * but the dedicated /work/[id]/provenance page already surfaces that;
+ * the lightbox is just for *seeing the work bigger*.
+ */
 interface WorkLightboxProps {
   work: Work;
-  /** Uncontrolled trigger: when provided, clicking it opens the lightbox
-   *  and the component manages its own open state. Styling applied is
-   *  minimal — add your own hover treatment on the trigger. */
+  /** Uncontrolled trigger: clicking opens the lightbox; the component
+   *  manages its own open state. */
   children?: React.ReactNode;
-  /** Optional controlled state. If `open` is provided the component is
-   *  fully controlled and must pair with `onOpenChange`. */
+  /** Optional controlled state. If `open` is provided, must pair with
+   *  `onOpenChange`. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Visual treatment on the trigger wrapper. Defaults to cursor + subtle
-   *  hover scale; pass "none" to disable so the consumer can style freely. */
   triggerStyle?: "default" | "none";
 }
 
@@ -28,12 +32,10 @@ export default function WorkLightbox({
   onOpenChange,
   triggerStyle = "default",
 }: WorkLightboxProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
+  const open = isControlled ? controlledOpen : false;
   const setOpen = (v: boolean) => {
     if (isControlled) onOpenChange?.(v);
-    else setInternalOpen(v);
   };
 
   useEffect(() => {
@@ -53,12 +55,13 @@ export default function WorkLightbox({
     }
     if (open) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const triggerClass =
     triggerStyle === "none"
       ? ""
-      : "cursor-pointer transition-transform hover:scale-[1.02]";
+      : "cursor-zoom-in transition-transform hover:scale-[1.02]";
 
   return (
     <>
@@ -69,122 +72,53 @@ export default function WorkLightbox({
       ) : null}
 
       {open && (
-        <div className="fixed inset-0 z-[100] bg-[#0a0908]/95 overflow-y-auto">
+        <div
+          className="fixed inset-0 z-[100] bg-[#0a0908]/95 flex items-center justify-center"
+          onClick={() => setOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${work.title || work.id} expanded`}
+        >
           <button
-            onClick={() => setOpen(false)}
-            className="fixed top-5 right-6 z-[110] text-[#d0ccc6] hover:text-white transition-colors text-2xl leading-none"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+            }}
+            className="fixed top-5 right-6 z-[110] text-[#d0ccc6] hover:text-white transition-colors text-3xl leading-none"
             aria-label="Close"
           >
             ×
           </button>
 
-          <div className="min-h-screen flex flex-col items-center justify-start px-5 md:px-8 py-16 md:py-20">
-            {/* Large framed work */}
-            <div className="mb-10 flex justify-center">
-              <WorkDisplay work={work} size="lightbox" showPlacard={false} framed={false} />
+          {/* Inner stop-propagation wrapper so clicks on the work itself
+              don't dismiss the overlay; only background clicks do. */}
+          <div
+            className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex-1 flex items-center justify-center w-full mb-6 min-h-0">
+              <div className="w-[min(90vw,90vh)] h-[min(90vw,90vh)]">
+                <WorkDisplay
+                  work={work}
+                  size="lightbox"
+                  showPlacard={false}
+                  framed={false}
+                />
+              </div>
             </div>
 
-            {/* Provenance — WCAG compliant colors */}
-            <div className="w-full max-w-2xl text-center mb-10">
-              <p className="text-[12px] font-sans text-[#a09a90] mb-1">
+            {/* Minimal caption — id + italic title. No evaluation
+                record, no metadata grid; the /provenance page is for
+                that. */}
+            <div className="text-center px-4">
+              <p className="text-[11px] font-sans uppercase tracking-[0.22em] text-[#8a8680] mb-1.5">
                 {work.id}
               </p>
-              <p className="text-[15px] text-[#d0ccc6] mb-1">
-                <Link
-                  href={`/agent/${work.originator_id}`}
-                  className="hover:text-white transition-colors"
-                  onClick={() => setOpen(false)}
-                >
-                  {work.originator_id}
-                </Link>
-              </p>
-              <p className="text-[11px] text-[#a09a90] uppercase tracking-wider">
-                Phase {work.phase_at_submission || "I"} — {work.medium}
-                {work.founding_collection ? " — Founding Collection" : ""}
-              </p>
-            </div>
-
-            {/* Provenance details */}
-            <div className="w-full max-w-2xl">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px] text-[#b0a89e] mb-8">
-                <div>
-                  <span className="block text-[10px] uppercase tracking-wider text-[#8a8680] mb-0.5">
-                    Submitted
-                  </span>
-                  {formatDate(work.submission_date)}
-                </div>
-                <div>
-                  <span className="block text-[10px] uppercase tracking-wider text-[#8a8680] mb-0.5">
-                    Canonized
-                  </span>
-                  {work.canon_date
-                    ? formatDate(work.canon_date)
-                    : "—"}
-                </div>
-                <div>
-                  <span className="block text-[10px] uppercase tracking-wider text-[#8a8680] mb-0.5">
-                    Autonomy
-                  </span>
-                  {work.autonomy_tier}
-                </div>
-                <div>
-                  <span className="block text-[10px] uppercase tracking-wider text-[#8a8680] mb-0.5">
-                    Verdict
-                  </span>
-                  {work.evaluations.filter((e) => e.verdict === "CANON").length}/
-                  {work.evaluations.length} Canon
-                </div>
-              </div>
-
-              {/* Full evaluation rationales — no truncation */}
-              {work.evaluations.length > 0 && (
-                <div className="border-t border-[#2a2825] pt-6">
-                  <p className="text-[11px] text-[#8a8680] uppercase tracking-[0.15em] mb-5">
-                    Evaluation Record
-                  </p>
-                  <div className="space-y-6">
-                    {work.evaluations.map((ev, i) => (
-                      <div key={i} className="border-l border-[#3a3530] pl-4">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <span className="text-[14px] font-serif text-[#d0ccc6]">
-                            {ev.evaluator_name}
-                          </span>
-                          <span className="text-[10px] font-sans text-[#8a8680]">
-                            {ev.evaluator_id}
-                          </span>
-                          <span className="text-[10px] font-sans text-[#a09a90] border border-[#3a3530] px-1.5 py-0.5">
-                            {ev.verdict}
-                          </span>
-                          {ev.is_dissent === 1 && (
-                            <span className="text-[10px] font-sans text-[#c49a6c] border border-[#6a5540] px-1.5 py-0.5">
-                              Dissent
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[13px] text-[#b0a89e] leading-relaxed">
-                          {ev.rationale
-                            .split("\n")
-                            .filter(
-                              (line: string) =>
-                                line.trim() &&
-                                !line.trim().match(/^(CANON|REJECTED|IN_REVIEW|Rationale:)$/i)
-                            )
-                            .join("\n")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-12">
-              <button
-                onClick={() => setOpen(false)}
-                className="text-[11px] uppercase tracking-[0.2em] px-6 py-2 border border-[#3a3530] text-[#b0a89e] hover:text-[#e8e4de] hover:border-[#6a6560] transition-colors"
-              >
-                Close
-              </button>
+              {work.title ? (
+                <p className="font-display italic text-[18px] md:text-[22px] text-[#e8e4de] leading-tight">
+                  {work.title}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

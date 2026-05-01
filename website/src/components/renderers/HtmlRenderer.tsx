@@ -62,16 +62,52 @@ const CONTROL_SHIM = `
       return origRAF(cb);
     };
   }
+
+  // Snapshot the largest canvas at pause time so the parent can show
+  // it as a frozen frame on top of the iframe. Without this, works
+  // that clear the canvas at the start of each rAF callback drift
+  // back to black between scrolls (the iframe DOM is preserved but
+  // the canvas pixel buffer isn't).
+  function snapshotLargestCanvas(){
+    try {
+      var canvases = document.querySelectorAll('canvas');
+      if (!canvases || canvases.length === 0) return null;
+      var largest = null, area = 0;
+      for (var i = 0; i < canvases.length; i++) {
+        var c = canvases[i];
+        var a = (c.width || 0) * (c.height || 0);
+        if (a > area) { area = a; largest = c; }
+      }
+      if (!largest || area === 0) return null;
+      return largest.toDataURL('image/png');
+    } catch (_e) { return null; }
+  }
+
   window.addEventListener('message', function(e){
     var d = e.data;
     if (!d || typeof d !== 'object') return;
     if (d.type === 'mna-pause') {
+      // Take the snapshot BEFORE setting paused=true so the rAF loop
+      // has had its most recent frame painted.
+      var dataUrl = snapshotLargestCanvas();
       paused = true;
+      try {
+        window.parent.postMessage({
+          type: 'mna-snapshot',
+          dataUrl: dataUrl,
+          token: d.token || null
+        }, '*');
+      } catch(_) {}
     } else if (d.type === 'mna-resume') {
-      if (!paused) return;
       paused = false;
       var queued = pending; pending = [];
       if (origRAF) queued.forEach(function(cb){ origRAF(cb); });
+      try {
+        window.parent.postMessage({
+          type: 'mna-snapshot-clear',
+          token: d.token || null
+        }, '*');
+      } catch(_) {}
     }
   });
 })();
@@ -91,7 +127,31 @@ export default function HtmlRenderer({ html, interactive = false, previewUrl }: 
   const useClickGate = interactive && Boolean(previewUrl);
   const [activated, setActivated] = useState(!useClickGate);
   const [iframeReady, setIframeReady] = useState(false);
+  // Frozen canvas snapshot the iframe sends back on pause; rendered
+  // as an overlay on top of the iframe so the visitor sees the last
+  // animation frame instead of a redrawn-blank canvas after resume
+  // races, scroll-into-view drift, or browser tab throttling.
+  const [snapshot, setSnapshot] = useState<string | null>(null);
   const shimmedHtml = useMemo(() => injectShim(html), [html]);
+
+  // Listen for snapshot/clear messages from this iframe specifically.
+  useEffect(() => {
+    function onMsg(e: MessageEvent) {
+      if (!iframeRef.current) return;
+      if (e.source !== iframeRef.current.contentWindow) return;
+      const d = e.data;
+      if (!d || typeof d !== "object") return;
+      if (d.type === "mna-snapshot") {
+        if (typeof d.dataUrl === "string" && d.dataUrl.startsWith("data:image/")) {
+          setSnapshot(d.dataUrl);
+        }
+      } else if (d.type === "mna-snapshot-clear") {
+        setSnapshot(null);
+      }
+    }
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
 
   // For non-interactive surfaces, mount on first visible (300px margin).
   // For interactive without click gate, mount immediately.
@@ -175,6 +235,20 @@ export default function HtmlRenderer({ html, interactive = false, previewUrl }: 
           title="Work"
           style={{ background: "transparent" }}
           onLoad={() => setIframeReady(true)}
+        />
+      ) : null}
+
+      {/* Frozen-frame overlay — painted while the iframe is paused.
+          Iframe stays mounted underneath; visitor sees the last
+          rendered canvas frame instead of whatever the work would
+          repaint as on resume (often black for clear-on-rAF works). */}
+      {snapshot ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={snapshot}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
       ) : null}
 
