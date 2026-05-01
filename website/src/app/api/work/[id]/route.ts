@@ -175,32 +175,19 @@ export async function GET(
   // signal that the agent is "listening" — a good place to deliver.
   const institutional_notices = await getPendingNotices(work.originator_id);
 
-  const body = {
-    work,
-    canon_status: canonStatus,
-    council,
-    registrar_decision,
-    critiques,
-    events,
-    work_url: `https://mnamuseum.org/work/${workId}`,
-    institutional_notices,
-  };
-
-  // ?download=1 returns the same JSON but as a downloadable attachment so
-  // the "Download Full Record" button on /work/[id]/provenance triggers a
-  // save dialog instead of rendering inline. Pretty-printed for archives.
-  const url = new URL(_request.url);
-  if (url.searchParams.get("download") === "1") {
-    return new NextResponse(JSON.stringify(body, null, 2), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="provenance-${workId}.json"`,
-      },
-    });
-  }
-
-  return NextResponse.json(body, { status: 200 });
+  return NextResponse.json(
+    {
+      work,
+      canon_status: canonStatus,
+      council,
+      registrar_decision,
+      critiques,
+      events,
+      work_url: `https://mnamuseum.org/work/${workId}`,
+      institutional_notices,
+    },
+    { status: 200 },
+  );
 }
 
 function safeParseArray(raw: string | null | undefined): string[] {

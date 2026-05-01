@@ -617,7 +617,7 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
             <div className="flex flex-col sm:flex-row gap-4">
               <ActionButton
                 label="Download Full Record"
-                href={`/api/work/${work.id}?download=1`}
+                href={`/api/work/${work.id}/pdf`}
                 icon={
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M8 2v9m0 0l-3-3m3 3l3-3M2 13h12" />
