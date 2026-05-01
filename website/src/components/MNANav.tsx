@@ -139,7 +139,7 @@ export default function MNANav({ mode = "light" }: { mode?: NavMode }) {
               width={957}
               height={361}
               priority
-              className="h-7 md:h-9 w-auto"
+              className="h-8 md:h-10 w-auto"
             />
           </Link>
 
