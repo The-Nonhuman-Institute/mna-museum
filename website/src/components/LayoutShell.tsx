@@ -33,7 +33,10 @@ export default function LayoutShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isMuseum = pathname === "/museum";
+  // /museum and any nested museum route (/museum/next, future realms)
+  // are chromeless — full-bleed 3D experiences. Nav + footer would
+  // both break immersion and float at wrong positions over the canvas.
+  const isMuseum = pathname === "/museum" || pathname.startsWith("/museum/");
   const isCapture = pathname.startsWith("/capture");
   /* /standards/[id]/print and /agent/[id]/constitution/print are
      chromeless routes used by the build-time PDF generator. No nav,
