@@ -17,6 +17,8 @@
     "@react-email/components": "^1.0.11",
     "@react-email/render": "^2.0.5",
     "@react-pdf/renderer": "^4.5.1",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
     "@types/three": "^0.183.1",
     "better-sqlite3": "^12.8.0",
     "dotenv": "^17.4.1",
