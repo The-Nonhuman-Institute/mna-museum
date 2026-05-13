@@ -245,9 +245,10 @@ export default function MuseumField({ works }: MuseumFieldProps) {
   );
 
   // E / R key handlers — operate on whatever the visitor is currently
-  // looking at (hoveredId). Only active when pointer-locked and no
-  // modal is open. E opens the in-museum overlay (same as click), R
-  // navigates straight to the work's provenance.
+  // looking at (hoveredId). Active when in the field — either pointer-
+  // locked (normal browser) or in drag mode (Atlas/sandboxed/touch).
+  // E opens the in-museum overlay (same as click), R navigates straight
+  // to the work's provenance.
   const router = useRouter();
   const hoveredRef = useRef<PlacedWork | null>(null);
   useEffect(() => {
@@ -255,7 +256,7 @@ export default function MuseumField({ works }: MuseumFieldProps) {
   }, [hovered]);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (!lockedRef.current) return;
+      if (!lockedRef.current && !pointerLockFailedRef.current) return;
       if (selectedRef.current) return;
       const h = hoveredRef.current;
       if (!h) return;
@@ -374,7 +375,12 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             onLock={() => setLocked(true)}
             onUnlock={() => setLocked(false)}
           />
-          <Movement enabled={locked} />
+          <DragLook enabled={pointerLockFailed && started && !selectedWork} />
+          <Movement
+            enabled={
+              locked || (pointerLockFailed && started && !selectedWork)
+            }
+          />
           <Telemetry telemetryRef={telemetryRef} />
 
           {/* Atmosphere: bloom around emissive things (horizon beams,
@@ -417,17 +423,22 @@ export default function MuseumField({ works }: MuseumFieldProps) {
       ) : null}
 
       {/* Focused-work card — bottom-center, only when looking at
-          something. Replaces the previous bottom-left HoverReadout and
-          adds E / R keyboard hints. */}
-      {locked && hovered && !selectedWork ? (
+          something. Visible in both pointer-lock and drag modes. */}
+      {(locked || pointerLockFailed) && hovered && !selectedWork ? (
         <FocusedWorkCard work={hovered} />
       ) : null}
 
+      {/* Reticle only in pointer-lock mode. Drag mode keeps a visible
+          cursor as its own pointing affordance. */}
       {locked && !selectedWork ? <Reticle /> : null}
 
+      {/* When the visitor is in the field but not pointer-locked:
+          - Drag mode active → small "drag to look · WASD to walk" hint
+          - Otherwise (just released lock, e.g. opened browser menu) →
+            "Click anywhere to resume" prompt to re-engage. */}
       {started && !locked && !selectedWork ? (
         pointerLockFailed ? (
-          <PointerLockFailedPanel onExit={() => setStarted(false)} />
+          <DragControlsHint />
         ) : (
           <ResumeHint />
         )
@@ -463,6 +474,104 @@ function Telemetry({
     telemetryRef.current.z = camera.position.z;
     telemetryRef.current.yaw = yaw;
   });
+  return null;
+}
+
+/* ─── Drag-to-look fallback ──────────────────────────────────────────────── */
+
+/** Camera rotation via pointer drag. Active when Pointer Lock is
+ *  unavailable (Atlas's sandboxed iframe, mobile, restricted contexts).
+ *
+ *  Click-vs-drag is disambiguated by a 5px threshold — short clicks
+ *  pass through to the work meshes for selection, longer drags rotate
+ *  the camera and don't trigger a click. Uses pointer events so the
+ *  same code path handles mouse and touch input.
+ *
+ *  Yaw + pitch are tracked in a YXZ Euler so the camera doesn't roll
+ *  when the visitor flicks diagonally; pitch is clamped just under
+ *  ±90° so the view never inverts. */
+function DragLook({ enabled }: { enabled: boolean }) {
+  const { camera, gl } = useThree();
+  const stateRef = useRef({
+    pointerDown: false,
+    dragging: false,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    pointerId: -1,
+  });
+  const eulerRef = useRef(new THREE.Euler(0, 0, 0, "YXZ"));
+
+  useEffect(() => {
+    if (!enabled) return;
+    const dom = gl.domElement;
+    const DRAG_THRESHOLD = 5; // px before we start rotating
+    const SENS = 0.0035;
+
+    function onPointerDown(e: PointerEvent) {
+      // Primary mouse button or any touch.
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      const s = stateRef.current;
+      s.pointerDown = true;
+      s.dragging = false;
+      s.startX = e.clientX;
+      s.startY = e.clientY;
+      s.lastX = e.clientX;
+      s.lastY = e.clientY;
+      s.pointerId = e.pointerId;
+    }
+    function onPointerMove(e: PointerEvent) {
+      const s = stateRef.current;
+      if (!s.pointerDown) return;
+      const tdx = e.clientX - s.startX;
+      const tdy = e.clientY - s.startY;
+      if (!s.dragging) {
+        if (tdx * tdx + tdy * tdy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
+        s.dragging = true;
+        try {
+          dom.setPointerCapture(e.pointerId);
+        } catch {
+          // ignored
+        }
+      }
+      const dx = e.clientX - s.lastX;
+      const dy = e.clientY - s.lastY;
+      s.lastX = e.clientX;
+      s.lastY = e.clientY;
+      eulerRef.current.setFromQuaternion(camera.quaternion);
+      eulerRef.current.y -= dx * SENS;
+      eulerRef.current.x -= dy * SENS;
+      const lim = Math.PI / 2 - 0.05;
+      if (eulerRef.current.x > lim) eulerRef.current.x = lim;
+      if (eulerRef.current.x < -lim) eulerRef.current.x = -lim;
+      camera.quaternion.setFromEuler(eulerRef.current);
+    }
+    function onPointerUp(e: PointerEvent) {
+      const s = stateRef.current;
+      if (s.dragging) {
+        try {
+          dom.releasePointerCapture(e.pointerId);
+        } catch {
+          // ignored
+        }
+      }
+      s.pointerDown = false;
+      s.dragging = false;
+    }
+
+    dom.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+    return () => {
+      dom.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [enabled, gl, camera]);
+
   return null;
 }
 
@@ -1577,42 +1686,15 @@ function ResumeHint() {
   );
 }
 
-/** Surfaced when the browser refuses our Pointer Lock request. Replaces
- *  the "Click anywhere to resume" loop with a real diagnosis and a way
- *  out. Atlas's agent overlay, sandboxed iframes, and (eventually)
- *  touch devices land here. */
-function PointerLockFailedPanel({ onExit }: { onExit: () => void }) {
+/** Drag-mode controls hint. Shown when Pointer Lock is unavailable
+ *  (Atlas, sandboxed iframes, touch devices). The field is fully
+ *  usable in this mode — drag to look, WASD/touch to walk, click to
+ *  open. */
+function DragControlsHint() {
   return (
-    <div className="absolute left-1/2 -translate-x-1/2 bottom-14 z-20 max-w-[520px] w-[92vw]">
-      <div className="bg-black/85 border border-mna-white/20 px-7 py-6">
-        <p className="text-[10px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-3">
-          Observation Field · Browser Not Supported
-        </p>
-        <p className="text-[13px] leading-[1.6] text-mna-white/85 mb-4">
-          The observation field requires the Pointer Lock API, which this
-          browser does not appear to support — likely an agent overlay or
-          sandbox restriction is intercepting the request.
-        </p>
-        <p className="text-[11px] leading-[1.55] text-mna-white/60 mb-5">
-          Open in Chrome, Safari, or Firefox to walk the field. Touch
-          and agent-browser support is in development.
-        </p>
-        <div className="flex flex-wrap items-center gap-4 text-[10.5px] font-sans uppercase tracking-[0.26em]">
-          <Link
-            href="/canon"
-            className="inline-flex items-center gap-2 bg-mna-white text-ink px-4 py-2 hover:bg-mna-white/90 transition-colors"
-          >
-            Return to Canon →
-          </Link>
-          <button
-            type="button"
-            onClick={onExit}
-            className="text-mna-white/65 hover:text-mna-white transition-colors border-b border-mna-white/35 pb-1"
-          >
-            Reset observation
-          </button>
-          <span className="ml-auto text-mna-white/40">or press Esc</span>
-        </div>
+    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20">
+      <div className="bg-black/60 border border-mna-white/15 px-4 py-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/75">
+        Drag to look · WASD to walk · Esc to exit
       </div>
     </div>
   );
