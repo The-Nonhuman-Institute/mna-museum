@@ -36,6 +36,7 @@ import {
   Grid,
   Billboard,
   Stars,
+  MeshReflectorMaterial,
 } from "@react-three/drei";
 import {
   EffectComposer,
@@ -171,16 +172,17 @@ export default function MuseumField({ works }: MuseumFieldProps) {
           <Movement enabled={locked} />
 
           {/* Atmosphere: bloom around emissive things (horizon beams,
-              sculpture haloes), corner vignette for cinematic falloff.
-              Intensity tuned low — we want suggestion, not haze. */}
+              bright stars, sculpture haloes). Vignette is now very
+              subtle — the previous version was darkening the corners
+              enough to eat the starfield as the visitor turned. */}
           <EffectComposer>
             <Bloom
-              luminanceThreshold={0.55}
-              luminanceSmoothing={0.9}
-              intensity={0.45}
+              luminanceThreshold={0.4}
+              luminanceSmoothing={0.92}
+              intensity={0.55}
               mipmapBlur
             />
-            <Vignette eskil={false} offset={0.12} darkness={0.55} />
+            <Vignette eskil={false} offset={0.45} darkness={0.22} />
           </EffectComposer>
         </Canvas>
       </div>
@@ -216,58 +218,86 @@ function Scene({ children }: { children: React.ReactNode }) {
   return (
     <>
       <color attach="background" args={["#0a0908"]} />
-      <fog attach="fog" args={["#0a0908", 22, 150]} />
+      <fog attach="fog" args={["#0a0908", 24, 160]} />
 
-      {/* Ambient stays low — most of the light should come from the
-          point lights above sculptures and the bloom on horizon beams,
-          not from filler ambient. */}
       <ambientLight intensity={0.14} color="#bcc6d0" />
       <directionalLight
         position={[40, 30, 10]}
         intensity={0.32}
         color="#d8c4a0"
       />
-      {/* Subtle cool counter-light from the opposite direction so the
-          sculptures aren't lit only from one side. */}
       <directionalLight
         position={[-30, 20, -25]}
         intensity={0.14}
         color="#8aa0bc"
       />
 
-      {/* Starfield filling the void. Subtle, sparse, slow drift. */}
+      {/* Two-layer starfield:
+          - Background: thousands of dim pinpoints, far away, slow drift
+          - Foreground: a few bright stars closer in, larger size, faster
+            drift. With higher factor + fade these are the ones bloom
+            grabs onto, giving real "stars" with halos rather than dust.  */}
       <Stars
-        radius={120}
-        depth={70}
-        count={3000}
-        factor={3.2}
+        radius={180}
+        depth={90}
+        count={4500}
+        factor={2.0}
         saturation={0}
         fade
-        speed={0.25}
+        speed={0.12}
       />
+      <Stars
+        radius={95}
+        depth={45}
+        count={140}
+        factor={6}
+        saturation={0.05}
+        fade
+        speed={0.4}
+      />
+
+      {/* Reflective floor — the single biggest atmosphere lift. A wide
+          dark plane just under the grid catches everything above it
+          (works, sculptures, beams, stars). Tuned dark and high-
+          roughness so it doesn't over-mirror — reads as a polished
+          stone slab, not a swimming pool. */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.01, 0]}
+      >
+        <planeGeometry args={[600, 600]} />
+        <MeshReflectorMaterial
+          blur={[300, 80]}
+          resolution={1024}
+          mixBlur={1.4}
+          mixStrength={1.1}
+          mirror={0.4}
+          roughness={0.94}
+          depthScale={0.6}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.2}
+          color="#0c0a09"
+          metalness={0.25}
+        />
+      </mesh>
 
       <Grid
         position={[0, 0, 0]}
         args={[400, 400]}
         cellSize={2}
         cellThickness={0.5}
-        cellColor="#2a2622"
+        cellColor="#2e2924"
         sectionSize={20}
         sectionThickness={1.2}
-        sectionColor="#48413a"
-        fadeDistance={120}
-        fadeStrength={1.5}
+        sectionColor="#4e4640"
+        fadeDistance={130}
+        fadeStrength={1.4}
         infiniteGrid
       />
 
-      {/* Decorative concentric circles around the spawn point — gives
-          the empty floor a ceremonial centre and an immediate sense of
-          architecture without needing a real environment model. */}
       <FloorRings />
 
-      <HorizonBeam position={[0, 0, -80]} />
-      <HorizonBeam position={[80, 0, -30]} dim />
-      <HorizonBeam position={[-90, 0, 20]} dim />
+      <HorizonBeams />
 
       {children}
     </>
@@ -301,22 +331,67 @@ function FloorRings() {
   );
 }
 
-function HorizonBeam({
-  position,
-  dim = false,
-}: {
-  position: [number, number, number];
-  dim?: boolean;
-}) {
-  // Bumped intensity (color values >1 with toneMapped:false) so the
-  // bloom pass picks them up and they read as light, not paint.
-  const color = dim ? "#5a4a3a" : "#fff0d8";
-  const intensity = dim ? 1.6 : 4.2;
-  const colorVec = new THREE.Color(color).multiplyScalar(intensity);
+/** Eight beams placed around the visitor at varying distances + heights
+ *  + brightnesses + thicknesses. Wherever you turn, at least one is in
+ *  view, and they read as a constellation of landmarks rather than a
+ *  single forward marker. Positions are hand-picked rather than ringed
+ *  so the field doesn't feel like a stage. */
+function HorizonBeams() {
+  // [x, z, brightness 0..1, height in m, radius in m]
+  const beams: Array<[number, number, number, number, number]> = [
+    [0, -90, 1.0, 70, 0.08],
+    [62, -70, 0.6, 55, 0.06],
+    [-58, -75, 0.55, 50, 0.05],
+    [98, 25, 0.25, 45, 0.04],
+    [-95, 30, 0.22, 50, 0.04],
+    [55, 90, 0.3, 50, 0.04],
+    [-50, 88, 0.28, 55, 0.04],
+    [0, 105, 0.18, 60, 0.05],
+  ];
   return (
-    <mesh position={[position[0], position[1] + 30, position[2]]}>
-      <cylinderGeometry args={[0.06, 0.06, 60, 12, 1, true]} />
-      <meshBasicMaterial color={colorVec} toneMapped={false} />
+    <>
+      {beams.map(([x, z, b, h, r], i) => (
+        <HorizonBeam
+          key={i}
+          x={x}
+          z={z}
+          brightness={b}
+          height={h}
+          radius={r}
+        />
+      ))}
+    </>
+  );
+}
+
+function HorizonBeam({
+  x,
+  z,
+  brightness,
+  height,
+  radius,
+}: {
+  x: number;
+  z: number;
+  brightness: number;
+  height: number;
+  radius: number;
+}) {
+  // Color shifts slightly with brightness — bright beams trend warm
+  // white, dim ones trend dusky amber, so the field doesn't look like
+  // a single bulb cloned in eight places.
+  const baseColor = new THREE.Color().lerpColors(
+    new THREE.Color("#705038"),
+    new THREE.Color("#fff0d8"),
+    brightness,
+  );
+  // HDR intensity for bloom — exponentiates the brighter end.
+  const intensity = 1.0 + brightness * 5.5;
+  const hdrColor = baseColor.clone().multiplyScalar(intensity);
+  return (
+    <mesh position={[x, height / 2, z]}>
+      <cylinderGeometry args={[radius, radius, height, 12, 1, true]} />
+      <meshBasicMaterial color={hdrColor} toneMapped={false} />
     </mesh>
   );
 }
