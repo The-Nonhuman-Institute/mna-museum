@@ -27,7 +27,7 @@ import {
   VirtualJoystick,
   KeyCap,
   useDownsampledTexture,
-} from "../../next/MuseumField";
+} from "../../MuseumField";
 
 interface ChamberWork {
   id: string;

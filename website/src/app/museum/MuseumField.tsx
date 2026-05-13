@@ -37,6 +37,7 @@ import {
   Billboard,
   Stars,
   MeshReflectorMaterial,
+  Html,
 } from "@react-three/drei";
 import {
   EffectComposer,
@@ -858,7 +859,11 @@ function Constellations({
   // push when the aimed gallery actually changes.
   const projected = useRef(new THREE.Vector3());
   useFrame(() => {
-    const AIM_THRESH_SQ = 0.05 * 0.05; // ~5% of NDC half-extent
+    // Wider aim cone than the original 5%. Constellations sit ~130m
+    // away in the sky; a tight cone made them feel snipey. 9% of NDC
+    // half-extent is generous enough that "looking at the constellation"
+    // counts as aim, without overlapping multiple constellations.
+    const AIM_THRESH_SQ = 0.09 * 0.09;
     let bestId: string | null = null;
     let bestDist = AIM_THRESH_SQ;
     for (const c of stars) {
@@ -880,12 +885,20 @@ function Constellations({
     }
   });
 
+  // Map gallery ids to names for label rendering. Cheap O(N) lookup;
+  // never more than a handful of galleries.
+  const galleryNamesById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const g of galleries) m.set(g.id, g.name);
+    return m;
+  }, [galleries]);
+
   return (
     <>
       {stars.map((c) => (
         <Constellation
           key={c.galleryId}
-          galleryId={c.galleryId}
+          name={galleryNamesById.get(c.galleryId) ?? c.galleryId}
           config={c.config}
           stars={c.stars}
         />
@@ -895,13 +908,17 @@ function Constellations({
 }
 
 /** Visual: bright tinted stars at constellation positions, connected by
- *  faint lines. No interactivity here — aim is read at the parent so
- *  per-star state isn't needed. */
+ *  faint lines, with an always-visible name label floating below. The
+ *  label gives the constellation a *findable* identity — visitors no
+ *  longer have to discover that the stars are interactive by aiming
+ *  blindly; they can see "✦ The Chamber" in the sky and aim with
+ *  intent. */
 function Constellation({
+  name,
   config,
   stars,
 }: {
-  galleryId: string;
+  name: string;
   config: ConstellationConfig;
   stars: ConstellationStar[];
 }) {
@@ -917,15 +934,30 @@ function Constellation({
     return new Float32Array(arr);
   }, [stars]);
 
+  // Centroid (mean of star positions) — anchor for the floating name
+  // label, slightly below the constellation so text doesn't overlap.
+  const labelPosition = useMemo<[number, number, number]>(() => {
+    let sx = 0,
+      sy = 0,
+      sz = 0;
+    for (const s of stars) {
+      sx += s.position[0];
+      sy += s.position[1];
+      sz += s.position[2];
+    }
+    const n = stars.length || 1;
+    return [sx / n, sy / n - 8, sz / n];
+  }, [stars]);
+
   return (
     <group>
       {stars.map((s, i) => (
         <mesh key={i} position={s.position}>
-          <sphereGeometry args={[0.55, 16, 12]} />
-          <meshBasicMaterial
-            color={config.tint}
-            toneMapped={false}
-          />
+          {/* Bigger than before (0.55 → 0.9). At 135m distance the
+              constellation reads clearly as "bright named stars" vs
+              ambient pinpoints. */}
+          <sphereGeometry args={[0.9, 16, 12]} />
+          <meshBasicMaterial color={config.tint} toneMapped={false} />
         </mesh>
       ))}
       <lineSegments>
@@ -940,10 +972,30 @@ function Constellation({
         <lineBasicMaterial
           color={config.tint}
           transparent
-          opacity={0.35}
+          opacity={0.4}
           toneMapped={false}
         />
       </lineSegments>
+      {/* Always-visible name label. Renders as a DOM overlay positioned
+          in 3D — readable at any aim. */}
+      <Html
+        position={labelPosition}
+        center
+        zIndexRange={[10, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <div
+          className="font-sans uppercase tracking-[0.22em] whitespace-nowrap select-none"
+          style={{
+            fontSize: "10px",
+            color: config.tint,
+            textShadow: `0 0 10px ${config.tint}, 0 0 2px rgba(0,0,0,0.85)`,
+            opacity: 0.9,
+          }}
+        >
+          ✦ {name}
+        </div>
+      </Html>
     </group>
   );
 }
