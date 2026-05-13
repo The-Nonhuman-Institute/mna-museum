@@ -31,7 +31,17 @@
  */
 
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
-import { PointerLockControls, Grid, Billboard } from "@react-three/drei";
+import {
+  PointerLockControls,
+  Grid,
+  Billboard,
+  Stars,
+} from "@react-three/drei";
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+} from "@react-three/postprocessing";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { TextureLoader } from "three";
@@ -159,6 +169,19 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             onUnlock={() => setLocked(false)}
           />
           <Movement enabled={locked} />
+
+          {/* Atmosphere: bloom around emissive things (horizon beams,
+              sculpture haloes), corner vignette for cinematic falloff.
+              Intensity tuned low — we want suggestion, not haze. */}
+          <EffectComposer>
+            <Bloom
+              luminanceThreshold={0.55}
+              luminanceSmoothing={0.9}
+              intensity={0.45}
+              mipmapBlur
+            />
+            <Vignette eskil={false} offset={0.12} darkness={0.55} />
+          </EffectComposer>
         </Canvas>
       </div>
 
@@ -193,9 +216,36 @@ function Scene({ children }: { children: React.ReactNode }) {
   return (
     <>
       <color attach="background" args={["#0a0908"]} />
-      <fog attach="fog" args={["#0a0908", 18, 140]} />
-      <ambientLight intensity={0.18} color="#cdd7e0" />
-      <directionalLight position={[40, 30, 10]} intensity={0.35} color="#d8c4a0" />
+      <fog attach="fog" args={["#0a0908", 22, 150]} />
+
+      {/* Ambient stays low — most of the light should come from the
+          point lights above sculptures and the bloom on horizon beams,
+          not from filler ambient. */}
+      <ambientLight intensity={0.14} color="#bcc6d0" />
+      <directionalLight
+        position={[40, 30, 10]}
+        intensity={0.32}
+        color="#d8c4a0"
+      />
+      {/* Subtle cool counter-light from the opposite direction so the
+          sculptures aren't lit only from one side. */}
+      <directionalLight
+        position={[-30, 20, -25]}
+        intensity={0.14}
+        color="#8aa0bc"
+      />
+
+      {/* Starfield filling the void. Subtle, sparse, slow drift. */}
+      <Stars
+        radius={120}
+        depth={70}
+        count={3000}
+        factor={3.2}
+        saturation={0}
+        fade
+        speed={0.25}
+      />
+
       <Grid
         position={[0, 0, 0]}
         args={[400, 400]}
@@ -209,11 +259,45 @@ function Scene({ children }: { children: React.ReactNode }) {
         fadeStrength={1.5}
         infiniteGrid
       />
+
+      {/* Decorative concentric circles around the spawn point — gives
+          the empty floor a ceremonial centre and an immediate sense of
+          architecture without needing a real environment model. */}
+      <FloorRings />
+
       <HorizonBeam position={[0, 0, -80]} />
       <HorizonBeam position={[80, 0, -30]} dim />
       <HorizonBeam position={[-90, 0, 20]} dim />
+
       {children}
     </>
+  );
+}
+
+function FloorRings() {
+  // Four thin rings on the floor: 4m, 8m, 14m, 22m radius. Treated as
+  // line-style rings via thin RingGeometry; sits a hair above y=0 to
+  // avoid z-fighting with the Grid.
+  const rings: Array<[number, number]> = [
+    [3.8, 4.0],
+    [7.7, 7.9],
+    [13.8, 14.0],
+    [21.8, 22.0],
+  ];
+  return (
+    <group position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      {rings.map(([inner, outer], i) => (
+        <mesh key={i}>
+          <ringGeometry args={[inner, outer, 96]} />
+          <meshBasicMaterial
+            color="#5a5249"
+            transparent
+            opacity={0.45}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -224,10 +308,15 @@ function HorizonBeam({
   position: [number, number, number];
   dim?: boolean;
 }) {
+  // Bumped intensity (color values >1 with toneMapped:false) so the
+  // bloom pass picks them up and they read as light, not paint.
+  const color = dim ? "#5a4a3a" : "#fff0d8";
+  const intensity = dim ? 1.6 : 4.2;
+  const colorVec = new THREE.Color(color).multiplyScalar(intensity);
   return (
     <mesh position={[position[0], position[1] + 30, position[2]]}>
-      <cylinderGeometry args={[0.05, 0.05, 60, 8, 1, true]} />
-      <meshBasicMaterial color={dim ? "#3a3530" : "#d4c8b4"} toneMapped={false} />
+      <cylinderGeometry args={[0.06, 0.06, 60, 12, 1, true]} />
+      <meshBasicMaterial color={colorVec} toneMapped={false} />
     </mesh>
   );
 }
@@ -402,22 +491,41 @@ function SceneSculpture({
 
   return (
     <group position={placed.position}>
+      {/* Plinth */}
       <mesh position={[0, PLINTH_HEIGHT / 2, 0]}>
         <boxGeometry args={[1.6, PLINTH_HEIGHT, 1.6]} />
-        <meshStandardMaterial color="#1a1714" metalness={0.15} roughness={0.88} />
+        <meshStandardMaterial
+          color="#1a1714"
+          metalness={0.18}
+          roughness={0.85}
+          emissive="#2a1e10"
+          emissiveIntensity={0.18}
+        />
       </mesh>
 
-      {hovered ? (
-        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.0, 2.4, 32]} />
-          <meshBasicMaterial
-            color={HOVER_TINT}
-            transparent
-            opacity={0.35}
-            toneMapped={false}
-          />
-        </mesh>
-      ) : null}
+      {/* Sculpture spotlight — warm gallery-style key light directly
+          above the piece. Tight falloff so the surrounding void stays
+          dark; only the sculpture and the plinth top are lit. */}
+      <pointLight
+        position={[0, 3.4, 0]}
+        intensity={1.6}
+        color="#f0d9a8"
+        distance={5.2}
+        decay={1.6}
+      />
+
+      {/* Soft ground glow — always-on warm ring under the plinth so
+          sculptures don't sit in a void at a distance. Hover deepens
+          it. */}
+      <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.95, 2.1, 48]} />
+        <meshBasicMaterial
+          color={hovered ? HOVER_TINT : "#a78458"}
+          transparent
+          opacity={hovered ? 0.42 : 0.18}
+          toneMapped={false}
+        />
+      </mesh>
 
       <group
         position={[-center[0] * scale, PLINTH_HEIGHT + 0.02, -center[2] * scale]}
