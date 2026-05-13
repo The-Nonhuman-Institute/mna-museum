@@ -30,7 +30,7 @@
  * trail what the browser actually did.
  */
 
-import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   PointerLockControls,
   Grid,
@@ -43,9 +43,8 @@ import {
   Bloom,
   Vignette,
 } from "@react-three/postprocessing";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { TextureLoader } from "three";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -62,6 +61,12 @@ const WORK_BASE_SIZE = 2.2;
 const SCULPTURE_TARGET = 2.4;
 const PLINTH_HEIGHT = 0.9;
 const HOVER_TINT = "#cdb798";
+
+// Aggressive cap on per-work texture size. Source PNGs are 2000×2000;
+// uploading 100+ of those to the GPU at full res blows out VRAM
+// (Metal: GL_OUT_OF_MEMORY, context lost, page crash). 512² is more
+// than enough for a billboarded plane viewed from 5-30m away.
+const WORK_TEXTURE_MAX = 512;
 
 // Per-originator tint palette. Each originator gets one of these based
 // on a stable hash of its registry id, so walking between clusters
@@ -81,6 +86,58 @@ const ORIGINATOR_TINTS = [
 
 function originatorTint(id: string): string {
   return ORIGINATOR_TINTS[stringHash(id) % ORIGINATOR_TINTS.length];
+}
+
+interface ClusterCentroid {
+  id: string;
+  name: string;
+  x: number;
+  z: number;
+  count: number;
+}
+
+interface CurrentCluster {
+  id: string;
+  name: string;
+  count: number;
+  /** Metres from visitor to centroid. */
+  distance: number;
+  /** 0..1 — 1 at the centroid, fades to 0 at PROX_OUTER. */
+  proximity: number;
+}
+
+// How far from a centroid the visitor still counts as "in" the cluster
+// for the purposes of the floor glow + HUD callout. Slightly larger
+// than CLUSTER_RADIUS so you feel the cluster *before* the first work
+// arrives, and the transition out is gradual.
+const PROX_OUTER = CLUSTER_RADIUS * 1.5;
+
+function nearestCluster(
+  x: number,
+  z: number,
+  centroids: ClusterCentroid[],
+): CurrentCluster | null {
+  if (centroids.length === 0) return null;
+  let best: ClusterCentroid | null = null;
+  let bestDist = Infinity;
+  for (const c of centroids) {
+    const dx = c.x - x;
+    const dz = c.z - z;
+    const d = Math.hypot(dx, dz);
+    if (d < bestDist) {
+      bestDist = d;
+      best = c;
+    }
+  }
+  if (!best || bestDist > PROX_OUTER) return null;
+  const proximity = Math.max(0, 1 - bestDist / PROX_OUTER);
+  return {
+    id: best.id,
+    name: best.name,
+    count: best.count,
+    distance: bestDist,
+    proximity,
+  };
 }
 
 export interface FieldWork {
@@ -114,6 +171,15 @@ export default function MuseumField({ works }: MuseumFieldProps) {
   const [locked, setLocked] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedWork, setSelectedWork] = useState<PlacedWork | null>(null);
+  // Set to true when the browser refuses or silently fails our Pointer
+  // Lock request. Atlas, sandboxed iframes, and (eventually) mobile all
+  // land here. Switches the resume hint to a real diagnostic panel and
+  // stops retrying the failing lock() call.
+  const [pointerLockFailed, setPointerLockFailed] = useState(false);
+  const pointerLockFailedRef = useRef(false);
+  useEffect(() => {
+    pointerLockFailedRef.current = pointerLockFailed;
+  }, [pointerLockFailed]);
 
   const controlsRef = useRef<PLCHandle>(null);
   // Refs mirror state so the canvas-click handler (which captures
@@ -145,8 +211,11 @@ export default function MuseumField({ works }: MuseumFieldProps) {
     return () => clearInterval(id);
   }, []);
 
-  // Originator centroids (for the minimap). Memoize once.
-  const centroids = useMemo(() => {
+  // Originator centroids (for the minimap + visitor glow). Memoize
+  // once. Names are sourced from the first work in each group; the
+  // placement math here mirrors `placeWorks` so the dot on the minimap
+  // sits on the same world point as the actual cluster.
+  const centroids = useMemo<ClusterCentroid[]>(() => {
     const grouped = new Map<string, FieldWork[]>();
     for (const w of works) {
       const a = grouped.get(w.originator_id) ?? [];
@@ -156,14 +225,24 @@ export default function MuseumField({ works }: MuseumFieldProps) {
     const ids = Array.from(grouped.keys()).sort();
     return ids.map((id, i) => {
       const angle = (i / Math.max(1, ids.length)) * Math.PI * 2;
+      const group = grouped.get(id)!;
       return {
         id,
+        name: originatorLabel(group[0]),
         x: Math.cos(angle) * RING_RADIUS,
         z: Math.sin(angle) * RING_RADIUS,
-        count: grouped.get(id)!.length,
+        count: group.length,
       };
     });
   }, [works]);
+
+  // The cluster the visitor is currently in (or approaching). Recomputed
+  // at the 10Hz telemetry tick — fine for the HUD; the in-world floor
+  // glow reads camera position every frame and doesn't depend on this.
+  const currentCluster = useMemo(
+    () => nearestCluster(telemetry.x, telemetry.z, centroids),
+    [telemetry.x, telemetry.z, centroids],
+  );
 
   // E / R key handlers — operate on whatever the visitor is currently
   // looking at (hoveredId). Only active when pointer-locked and no
@@ -201,8 +280,18 @@ export default function MuseumField({ works }: MuseumFieldProps) {
     try {
       controlsRef.current?.lock();
     } catch {
-      // ignored
+      setPointerLockFailed(true);
+      return;
     }
+    // Watchdog: if pointer-lock doesn't engage within 700ms, treat
+    // it as failed. onLock fires synchronously-ish when it succeeds
+    // (real browser path), so by 700ms we know. Atlas, sandboxed
+    // iframes, and any browser without Pointer Lock API land here.
+    window.setTimeout(() => {
+      if (!document.pointerLockElement) {
+        setPointerLockFailed(true);
+      }
+    }, 700);
   }
 
   function openWork(work: PlacedWork) {
@@ -219,17 +308,48 @@ export default function MuseumField({ works }: MuseumFieldProps) {
   // Click the canvas to resume walking. Only re-engages lock when:
   // visitor has started, isn't already locked, and no modal is open.
   // We read from refs so any in-flight state updates from a work-
-  // click in the same event don't cause a double-action.
+  // click in the same event don't cause a double-action. Skips when
+  // pointer-lock has already failed once — re-trying just re-fails.
   function handleCanvasMaybeRelock() {
     if (!started) return;
     if (lockedRef.current) return;
     if (selectedRef.current) return;
+    if (pointerLockFailedRef.current) return;
     try {
       controlsRef.current?.lock();
     } catch {
-      // ignored
+      setPointerLockFailed(true);
     }
   }
+
+  // Global pointerlockerror listener — fires when the browser
+  // explicitly rejects the lock request. Belt-and-suspenders with the
+  // 700ms watchdog above.
+  useEffect(() => {
+    function onErr() {
+      setPointerLockFailed(true);
+    }
+    document.addEventListener("pointerlockerror", onErr);
+    return () => document.removeEventListener("pointerlockerror", onErr);
+  }, []);
+
+  // Universal Escape handler — guarantees the visitor always has a
+  // way out, even when pointer-lock is broken. The browser already
+  // handles Escape when actually pointer-locked (releases the lock),
+  // so we only act when we're stuck on the field with no lock and
+  // no modal open. Drops back to the entry overlay.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (document.pointerLockElement) return; // browser handles it
+      if (selectedRef.current) return; // WorkOverlay handles it
+      if (!started) return;
+      setStarted(false);
+      setPointerLockFailed(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [started]);
 
   return (
     <div className="fixed inset-0 bg-black">
@@ -245,6 +365,7 @@ export default function MuseumField({ works }: MuseumFieldProps) {
               onHover={setHoveredId}
               onSelect={openWork}
             />
+            <VisitorGlow centroids={centroids} />
           </Scene>
           <PointerLockControls
             ref={(r) => {
@@ -289,6 +410,7 @@ export default function MuseumField({ works }: MuseumFieldProps) {
           <MinimapRadar
             telemetry={telemetry}
             centroids={centroids}
+            currentCluster={currentCluster}
           />
           <SystemTimeStrip />
         </>
@@ -303,7 +425,13 @@ export default function MuseumField({ works }: MuseumFieldProps) {
 
       {locked && !selectedWork ? <Reticle /> : null}
 
-      {started && !locked && !selectedWork ? <ResumeHint /> : null}
+      {started && !locked && !selectedWork ? (
+        pointerLockFailed ? (
+          <PointerLockFailedPanel onExit={() => setStarted(false)} />
+        ) : (
+          <ResumeHint />
+        )
+      ) : null}
 
       <FooterLine />
 
@@ -393,8 +521,8 @@ function Scene({ children }: { children: React.ReactNode }) {
       >
         <planeGeometry args={[600, 600]} />
         <MeshReflectorMaterial
-          blur={[300, 80]}
-          resolution={1024}
+          blur={[200, 50]}
+          resolution={512}
           mixBlur={1.4}
           mixStrength={1.1}
           mirror={0.4}
@@ -522,6 +650,62 @@ function HorizonBeam({
   );
 }
 
+/* ─── Visitor glow ───────────────────────────────────────────────────────── */
+
+/** A soft tinted disc that follows the visitor's feet. Color comes from
+ *  the cluster the visitor is currently nearest, opacity fades with
+ *  proximity (1 at the centroid, 0 outside PROX_OUTER). This is the
+ *  in-world counterpart to the minimap's active-cluster pulse — the
+ *  same color appears under your feet that's lit up on the map, so the
+ *  field map and the field itself stop reading as separate systems.
+ *
+ *  Runs inside the Canvas and reads camera position every frame so the
+ *  transition is silky regardless of the HUD's 10Hz refresh cadence. */
+function VisitorGlow({ centroids }: { centroids: ClusterCentroid[] }) {
+  const { camera } = useThree();
+  const groupRef = useRef<THREE.Group>(null);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  const colorRef = useRef(new THREE.Color("#000000"));
+
+  useFrame(() => {
+    const g = groupRef.current;
+    const m = matRef.current;
+    if (!g || !m) return;
+    // Glow follows the visitor in X/Z, sits a hair above the floor to
+    // avoid z-fighting with the grid + the world floor rings.
+    g.position.set(camera.position.x, 0.008, camera.position.z);
+
+    const cluster = nearestCluster(camera.position.x, camera.position.z, centroids);
+    if (!cluster) {
+      // Lerp opacity toward 0 — still keep last color so the fade is
+      // smooth rather than a hard cut to default.
+      m.opacity += (0 - m.opacity) * 0.12;
+      return;
+    }
+    const target = new THREE.Color(originatorTint(cluster.id));
+    colorRef.current.lerp(target, 0.12);
+    m.color.copy(colorRef.current);
+    const targetOpacity = 0.28 * cluster.proximity;
+    m.opacity += (targetOpacity - m.opacity) * 0.12;
+  });
+
+  return (
+    <group ref={groupRef} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh>
+        <ringGeometry args={[1.4, 4.2, 64]} />
+        <meshBasicMaterial
+          ref={matRef}
+          color="#000000"
+          transparent
+          opacity={0}
+          toneMapped={false}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
 /* ─── Works field ────────────────────────────────────────────────────────── */
 
 function WorksField({
@@ -545,9 +729,12 @@ function WorksField({
             onSelect={onSelect}
           />
         ) : (
-          <Suspense key={w.id} fallback={<PlaceholderPlane placed={w} />}>
-            <WorkPlane placed={w} onHover={onHover} onSelect={onSelect} />
-          </Suspense>
+          <WorkPlane
+            key={w.id}
+            placed={w}
+            onHover={onHover}
+            onSelect={onSelect}
+          />
         ),
       )}
     </>
@@ -565,6 +752,59 @@ function PlaceholderPlane({ placed }: { placed: PlacedWork }) {
   );
 }
 
+/** Loads `url`, downscales it to at most `maxSize × maxSize` via an
+ *  offscreen canvas, and returns a Three.js CanvasTexture with mipmaps
+ *  disabled. Mipmaps add ~33% per-texture memory and aren't useful for
+ *  camera-facing billboards. Disposes the texture on unmount/URL change
+ *  so navigating away frees GPU memory. */
+function useDownsampledTexture(
+  url: string,
+  maxSize: number,
+): THREE.Texture | null {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let canceled = false;
+    let createdTexture: THREE.Texture | null = null;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (canceled) return;
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const longest = Math.max(w, h, 1);
+      const scale = longest > maxSize ? maxSize / longest : 1;
+      const dw = Math.max(1, Math.round(w * scale));
+      const dh = Math.max(1, Math.round(h * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = dw;
+      canvas.height = dh;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, dw, dh);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
+      createdTexture = tex;
+      setTexture(tex);
+    };
+    img.onerror = () => {
+      // swallow — placeholder will render
+    };
+    img.src = url;
+    return () => {
+      canceled = true;
+      if (createdTexture) createdTexture.dispose();
+    };
+  }, [url, maxSize]);
+
+  return texture;
+}
+
 function WorkPlane({
   placed,
   onHover,
@@ -574,19 +814,30 @@ function WorkPlane({
   onHover: (id: string | null) => void;
   onSelect: (placed: PlacedWork) => void;
 }) {
-  const texture = useLoader(TextureLoader, `/previews/${placed.id}.png`);
+  const texture = useDownsampledTexture(
+    `/previews/${placed.id}.png`,
+    WORK_TEXTURE_MAX,
+  );
   const [hovered, setHovered] = useState(false);
-
-  useEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 8;
-    texture.needsUpdate = true;
-  }, [texture]);
 
   const size = placed.size;
   const halo = size * 1.06;
 
   const tint = originatorTint(placed.originator_id);
+
+  if (!texture) {
+    // Hold the work's slot in the field while its texture is loading
+    // so other works don't reflow visually. Tinted to its originator
+    // so the cluster reads correctly even pre-texture.
+    return (
+      <Billboard position={placed.position} follow lockX={false} lockY={false} lockZ={false}>
+        <mesh>
+          <planeGeometry args={[size, size]} />
+          <meshBasicMaterial color={tint} transparent opacity={0.18} toneMapped={false} />
+        </mesh>
+      </Billboard>
+    );
+  }
 
   return (
     <Billboard position={placed.position} follow lockX={false} lockY={false} lockZ={false}>
@@ -1097,6 +1348,18 @@ function CanonFieldPanel({
             {locked ? "Observing" : "Idle"}
           </span>
         </div>
+        {/* Always-visible exit. pointer-events-auto so it works even
+            when the surrounding card is click-through, and when pointer
+            lock is broken (Atlas, sandbox, etc.) the visitor is one
+            click away from leaving the field. */}
+        <div className="pointer-events-auto mt-3 pt-3 border-t border-mna-white/10">
+          <Link
+            href="/canon"
+            className="text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55 hover:text-mna-white transition-colors"
+          >
+            ← Exit · Return to Canon
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -1151,9 +1414,11 @@ const MINIMAP_RADIUS_M = 60; // world-metres → maps to MINIMAP_SIZE / 2
 function MinimapRadar({
   telemetry,
   centroids,
+  currentCluster,
 }: {
   telemetry: { x: number; z: number; yaw: number };
-  centroids: Array<{ id: string; x: number; z: number; count: number }>;
+  centroids: ClusterCentroid[];
+  currentCluster: CurrentCluster | null;
 }) {
   const half = MINIMAP_SIZE / 2;
   // World → minimap pixel mapping. Visitor is always centered.
@@ -1201,7 +1466,9 @@ function MinimapRadar({
             }}
           />
 
-          {/* Cluster centroids */}
+          {/* Cluster centroids. The currently-occupied cluster gets a
+              brighter dot + halo so the dot-on-map and pool-of-light-
+              in-world read as the same thing. */}
           {centroids.map((c) => {
             const p = toPx(c.x, c.z);
             if (
@@ -1212,18 +1479,41 @@ function MinimapRadar({
             )
               return null;
             const tint = originatorTint(c.id);
+            const active = currentCluster?.id === c.id;
+            const dotSize = active ? 8 : 6;
             return (
-              <span
-                key={c.id}
-                className="absolute -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-                style={{
-                  left: p.x,
-                  top: p.y,
-                  backgroundColor: tint,
-                  boxShadow: `0 0 6px ${tint}`,
-                }}
-                aria-hidden
-              />
+              <span key={c.id}>
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{
+                      left: p.x,
+                      top: p.y,
+                      width: 22,
+                      height: 22,
+                      backgroundColor: tint,
+                      opacity: 0.18 + currentCluster!.proximity * 0.18,
+                      filter: "blur(4px)",
+                    }}
+                  />
+                ) : null}
+                <span
+                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{
+                    left: p.x,
+                    top: p.y,
+                    width: dotSize,
+                    height: dotSize,
+                    backgroundColor: tint,
+                    boxShadow: active
+                      ? `0 0 10px ${tint}, 0 0 2px #fff8`
+                      : `0 0 6px ${tint}`,
+                    border: active ? "1px solid rgba(255,255,255,0.45)" : undefined,
+                  }}
+                  aria-hidden
+                />
+              </span>
             );
           })}
 
@@ -1244,9 +1534,32 @@ function MinimapRadar({
             </svg>
           </span>
         </div>
-        <p className="mt-2 px-1 text-[8.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40">
-          {centroids.length} clusters · {Math.round(MINIMAP_RADIUS_M)}m radius
-        </p>
+
+        {/* Current-cluster callout. Replaces the previous static
+            "N clusters · 60m radius" footer with a contextual label
+            that names whose region you're standing in. Falls back to
+            the static line when you're in the void between clusters. */}
+        {currentCluster ? (
+          <div className="mt-2 px-1 pt-2 border-t border-mna-white/10">
+            <p className="text-[8.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40 mb-1">
+              Observing
+            </p>
+            <p
+              className="text-[10.5px] font-sans uppercase tracking-[0.22em] leading-tight truncate"
+              style={{ color: originatorTint(currentCluster.id) }}
+              title={currentCluster.name}
+            >
+              {currentCluster.name}
+            </p>
+            <p className="mt-1 text-[8.5px] font-sans uppercase tracking-[0.22em] text-mna-white/45 tabular-nums">
+              {currentCluster.count} {currentCluster.count === 1 ? "work" : "works"} · {Math.round(currentCluster.distance)}m to centroid
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 px-1 text-[8.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40">
+            {centroids.length} clusters · {Math.round(MINIMAP_RADIUS_M)}m radius
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1259,6 +1572,47 @@ function ResumeHint() {
     <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20">
       <div className="bg-black/60 border border-mna-white/15 px-4 py-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/75">
         Click anywhere to resume
+      </div>
+    </div>
+  );
+}
+
+/** Surfaced when the browser refuses our Pointer Lock request. Replaces
+ *  the "Click anywhere to resume" loop with a real diagnosis and a way
+ *  out. Atlas's agent overlay, sandboxed iframes, and (eventually)
+ *  touch devices land here. */
+function PointerLockFailedPanel({ onExit }: { onExit: () => void }) {
+  return (
+    <div className="absolute left-1/2 -translate-x-1/2 bottom-14 z-20 max-w-[520px] w-[92vw]">
+      <div className="bg-black/85 border border-mna-white/20 px-7 py-6">
+        <p className="text-[10px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-3">
+          Observation Field · Browser Not Supported
+        </p>
+        <p className="text-[13px] leading-[1.6] text-mna-white/85 mb-4">
+          The observation field requires the Pointer Lock API, which this
+          browser does not appear to support — likely an agent overlay or
+          sandbox restriction is intercepting the request.
+        </p>
+        <p className="text-[11px] leading-[1.55] text-mna-white/60 mb-5">
+          Open in Chrome, Safari, or Firefox to walk the field. Touch
+          and agent-browser support is in development.
+        </p>
+        <div className="flex flex-wrap items-center gap-4 text-[10.5px] font-sans uppercase tracking-[0.26em]">
+          <Link
+            href="/canon"
+            className="inline-flex items-center gap-2 bg-mna-white text-ink px-4 py-2 hover:bg-mna-white/90 transition-colors"
+          >
+            Return to Canon →
+          </Link>
+          <button
+            type="button"
+            onClick={onExit}
+            className="text-mna-white/65 hover:text-mna-white transition-colors border-b border-mna-white/35 pb-1"
+          >
+            Reset observation
+          </button>
+          <span className="ml-auto text-mna-white/40">or press Esc</span>
+        </div>
       </div>
     </div>
   );
