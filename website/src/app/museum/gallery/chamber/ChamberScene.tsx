@@ -16,10 +16,9 @@
  * a room name to useMuseumPresence.
  */
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { PointerLockControls, Stars } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
