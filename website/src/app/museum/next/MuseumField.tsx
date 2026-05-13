@@ -44,11 +44,17 @@ import { useRouter } from "next/navigation";
 const EYE_HEIGHT = 1.7;
 const WALK_SPEED = 4.5;
 const SPRINT_SPEED = 8.5;
-const RING_RADIUS = 24; // distance of originator centroids from spawn
-const CLUSTER_RADIUS = 7; // works scatter this far from their centroid
+// Spacing: wider ring + roomier clusters than the v1 placement so
+// visitors can walk between works rather than weave through them.
+const RING_RADIUS = 44; // originator centroids on a circle this far from spawn
+const CLUSTER_RADIUS = 14; // works scatter this far from their centroid
+const MIN_WORK_DISTANCE = 4.5; // minimum 3D distance between any two works
+const PLACEMENT_RETRIES = 24; // how many times to re-roll a position
 const HEIGHT_MIN = 1.2;
 const HEIGHT_MAX = 3.4;
 const WORK_BASE_SIZE = 2.2; // metres edge of a square work in 3D
+const SCULPTURE_TARGET = 2.4; // metres — longest bbox edge after scaling
+const PLINTH_HEIGHT = 0.9;
 const HOVER_TINT = "#cdb798";
 
 export interface FieldWork {
@@ -60,11 +66,14 @@ export interface FieldWork {
   output_type: string;
   canon_date: string | null;
   phase_at_submission: string | null;
+  /** Full 3D scene payload — only present for scene-json works. */
+  scene_payload?: string | null;
 }
 
 interface PlacedWork extends FieldWork {
   position: [number, number, number];
   size: number; // edge length, slight variation per work
+  isSculpture: boolean;
 }
 
 interface MuseumFieldProps {
@@ -165,11 +174,20 @@ function WorksField({
 }) {
   return (
     <>
-      {placed.map((w) => (
-        <Suspense key={w.id} fallback={<PlaceholderPlane placed={w} />}>
-          <WorkPlane placed={w} onHover={onHover} />
-        </Suspense>
-      ))}
+      {placed.map((w) =>
+        w.isSculpture && w.scene_payload ? (
+          <SceneSculpture
+            key={w.id}
+            placed={w}
+            json={w.scene_payload}
+            onHover={onHover}
+          />
+        ) : (
+          <Suspense key={w.id} fallback={<PlaceholderPlane placed={w} />}>
+            <WorkPlane placed={w} onHover={onHover} />
+          </Suspense>
+        ),
+      )}
     </>
   );
 }
@@ -240,6 +258,174 @@ function WorkPlane({
   );
 }
 
+/* ─── Sculpture (scene-json) rendering ──────────────────────────────────── */
+
+interface SceneObjectSpec {
+  shape: "box" | "sphere" | "cylinder" | "cone" | "torus" | "plane";
+  position?: number[];
+  rotation?: number[];
+  scale?: number[];
+  color?: string;
+  opacity?: number;
+  metalness?: number;
+  roughness?: number;
+}
+interface SceneSpec {
+  bg?: string;
+  objects?: SceneObjectSpec[];
+}
+
+function SceneSculpture({
+  placed,
+  json,
+  onHover,
+}: {
+  placed: PlacedWork;
+  json: string;
+  onHover: (id: string | null) => void;
+}) {
+  const router = useRouter();
+  const [hovered, setHovered] = useState(false);
+
+  const { scene, center, scale } = useMemo(() => {
+    let parsed: SceneSpec | null = null;
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      parsed = null;
+    }
+    if (!parsed || !parsed.objects || parsed.objects.length === 0) {
+      return { scene: null, center: [0, 0, 0] as const, scale: 1 };
+    }
+    // Bounding box across all objects, accounting for position + half-scale.
+    const mn = [Infinity, Infinity, Infinity];
+    const mx = [-Infinity, -Infinity, -Infinity];
+    for (const o of parsed.objects) {
+      const p = o.position ?? [0, 0, 0];
+      const s = o.scale ?? [1, 1, 1];
+      for (let i = 0; i < 3; i++) {
+        mn[i] = Math.min(mn[i], p[i] - Math.abs(s[i]) / 2);
+        mx[i] = Math.max(mx[i], p[i] + Math.abs(s[i]) / 2);
+      }
+    }
+    const dims = [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]];
+    const longest = Math.max(...dims, 0.001);
+    const fit = SCULPTURE_TARGET / longest;
+    const c: [number, number, number] = [
+      (mn[0] + mx[0]) / 2,
+      (mn[1] + mx[1]) / 2,
+      (mn[2] + mx[2]) / 2,
+    ];
+    return { scene: parsed, center: c, scale: fit };
+  }, [json]);
+
+  if (!scene || !scene.objects) {
+    return <PlaceholderPlane placed={placed} />;
+  }
+
+  // Plinth top y = PLINTH_HEIGHT; we place the centered-and-scaled
+  // group with its bbox-bottom on that y. Sculpture vertical span:
+  // ((maxY - minY) * scale).
+  const groupYBottom =
+    PLINTH_HEIGHT + 0.02; // a hair above the plinth surface
+  const sculptureGroupY = groupYBottom - (center[1] - (center[1])) * 0; // bbox-bottom set below via inner offset
+
+  return (
+    <group position={placed.position}>
+      {/* Plinth */}
+      <mesh position={[0, PLINTH_HEIGHT / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.6, PLINTH_HEIGHT, 1.6]} />
+        <meshStandardMaterial
+          color="#1a1714"
+          metalness={0.15}
+          roughness={0.88}
+        />
+      </mesh>
+
+      {/* Hover halo (soft warm ground glow under the plinth) */}
+      {hovered ? (
+        <mesh
+          position={[0, 0.01, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <ringGeometry args={[1.0, 2.4, 32]} />
+          <meshBasicMaterial
+            color={HOVER_TINT}
+            transparent
+            opacity={0.35}
+            toneMapped={false}
+          />
+        </mesh>
+      ) : null}
+
+      {/* Sculpture itself — recentered + scaled to fit. Interactive
+          group: hover/click here so the entire piece is the target. */}
+      <group
+        position={[
+          -center[0] * scale,
+          sculptureGroupY,
+          -center[2] * scale,
+        ]}
+        scale={scale}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+          onHover(placed.id);
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          onHover(null);
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          router.push(`/work/${placed.id}?from=museum`);
+        }}
+      >
+        {scene.objects.map((o, i) => (
+          <SceneObjectMesh key={i} obj={o} />
+        ))}
+      </group>
+    </group>
+  );
+}
+
+function SceneObjectMesh({ obj }: { obj: SceneObjectSpec }) {
+  const opacity = obj.opacity ?? 1;
+  const pos = (obj.position ?? [0, 0, 0]) as [number, number, number];
+  const rot = (obj.rotation ?? [0, 0, 0]) as [number, number, number];
+  const scl = (obj.scale ?? [1, 1, 1]) as [number, number, number];
+  return (
+    <mesh position={pos} rotation={rot} scale={scl}>
+      {geomForShape(obj.shape)}
+      <meshStandardMaterial
+        color={obj.color || "#9b938a"}
+        opacity={opacity}
+        transparent={opacity < 1}
+        metalness={obj.metalness ?? 0.15}
+        roughness={obj.roughness ?? 0.75}
+      />
+    </mesh>
+  );
+}
+
+function geomForShape(shape: SceneObjectSpec["shape"]) {
+  switch (shape) {
+    case "sphere":
+      return <sphereGeometry args={[0.5, 24, 18]} />;
+    case "cylinder":
+      return <cylinderGeometry args={[0.5, 0.5, 1, 24]} />;
+    case "cone":
+      return <coneGeometry args={[0.5, 1, 24]} />;
+    case "torus":
+      return <torusGeometry args={[0.5, 0.15, 12, 36]} />;
+    case "plane":
+      return <planeGeometry args={[1, 1]} />;
+    case "box":
+    default:
+      return <boxGeometry args={[1, 1, 1]} />;
+  }
+}
+
 /* ─── Placement ──────────────────────────────────────────────────────────── */
 
 function placeWorks(works: FieldWork[]): PlacedWork[] {
@@ -266,13 +452,47 @@ function placeWorks(works: FieldWork[]): PlacedWork[] {
   for (const w of works) {
     const [cx, cz] = centroids.get(w.originator_id) ?? [0, 0];
     const rng = seededRandom(w.id);
-    const r = rng() * CLUSTER_RADIUS;
-    const a = rng() * Math.PI * 2;
-    const x = cx + Math.cos(a) * r;
-    const z = cz + Math.sin(a) * r;
-    const y = HEIGHT_MIN + rng() * (HEIGHT_MAX - HEIGHT_MIN);
-    const size = WORK_BASE_SIZE * (0.85 + rng() * 0.45); // 0.85x-1.30x
-    placed.push({ ...w, position: [x, y, z], size });
+    const isSculpture = w.output_type === "scene-json" && Boolean(w.scene_payload);
+
+    // Pick a position with retries to keep works from overlapping.
+    // Sculptures count too, so a 3m-tall piece on a plinth gets a clear
+    // walkable gap to any neighbouring painting.
+    let x = cx, y = 0, z = cz;
+    for (let attempt = 0; attempt < PLACEMENT_RETRIES; attempt++) {
+      const r = Math.sqrt(rng()) * CLUSTER_RADIUS; // sqrt → even area density
+      const a = rng() * Math.PI * 2;
+      const tx = cx + Math.cos(a) * r;
+      const tz = cz + Math.sin(a) * r;
+      const ty = isSculpture
+        ? 0
+        : HEIGHT_MIN + rng() * (HEIGHT_MAX - HEIGHT_MIN);
+      // Check spacing against everything already placed.
+      let ok = true;
+      for (const p of placed) {
+        const dx = p.position[0] - tx;
+        const dy = p.position[1] - ty;
+        const dz = p.position[2] - tz;
+        if (dx * dx + dy * dy + dz * dz < MIN_WORK_DISTANCE * MIN_WORK_DISTANCE) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        x = tx;
+        y = ty;
+        z = tz;
+        break;
+      }
+      // last attempt: accept the latest candidate anyway
+      if (attempt === PLACEMENT_RETRIES - 1) {
+        x = tx;
+        y = ty;
+        z = tz;
+      }
+    }
+
+    const size = WORK_BASE_SIZE * (0.85 + rng() * 0.45);
+    placed.push({ ...w, position: [x, y, z], size, isSculpture });
   }
   return placed;
 }

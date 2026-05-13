@@ -44,6 +44,13 @@ export default async function Page() {
     output_type: w.output_type,
     canon_date: w.canon_date,
     phase_at_submission: w.phase_at_submission,
+    // scene-json works carry their full 3D geometry in output_payload;
+    // pass it through so the museum field can render them as actual
+    // sculptures on plinths rather than flat preview thumbnails.
+    // Everything else gets a null payload (visitor downloads the
+    // preview PNG instead).
+    scene_payload:
+      w.output_type === "scene-json" ? w.output_payload : null,
   }));
 
   return <MuseumField works={projected} />;
