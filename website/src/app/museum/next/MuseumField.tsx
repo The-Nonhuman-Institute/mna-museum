@@ -201,6 +201,21 @@ export default function MuseumField({ works }: MuseumFieldProps) {
   const placed = useMemo(() => placeWorks(works), [works]);
   const hovered = hoveredId ? placed.find((w) => w.id === hoveredId) : null;
 
+  // Touch device detection. (pointer: coarse) reliably catches phones,
+  // tablets, and other touch-primary devices regardless of UA. Used to
+  // decide whether to mount the virtual joystick and which control
+  // hints to show on the entry overlay.
+  const [isTouch, setIsTouch] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsTouch(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+
+  // Analog input from the virtual joystick. Mutated each frame by the
+  // joystick component (DOM-side) and read by Movement (Canvas-side).
+  // A ref avoids React re-rendering the field at 60Hz.
+  const joystickRef = useRef({ forward: 0, strafe: 0 });
+
   // Realtime presence. Reads NEXT_PUBLIC_PARTY_HOST at build time;
   // when unset the hook stays idle and `others` is an empty array, so
   // the field works in solo mode without any deployment.
@@ -399,6 +414,7 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             enabled={
               locked || (pointerLockFailed && started && !selectedWork)
             }
+            joystickRef={joystickRef}
           />
           <Telemetry telemetryRef={telemetryRef} />
 
@@ -423,7 +439,17 @@ export default function MuseumField({ works }: MuseumFieldProps) {
       </div>
 
       {/* Entry overlay — only visible until first Begin. */}
-      {!started ? <EntryOverlay onEnter={handleBegin} /> : null}
+      {!started ? (
+        <EntryOverlay onEnter={handleBegin} isTouch={isTouch} />
+      ) : null}
+
+      {/* Virtual joystick — only on touch devices and only after the
+          visitor has begun observation. Lives at the DOM level (not
+          inside Canvas) so the thumb area is a real interactive
+          surface, not a 3D mesh. */}
+      {isTouch && started && !selectedWork ? (
+        <VirtualJoystick joystickRef={joystickRef} />
+      ) : null}
 
       {/* Persistent HUD — visible whenever the visitor is in the
           observation field (started + no entry overlay). Each panel
@@ -1341,10 +1367,18 @@ function stringHash(s: string): number {
 
 /* ─── Movement (WASD) ────────────────────────────────────────────────────── */
 
-/** Walks the camera in its horizontal frame based on key state. Gated
+/** Walks the camera in its horizontal frame based on key state +
+ *  optional analog joystick input. Joystick deflection is summed with
+ *  WASD so both inputs can coexist (e.g. tablet with keyboard). Gated
  *  by `enabled` so the visitor doesn't slide around while a modal is
  *  open or before they begin observation. */
-function Movement({ enabled }: { enabled: boolean }) {
+function Movement({
+  enabled,
+  joystickRef,
+}: {
+  enabled: boolean;
+  joystickRef: React.MutableRefObject<{ forward: number; strafe: number }>;
+}) {
   const keys = useRef<Record<string, boolean>>({});
   const { camera } = useThree();
 
@@ -1366,10 +1400,13 @@ function Movement({ enabled }: { enabled: boolean }) {
   useFrame((_, dt) => {
     if (!enabled) return;
     const k = keys.current;
-    const forward =
+    const j = joystickRef.current;
+    const keyForward =
       Number(k.KeyW || k.ArrowUp || 0) - Number(k.KeyS || k.ArrowDown || 0);
-    const strafe =
+    const keyStrafe =
       Number(k.KeyD || k.ArrowRight || 0) - Number(k.KeyA || k.ArrowLeft || 0);
+    const forward = Math.max(-1, Math.min(1, keyForward + j.forward));
+    const strafe = Math.max(-1, Math.min(1, keyStrafe + j.strafe));
     if (forward === 0 && strafe === 0) return;
 
     const speed = k.ShiftLeft || k.ShiftRight ? SPRINT_SPEED : WALK_SPEED;
@@ -1391,16 +1428,110 @@ function Movement({ enabled }: { enabled: boolean }) {
   return null;
 }
 
+/* ─── Virtual joystick (touch) ───────────────────────────────────────────── */
+
+/** Thumb-stick for touch movement. Lives in the bottom-left corner.
+ *  Mutates `joystickRef` continuously while held; `Movement` reads
+ *  it each frame and sums with WASD. Pointer-events-auto so the
+ *  joystick consumes touches that would otherwise reach DragLook.
+ *  Uses pointer events so a second finger touching elsewhere on the
+ *  canvas can still rotate the camera at the same time. */
+function VirtualJoystick({
+  joystickRef,
+}: {
+  joystickRef: React.MutableRefObject<{ forward: number; strafe: number }>;
+}) {
+  const baseRef = useRef<HTMLDivElement>(null);
+  const [knobOffset, setKnobOffset] = useState({ x: 0, y: 0 });
+  const activeRef = useRef(false);
+  const RADIUS = 52; // px — max knob deflection from center
+
+  function setFromPointer(clientX: number, clientY: number) {
+    const base = baseRef.current;
+    if (!base) return;
+    const rect = base.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > RADIUS) {
+      dx = (dx / dist) * RADIUS;
+      dy = (dy / dist) * RADIUS;
+    }
+    setKnobOffset({ x: dx, y: dy });
+    // Up on screen = forward; right on screen = strafe right.
+    joystickRef.current.forward = -dy / RADIUS;
+    joystickRef.current.strafe = dx / RADIUS;
+  }
+
+  function release() {
+    activeRef.current = false;
+    setKnobOffset({ x: 0, y: 0 });
+    joystickRef.current.forward = 0;
+    joystickRef.current.strafe = 0;
+  }
+
+  return (
+    <div
+      ref={baseRef}
+      onPointerDown={(e) => {
+        activeRef.current = true;
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // ignored
+        }
+        setFromPointer(e.clientX, e.clientY);
+      }}
+      onPointerMove={(e) => {
+        if (!activeRef.current) return;
+        setFromPointer(e.clientX, e.clientY);
+      }}
+      onPointerUp={(e) => {
+        try {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch {
+          // ignored
+        }
+        release();
+      }}
+      onPointerCancel={() => release()}
+      className="pointer-events-auto absolute bottom-8 left-8 w-32 h-32 rounded-full border border-mna-white/25 bg-black/40 backdrop-blur-[2px] select-none z-20"
+      style={{ touchAction: "none" }}
+      aria-label="Movement joystick"
+    >
+      {/* Knob */}
+      <div
+        className="absolute w-14 h-14 rounded-full bg-mna-white/70 pointer-events-none"
+        style={{
+          left: "50%",
+          top: "50%",
+          transform: `translate(calc(-50% + ${knobOffset.x}px), calc(-50% + ${knobOffset.y}px))`,
+          transition: activeRef.current ? "none" : "transform 0.12s ease-out",
+        }}
+        aria-hidden
+      />
+    </div>
+  );
+}
+
 /* ─── HUD pieces ─────────────────────────────────────────────────────────── */
 
-function EntryOverlay({ onEnter }: { onEnter: () => void }) {
+function EntryOverlay({
+  onEnter,
+  isTouch,
+}: {
+  onEnter: () => void;
+  isTouch: boolean;
+}) {
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-mna-white pointer-events-none">
-      <div className="bg-black/55 backdrop-blur-[2px] border border-mna-white/15 px-10 py-9 max-w-[480px] text-center pointer-events-auto">
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-mna-white pointer-events-none px-5">
+      <div className="bg-black/55 backdrop-blur-[2px] border border-mna-white/15 px-7 sm:px-10 py-8 sm:py-9 max-w-[480px] w-full text-center pointer-events-auto">
         <p className="text-[10px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-4">
           Observation Field · Preview
         </p>
-        <h1 className="font-display text-[42px] leading-[1.05] tracking-tight text-mna-white mb-5">
+        <h1 className="font-display text-[36px] sm:text-[42px] leading-[1.05] tracking-tight text-mna-white mb-5">
           Enter the Archive
         </h1>
         <p className="text-[13px] text-mna-white/72 leading-[1.7] mb-7">
@@ -1415,16 +1546,29 @@ function EntryOverlay({ onEnter }: { onEnter: () => void }) {
           <span aria-hidden>→</span>
         </button>
         <div className="mt-7 pt-6 border-t border-mna-white/15 grid grid-cols-2 gap-y-2 text-[10px] uppercase tracking-[0.22em] text-mna-white/55">
-          <span className="text-left">W A S D</span>
-          <span className="text-right">Move</span>
-          <span className="text-left">Mouse</span>
-          <span className="text-right">Look</span>
-          <span className="text-left">Shift</span>
-          <span className="text-right">Walk Faster</span>
-          <span className="text-left">Click</span>
-          <span className="text-right">Open Work</span>
-          <span className="text-left">Esc</span>
-          <span className="text-right">Release</span>
+          {isTouch ? (
+            <>
+              <span className="text-left">Joystick</span>
+              <span className="text-right">Move</span>
+              <span className="text-left">Drag</span>
+              <span className="text-right">Look</span>
+              <span className="text-left">Tap</span>
+              <span className="text-right">Open Work</span>
+            </>
+          ) : (
+            <>
+              <span className="text-left">W A S D</span>
+              <span className="text-right">Move</span>
+              <span className="text-left">Mouse</span>
+              <span className="text-right">Look</span>
+              <span className="text-left">Shift</span>
+              <span className="text-right">Walk Faster</span>
+              <span className="text-left">Click</span>
+              <span className="text-right">Open Work</span>
+              <span className="text-left">Esc</span>
+              <span className="text-right">Release</span>
+            </>
+          )}
         </div>
         <Link
           href="/canon"
