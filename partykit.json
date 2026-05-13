@@ -1,4 +1,5 @@
 {
   "name": "mna-museum",
-  "main": "party/museum.ts"
+  "main": "party/museum.ts",
+  "compatibilityDate": "2026-05-13"
 }

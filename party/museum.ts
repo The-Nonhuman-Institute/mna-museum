@@ -1,4 +1,4 @@
-import type { Party, PartyConnection, PartyServer } from "partykit/server";
+import type * as Party from "partykit/server";
 
 const COLORS = [
   "#D4A574", // warm sand
@@ -26,28 +26,38 @@ function designationFor(id: string): string {
   return "Observer-" + id.slice(0, 4).toUpperCase();
 }
 
-// In-memory visitor state (resets when party room hibernates)
-const visitors = new Map<string, Visitor>();
-let colorIndex = 0;
+/**
+ * MNA Museum presence server. One PartyKit party per room (we use a
+ * single shared room "mna-museum") so every visitor sees every other.
+ *
+ * Class-based style is required for v0.0.115 to correctly route
+ * WebSocket-upgrade requests to onConnect — the module-style export
+ * fell through to onRequest, which doesn't exist, and Cloudflare
+ * surfaced a 522.
+ */
+export default class MuseumServer implements Party.Server {
+  visitors = new Map<string, Visitor>();
+  colorIndex = 0;
 
-export default {
-  onStart(party: Party) {
-    // Broadcast full visitor state at 10Hz
+  constructor(readonly room: Party.Room) {}
+
+  onStart() {
+    // Broadcast full visitor state at 10Hz. Cheap — the party only
+    // holds in-memory state and serializes a small JSON message.
     setInterval(() => {
-      if (visitors.size === 0) return;
-      const msg = JSON.stringify({
-        type: "sync",
-        visitors: Array.from(visitors.values()),
-      });
-      for (const conn of party.getConnections()) {
-        conn.send(msg);
-      }
+      if (this.visitors.size === 0) return;
+      this.room.broadcast(
+        JSON.stringify({
+          type: "sync",
+          visitors: Array.from(this.visitors.values()),
+        }),
+      );
     }, 100);
-  },
+  }
 
-  onConnect(conn: PartyConnection, party: Party) {
-    const color = COLORS[colorIndex % COLORS.length];
-    colorIndex++;
+  onConnect(conn: Party.Connection) {
+    const color = COLORS[this.colorIndex % COLORS.length];
+    this.colorIndex++;
     const designation = designationFor(conn.id);
 
     const visitor: Visitor = {
@@ -58,38 +68,33 @@ export default {
       z: 8,
       yaw: 0,
     };
-    visitors.set(conn.id, visitor);
+    this.visitors.set(conn.id, visitor);
 
     // Tell the new visitor who they are.
     conn.send(
       JSON.stringify({ type: "init", id: conn.id, designation, color }),
     );
 
-    // Send a snapshot of everyone else so they render immediately.
-    const others = Array.from(visitors.values()).filter((v) => v.id !== conn.id);
+    // Snapshot of everyone else so they render immediately.
+    const others = Array.from(this.visitors.values()).filter(
+      (v) => v.id !== conn.id,
+    );
     if (others.length > 0) {
       conn.send(JSON.stringify({ type: "sync", visitors: others }));
     }
 
-    // Notify others of the new visitor.
-    const joinMsg = JSON.stringify({
-      type: "join",
-      id: conn.id,
-      designation,
-      color,
-    });
-    for (const other of party.getConnections()) {
-      if (other.id !== conn.id) {
-        other.send(joinMsg);
-      }
-    }
-  },
+    // Notify others. Second arg is an exclude-list.
+    this.room.broadcast(
+      JSON.stringify({ type: "join", id: conn.id, designation, color }),
+      [conn.id],
+    );
+  }
 
-  onMessage(message: string, conn: PartyConnection) {
+  onMessage(message: string, conn: Party.Connection) {
     try {
       const data = JSON.parse(message as string);
       if (data.type !== "position") return;
-      const v = visitors.get(conn.id);
+      const v = this.visitors.get(conn.id);
       if (!v) return;
       if (
         typeof data.x !== "number" ||
@@ -106,15 +111,27 @@ export default {
       v.x = data.x;
       v.z = data.z;
       v.yaw = data.yaw;
-    } catch {}
-  },
-
-  onClose(conn: PartyConnection, party: Party) {
-    visitors.delete(conn.id);
-
-    const msg = JSON.stringify({ type: "leave", id: conn.id });
-    for (const other of party.getConnections()) {
-      other.send(msg);
+    } catch {
+      // ignored
     }
-  },
-} satisfies PartyServer;
+  }
+
+  onClose(conn: Party.Connection) {
+    this.visitors.delete(conn.id);
+    this.room.broadcast(JSON.stringify({ type: "leave", id: conn.id }));
+  }
+
+  /** Health probe — anyone hitting the room as plain HTTP gets a
+   *  readable response instead of a 500. The partysocket client uses
+   *  WebSocket upgrade and never hits this path. */
+  onRequest(_req: Party.Request) {
+    return new Response(
+      JSON.stringify({
+        party: "mna-museum",
+        visitors: this.visitors.size,
+        protocol: "ws",
+      }),
+      { headers: { "content-type": "application/json" } },
+    );
+  }
+}
