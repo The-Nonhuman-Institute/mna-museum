@@ -68,9 +68,10 @@ const HOVER_TINT = "#cdb798";
 
 // Aggressive cap on per-work texture size. Source PNGs are 2000×2000;
 // uploading 100+ of those to the GPU at full res blows out VRAM
-// (Metal: GL_OUT_OF_MEMORY, context lost, page crash). 512² is more
-// than enough for a billboarded plane viewed from 5-30m away.
-const WORK_TEXTURE_MAX = 512;
+// (Metal: GL_OUT_OF_MEMORY, context lost, page crash). 384² is still
+// crisp at typical viewing distance (5-30m, billboard ~2m wide) and
+// drops total texture memory ~44% vs 512².
+const WORK_TEXTURE_MAX = 384;
 
 // Per-originator tint palette. Each originator gets one of these based
 // on a stable hash of its registry id, so walking between clusters
@@ -368,6 +369,12 @@ export default function MuseumField({ works }: MuseumFieldProps) {
       <div className="absolute inset-0" onClick={handleCanvasMaybeRelock}>
         <Canvas
           camera={{ fov: 70, near: 0.1, far: 240, position: [0, EYE_HEIGHT, 8] }}
+          // Cap the device pixel ratio. Retina screens default to 2-3×,
+          // which quadruples-to-9× every render target (main framebuffer,
+          // reflector, bloom chain). On a 1440p retina display dpr=2 means
+          // 5120×2880 buffers — a single OOM trigger. 1.5× is the sweet
+          // spot between crisp and stable.
+          dpr={[1, 1.5]}
           gl={{ antialias: true, powerPreference: "high-performance" }}
         >
           <Scene>
@@ -399,12 +406,16 @@ export default function MuseumField({ works }: MuseumFieldProps) {
               bright stars, sculpture haloes). Vignette is now very
               subtle — the previous version was darkening the corners
               enough to eat the starfield as the visitor turned. */}
+          {/* Postprocessing kept light — mipmapBlur on Bloom was
+              allocating a tall stack of half-resolution render targets
+              which contributed to the OOM crash. Single-pass bloom on
+              the bright stars + beams reads almost identical at a
+              fraction of the memory cost. */}
           <EffectComposer>
             <Bloom
-              luminanceThreshold={0.4}
-              luminanceSmoothing={0.92}
-              intensity={0.55}
-              mipmapBlur
+              luminanceThreshold={0.6}
+              luminanceSmoothing={0.9}
+              intensity={0.45}
             />
             <Vignette eskil={false} offset={0.45} darkness={0.22} />
           </EffectComposer>
@@ -726,10 +737,10 @@ function Scene({ children }: { children: React.ReactNode }) {
       >
         <planeGeometry args={[600, 600]} />
         <MeshReflectorMaterial
-          blur={[200, 50]}
-          resolution={512}
+          blur={[150, 40]}
+          resolution={384}
           mixBlur={1.4}
-          mixStrength={1.1}
+          mixStrength={1.0}
           mirror={0.4}
           roughness={0.94}
           depthScale={0.6}
