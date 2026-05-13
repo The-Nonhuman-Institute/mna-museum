@@ -14,7 +14,12 @@
 
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
-import { getCanonWorks } from "@/lib/collection";
+import { getCanonWorks, getWork, getWorksByOriginator } from "@/lib/collection";
+import {
+  getMonumentalWork,
+  getSoloFeaturedOriginator,
+} from "@/lib/museum-installations";
+import { starsForScope } from "@/lib/gallery-constellations";
 
 export const metadata: Metadata = {
   title: "Museum — Field (Preview) — Museum of Nonhuman Art",
@@ -29,8 +34,61 @@ export const revalidate = 3600;
 // The whole scene depends on WebGL + DOM listeners → client-only.
 const MuseumField = dynamic(() => import("./MuseumField"), { ssr: false });
 
+/**
+ * Build the set of active gallery constellations from Curator decisions
+ * in the database. Each entry surfaces as a portal star pattern in the
+ * sky on the field. Empty array if the Curator hasn't placed anything
+ * yet — the field renders as pure canon with no portals.
+ */
+async function getActiveGalleries(): Promise<ActiveGallery[]> {
+  const galleries: ActiveGallery[] = [];
+
+  // The Chamber — current monumental installation.
+  const monumental = await getMonumentalWork();
+  if (monumental) {
+    const work = await getWork(monumental.work_id);
+    galleries.push({
+      id: "chamber",
+      name: "The Chamber",
+      starCount: 4, // monumental is always exactly one work
+      featuredLabel: work?.title
+        ? `Featured: ${work.title}`
+        : `Featured Work · ${monumental.work_id}`,
+      route: "/museum/gallery/chamber",
+    });
+  }
+
+  // Solo Exhibition Hall — current featured originator + their works.
+  const soloOrig = await getSoloFeaturedOriginator();
+  if (soloOrig) {
+    const soloWorks = await getWorksByOriginator(soloOrig);
+    const name =
+      soloWorks[0]?.originator_name?.trim() ?? soloOrig;
+    galleries.push({
+      id: "solo_exhibition",
+      name: "Solo Exhibition Hall",
+      starCount: starsForScope(soloWorks.length || 1),
+      featuredLabel: `${soloWorks.length} works · ${name}`,
+      route: "/museum/gallery/solo",
+    });
+  }
+
+  return galleries;
+}
+
+export interface ActiveGallery {
+  id: string;
+  name: string;
+  starCount: number;
+  featuredLabel: string;
+  route: string;
+}
+
 export default async function Page() {
-  const works = await getCanonWorks();
+  const [works, galleries] = await Promise.all([
+    getCanonWorks(),
+    getActiveGalleries(),
+  ]);
 
   // Project to the minimum shape MuseumField needs. Keeps the wire
   // payload small (no full output_payloads or evaluations) and the
@@ -53,5 +111,5 @@ export default async function Page() {
       w.output_type === "scene-json" ? w.output_payload : null,
   }));
 
-  return <MuseumField works={projected} />;
+  return <MuseumField works={projected} galleries={galleries} />;
 }

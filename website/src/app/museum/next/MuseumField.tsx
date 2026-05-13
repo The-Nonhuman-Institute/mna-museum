@@ -51,6 +51,12 @@ import {
   useMuseumPresence,
   type PresenceVisitor,
 } from "@/lib/use-museum-presence";
+import {
+  CONSTELLATION_CONFIGS,
+  constellationStars,
+  type ConstellationConfig,
+  type ConstellationStar,
+} from "@/lib/gallery-constellations";
 
 const EYE_HEIGHT = 1.7;
 const WALK_SPEED = 4.5;
@@ -163,15 +169,24 @@ interface PlacedWork extends FieldWork {
   isSculpture: boolean;
 }
 
+export interface ActiveGallery {
+  id: string;
+  name: string;
+  starCount: number;
+  featuredLabel: string;
+  route: string;
+}
+
 interface MuseumFieldProps {
   works: FieldWork[];
+  galleries: ActiveGallery[];
 }
 
 // Drei's PointerLockControls ref exposes the underlying Three.js
 // instance with lock()/unlock(). We don't need the full type.
 type PLCHandle = { lock: () => void; unlock: () => void } | null;
 
-export default function MuseumField({ works }: MuseumFieldProps) {
+export default function MuseumField({ works, galleries }: MuseumFieldProps) {
   const [started, setStarted] = useState(false);
   const [locked, setLocked] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -215,6 +230,25 @@ export default function MuseumField({ works }: MuseumFieldProps) {
   // joystick component (DOM-side) and read by Movement (Canvas-side).
   // A ref avoids React re-rendering the field at 60Hz.
   const joystickRef = useRef({ forward: 0, strafe: 0 });
+
+  // Which gallery constellation the visitor is currently aiming at, if
+  // any. Aim detection runs every frame (NDC projection) but state is
+  // only updated when the aimed gallery changes — so the HUD label
+  // doesn't re-render at 60Hz. Ref mirrors state for closure-free key
+  // handlers.
+  const [aimedGalleryId, setAimedGalleryId] = useState<string | null>(null);
+  const aimedGalleryIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    aimedGalleryIdRef.current = aimedGalleryId;
+  }, [aimedGalleryId]);
+
+  // Travel transition. Non-null while we're fading to black before
+  // navigating to a gallery route.
+  const [traveling, setTraveling] = useState<{ id: string; route: string } | null>(null);
+  const travelingRef = useRef(false);
+  useEffect(() => {
+    travelingRef.current = !!traveling;
+  }, [traveling]);
 
   // Realtime presence. Reads NEXT_PUBLIC_PARTY_HOST at build time;
   // when unset the hook stays idle and `others` is an empty array, so
@@ -284,12 +318,25 @@ export default function MuseumField({ works }: MuseumFieldProps) {
     function onKey(e: KeyboardEvent) {
       if (!lockedRef.current && !pointerLockFailedRef.current) return;
       if (selectedRef.current) return;
+      if (travelingRef.current) return;
+
+      // Constellation aim takes priority only when no work is hovered.
+      // Works are close (within 30m), constellations are far (130m+),
+      // so these almost never conflict in practice — but if both happen
+      // to land in the same aim cone, the closer thing wins.
       const h = hoveredRef.current;
-      if (!h) return;
       if (e.code === "KeyE") {
         e.preventDefault();
-        openWork(h);
-      } else if (e.code === "KeyR") {
+        if (h) {
+          openWork(h);
+        } else {
+          const aimedId = aimedGalleryIdRef.current;
+          if (aimedId) {
+            const g = galleries.find((x) => x.id === aimedId);
+            if (g) setTraveling({ id: g.id, route: g.route });
+          }
+        }
+      } else if (e.code === "KeyR" && h) {
         e.preventDefault();
         router.push(`/work/${h.id}/provenance?from=museum`);
       }
@@ -297,7 +344,18 @@ export default function MuseumField({ works }: MuseumFieldProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [galleries]);
+
+  // Travel transition: when `traveling` flips on, fade overlay then
+  // navigate to the gallery route. 600ms fade matches the visual
+  // language of celestial drift toward a star.
+  useEffect(() => {
+    if (!traveling) return;
+    const t = window.setTimeout(() => {
+      router.push(traveling.route);
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [traveling, router]);
 
   function handleBegin() {
     setStarted(true);
@@ -416,6 +474,10 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             />
             <VisitorGlow centroids={centroids} />
             <OtherVisitors others={others} />
+            <Constellations
+              galleries={galleries}
+              onAimChange={setAimedGalleryId}
+            />
           </Scene>
           <PositionPublisher publish={publish} />
           <PointerLockControls
@@ -494,10 +556,28 @@ export default function MuseumField({ works }: MuseumFieldProps) {
       ) : null}
 
       {/* Focused-work card — bottom-center, only when looking at
-          something. Visible in both pointer-lock and drag modes. */}
-      {(locked || pointerLockFailed) && hovered && !selectedWork ? (
+          something. Visible in both pointer-lock and drag modes.
+          Suppressed during constellation aim so the gallery label can
+          take the slot. */}
+      {(locked || pointerLockFailed) &&
+      hovered &&
+      !selectedWork &&
+      !aimedGalleryId ? (
         <FocusedWorkCard work={hovered} />
       ) : null}
+
+      {/* Gallery constellation label — replaces the work card when
+          the visitor is aiming at a celestial body. */}
+      {(locked || pointerLockFailed) && aimedGalleryId && !selectedWork ? (
+        <GalleryLabel
+          gallery={galleries.find((g) => g.id === aimedGalleryId)!}
+          isTouch={isTouch}
+          onTravel={(g) => setTraveling({ id: g.id, route: g.route })}
+        />
+      ) : null}
+
+      {/* Fade-to-black travel transition. */}
+      <TravelOverlay active={!!traveling} />
 
       {/* Reticle only in pointer-lock mode. Drag mode keeps a visible
           cursor as its own pointing affordance. */}
@@ -561,7 +641,7 @@ function Telemetry({
  *  Yaw + pitch are tracked in a YXZ Euler so the camera doesn't roll
  *  when the visitor flicks diagonally; pitch is clamped just under
  *  ±90° so the view never inverts. */
-function DragLook({ enabled }: { enabled: boolean }) {
+export function DragLook({ enabled }: { enabled: boolean }) {
   const { camera, gl } = useThree();
   const stateRef = useRef({
     pointerDown: false,
@@ -725,6 +805,138 @@ function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
           toneMapped={false}
         />
       </mesh>
+    </group>
+  );
+}
+
+/* ─── Constellations (gallery portals in the sky) ─────────────────────────── */
+
+/** Renders one bright constellation per active gallery and writes the
+ *  currently-aimed-at gallery id back to the parent. Aim detection is
+ *  pure NDC projection — cheap, works in pointer-lock + drag + touch. */
+function Constellations({
+  galleries,
+  onAimChange,
+}: {
+  galleries: ActiveGallery[];
+  onAimChange: (id: string | null) => void;
+}) {
+  const { camera } = useThree();
+  const lastAimed = useRef<string | null>(null);
+
+  // Pre-compute each gallery's star world positions once per gallery
+  // configuration. `galleries` typically changes only when the Curator
+  // makes a decision, so this is effectively static.
+  const stars = useMemo(() => {
+    const out: Array<{
+      galleryId: string;
+      config: ConstellationConfig;
+      stars: ConstellationStar[];
+    }> = [];
+    for (const g of galleries) {
+      const config = CONSTELLATION_CONFIGS[g.id];
+      if (!config) continue;
+      out.push({
+        galleryId: g.id,
+        config,
+        stars: constellationStars(config, g.starCount, g.id),
+      });
+    }
+    return out;
+  }, [galleries]);
+
+  // Every frame, project each star into NDC and find the gallery whose
+  // star is closest to the screen center within an aim threshold. The
+  // first frame this resolves, push state up. Subsequent frames only
+  // push when the aimed gallery actually changes.
+  const projected = useRef(new THREE.Vector3());
+  useFrame(() => {
+    const AIM_THRESH_SQ = 0.05 * 0.05; // ~5% of NDC half-extent
+    let bestId: string | null = null;
+    let bestDist = AIM_THRESH_SQ;
+    for (const c of stars) {
+      for (const s of c.stars) {
+        projected.current.set(s.position[0], s.position[1], s.position[2]);
+        projected.current.project(camera);
+        if (projected.current.z >= 1) continue; // behind / out of view
+        const d = projected.current.x * projected.current.x +
+          projected.current.y * projected.current.y;
+        if (d < bestDist) {
+          bestDist = d;
+          bestId = c.galleryId;
+        }
+      }
+    }
+    if (bestId !== lastAimed.current) {
+      lastAimed.current = bestId;
+      onAimChange(bestId);
+    }
+  });
+
+  return (
+    <>
+      {stars.map((c) => (
+        <Constellation
+          key={c.galleryId}
+          galleryId={c.galleryId}
+          config={c.config}
+          stars={c.stars}
+        />
+      ))}
+    </>
+  );
+}
+
+/** Visual: bright tinted stars at constellation positions, connected by
+ *  faint lines. No interactivity here — aim is read at the parent so
+ *  per-star state isn't needed. */
+function Constellation({
+  config,
+  stars,
+}: {
+  galleryId: string;
+  config: ConstellationConfig;
+  stars: ConstellationStar[];
+}) {
+  // Build line segments connecting each consecutive pair (closing the
+  // loop). Visually reads as the institution's hand on the sky.
+  const linePositions = useMemo(() => {
+    const arr: number[] = [];
+    for (let i = 0; i < stars.length; i++) {
+      const a = stars[i].position;
+      const b = stars[(i + 1) % stars.length].position;
+      arr.push(a[0], a[1], a[2], b[0], b[1], b[2]);
+    }
+    return new Float32Array(arr);
+  }, [stars]);
+
+  return (
+    <group>
+      {stars.map((s, i) => (
+        <mesh key={i} position={s.position}>
+          <sphereGeometry args={[0.55, 16, 12]} />
+          <meshBasicMaterial
+            color={config.tint}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+      <lineSegments>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            array={linePositions}
+            itemSize={3}
+            count={linePositions.length / 3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color={config.tint}
+          transparent
+          opacity={0.35}
+          toneMapped={false}
+        />
+      </lineSegments>
     </group>
   );
 }
@@ -1020,7 +1232,7 @@ function PlaceholderPlane({ placed }: { placed: PlacedWork }) {
  *  disabled. Mipmaps add ~33% per-texture memory and aren't useful for
  *  camera-facing billboards. Disposes the texture on unmount/URL change
  *  so navigating away frees GPU memory. */
-function useDownsampledTexture(
+export function useDownsampledTexture(
   url: string,
   maxSize: number,
 ): THREE.Texture | null {
@@ -1393,7 +1605,7 @@ function stringHash(s: string): number {
  *  WASD so both inputs can coexist (e.g. tablet with keyboard). Gated
  *  by `enabled` so the visitor doesn't slide around while a modal is
  *  open or before they begin observation. */
-function Movement({
+export function Movement({
   enabled,
   joystickRef,
 }: {
@@ -1457,7 +1669,7 @@ function Movement({
  *  joystick consumes touches that would otherwise reach DragLook.
  *  Uses pointer events so a second finger touching elsewhere on the
  *  canvas can still rotate the camera at the same time. */
-function VirtualJoystick({
+export function VirtualJoystick({
   joystickRef,
 }: {
   joystickRef: React.MutableRefObject<{ forward: number; strafe: number }>;
@@ -1657,7 +1869,7 @@ function FocusedWorkCard({ work }: { work: PlacedWork }) {
   );
 }
 
-function KeyCap({ label }: { label: string }) {
+export function KeyCap({ label }: { label: string }) {
   return (
     <span
       className="inline-block min-w-[18px] text-center px-1.5 py-0.5 border border-mna-white/35 text-mna-white/80 text-[9px] tracking-[0.06em] uppercase"
@@ -2021,6 +2233,77 @@ function ResumeHint() {
         Click anywhere to resume
       </div>
     </div>
+  );
+}
+
+/** Bottom-center label shown when the visitor is aiming at a gallery
+ *  constellation. Same slot as FocusedWorkCard so the two never
+ *  conflict. Tap (touch) or E (keyboard) triggers travel. */
+function GalleryLabel({
+  gallery,
+  isTouch,
+  onTravel,
+}: {
+  gallery: ActiveGallery;
+  isTouch: boolean;
+  onTravel: (g: ActiveGallery) => void;
+}) {
+  const config = CONSTELLATION_CONFIGS[gallery.id];
+  const tint = config?.tint ?? "#cdb798";
+  return (
+    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 z-20 max-w-[520px] w-[88vw]">
+      <div className="pointer-events-auto bg-black/72 backdrop-blur-[3px] border border-mna-white/20 px-6 py-4">
+        <div className="flex items-baseline gap-3 mb-1.5">
+          <span
+            aria-hidden
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: tint, boxShadow: `0 0 8px ${tint}` }}
+          />
+          <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
+            Constellation · Gallery
+          </p>
+        </div>
+        <p
+          className="font-display italic text-[20px] leading-tight text-mna-white mb-1"
+          style={{ color: tint }}
+        >
+          {gallery.name}
+        </p>
+        <p className="text-[11px] font-sans tracking-[0.04em] text-mna-white/70 mb-3">
+          {gallery.featuredLabel}
+        </p>
+        <button
+          type="button"
+          onClick={() => onTravel(gallery)}
+          className="inline-flex items-center gap-2 text-[10.5px] font-sans uppercase tracking-[0.26em] text-mna-white/85 hover:text-mna-white transition-colors border-b border-mna-white/35 pb-1"
+        >
+          {isTouch ? (
+            <>
+              <span>Tap to enter</span>
+              <span aria-hidden>→</span>
+            </>
+          ) : (
+            <>
+              <KeyCap label="E" />
+              <span>Enter</span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Fade-to-black overlay used during gallery travel. Mounted always so
+ *  the opacity transition is smooth; only opaque when `active`. */
+function TravelOverlay({ active }: { active: boolean }) {
+  return (
+    <div
+      className={`pointer-events-none absolute inset-0 z-40 bg-black transition-opacity duration-500 ${
+        active ? "opacity-100" : "opacity-0"
+      }`}
+      aria-hidden
+    />
   );
 }
 
