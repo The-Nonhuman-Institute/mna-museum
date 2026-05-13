@@ -68,10 +68,10 @@ const HOVER_TINT = "#cdb798";
 
 // Aggressive cap on per-work texture size. Source PNGs are 2000×2000;
 // uploading 100+ of those to the GPU at full res blows out VRAM
-// (Metal: GL_OUT_OF_MEMORY, context lost, page crash). 384² is still
-// crisp at typical viewing distance (5-30m, billboard ~2m wide) and
-// drops total texture memory ~44% vs 512².
-const WORK_TEXTURE_MAX = 384;
+// (Metal: GL_OUT_OF_MEMORY, context lost, page crash). 256² costs
+// ~33 MB total across 126 works — most of the recovered headroom
+// goes to surviving sleep/wake context loss.
+const WORK_TEXTURE_MAX = 256;
 
 // Per-originator tint palette. Each originator gets one of these based
 // on a stable hash of its registry id, so walking between clusters
@@ -391,6 +391,20 @@ export default function MuseumField({ works }: MuseumFieldProps) {
           // spot between crisp and stable.
           dpr={[1, 1.5]}
           gl={{ antialias: true, powerPreference: "high-performance" }}
+          // WebGL context loss (sleep/wake, OS GPU reset, memory pressure)
+          // leaves Three.js in a state it can't always recover from cleanly
+          // — half-restored render targets accumulate and the next texture
+          // allocation OOMs. Calling preventDefault keeps the browser from
+          // permanently killing the context; a hard reload gives us a
+          // clean slate without the visitor seeing the white error page.
+          onCreated={({ gl }) => {
+            const onLost = (e: Event) => {
+              e.preventDefault();
+              // Brief delay so the browser settles before reload.
+              setTimeout(() => window.location.reload(), 80);
+            };
+            gl.domElement.addEventListener("webglcontextlost", onLost);
+          }}
         >
           <Scene>
             <WorksField
@@ -763,17 +777,17 @@ function Scene({ children }: { children: React.ReactNode }) {
       >
         <planeGeometry args={[600, 600]} />
         <MeshReflectorMaterial
-          blur={[150, 40]}
-          resolution={384}
+          blur={[120, 30]}
+          resolution={256}
           mixBlur={1.4}
-          mixStrength={1.0}
-          mirror={0.4}
+          mixStrength={0.85}
+          mirror={0.35}
           roughness={0.94}
-          depthScale={0.6}
+          depthScale={0.5}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.2}
           color="#0c0a09"
-          metalness={0.25}
+          metalness={0.22}
         />
       </mesh>
 
