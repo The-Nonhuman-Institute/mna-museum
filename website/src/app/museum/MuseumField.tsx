@@ -475,13 +475,22 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
           }}
         >
           <Scene>
-            <WorksField
-              placed={placed}
-              onHover={setHoveredId}
-              onSelect={openWork}
-            />
-            <VisitorGlow centroids={centroids} />
-            <OtherVisitors others={others} />
+            {/* The canon itself only appears after Begin. On the entry
+                view the visitor sees just the institution's structural
+                elements — stars, beams, floor, and the gallery
+                constellations — so the first impression reads as
+                threshold, not feed. */}
+            {started ? (
+              <>
+                <WorksField
+                  placed={placed}
+                  onHover={setHoveredId}
+                  onSelect={openWork}
+                />
+                <VisitorGlow centroids={centroids} />
+                <OtherVisitors others={others} />
+              </>
+            ) : null}
             <Constellations
               galleries={galleries}
               onAimChange={setAimedGalleryId}
@@ -495,7 +504,10 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
             onLock={() => setLocked(true)}
             onUnlock={() => setLocked(false)}
           />
-          <DragLook enabled={pointerLockFailed && started && !selectedWork} />
+          <DragLook
+            enabled={pointerLockFailed && started && !selectedWork}
+            isTouch={isTouch}
+          />
           <Movement
             enabled={
               locked || (pointerLockFailed && started && !selectedWork)
@@ -649,7 +661,13 @@ function Telemetry({
  *  Yaw + pitch are tracked in a YXZ Euler so the camera doesn't roll
  *  when the visitor flicks diagonally; pitch is clamped just under
  *  ±90° so the view never inverts. */
-export function DragLook({ enabled }: { enabled: boolean }) {
+export function DragLook({
+  enabled,
+  isTouch = false,
+}: {
+  enabled: boolean;
+  isTouch?: boolean;
+}) {
   const { camera, gl } = useThree();
   const stateRef = useRef({
     pointerDown: false,
@@ -666,7 +684,10 @@ export function DragLook({ enabled }: { enabled: boolean }) {
     if (!enabled) return;
     const dom = gl.domElement;
     const DRAG_THRESHOLD = 5; // px before we start rotating
-    const SENS = 0.0035;
+    // Touch fingers cover more screen pixels per intended rotation than
+    // a mouse drag, so the same SENS feels sluggish on phones. Bump
+    // ~40% on touch to make camera response match finger expectation.
+    const SENS = isTouch ? 0.005 : 0.0035;
 
     function onPointerDown(e: PointerEvent) {
       // Primary mouse button or any touch.
@@ -729,7 +750,7 @@ export function DragLook({ enabled }: { enabled: boolean }) {
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
     };
-  }, [enabled, gl, camera]);
+  }, [enabled, gl, camera, isTouch]);
 
   return null;
 }
@@ -1341,9 +1362,10 @@ export function useDownsampledTexture(
 
 // Squared pixel-distance threshold above which a pointerdown→pointerup
 // pair is treated as a drag (rather than a click). Big enough to absorb
-// touchscreen jitter and brief drag-look swipes; small enough that an
-// intentional tap still opens the work.
-const CLICK_DRAG_THRESHOLD_SQ = 8 * 8;
+// touchscreen finger jitter (raised from 8 → 10 after mobile testing
+// showed taps misfiring as drags on jittery touch hardware) and brief
+// drag-look swipes; small enough that an intentional tap still opens.
+const CLICK_DRAG_THRESHOLD_SQ = 10 * 10;
 
 function WorkPlane({
   placed,
@@ -1810,13 +1832,21 @@ export function VirtualJoystick({
       if (e.pointerId !== pointerIdRef.current) return;
       release();
     }
+    function onBlur() {
+      // Safety net for "user switched apps mid-drag" — pointer events
+      // stop firing while backgrounded; without this the joystick can
+      // stay deflected when the visitor comes back.
+      if (activeRef.current) release();
+    }
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onEnd);
     window.addEventListener("pointercancel", onEnd);
+    window.addEventListener("blur", onBlur);
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onEnd);
       window.removeEventListener("pointercancel", onEnd);
+      window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1864,57 +1894,111 @@ function EntryOverlay({
   onEnter: () => void;
   isTouch: boolean;
 }) {
+  // Detect a short-viewport touch context (landscape phone, mostly) so
+  // the entry card can shed weight without harming portrait/desktop.
+  // Window dims aren't reactive on rotation by default — re-check on
+  // resize + orientationchange.
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function compute() {
+      const short = window.innerHeight < 520;
+      setCompact(isTouch && short);
+    }
+    compute();
+    window.addEventListener("resize", compute);
+    window.addEventListener("orientationchange", compute);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("orientationchange", compute);
+    };
+  }, [isTouch]);
+
   return (
     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-mna-white pointer-events-none px-5">
-      <div className="bg-black/55 backdrop-blur-[2px] border border-mna-white/15 px-7 sm:px-10 py-8 sm:py-9 max-w-[480px] w-full text-center pointer-events-auto">
-        <p className="text-[10px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-4">
-          Observation Field · Preview
+      <div
+        className={`bg-black/80 backdrop-blur-[3px] border border-mna-white/15 max-w-[480px] w-full text-center pointer-events-auto ${
+          compact
+            ? "px-6 py-5"
+            : "px-7 sm:px-10 py-8 sm:py-9"
+        }`}
+      >
+        <p
+          className={`font-sans uppercase tracking-[0.32em] text-mna-white/55 ${
+            compact ? "text-[9px] mb-2" : "text-[10px] mb-4"
+          }`}
+        >
+          Observation Field
         </p>
-        <h1 className="font-display text-[36px] sm:text-[42px] leading-[1.05] tracking-tight text-mna-white mb-5">
+        <h1
+          className={`font-display leading-[1.05] tracking-tight text-mna-white ${
+            compact ? "text-[26px] mb-3" : "text-[36px] sm:text-[42px] mb-5"
+          }`}
+        >
           Enter the Archive
         </h1>
-        <p className="text-[13px] text-mna-white/72 leading-[1.7] mb-7">
-          You are a visitor. Observe. Do not interfere.
-        </p>
+        {compact ? null : (
+          <p className="text-[13px] text-mna-white/72 leading-[1.7] mb-7">
+            You are a visitor. Observe. Do not interfere.
+          </p>
+        )}
         <button
           type="button"
           onClick={onEnter}
-          className="inline-flex items-center gap-3 bg-mna-white text-ink px-6 py-3 text-[10.5px] font-sans uppercase tracking-[0.26em] hover:bg-mna-white/90 transition-colors"
+          className={`inline-flex items-center gap-3 bg-mna-white text-ink font-sans uppercase tracking-[0.26em] hover:bg-mna-white/90 transition-colors ${
+            compact ? "px-5 py-2.5 text-[10px]" : "px-6 py-3 text-[10.5px]"
+          }`}
         >
           <span>Begin Observation</span>
           <span aria-hidden>→</span>
         </button>
-        <div className="mt-7 pt-6 border-t border-mna-white/15 grid grid-cols-2 gap-y-2 text-[10px] uppercase tracking-[0.22em] text-mna-white/55">
-          {isTouch ? (
-            <>
-              <span className="text-left">Joystick</span>
-              <span className="text-right">Move</span>
-              <span className="text-left">Drag</span>
-              <span className="text-right">Look</span>
-              <span className="text-left">Tap</span>
-              <span className="text-right">Open Work</span>
-            </>
+        <div
+          className={`border-t border-mna-white/15 text-[10px] uppercase tracking-[0.22em] text-mna-white/55 ${
+            compact ? "mt-4 pt-3" : "mt-7 pt-6"
+          }`}
+        >
+          {compact ? (
+            // Single dense row on landscape phones — every affordance
+            // visible at once without the grid.
+            <p className="text-[9px] tracking-[0.18em] text-mna-white/55">
+              Joystick · Drag · Tap
+            </p>
           ) : (
-            <>
-              <span className="text-left">W A S D</span>
-              <span className="text-right">Move</span>
-              <span className="text-left">Mouse</span>
-              <span className="text-right">Look</span>
-              <span className="text-left">Shift</span>
-              <span className="text-right">Walk Faster</span>
-              <span className="text-left">Click</span>
-              <span className="text-right">Open Work</span>
-              <span className="text-left">Esc</span>
-              <span className="text-right">Release</span>
-            </>
+            <div className="grid grid-cols-2 gap-y-2">
+              {isTouch ? (
+                <>
+                  <span className="text-left">Joystick</span>
+                  <span className="text-right">Move</span>
+                  <span className="text-left">Drag</span>
+                  <span className="text-right">Look</span>
+                  <span className="text-left">Tap</span>
+                  <span className="text-right">Open Work</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-left">W A S D</span>
+                  <span className="text-right">Move</span>
+                  <span className="text-left">Mouse</span>
+                  <span className="text-right">Look</span>
+                  <span className="text-left">Shift</span>
+                  <span className="text-right">Walk Faster</span>
+                  <span className="text-left">Click</span>
+                  <span className="text-right">Open Work</span>
+                  <span className="text-left">Esc</span>
+                  <span className="text-right">Release</span>
+                </>
+              )}
+            </div>
           )}
         </div>
-        <Link
-          href="/canon"
-          className="mt-6 inline-block text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white transition-colors"
-        >
-          Return to Canon →
-        </Link>
+        {compact ? null : (
+          <Link
+            href="/canon"
+            className="mt-6 inline-block text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white transition-colors"
+          >
+            Return to Canon →
+          </Link>
+        )}
       </div>
     </div>
   );

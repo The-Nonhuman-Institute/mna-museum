@@ -117,7 +117,7 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
       if (document.pointerLockElement) return; // browser releases lock
-      router.push("/museum/next");
+      router.push("/museum");
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -155,7 +155,10 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             onLock={() => setLocked(true)}
             onUnlock={() => setLocked(false)}
           />
-          <DragLook enabled={pointerLockFailed && started} />
+          <DragLook
+            enabled={pointerLockFailed && started}
+            isTouch={isTouch}
+          />
           <Movement
             enabled={locked || (pointerLockFailed && started)}
             joystickRef={joystickRef}
@@ -391,7 +394,7 @@ function ChamberEntry({
           )}
         </div>
         <Link
-          href="/museum/next"
+          href="/museum"
           className="mt-6 inline-block text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white transition-colors"
         >
           ← Return to The Archive
@@ -443,7 +446,7 @@ function ChamberHUD({
           ) : null}
           <div className="pointer-events-auto mt-3 pt-3 border-t border-mna-white/10">
             <Link
-              href="/museum/next"
+              href="/museum"
               className="text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55 hover:text-mna-white transition-colors"
             >
               ← Return to The Archive
