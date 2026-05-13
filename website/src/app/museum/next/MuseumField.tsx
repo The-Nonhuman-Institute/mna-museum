@@ -384,12 +384,14 @@ export default function MuseumField({ works }: MuseumFieldProps) {
       <div className="absolute inset-0" onClick={handleCanvasMaybeRelock}>
         <Canvas
           camera={{ fov: 70, near: 0.1, far: 240, position: [0, EYE_HEIGHT, 8] }}
-          // Cap the device pixel ratio. Retina screens default to 2-3×,
-          // which quadruples-to-9× every render target (main framebuffer,
-          // reflector, bloom chain). On a 1440p retina display dpr=2 means
-          // 5120×2880 buffers — a single OOM trigger. 1.5× is the sweet
-          // spot between crisp and stable.
-          dpr={[1, 1.5]}
+          // Cap the device pixel ratio.
+          // Desktop: up to 1.5× — sweet spot between crisp and stable.
+          // Mobile/touch: hard 1×. Phones run native 2-3×, so dpr=1 is
+          // a 4-9× fragment-cost reduction — the single biggest mobile
+          // perf win. Visually invisible because a 460ppi phone screen
+          // at dpr=1 still renders the 3D scene at ~150ppi (sharper
+          // than any 1440p desktop monitor).
+          dpr={isTouch ? 1 : [1, 1.5]}
           gl={{ antialias: true, powerPreference: "high-performance" }}
           // WebGL context loss (sleep/wake, OS GPU reset, memory pressure)
           // leaves Three.js in a state it can't always recover from cleanly
@@ -476,13 +478,18 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             workCount={works.length}
             locked={locked}
             otherObservers={others.length}
+            isTouch={isTouch}
           />
           <MinimapRadar
             telemetry={telemetry}
             centroids={centroids}
             currentCluster={currentCluster}
+            isTouch={isTouch}
           />
-          <SystemTimeStrip />
+          {/* System time is a luxury indicator on a phone — institutional
+              voice without functional payoff. Hidden on touch screens
+              to give the field back its real estate. */}
+          {!isTouch ? <SystemTimeStrip /> : null}
         </>
       ) : null}
 
@@ -502,7 +509,7 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             "Click anywhere to resume" prompt to re-engage. */}
       {started && !locked && !selectedWork ? (
         pointerLockFailed ? (
-          <DragControlsHint />
+          <DragControlsHint isTouch={isTouch} />
         ) : (
           <ResumeHint />
         )
@@ -1511,8 +1518,16 @@ function VirtualJoystick({
         release();
       }}
       onPointerCancel={() => release()}
-      className="pointer-events-auto absolute bottom-8 left-8 w-32 h-32 rounded-full border border-mna-white/25 bg-black/40 backdrop-blur-[2px] select-none z-20"
-      style={{ touchAction: "none" }}
+      className="pointer-events-auto absolute w-32 h-32 rounded-full border border-mna-white/25 bg-black/40 backdrop-blur-[2px] select-none z-20"
+      style={{
+        // iOS Safari floats its URL bar over the bottom of the viewport
+        // in landscape; without safe-area padding the home-indicator zone
+        // partially covers the joystick. calc(...) so we still have a
+        // visible margin on devices that report no inset.
+        bottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+        left: "calc(1.5rem + env(safe-area-inset-left))",
+        touchAction: "none",
+      }}
       aria-label="Movement joystick"
     >
       {/* Knob */}
@@ -1692,12 +1707,56 @@ function CanonFieldPanel({
   workCount,
   locked,
   otherObservers,
+  isTouch,
 }: {
   originatorCount: number;
   workCount: number;
   locked: boolean;
   otherObservers: number;
+  isTouch: boolean;
 }) {
+  // Touch devices have less room and the description paragraph reads as
+  // institutional bloat on first scan. Same typography, tighter
+  // container, no description. Aesthetic continuity preserved — it's
+  // the same card, just folded.
+  if (isTouch) {
+    return (
+      <div className="pointer-events-none absolute top-4 left-4 z-20 max-w-[220px]">
+        <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 px-4 py-3">
+          <p className="text-[9px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-1">
+            Canon Field
+          </p>
+          <p className="font-display italic text-[14px] leading-tight text-mna-white mb-2.5">
+            The Archive
+          </p>
+          <div className="flex items-center justify-between text-[8.5px] font-sans uppercase tracking-[0.22em] text-mna-white/55 pt-2 border-t border-mna-white/10">
+            <span>{workCount} · {originatorCount}</span>
+            <span className="inline-flex items-center gap-1">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${locked ? "bg-emerald-400" : "bg-mna-white/30"}`}
+                aria-hidden
+              />
+              {locked ? "Observing" : "Idle"}
+            </span>
+          </div>
+          {otherObservers > 0 ? (
+            <div className="mt-2 pt-2 border-t border-mna-white/10 text-[8.5px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
+              + {otherObservers} other{otherObservers === 1 ? "" : "s"}
+            </div>
+          ) : null}
+          <div className="pointer-events-auto mt-2 pt-2 border-t border-mna-white/10">
+            <Link
+              href="/canon"
+              className="text-[8.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55 hover:text-mna-white transition-colors"
+            >
+              ← Exit
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pointer-events-none absolute top-5 left-5 z-20 max-w-[290px]">
       <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 px-5 py-4">
@@ -1797,12 +1856,18 @@ function MinimapRadar({
   telemetry,
   centroids,
   currentCluster,
+  isTouch,
 }: {
   telemetry: { x: number; z: number; yaw: number };
   centroids: ClusterCentroid[];
   currentCluster: CurrentCluster | null;
+  isTouch: boolean;
 }) {
-  const half = MINIMAP_SIZE / 2;
+  // Same minimap, just sized for a phone. World→minimap mapping uses
+  // MINIMAP_RADIUS_M (unchanged) so dots represent the same world
+  // positions in both sizes.
+  const size = isTouch ? 120 : MINIMAP_SIZE;
+  const half = size / 2;
   // World → minimap pixel mapping. Visitor is always centered.
   // North-up: world +z extends down on the minimap, world -z is up.
   function toPx(worldX: number, worldZ: number) {
@@ -1813,8 +1878,8 @@ function MinimapRadar({
     return { x: px, y: py };
   }
   return (
-    <div className="pointer-events-none absolute top-5 right-5 z-20">
-      <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 p-3">
+    <div className={`pointer-events-none absolute z-20 ${isTouch ? "top-4 right-4" : "top-5 right-5"}`}>
+      <div className={`bg-black/60 backdrop-blur-[3px] border border-mna-white/15 ${isTouch ? "p-2.5" : "p-3"}`}>
         <div className="flex items-baseline justify-between mb-2 px-1">
           <p className="text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55">
             Field Map
@@ -1825,7 +1890,7 @@ function MinimapRadar({
         </div>
         <div
           className="relative rounded-full border border-mna-white/12 bg-black/40 overflow-hidden"
-          style={{ width: MINIMAP_SIZE, height: MINIMAP_SIZE }}
+          style={{ width: size, height: size }}
         >
           {/* Concentric guide rings */}
           <div className="absolute inset-0 rounded-full border border-mna-white/8" />
@@ -1855,9 +1920,9 @@ function MinimapRadar({
             const p = toPx(c.x, c.z);
             if (
               p.x < -8 ||
-              p.x > MINIMAP_SIZE + 8 ||
+              p.x > size + 8 ||
               p.y < -8 ||
-              p.y > MINIMAP_SIZE + 8
+              p.y > size + 8
             )
               return null;
             const tint = originatorTint(c.id);
@@ -1961,13 +2026,26 @@ function ResumeHint() {
 
 /** Drag-mode controls hint. Shown when Pointer Lock is unavailable
  *  (Atlas, sandboxed iframes, touch devices). The field is fully
- *  usable in this mode — drag to look, WASD/touch to walk, click to
- *  open. */
-function DragControlsHint() {
+ *  usable in this mode — drag to look, joystick/WASD to walk, tap/
+ *  click to open. Fades out after a few seconds so it stops competing
+ *  with the field. */
+function DragControlsHint({ isTouch }: { isTouch: boolean }) {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 4500);
+    return () => clearTimeout(t);
+  }, []);
+  const copy = isTouch
+    ? "Drag to look · Joystick to walk"
+    : "Drag to look · WASD to walk · Esc to exit";
   return (
-    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20">
+    <div
+      className={`pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20 transition-opacity duration-700 ${
+        visible ? "opacity-100" : "opacity-0"
+      }`}
+    >
       <div className="bg-black/60 border border-mna-white/15 px-4 py-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/75">
-        Drag to look · WASD to walk · Esc to exit
+        {copy}
       </div>
     </div>
   );
