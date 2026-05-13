@@ -1,59 +1,53 @@
 "use client";
 
 /**
- * MuseumField — week 2.
+ * MuseumField — observation field.
  *
- * The void is now populated. Canonized works are placed across the
- * field in seeded clusters around each originator's centroid, rendered
- * as billboarded textured planes using their preview PNGs. Hovering a
- * work surfaces a small contextual readout at the bottom-left of the
- * HUD; clicks navigate to the public work page.
+ * Visitors walk through a procedurally placed canon. Each canonized
+ * work appears in seeded position around its originator's cluster.
+ * Flat works hang at eye-level as billboarded textured planes;
+ * scene-json sculptures stand on plinths with their real 3D geometry.
  *
- * Key design decisions:
+ * State model (rewritten — two states, two truths):
  *
- *   - Positions are seeded from `work.id`, so the field is identical
- *     across page loads. A visitor's mental map of "where the
- *     Kuramoto piece is" survives a reload.
+ *   `started`  one-way: false → true the moment the visitor first
+ *              hits "Begin Observation". Sticky. Drives whether the
+ *              entry overlay is on screen.
  *
- *   - Works are clustered by originator: each originator gets a
- *     centroid on a ring around the spawn point. The visitor walks
- *     between distinct neighborhoods, each implicitly authored.
+ *   `locked`   mirrors document.pointerLockElement. Updated by
+ *              Drei's PointerLockControls onLock/onUnlock callbacks.
+ *              Drives WASD movement, the reticle, the resume hint,
+ *              and the hover readout.
  *
- *   - Heights vary 1.2-3.4m. Pictures hang at human eye-level mostly,
- *     with some sitting higher to break the rhythm.
+ *   `selectedWork`  the in-museum work overlay. Opening a work
+ *              releases pointer-lock but does NOT clear `started`.
  *
- *   - Billboarding: works face the camera at all times so the visitor
- *     reads the image flat. Without billboarding the previews
- *     foreshorten and look like paintings, not artifacts in space —
- *     wrong metaphor for an Originator's output.
- *
- *   - Textures are loaded via React Three Fiber's `useLoader`. The
- *     browser handles caching. Each work suspends on its own; the
- *     whole field doesn't block on any single texture.
+ * The previous implementation conflated started + locked into one
+ * `entered` boolean and tried to imperatively call requestPointerLock
+ * inside the Begin gesture. That raced with Drei's controls and could
+ * leave the visitor stuck on the entry overlay. The new model puts
+ * the controls in charge of the lock state and lets the React state
+ * trail what the browser actually did.
  */
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { PointerLockControls, Grid, Billboard } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { TextureLoader } from "three";
-import { useLoader } from "@react-three/fiber";
 import Link from "next/link";
 
 const EYE_HEIGHT = 1.7;
 const WALK_SPEED = 4.5;
 const SPRINT_SPEED = 8.5;
-// Spacing — keeps clusters dense enough that walking around a group
-// reveals different pieces at different angles (museum charm), but
-// uses a min-distance retry so works don't literally overlap.
-const RING_RADIUS = 28; // originator centroids on a circle this far from spawn
-const CLUSTER_RADIUS = 9; // works scatter this far from their centroid
-const MIN_WORK_DISTANCE = 2.5; // minimum 3D distance between any two works
-const PLACEMENT_RETRIES = 24; // how many times to re-roll a position
+const RING_RADIUS = 28;
+const CLUSTER_RADIUS = 9;
+const MIN_WORK_DISTANCE = 2.5;
+const PLACEMENT_RETRIES = 24;
 const HEIGHT_MIN = 1.2;
 const HEIGHT_MAX = 3.4;
-const WORK_BASE_SIZE = 2.2; // metres edge of a square work in 3D
-const SCULPTURE_TARGET = 2.4; // metres — longest bbox edge after scaling
+const WORK_BASE_SIZE = 2.2;
+const SCULPTURE_TARGET = 2.4;
 const PLINTH_HEIGHT = 0.9;
 const HOVER_TINT = "#cdb798";
 
@@ -66,13 +60,12 @@ export interface FieldWork {
   output_type: string;
   canon_date: string | null;
   phase_at_submission: string | null;
-  /** Full 3D scene payload — only present for scene-json works. */
   scene_payload?: string | null;
 }
 
 interface PlacedWork extends FieldWork {
   position: [number, number, number];
-  size: number; // edge length, slight variation per work
+  size: number;
   isSculpture: boolean;
 }
 
@@ -80,81 +73,110 @@ interface MuseumFieldProps {
   works: FieldWork[];
 }
 
+// Drei's PointerLockControls ref exposes the underlying Three.js
+// instance with lock()/unlock(). We don't need the full type.
+type PLCHandle = { lock: () => void; unlock: () => void } | null;
+
 export default function MuseumField({ works }: MuseumFieldProps) {
-  const [entered, setEntered] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [locked, setLocked] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  // Modal state — when set, the in-museum overlay is shown over the
-  // canvas and pointer-lock is released. The visitor stays in the
-  // museum; the overlay is just a closer look + a doorway to the
-  // full institutional record.
   const [selectedWork, setSelectedWork] = useState<PlacedWork | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  const controlsRef = useRef<PLCHandle>(null);
+  // Refs mirror state so the canvas-click handler (which captures
+  // its closure once) can read fresh values without re-binding.
+  const lockedRef = useRef(false);
+  const selectedRef = useRef<PlacedWork | null>(null);
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
+  useEffect(() => {
+    selectedRef.current = selectedWork;
+  }, [selectedWork]);
 
   const placed = useMemo(() => placeWorks(works), [works]);
   const hovered = hoveredId ? placed.find((w) => w.id === hoveredId) : null;
 
-  // Begin Observation — request pointer-lock SYNCHRONOUSLY inside the
-  // click handler so we don't burn the user gesture by waiting for
-  // React to mount PointerLockControls. The browser will hand the lock
-  // back via pointerlockchange events that Drei's controls listen for,
-  // so the controls (mounted via `entered=true` on the next render)
-  // pick up the already-locked state and just work.
   function handleBegin() {
-    const canvas = containerRef.current?.querySelector("canvas");
-    if (canvas && typeof canvas.requestPointerLock === "function") {
-      // requestPointerLock returns a Promise in Chrome 102+ but isn't
-      // required to be awaited — the lock takes effect synchronously.
-      canvas.requestPointerLock();
+    setStarted(true);
+    // We're inside the click gesture — safe to request pointer-lock.
+    // If it fails for any reason, started is already true, so the
+    // visitor at least sees the canvas and can click again.
+    try {
+      controlsRef.current?.lock();
+    } catch {
+      // ignored
     }
-    setEntered(true);
   }
 
-  // Opening a work modal releases pointer-lock so the visitor can
-  // interact with the overlay. Closing it doesn't auto-re-lock —
-  // they click the canvas to resume walking (browser security: lock
-  // must come from a user gesture, and an Esc-dismissed modal is
-  // not one).
   function openWork(work: PlacedWork) {
-    if (typeof document !== "undefined" && document.pointerLockElement) {
-      document.exitPointerLock();
+    // Releasing the lock so the visitor can interact with the modal.
+    // The onUnlock callback will update `locked` to false.
+    try {
+      controlsRef.current?.unlock();
+    } catch {
+      // ignored
     }
     setSelectedWork(work);
   }
 
+  // Click the canvas to resume walking. Only re-engages lock when:
+  // visitor has started, isn't already locked, and no modal is open.
+  // We read from refs so any in-flight state updates from a work-
+  // click in the same event don't cause a double-action.
+  function handleCanvasMaybeRelock() {
+    if (!started) return;
+    if (lockedRef.current) return;
+    if (selectedRef.current) return;
+    try {
+      controlsRef.current?.lock();
+    } catch {
+      // ignored
+    }
+  }
+
   return (
-    <div ref={containerRef} className="fixed inset-0 bg-black">
-      <Canvas
-        camera={{ fov: 70, near: 0.1, far: 240, position: [0, EYE_HEIGHT, 8] }}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
-      >
-        <Scene>
-          <WorksField
-            placed={placed}
-            onHover={setHoveredId}
-            onSelect={openWork}
+    <div className="fixed inset-0 bg-black">
+      {/* Canvas + its click area. Clicks here re-lock when applicable. */}
+      <div className="absolute inset-0" onClick={handleCanvasMaybeRelock}>
+        <Canvas
+          camera={{ fov: 70, near: 0.1, far: 240, position: [0, EYE_HEIGHT, 8] }}
+          gl={{ antialias: true, powerPreference: "high-performance" }}
+        >
+          <Scene>
+            <WorksField
+              placed={placed}
+              onHover={setHoveredId}
+              onSelect={openWork}
+            />
+          </Scene>
+          <PointerLockControls
+            ref={(r) => {
+              controlsRef.current = r as PLCHandle;
+            }}
+            onLock={() => setLocked(true)}
+            onUnlock={() => setLocked(false)}
           />
-        </Scene>
-        {entered ? <Controls onExit={() => setEntered(false)} /> : null}
-      </Canvas>
+          <Movement enabled={locked} />
+        </Canvas>
+      </div>
 
-      {!entered ? <EntryOverlay onEnter={handleBegin} /> : null}
+      {/* Entry overlay — only visible until first Begin. */}
+      {!started ? <EntryOverlay onEnter={handleBegin} /> : null}
 
-      {entered && hovered && !selectedWork ? (
-        <HoverReadout work={hovered} />
-      ) : null}
+      {/* Hover readout — only while walking, never over a modal. */}
+      {locked && hovered && !selectedWork ? <HoverReadout work={hovered} /> : null}
+
+      {/* Crosshair — visible only while pointer is locked. */}
+      {locked && !selectedWork ? <Reticle /> : null}
+
+      {/* Resume hint — started but not locked and no modal showing. */}
+      {started && !locked && !selectedWork ? <ResumeHint /> : null}
 
       <FooterLine />
 
-      {entered && !selectedWork ? <Reticle /> : null}
-
-      {/* Resume-hint surfaces when the visitor closes a modal but
-          isn't pointer-locked yet — tells them they can click to
-          start walking again. */}
-      {entered && !selectedWork && typeof document !== "undefined" ? (
-        <ResumeHint />
-      ) : null}
-
-      {/* In-museum work overlay. */}
+      {/* In-museum work overlay (Option A). */}
       {selectedWork ? (
         <WorkOverlay
           work={selectedWork}
@@ -172,10 +194,8 @@ function Scene({ children }: { children: React.ReactNode }) {
     <>
       <color attach="background" args={["#0a0908"]} />
       <fog attach="fog" args={["#0a0908", 18, 140]} />
-
       <ambientLight intensity={0.18} color="#cdd7e0" />
       <directionalLight position={[40, 30, 10]} intensity={0.35} color="#d8c4a0" />
-
       <Grid
         position={[0, 0, 0]}
         args={[400, 400]}
@@ -189,11 +209,9 @@ function Scene({ children }: { children: React.ReactNode }) {
         fadeStrength={1.5}
         infiniteGrid
       />
-
       <HorizonBeam position={[0, 0, -80]} />
       <HorizonBeam position={[80, 0, -30]} dim />
       <HorizonBeam position={[-90, 0, 20]} dim />
-
       {children}
     </>
   );
@@ -246,8 +264,6 @@ function WorksField({
   );
 }
 
-/** Light grey square shown until the texture loads. Keeps the field
- *  from popping in violently. */
 function PlaceholderPlane({ placed }: { placed: PlacedWork }) {
   return (
     <Billboard position={placed.position} follow lockX={false} lockY={false} lockZ={false}>
@@ -271,7 +287,6 @@ function WorkPlane({
   const texture = useLoader(TextureLoader, `/previews/${placed.id}.png`);
   const [hovered, setHovered] = useState(false);
 
-  // Crisp pixel-perfect texture without color shift.
   useEffect(() => {
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = 8;
@@ -283,11 +298,15 @@ function WorkPlane({
 
   return (
     <Billboard position={placed.position} follow lockX={false} lockY={false} lockZ={false}>
-      {/* Hover halo — faint warm ring behind the work. */}
       {hovered ? (
         <mesh position={[0, 0, -0.01]}>
           <planeGeometry args={[halo, halo]} />
-          <meshBasicMaterial color={HOVER_TINT} transparent opacity={0.32} toneMapped={false} />
+          <meshBasicMaterial
+            color={HOVER_TINT}
+            transparent
+            opacity={0.32}
+            toneMapped={false}
+          />
         </mesh>
       ) : null}
 
@@ -303,6 +322,9 @@ function WorkPlane({
         }}
         onClick={(e) => {
           e.stopPropagation();
+          // Also stop the underlying DOM click from bubbling to the
+          // canvas wrapper (which would try to re-lock the cursor).
+          e.nativeEvent.stopPropagation();
           onSelect(placed);
         }}
       >
@@ -353,7 +375,6 @@ function SceneSculpture({
     if (!parsed || !parsed.objects || parsed.objects.length === 0) {
       return { scene: null, center: [0, 0, 0] as const, scale: 1 };
     }
-    // Bounding box across all objects, accounting for position + half-scale.
     const mn = [Infinity, Infinity, Infinity];
     const mx = [-Infinity, -Infinity, -Infinity];
     for (const o of parsed.objects) {
@@ -379,31 +400,15 @@ function SceneSculpture({
     return <PlaceholderPlane placed={placed} />;
   }
 
-  // Plinth top y = PLINTH_HEIGHT; we place the centered-and-scaled
-  // group with its bbox-bottom on that y. Sculpture vertical span:
-  // ((maxY - minY) * scale).
-  const groupYBottom =
-    PLINTH_HEIGHT + 0.02; // a hair above the plinth surface
-  const sculptureGroupY = groupYBottom - (center[1] - (center[1])) * 0; // bbox-bottom set below via inner offset
-
   return (
     <group position={placed.position}>
-      {/* Plinth */}
-      <mesh position={[0, PLINTH_HEIGHT / 2, 0]} castShadow receiveShadow>
+      <mesh position={[0, PLINTH_HEIGHT / 2, 0]}>
         <boxGeometry args={[1.6, PLINTH_HEIGHT, 1.6]} />
-        <meshStandardMaterial
-          color="#1a1714"
-          metalness={0.15}
-          roughness={0.88}
-        />
+        <meshStandardMaterial color="#1a1714" metalness={0.15} roughness={0.88} />
       </mesh>
 
-      {/* Hover halo (soft warm ground glow under the plinth) */}
       {hovered ? (
-        <mesh
-          position={[0, 0.01, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[1.0, 2.4, 32]} />
           <meshBasicMaterial
             color={HOVER_TINT}
@@ -414,14 +419,8 @@ function SceneSculpture({
         </mesh>
       ) : null}
 
-      {/* Sculpture itself — recentered + scaled to fit. Interactive
-          group: hover/click here so the entire piece is the target. */}
       <group
-        position={[
-          -center[0] * scale,
-          sculptureGroupY,
-          -center[2] * scale,
-        ]}
+        position={[-center[0] * scale, PLINTH_HEIGHT + 0.02, -center[2] * scale]}
         scale={scale}
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -434,6 +433,7 @@ function SceneSculpture({
         }}
         onClick={(e) => {
           e.stopPropagation();
+          e.nativeEvent.stopPropagation();
           onSelect(placed);
         }}
       >
@@ -485,8 +485,6 @@ function geomForShape(shape: SceneObjectSpec["shape"]) {
 /* ─── Placement ──────────────────────────────────────────────────────────── */
 
 function placeWorks(works: FieldWork[]): PlacedWork[] {
-  // Group by originator, then assign each originator a fixed angular
-  // slot on a ring around the spawn point.
   const grouped = new Map<string, FieldWork[]>();
   for (const w of works) {
     const arr = grouped.get(w.originator_id) ?? [];
@@ -510,19 +508,15 @@ function placeWorks(works: FieldWork[]): PlacedWork[] {
     const rng = seededRandom(w.id);
     const isSculpture = w.output_type === "scene-json" && Boolean(w.scene_payload);
 
-    // Pick a position with retries to keep works from overlapping.
-    // Sculptures count too, so a 3m-tall piece on a plinth gets a clear
-    // walkable gap to any neighbouring painting.
     let x = cx, y = 0, z = cz;
     for (let attempt = 0; attempt < PLACEMENT_RETRIES; attempt++) {
-      const r = Math.sqrt(rng()) * CLUSTER_RADIUS; // sqrt → even area density
+      const r = Math.sqrt(rng()) * CLUSTER_RADIUS;
       const a = rng() * Math.PI * 2;
       const tx = cx + Math.cos(a) * r;
       const tz = cz + Math.sin(a) * r;
       const ty = isSculpture
         ? 0
         : HEIGHT_MIN + rng() * (HEIGHT_MAX - HEIGHT_MIN);
-      // Check spacing against everything already placed.
       let ok = true;
       for (const p of placed) {
         const dx = p.position[0] - tx;
@@ -533,17 +527,11 @@ function placeWorks(works: FieldWork[]): PlacedWork[] {
           break;
         }
       }
-      if (ok) {
+      if (ok || attempt === PLACEMENT_RETRIES - 1) {
         x = tx;
         y = ty;
         z = tz;
-        break;
-      }
-      // last attempt: accept the latest candidate anyway
-      if (attempt === PLACEMENT_RETRIES - 1) {
-        x = tx;
-        y = ty;
-        z = tz;
+        if (ok) break;
       }
     }
 
@@ -553,8 +541,6 @@ function placeWorks(works: FieldWork[]): PlacedWork[] {
   return placed;
 }
 
-/** Mulberry32 — small, fast deterministic PRNG. Seed comes from a
- *  string hash of the work id so positions are stable per work. */
 function seededRandom(seed: string): () => number {
   let a = stringHash(seed);
   return () => {
@@ -575,16 +561,18 @@ function stringHash(s: string): number {
   return h >>> 0;
 }
 
-/* ─── Controls ───────────────────────────────────────────────────────────── */
+/* ─── Movement (WASD) ────────────────────────────────────────────────────── */
 
-function Controls({ onExit }: { onExit: () => void }) {
+/** Walks the camera in its horizontal frame based on key state. Gated
+ *  by `enabled` so the visitor doesn't slide around while a modal is
+ *  open or before they begin observation. */
+function Movement({ enabled }: { enabled: boolean }) {
   const keys = useRef<Record<string, boolean>>({});
   const { camera } = useThree();
 
   useEffect(() => {
     function down(e: KeyboardEvent) {
       keys.current[e.code] = true;
-      if (e.code === "Escape") onExit();
     }
     function up(e: KeyboardEvent) {
       keys.current[e.code] = false;
@@ -595,9 +583,10 @@ function Controls({ onExit }: { onExit: () => void }) {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, [onExit]);
+  }, []);
 
   useFrame((_, dt) => {
+    if (!enabled) return;
     const k = keys.current;
     const forward =
       Number(k.KeyW || k.ArrowUp || 0) - Number(k.KeyS || k.ArrowDown || 0);
@@ -621,7 +610,7 @@ function Controls({ onExit }: { onExit: () => void }) {
     camera.position.y = EYE_HEIGHT;
   });
 
-  return <PointerLockControls onUnlock={onExit} />;
+  return null;
 }
 
 /* ─── HUD pieces ─────────────────────────────────────────────────────────── */
@@ -693,7 +682,7 @@ function HoverReadout({ work }: { work: PlacedWork }) {
   );
 }
 
-function originatorLabel(w: PlacedWork): string {
+function originatorLabel(w: FieldWork): string {
   const name = (w.originator_name || "").trim();
   if (
     name &&
@@ -727,22 +716,7 @@ function FooterLine() {
 
 /* ─── Resume hint ────────────────────────────────────────────────────────── */
 
-/** Bottom-center cue after a modal closes — tells the visitor they
- *  can click the canvas to re-engage pointer-lock and resume walking.
- *  Only shows when we're "entered" but not currently locked. Pointer-
- *  lock state isn't a React thing, so we poll cheaply via a small
- *  interval. The element auto-hides as soon as lock returns. */
 function ResumeHint() {
-  const [locked, setLocked] = useState(true);
-  useEffect(() => {
-    function check() {
-      setLocked(Boolean(document.pointerLockElement));
-    }
-    check();
-    document.addEventListener("pointerlockchange", check);
-    return () => document.removeEventListener("pointerlockchange", check);
-  }, []);
-  if (locked) return null;
   return (
     <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20">
       <div className="bg-black/60 border border-mna-white/15 px-4 py-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/75">
@@ -754,11 +728,6 @@ function ResumeHint() {
 
 /* ─── Work overlay (Option A — in-museum modal) ──────────────────────────── */
 
-/** Fullscreen dim overlay surfaced when a visitor clicks on a work in
- *  the field. The museum scene keeps rendering behind it (semi-dimmed
- *  via backdrop opacity). Esc / backdrop click closes; "View Full
- *  Record" leaves the museum and lands the visitor on the work's
- *  provenance page. */
 function WorkOverlay({
   work,
   onClose,
@@ -807,7 +776,6 @@ function WorkOverlay({
         className="relative bg-ink/95 border border-mna-white/15 max-w-[860px] w-[92vw] max-h-[88vh] flex flex-col md:flex-row overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Preview side */}
         <div className="md:w-[420px] aspect-square md:aspect-auto bg-[#0a0908] flex items-center justify-center flex-shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -817,7 +785,6 @@ function WorkOverlay({
           />
         </div>
 
-        {/* Metadata + actions side */}
         <div className="flex-1 p-7 md:p-9 flex flex-col">
           <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/55 mb-3">
             Observation · {statusLabel}
@@ -835,11 +802,7 @@ function WorkOverlay({
               <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
                 Originator
               </dt>
-              <dd className="text-mna-white/85">
-                {originatorLabel({
-                  ...work,
-                })}
-              </dd>
+              <dd className="text-mna-white/85">{originatorLabel(work)}</dd>
             </div>
             <div>
               <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
@@ -851,9 +814,7 @@ function WorkOverlay({
               <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
                 Phase
               </dt>
-              <dd className="text-mna-white/85">
-                {work.phase_at_submission || "I"}
-              </dd>
+              <dd className="text-mna-white/85">{work.phase_at_submission || "I"}</dd>
             </div>
             <div>
               <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
