@@ -47,6 +47,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { TextureLoader } from "three";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const EYE_HEIGHT = 1.7;
 const WALK_SPEED = 4.5;
@@ -61,6 +62,26 @@ const WORK_BASE_SIZE = 2.2;
 const SCULPTURE_TARGET = 2.4;
 const PLINTH_HEIGHT = 0.9;
 const HOVER_TINT = "#cdb798";
+
+// Per-originator tint palette. Each originator gets one of these based
+// on a stable hash of its registry id, so walking between clusters
+// feels like walking between palettes ("realms") without needing
+// separate scenes. Constrained to the institutional warm/cool family
+// — none of these clash with each other or the bone/ink chrome.
+const ORIGINATOR_TINTS = [
+  "#e6c890", // warm amber
+  "#a5c4d8", // cool slate
+  "#cab69c", // dusty bone
+  "#d8b0a0", // peach
+  "#9fb8a8", // sage
+  "#c8a4be", // mauve
+  "#b8a890", // tan
+  "#a6abc2", // pale violet
+];
+
+function originatorTint(id: string): string {
+  return ORIGINATOR_TINTS[stringHash(id) % ORIGINATOR_TINTS.length];
+}
 
 export interface FieldWork {
   id: string;
@@ -108,6 +129,69 @@ export default function MuseumField({ works }: MuseumFieldProps) {
 
   const placed = useMemo(() => placeWorks(works), [works]);
   const hovered = hoveredId ? placed.find((w) => w.id === hoveredId) : null;
+
+  // Camera telemetry for the HUD minimap. Inside Canvas, the
+  // Telemetry component reads camera position + yaw and writes them
+  // into this ref every frame; a separate interval lifts the ref into
+  // React state at ~10Hz so the minimap re-renders smoothly without
+  // tanking framerate.
+  const telemetryRef = useRef({ x: 0, z: 8, yaw: 0 });
+  const [telemetry, setTelemetry] = useState({ x: 0, z: 8, yaw: 0 });
+  useEffect(() => {
+    const id = setInterval(() => {
+      const t = telemetryRef.current;
+      setTelemetry({ x: t.x, z: t.z, yaw: t.yaw });
+    }, 100);
+    return () => clearInterval(id);
+  }, []);
+
+  // Originator centroids (for the minimap). Memoize once.
+  const centroids = useMemo(() => {
+    const grouped = new Map<string, FieldWork[]>();
+    for (const w of works) {
+      const a = grouped.get(w.originator_id) ?? [];
+      a.push(w);
+      grouped.set(w.originator_id, a);
+    }
+    const ids = Array.from(grouped.keys()).sort();
+    return ids.map((id, i) => {
+      const angle = (i / Math.max(1, ids.length)) * Math.PI * 2;
+      return {
+        id,
+        x: Math.cos(angle) * RING_RADIUS,
+        z: Math.sin(angle) * RING_RADIUS,
+        count: grouped.get(id)!.length,
+      };
+    });
+  }, [works]);
+
+  // E / R key handlers — operate on whatever the visitor is currently
+  // looking at (hoveredId). Only active when pointer-locked and no
+  // modal is open. E opens the in-museum overlay (same as click), R
+  // navigates straight to the work's provenance.
+  const router = useRouter();
+  const hoveredRef = useRef<PlacedWork | null>(null);
+  useEffect(() => {
+    hoveredRef.current = hovered ?? null;
+  }, [hovered]);
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!lockedRef.current) return;
+      if (selectedRef.current) return;
+      const h = hoveredRef.current;
+      if (!h) return;
+      if (e.code === "KeyE") {
+        e.preventDefault();
+        openWork(h);
+      } else if (e.code === "KeyR") {
+        e.preventDefault();
+        router.push(`/work/${h.id}/provenance?from=museum`);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleBegin() {
     setStarted(true);
@@ -170,6 +254,7 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             onUnlock={() => setLocked(false)}
           />
           <Movement enabled={locked} />
+          <Telemetry telemetryRef={telemetryRef} />
 
           {/* Atmosphere: bloom around emissive things (horizon beams,
               bright stars, sculpture haloes). Vignette is now very
@@ -190,18 +275,38 @@ export default function MuseumField({ works }: MuseumFieldProps) {
       {/* Entry overlay — only visible until first Begin. */}
       {!started ? <EntryOverlay onEnter={handleBegin} /> : null}
 
-      {/* Hover readout — only while walking, never over a modal. */}
-      {locked && hovered && !selectedWork ? <HoverReadout work={hovered} /> : null}
+      {/* Persistent HUD — visible whenever the visitor is in the
+          observation field (started + no entry overlay). Each panel
+          hides during the work modal so the visitor's full attention
+          is on the work. */}
+      {started && !selectedWork ? (
+        <>
+          <CanonFieldPanel
+            originatorCount={centroids.length}
+            workCount={works.length}
+            locked={locked}
+          />
+          <MinimapRadar
+            telemetry={telemetry}
+            centroids={centroids}
+          />
+          <SystemTimeStrip />
+        </>
+      ) : null}
 
-      {/* Crosshair — visible only while pointer is locked. */}
+      {/* Focused-work card — bottom-center, only when looking at
+          something. Replaces the previous bottom-left HoverReadout and
+          adds E / R keyboard hints. */}
+      {locked && hovered && !selectedWork ? (
+        <FocusedWorkCard work={hovered} />
+      ) : null}
+
       {locked && !selectedWork ? <Reticle /> : null}
 
-      {/* Resume hint — started but not locked and no modal showing. */}
       {started && !locked && !selectedWork ? <ResumeHint /> : null}
 
       <FooterLine />
 
-      {/* In-museum work overlay (Option A). */}
       {selectedWork ? (
         <WorkOverlay
           work={selectedWork}
@@ -210,6 +315,27 @@ export default function MuseumField({ works }: MuseumFieldProps) {
       ) : null}
     </div>
   );
+}
+
+/* ─── Telemetry (camera → HUD ref) ───────────────────────────────────────── */
+
+function Telemetry({
+  telemetryRef,
+}: {
+  telemetryRef: React.MutableRefObject<{ x: number; z: number; yaw: number }>;
+}) {
+  const { camera } = useThree();
+  useFrame(() => {
+    // Yaw extracted from the camera's local forward vector projected
+    // to the horizontal plane. atan2 gives 0 = -Z (forward), pi/2 = +X.
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd);
+    const yaw = Math.atan2(fwd.x, -fwd.z);
+    telemetryRef.current.x = camera.position.x;
+    telemetryRef.current.z = camera.position.z;
+    telemetryRef.current.yaw = yaw;
+  });
+  return null;
 }
 
 /* ─── Scene ──────────────────────────────────────────────────────────────── */
@@ -460,15 +586,17 @@ function WorkPlane({
   const size = placed.size;
   const halo = size * 1.06;
 
+  const tint = originatorTint(placed.originator_id);
+
   return (
     <Billboard position={placed.position} follow lockX={false} lockY={false} lockZ={false}>
       {hovered ? (
         <mesh position={[0, 0, -0.01]}>
           <planeGeometry args={[halo, halo]} />
           <meshBasicMaterial
-            color={HOVER_TINT}
+            color={tint}
             transparent
-            opacity={0.32}
+            opacity={0.42}
             toneMapped={false}
           />
         </mesh>
@@ -578,26 +706,26 @@ function SceneSculpture({
         />
       </mesh>
 
-      {/* Sculpture spotlight — warm gallery-style key light directly
-          above the piece. Tight falloff so the surrounding void stays
-          dark; only the sculpture and the plinth top are lit. */}
+      {/* Sculpture spotlight — per-originator tinted key light above
+          the piece. Visitors walking across the field cross between
+          warm and cool pools of light depending on whose region they
+          enter. Tight falloff so the surrounding void stays dark. */}
       <pointLight
         position={[0, 3.4, 0]}
         intensity={1.6}
-        color="#f0d9a8"
+        color={originatorTint(placed.originator_id)}
         distance={5.2}
         decay={1.6}
       />
 
-      {/* Soft ground glow — always-on warm ring under the plinth so
-          sculptures don't sit in a void at a distance. Hover deepens
-          it. */}
+      {/* Soft ground glow — always-on tinted ring under the plinth.
+          Hover flips to the warm hover tint regardless of region. */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.95, 2.1, 48]} />
         <meshBasicMaterial
-          color={hovered ? HOVER_TINT : "#a78458"}
+          color={hovered ? HOVER_TINT : originatorTint(placed.originator_id)}
           transparent
-          opacity={hovered ? 0.42 : 0.18}
+          opacity={hovered ? 0.45 : 0.16}
           toneMapped={false}
         />
       </mesh>
@@ -842,26 +970,61 @@ function EntryOverlay({ onEnter }: { onEnter: () => void }) {
   );
 }
 
-function HoverReadout({ work }: { work: PlacedWork }) {
+/** Bottom-center card surfaced whenever the visitor is looking at a
+ *  work. Replaces the old bottom-left HoverReadout and adds keyboard
+ *  shortcuts so the visitor can act without unlocking the cursor. */
+function FocusedWorkCard({ work }: { work: PlacedWork }) {
+  const tint = originatorTint(work.originator_id);
   return (
-    <div className="pointer-events-none absolute left-6 bottom-12 z-20 max-w-[360px]">
-      <div className="bg-black/55 backdrop-blur-[2px] border border-mna-white/15 px-5 py-4">
-        <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 mb-1.5">
-          {work.id}
-        </p>
+    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 z-20 max-w-[520px] w-[88vw]">
+      <div className="bg-black/68 backdrop-blur-[3px] border border-mna-white/15 px-6 py-4">
+        <div className="flex items-baseline gap-3 mb-1.5">
+          <span
+            aria-hidden
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: tint }}
+          />
+          <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
+            {work.id}
+          </p>
+          {work.canon_date ? (
+            <p className="ml-auto text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/45">
+              Canonized
+            </p>
+          ) : null}
+        </div>
         {work.title ? (
-          <p className="font-display italic text-[18px] leading-tight text-mna-white mb-1.5">
+          <p className="font-display italic text-[20px] leading-tight text-mna-white mb-1">
             {work.title}
           </p>
         ) : null}
-        <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/65">
+        <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/70 mb-3.5">
           {originatorLabel(work)} · {work.medium || work.output_type}
         </p>
-        <p className="mt-3 text-[9.5px] font-sans uppercase tracking-[0.24em] text-mna-white/45">
-          Click to open
-        </p>
+        <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-mna-white/10 text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
+          <span className="inline-flex items-center gap-2">
+            <KeyCap label="E" />
+            Observe
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <KeyCap label="R" />
+            Trace Origin
+          </span>
+          <span className="ml-auto text-mna-white/35">or click</span>
+        </div>
       </div>
     </div>
+  );
+}
+
+function KeyCap({ label }: { label: string }) {
+  return (
+    <span
+      className="inline-block min-w-[18px] text-center px-1.5 py-0.5 border border-mna-white/35 text-mna-white/80 text-[9px] tracking-[0.06em] uppercase"
+      aria-hidden
+    >
+      {label}
+    </span>
   );
 }
 
@@ -893,6 +1056,198 @@ function FooterLine() {
     <div className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-between items-center px-6 text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40">
       <span>The Observer is Human. We Observe. We Do Not Interfere.</span>
       <span>Museum of Nonhuman Art</span>
+    </div>
+  );
+}
+
+/* ─── Canon Field panel (top-left) ───────────────────────────────────────── */
+
+function CanonFieldPanel({
+  originatorCount,
+  workCount,
+  locked,
+}: {
+  originatorCount: number;
+  workCount: number;
+  locked: boolean;
+}) {
+  return (
+    <div className="pointer-events-none absolute top-5 left-5 z-20 max-w-[290px]">
+      <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 px-5 py-4">
+        <p className="text-[10px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-1.5">
+          Canon Field
+        </p>
+        <p className="font-display italic text-[16px] leading-tight text-mna-white mb-3">
+          The Archive
+        </p>
+        <p className="text-[11px] leading-[1.55] text-mna-white/65 mb-4">
+          A navigable space for observing the emergence of nonhuman
+          creativity. Walk the canon; each work stands where it was
+          placed by the institution.
+        </p>
+        <div className="flex items-center justify-between text-[9.5px] font-sans uppercase tracking-[0.22em] text-mna-white/55 pt-3 border-t border-mna-white/10">
+          <span>
+            {workCount} works · {originatorCount} originators
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${locked ? "bg-emerald-400" : "bg-mna-white/30"}`}
+              aria-hidden
+            />
+            {locked ? "Observing" : "Idle"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── System Time strip (bottom-right) ───────────────────────────────────── */
+
+function SystemTimeStrip() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const date = now.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const time = now.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  });
+  return (
+    <div className="pointer-events-none absolute bottom-12 right-5 z-20">
+      <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 px-5 py-4 min-w-[180px] text-right">
+        <p className="text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55 mb-1.5">
+          System Time
+        </p>
+        <p className="font-display text-[20px] leading-none text-mna-white tabular-nums mb-1">
+          {time}
+        </p>
+        <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 mb-3">
+          {date} · UTC
+        </p>
+        <p className="text-[9px] font-sans uppercase tracking-[0.26em] text-mna-white/45 pt-3 border-t border-mna-white/10">
+          Visitor · Observer
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Minimap radar (top-right) ──────────────────────────────────────────── */
+
+const MINIMAP_SIZE = 168; // px
+const MINIMAP_RADIUS_M = 60; // world-metres → maps to MINIMAP_SIZE / 2
+
+function MinimapRadar({
+  telemetry,
+  centroids,
+}: {
+  telemetry: { x: number; z: number; yaw: number };
+  centroids: Array<{ id: string; x: number; z: number; count: number }>;
+}) {
+  const half = MINIMAP_SIZE / 2;
+  // World → minimap pixel mapping. Visitor is always centered.
+  // North-up: world +z extends down on the minimap, world -z is up.
+  function toPx(worldX: number, worldZ: number) {
+    const dx = worldX - telemetry.x;
+    const dz = worldZ - telemetry.z;
+    const px = half + (dx / MINIMAP_RADIUS_M) * half;
+    const py = half + (dz / MINIMAP_RADIUS_M) * half;
+    return { x: px, y: py };
+  }
+  return (
+    <div className="pointer-events-none absolute top-5 right-5 z-20">
+      <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 p-3">
+        <div className="flex items-baseline justify-between mb-2 px-1">
+          <p className="text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55">
+            Field Map
+          </p>
+          <p className="text-[9px] font-sans uppercase tracking-[0.22em] text-mna-white/35 tabular-nums">
+            N
+          </p>
+        </div>
+        <div
+          className="relative rounded-full border border-mna-white/12 bg-black/40 overflow-hidden"
+          style={{ width: MINIMAP_SIZE, height: MINIMAP_SIZE }}
+        >
+          {/* Concentric guide rings */}
+          <div className="absolute inset-0 rounded-full border border-mna-white/8" />
+          <div
+            className="absolute rounded-full border border-mna-white/8"
+            style={{
+              left: "16%",
+              top: "16%",
+              width: "68%",
+              height: "68%",
+            }}
+          />
+          <div
+            className="absolute rounded-full border border-mna-white/8"
+            style={{
+              left: "33%",
+              top: "33%",
+              width: "34%",
+              height: "34%",
+            }}
+          />
+
+          {/* Cluster centroids */}
+          {centroids.map((c) => {
+            const p = toPx(c.x, c.z);
+            if (
+              p.x < -8 ||
+              p.x > MINIMAP_SIZE + 8 ||
+              p.y < -8 ||
+              p.y > MINIMAP_SIZE + 8
+            )
+              return null;
+            const tint = originatorTint(c.id);
+            return (
+              <span
+                key={c.id}
+                className="absolute -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
+                style={{
+                  left: p.x,
+                  top: p.y,
+                  backgroundColor: tint,
+                  boxShadow: `0 0 6px ${tint}`,
+                }}
+                aria-hidden
+              />
+            );
+          })}
+
+          {/* Visitor — triangle pointing in current facing direction. */}
+          <span
+            aria-hidden
+            className="absolute left-1/2 top-1/2"
+            style={{
+              transform: `translate(-50%, -50%) rotate(${telemetry.yaw}rad)`,
+            }}
+          >
+            <svg width="14" height="14" viewBox="-7 -7 14 14">
+              <polygon
+                points="0,-5 4,4 0,2 -4,4"
+                fill="#ffffff"
+                opacity="0.92"
+              />
+            </svg>
+          </span>
+        </div>
+        <p className="mt-2 px-1 text-[8.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40">
+          {centroids.length} clusters · {Math.round(MINIMAP_RADIUS_M)}m radius
+        </p>
+      </div>
     </div>
   );
 }
