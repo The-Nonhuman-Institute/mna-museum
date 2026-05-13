@@ -39,16 +39,16 @@ import * as THREE from "three";
 import { TextureLoader } from "three";
 import { useLoader } from "@react-three/fiber";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 const EYE_HEIGHT = 1.7;
 const WALK_SPEED = 4.5;
 const SPRINT_SPEED = 8.5;
-// Spacing: wider ring + roomier clusters than the v1 placement so
-// visitors can walk between works rather than weave through them.
-const RING_RADIUS = 44; // originator centroids on a circle this far from spawn
-const CLUSTER_RADIUS = 14; // works scatter this far from their centroid
-const MIN_WORK_DISTANCE = 4.5; // minimum 3D distance between any two works
+// Spacing — keeps clusters dense enough that walking around a group
+// reveals different pieces at different angles (museum charm), but
+// uses a min-distance retry so works don't literally overlap.
+const RING_RADIUS = 28; // originator centroids on a circle this far from spawn
+const CLUSTER_RADIUS = 9; // works scatter this far from their centroid
+const MIN_WORK_DISTANCE = 2.5; // minimum 3D distance between any two works
 const PLACEMENT_RETRIES = 24; // how many times to re-roll a position
 const HEIGHT_MIN = 1.2;
 const HEIGHT_MAX = 3.4;
@@ -83,33 +83,84 @@ interface MuseumFieldProps {
 export default function MuseumField({ works }: MuseumFieldProps) {
   const [entered, setEntered] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Modal state — when set, the in-museum overlay is shown over the
+  // canvas and pointer-lock is released. The visitor stays in the
+  // museum; the overlay is just a closer look + a doorway to the
+  // full institutional record.
+  const [selectedWork, setSelectedWork] = useState<PlacedWork | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // One-time placement, deterministic from work id.
   const placed = useMemo(() => placeWorks(works), [works]);
   const hovered = hoveredId ? placed.find((w) => w.id === hoveredId) : null;
 
+  // Begin Observation — request pointer-lock SYNCHRONOUSLY inside the
+  // click handler so we don't burn the user gesture by waiting for
+  // React to mount PointerLockControls. The browser will hand the lock
+  // back via pointerlockchange events that Drei's controls listen for,
+  // so the controls (mounted via `entered=true` on the next render)
+  // pick up the already-locked state and just work.
+  function handleBegin() {
+    const canvas = containerRef.current?.querySelector("canvas");
+    if (canvas && typeof canvas.requestPointerLock === "function") {
+      // requestPointerLock returns a Promise in Chrome 102+ but isn't
+      // required to be awaited — the lock takes effect synchronously.
+      canvas.requestPointerLock();
+    }
+    setEntered(true);
+  }
+
+  // Opening a work modal releases pointer-lock so the visitor can
+  // interact with the overlay. Closing it doesn't auto-re-lock —
+  // they click the canvas to resume walking (browser security: lock
+  // must come from a user gesture, and an Esc-dismissed modal is
+  // not one).
+  function openWork(work: PlacedWork) {
+    if (typeof document !== "undefined" && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    setSelectedWork(work);
+  }
+
   return (
-    <div className="fixed inset-0 bg-black">
+    <div ref={containerRef} className="fixed inset-0 bg-black">
       <Canvas
         camera={{ fov: 70, near: 0.1, far: 240, position: [0, EYE_HEIGHT, 8] }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
       >
         <Scene>
-          <WorksField placed={placed} onHover={setHoveredId} />
+          <WorksField
+            placed={placed}
+            onHover={setHoveredId}
+            onSelect={openWork}
+          />
         </Scene>
         {entered ? <Controls onExit={() => setEntered(false)} /> : null}
       </Canvas>
 
-      {!entered ? <EntryOverlay onEnter={() => setEntered(true)} /> : null}
+      {!entered ? <EntryOverlay onEnter={handleBegin} /> : null}
 
-      {/* Hovered-work readout — bottom-left, only while pointer-locked. */}
-      {entered && hovered ? <HoverReadout work={hovered} /> : null}
+      {entered && hovered && !selectedWork ? (
+        <HoverReadout work={hovered} />
+      ) : null}
 
       <FooterLine />
 
-      {/* Reticle — small fixed dot at screen center so the visitor
-          knows where they're aiming when pointer is locked. */}
-      {entered ? <Reticle /> : null}
+      {entered && !selectedWork ? <Reticle /> : null}
+
+      {/* Resume-hint surfaces when the visitor closes a modal but
+          isn't pointer-locked yet — tells them they can click to
+          start walking again. */}
+      {entered && !selectedWork && typeof document !== "undefined" ? (
+        <ResumeHint />
+      ) : null}
+
+      {/* In-museum work overlay. */}
+      {selectedWork ? (
+        <WorkOverlay
+          work={selectedWork}
+          onClose={() => setSelectedWork(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -168,9 +219,11 @@ function HorizonBeam({
 function WorksField({
   placed,
   onHover,
+  onSelect,
 }: {
   placed: PlacedWork[];
   onHover: (id: string | null) => void;
+  onSelect: (placed: PlacedWork) => void;
 }) {
   return (
     <>
@@ -181,10 +234,11 @@ function WorksField({
             placed={w}
             json={w.scene_payload}
             onHover={onHover}
+            onSelect={onSelect}
           />
         ) : (
           <Suspense key={w.id} fallback={<PlaceholderPlane placed={w} />}>
-            <WorkPlane placed={w} onHover={onHover} />
+            <WorkPlane placed={w} onHover={onHover} onSelect={onSelect} />
           </Suspense>
         ),
       )}
@@ -208,13 +262,14 @@ function PlaceholderPlane({ placed }: { placed: PlacedWork }) {
 function WorkPlane({
   placed,
   onHover,
+  onSelect,
 }: {
   placed: PlacedWork;
   onHover: (id: string | null) => void;
+  onSelect: (placed: PlacedWork) => void;
 }) {
   const texture = useLoader(TextureLoader, `/previews/${placed.id}.png`);
   const [hovered, setHovered] = useState(false);
-  const router = useRouter();
 
   // Crisp pixel-perfect texture without color shift.
   useEffect(() => {
@@ -248,7 +303,7 @@ function WorkPlane({
         }}
         onClick={(e) => {
           e.stopPropagation();
-          router.push(`/work/${placed.id}?from=museum`);
+          onSelect(placed);
         }}
       >
         <planeGeometry args={[size, size]} />
@@ -279,12 +334,13 @@ function SceneSculpture({
   placed,
   json,
   onHover,
+  onSelect,
 }: {
   placed: PlacedWork;
   json: string;
   onHover: (id: string | null) => void;
+  onSelect: (placed: PlacedWork) => void;
 }) {
-  const router = useRouter();
   const [hovered, setHovered] = useState(false);
 
   const { scene, center, scale } = useMemo(() => {
@@ -378,7 +434,7 @@ function SceneSculpture({
         }}
         onClick={(e) => {
           e.stopPropagation();
-          router.push(`/work/${placed.id}?from=museum`);
+          onSelect(placed);
         }}
       >
         {scene.objects.map((o, i) => (
@@ -665,6 +721,174 @@ function FooterLine() {
     <div className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-between items-center px-6 text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40">
       <span>The Observer is Human. We Observe. We Do Not Interfere.</span>
       <span>Museum of Nonhuman Art</span>
+    </div>
+  );
+}
+
+/* ─── Resume hint ────────────────────────────────────────────────────────── */
+
+/** Bottom-center cue after a modal closes — tells the visitor they
+ *  can click the canvas to re-engage pointer-lock and resume walking.
+ *  Only shows when we're "entered" but not currently locked. Pointer-
+ *  lock state isn't a React thing, so we poll cheaply via a small
+ *  interval. The element auto-hides as soon as lock returns. */
+function ResumeHint() {
+  const [locked, setLocked] = useState(true);
+  useEffect(() => {
+    function check() {
+      setLocked(Boolean(document.pointerLockElement));
+    }
+    check();
+    document.addEventListener("pointerlockchange", check);
+    return () => document.removeEventListener("pointerlockchange", check);
+  }, []);
+  if (locked) return null;
+  return (
+    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20">
+      <div className="bg-black/60 border border-mna-white/15 px-4 py-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/75">
+        Click anywhere to resume
+      </div>
+    </div>
+  );
+}
+
+/* ─── Work overlay (Option A — in-museum modal) ──────────────────────────── */
+
+/** Fullscreen dim overlay surfaced when a visitor clicks on a work in
+ *  the field. The museum scene keeps rendering behind it (semi-dimmed
+ *  via backdrop opacity). Esc / backdrop click closes; "View Full
+ *  Record" leaves the museum and lands the visitor on the work's
+ *  provenance page. */
+function WorkOverlay({
+  work,
+  onClose,
+}: {
+  work: PlacedWork;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const statusLabel = work.canon_date ? "Canonized" : "In Record";
+  const dateLine = work.canon_date
+    ? new Date(work.canon_date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+
+  return (
+    <div
+      className="fixed inset-0 z-30 bg-black/72 backdrop-blur-[1px] flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${work.title || work.id} — observation`}
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="absolute top-5 right-6 z-10 text-mna-white/65 hover:text-mna-white transition-colors text-3xl leading-none"
+        aria-label="Close"
+      >
+        ×
+      </button>
+
+      <div
+        className="relative bg-ink/95 border border-mna-white/15 max-w-[860px] w-[92vw] max-h-[88vh] flex flex-col md:flex-row overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Preview side */}
+        <div className="md:w-[420px] aspect-square md:aspect-auto bg-[#0a0908] flex items-center justify-center flex-shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/previews/${work.id}.png`}
+            alt={work.title || work.id}
+            className="w-full h-full object-contain"
+          />
+        </div>
+
+        {/* Metadata + actions side */}
+        <div className="flex-1 p-7 md:p-9 flex flex-col">
+          <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/55 mb-3">
+            Observation · {statusLabel}
+            {dateLine ? ` · ${dateLine}` : ""}
+          </p>
+          <p className="text-[10px] font-sans tracking-[0.04em] text-mna-white/60 mb-3">
+            {work.id}
+          </p>
+          <h2 className="font-display italic text-[28px] md:text-[32px] leading-[1.1] text-mna-white mb-5">
+            {work.title || "Untitled"}
+          </h2>
+
+          <dl className="grid grid-cols-2 gap-x-5 gap-y-3 text-[12px] mb-7">
+            <div>
+              <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
+                Originator
+              </dt>
+              <dd className="text-mna-white/85">
+                {originatorLabel({
+                  ...work,
+                })}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
+                Medium
+              </dt>
+              <dd className="text-mna-white/85">{work.medium || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
+                Phase
+              </dt>
+              <dd className="text-mna-white/85">
+                {work.phase_at_submission || "I"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
+                Output Type
+              </dt>
+              <dd className="text-mna-white/85 font-mono text-[11px]">
+                {work.output_type}
+              </dd>
+            </div>
+          </dl>
+
+          <p className="text-[11px] leading-[1.65] text-mna-white/65 mb-7 max-w-prose">
+            This is an observation. The full institutional record — council
+            rationales, dissent, deliberation, full provenance — lives on
+            the work&apos;s permanent page.
+          </p>
+
+          <div className="mt-auto flex flex-wrap items-center gap-5">
+            <Link
+              href={`/work/${work.id}/provenance?from=museum`}
+              className="inline-flex items-center gap-3 bg-mna-white text-ink px-5 py-3 text-[10.5px] font-sans uppercase tracking-[0.26em] hover:bg-mna-white/90 transition-colors"
+            >
+              <span>View Full Record</span>
+              <span aria-hidden>→</span>
+            </Link>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-[10.5px] font-sans uppercase tracking-[0.26em] text-mna-white/65 hover:text-mna-white transition-colors border-b border-mna-white/35 pb-1"
+            >
+              Close · keep observing
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
