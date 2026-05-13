@@ -40,6 +40,12 @@ export default async function Page() {
         output_type: work.output_type,
         canon_date: work.canon_date,
         phase_at_submission: work.phase_at_submission,
+        // For scene-json works, pass the full payload so the Chamber
+        // can render the actual 3D geometry at monumental scale rather
+        // than the flat preview PNG. Other output types fall back to
+        // the preview image.
+        scene_payload:
+          work.output_type === "scene-json" ? work.output_payload : null,
       }
     : null;
 

@@ -1454,7 +1454,7 @@ function WorkPlane({
 
 /* ─── Sculpture (scene-json) rendering ──────────────────────────────────── */
 
-interface SceneObjectSpec {
+export interface SceneObjectSpec {
   shape: "box" | "sphere" | "cylinder" | "cone" | "torus" | "plane";
   position?: number[];
   rotation?: number[];
@@ -1464,7 +1464,7 @@ interface SceneObjectSpec {
   metalness?: number;
   roughness?: number;
 }
-interface SceneSpec {
+export interface SceneSpec {
   bg?: string;
   objects?: SceneObjectSpec[];
 }
@@ -1592,7 +1592,7 @@ function SceneSculpture({
   );
 }
 
-function SceneObjectMesh({ obj }: { obj: SceneObjectSpec }) {
+export function SceneObjectMesh({ obj }: { obj: SceneObjectSpec }) {
   const opacity = obj.opacity ?? 1;
   const pos = (obj.position ?? [0, 0, 0]) as [number, number, number];
   const rot = (obj.rotation ?? [0, 0, 0]) as [number, number, number];

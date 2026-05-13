@@ -16,9 +16,10 @@
  * a room name to useMuseumPresence.
  */
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { PointerLockControls, Stars } from "@react-three/drei";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -26,7 +27,9 @@ import {
   Movement,
   VirtualJoystick,
   KeyCap,
+  SceneObjectMesh,
   useDownsampledTexture,
+  type SceneSpec,
 } from "../../MuseumField";
 
 interface ChamberWork {
@@ -38,6 +41,9 @@ interface ChamberWork {
   output_type: string;
   canon_date: string | null;
   phase_at_submission: string | null;
+  /** For scene-json works, the full payload so we can render the 3D
+   *  geometry at monumental scale. null for other output types. */
+  scene_payload?: string | null;
 }
 
 interface ChamberSceneProps {
@@ -277,12 +283,94 @@ function ChamberSceneInterior({
 }
 
 function FeaturedWorkPlane({ work }: { work: ChamberWork }) {
+  // Scene-json works render as their actual 3D geometry at monumental
+  // scale (cathedral altarpiece). All other output types fall back to
+  // the high-res preview PNG.
+  if (work.output_type === "scene-json" && work.scene_payload) {
+    return <MonumentalSculpture json={work.scene_payload} />;
+  }
+  return <MonumentalBillboard work={work} />;
+}
+
+/** Renders a scene-json work as actual 3D geometry, scaled so the
+ *  longest dimension reaches MONUMENTAL_TARGET metres. Auto-rotates
+ *  slowly (~5°/sec) so the visitor can stand still and see the piece
+ *  from all sides — the institution presents the work, the visitor
+ *  observes. */
+function MonumentalSculpture({ json }: { json: string }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  const { scene, center, scale } = useMemo(() => {
+    let parsed: SceneSpec | null = null;
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      parsed = null;
+    }
+    if (!parsed || !parsed.objects || parsed.objects.length === 0) {
+      return { scene: null, center: [0, 0, 0] as const, scale: 1 };
+    }
+    const mn = [Infinity, Infinity, Infinity];
+    const mx = [-Infinity, -Infinity, -Infinity];
+    for (const o of parsed.objects) {
+      const p = o.position ?? [0, 0, 0];
+      const s = o.scale ?? [1, 1, 1];
+      for (let i = 0; i < 3; i++) {
+        mn[i] = Math.min(mn[i], p[i] - Math.abs(s[i]) / 2);
+        mx[i] = Math.max(mx[i], p[i] + Math.abs(s[i]) / 2);
+      }
+    }
+    const dims = [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]];
+    const longest = Math.max(...dims, 0.001);
+    const fit = WORK_HEIGHT / longest;
+    const c: [number, number, number] = [
+      (mn[0] + mx[0]) / 2,
+      (mn[1] + mx[1]) / 2,
+      (mn[2] + mx[2]) / 2,
+    ];
+    return { scene: parsed, center: c, scale: fit };
+  }, [json]);
+
+  useFrame((_, dt) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y += dt * 0.08;
+    }
+  });
+
+  if (!scene || !scene.objects) {
+    return null;
+  }
+
+  // Position: bottom of the work's bounding box sits 0.6m above floor.
+  // Centered horizontally on the chamber's axis. group rotates as a
+  // whole around vertical axis for slow presentation.
+  return (
+    <group ref={groupRef} position={[0, 0.6, 0]}>
+      <group
+        position={[
+          -center[0] * scale,
+          -center[1] * scale + WORK_HEIGHT / 2,
+          -center[2] * scale,
+        ]}
+        scale={scale}
+      >
+        {scene.objects.map((o, i) => (
+          <SceneObjectMesh key={i} obj={o} />
+        ))}
+      </group>
+    </group>
+  );
+}
+
+/** Renders a 2D work (image / canvas / SVG / etc.) as a billboarded
+ *  plane at monumental scale. Used when the featured work isn't a
+ *  scene-json sculpture. */
+function MonumentalBillboard({ work }: { work: ChamberWork }) {
   const texture = useDownsampledTexture(
     `/previews/${work.id}.png`,
     WORK_TEXTURE_MAX,
   );
 
-  // Vertical center of the work. Bottom edge sits 1m above floor.
   const cy = 1 + WORK_HEIGHT / 2;
 
   if (!texture) {
@@ -301,9 +389,6 @@ function FeaturedWorkPlane({ work }: { work: ChamberWork }) {
 
   return (
     <group position={[0, cy, 0]}>
-      {/* Back glow — large soft plane behind the work tinted Chamber
-          color. Adds presence without needing real lighting on the
-          billboard. */}
       <mesh position={[0, 0, -0.3]}>
         <planeGeometry args={[WORK_HEIGHT * 1.15, WORK_HEIGHT * 1.15]} />
         <meshBasicMaterial
@@ -313,7 +398,6 @@ function FeaturedWorkPlane({ work }: { work: ChamberWork }) {
           toneMapped={false}
         />
       </mesh>
-      {/* The work itself. */}
       <mesh>
         <planeGeometry args={[WORK_HEIGHT, WORK_HEIGHT]} />
         <meshBasicMaterial map={texture} toneMapped={false} />
