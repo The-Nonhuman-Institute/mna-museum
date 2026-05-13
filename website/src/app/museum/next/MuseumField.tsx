@@ -47,6 +47,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  useMuseumPresence,
+  type PresenceVisitor,
+} from "@/lib/use-museum-presence";
 
 const EYE_HEIGHT = 1.7;
 const WALK_SPEED = 4.5;
@@ -195,6 +199,12 @@ export default function MuseumField({ works }: MuseumFieldProps) {
 
   const placed = useMemo(() => placeWorks(works), [works]);
   const hovered = hoveredId ? placed.find((w) => w.id === hoveredId) : null;
+
+  // Realtime presence. Reads NEXT_PUBLIC_PARTY_HOST at build time;
+  // when unset the hook stays idle and `others` is an empty array, so
+  // the field works in solo mode without any deployment.
+  const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
+  const { others, publish } = useMuseumPresence(presenceHost);
 
   // Camera telemetry for the HUD minimap. Inside Canvas, the
   // Telemetry component reads camera position + yaw and writes them
@@ -367,7 +377,9 @@ export default function MuseumField({ works }: MuseumFieldProps) {
               onSelect={openWork}
             />
             <VisitorGlow centroids={centroids} />
+            <OtherVisitors others={others} />
           </Scene>
+          <PositionPublisher publish={publish} />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -412,6 +424,7 @@ export default function MuseumField({ works }: MuseumFieldProps) {
             originatorCount={centroids.length}
             workCount={works.length}
             locked={locked}
+            otherObservers={others.length}
           />
           <MinimapRadar
             telemetry={telemetry}
@@ -573,6 +586,89 @@ function DragLook({ enabled }: { enabled: boolean }) {
   }, [enabled, gl, camera]);
 
   return null;
+}
+
+/* ─── Multiplayer presence ───────────────────────────────────────────────── */
+
+/** Publishes this visitor's camera position + yaw each frame. The
+ *  underlying hook throttles to ~10Hz internally so it's safe to call
+ *  every frame. No-op when NEXT_PUBLIC_PARTY_HOST is unset because
+ *  `publish` from the hook short-circuits without an open socket. */
+function PositionPublisher({
+  publish,
+}: {
+  publish: (x: number, z: number, yaw: number) => void;
+}) {
+  const { camera } = useThree();
+  useFrame(() => {
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd);
+    const yaw = Math.atan2(fwd.x, -fwd.z);
+    publish(camera.position.x, camera.position.z, yaw);
+  });
+  return null;
+}
+
+/** Renders every other connected visitor. Empty in solo mode (no
+ *  party host) — the hook returns `[]`. */
+function OtherVisitors({ others }: { others: PresenceVisitor[] }) {
+  return (
+    <>
+      {others.map((v) => (
+        <OtherVisitor key={v.id} visitor={v} />
+      ))}
+    </>
+  );
+}
+
+/** One other visitor as a warm point of light in the field. The
+ *  server-assigned color (institutional palette) gives each visitor a
+ *  stable hue without exposing identity. Position lerps toward the
+ *  latest server sample so the 10Hz state stream reads as smooth
+ *  motion rather than 100ms steps. */
+function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const targetRef = useRef(new THREE.Vector3(visitor.x, 0, visitor.z));
+
+  useEffect(() => {
+    targetRef.current.set(visitor.x, 0, visitor.z);
+  }, [visitor.x, visitor.z]);
+
+  useFrame(() => {
+    const g = groupRef.current;
+    if (!g) return;
+    const t = targetRef.current;
+    g.position.x += (t.x - g.position.x) * 0.18;
+    g.position.z += (t.z - g.position.z) * 0.18;
+  });
+
+  return (
+    <group ref={groupRef} position={[visitor.x, 0, visitor.z]}>
+      {/* Eye-level orb */}
+      <mesh position={[0, EYE_HEIGHT, 0]}>
+        <sphereGeometry args={[0.12, 16, 12]} />
+        <meshBasicMaterial color={visitor.color} toneMapped={false} />
+      </mesh>
+      {/* Warm pool of light around the visitor */}
+      <pointLight
+        position={[0, EYE_HEIGHT, 0]}
+        color={visitor.color}
+        intensity={0.9}
+        distance={3.6}
+        decay={1.6}
+      />
+      {/* Ground halo so the visitor reads even at distance */}
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.45, 0.7, 32]} />
+        <meshBasicMaterial
+          color={visitor.color}
+          transparent
+          opacity={0.45}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
 }
 
 /* ─── Scene ──────────────────────────────────────────────────────────────── */
@@ -1426,10 +1522,12 @@ function CanonFieldPanel({
   originatorCount,
   workCount,
   locked,
+  otherObservers,
 }: {
   originatorCount: number;
   workCount: number;
   locked: boolean;
+  otherObservers: number;
 }) {
   return (
     <div className="pointer-events-none absolute top-5 left-5 z-20 max-w-[290px]">
@@ -1457,6 +1555,12 @@ function CanonFieldPanel({
             {locked ? "Observing" : "Idle"}
           </span>
         </div>
+        {otherObservers > 0 ? (
+          <div className="mt-3 pt-3 border-t border-mna-white/10 text-[9.5px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
+            {otherObservers} other{" "}
+            {otherObservers === 1 ? "observer" : "observers"} present
+          </div>
+        ) : null}
         {/* Always-visible exit. pointer-events-auto so it works even
             when the surrounding card is click-through, and when pointer
             lock is broken (Atlas, sandbox, etc.) the visitor is one

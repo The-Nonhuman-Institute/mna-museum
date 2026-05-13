@@ -13,10 +13,17 @@ const COLORS = [
 
 interface Visitor {
   id: string;
+  designation: string;
+  color: string;
   x: number;
   z: number;
   yaw: number;
-  color: string;
+}
+
+function designationFor(id: string): string {
+  // Stable per connection; visible to other visitors as the anonymous
+  // public name (e.g. "Observer-7F4A"). No identity, no persistence.
+  return "Observer-" + id.slice(0, 4).toUpperCase();
 }
 
 // In-memory visitor state (resets when party room hibernates)
@@ -41,21 +48,36 @@ export default {
   onConnect(conn: PartyConnection, party: Party) {
     const color = COLORS[colorIndex % COLORS.length];
     colorIndex++;
+    const designation = designationFor(conn.id);
 
-    const visitor: Visitor = { id: conn.id, x: 0, z: 0, yaw: 0, color };
+    const visitor: Visitor = {
+      id: conn.id,
+      designation,
+      color,
+      x: 0,
+      z: 8,
+      yaw: 0,
+    };
     visitors.set(conn.id, visitor);
 
-    // Tell the new visitor their id and color
-    conn.send(JSON.stringify({ type: "init", id: conn.id, color }));
+    // Tell the new visitor who they are.
+    conn.send(
+      JSON.stringify({ type: "init", id: conn.id, designation, color }),
+    );
 
-    // Send current state of all other visitors
+    // Send a snapshot of everyone else so they render immediately.
     const others = Array.from(visitors.values()).filter((v) => v.id !== conn.id);
     if (others.length > 0) {
       conn.send(JSON.stringify({ type: "sync", visitors: others }));
     }
 
-    // Notify others of the new visitor
-    const joinMsg = JSON.stringify({ type: "join", id: conn.id, color });
+    // Notify others of the new visitor.
+    const joinMsg = JSON.stringify({
+      type: "join",
+      id: conn.id,
+      designation,
+      color,
+    });
     for (const other of party.getConnections()) {
       if (other.id !== conn.id) {
         other.send(joinMsg);
@@ -66,14 +88,24 @@ export default {
   onMessage(message: string, conn: PartyConnection) {
     try {
       const data = JSON.parse(message as string);
-      if (data.type === "position") {
-        const v = visitors.get(conn.id);
-        if (v) {
-          v.x = data.x;
-          v.z = data.z;
-          v.yaw = data.yaw;
-        }
+      if (data.type !== "position") return;
+      const v = visitors.get(conn.id);
+      if (!v) return;
+      if (
+        typeof data.x !== "number" ||
+        typeof data.z !== "number" ||
+        typeof data.yaw !== "number"
+      ) {
+        return;
       }
+      // Reject implausible jumps. 60m caps allow legitimate teleports
+      // (filter changes, reset view) but reject garbage.
+      const dx = data.x - v.x;
+      const dz = data.z - v.z;
+      if (dx * dx + dz * dz > 60 * 60) return;
+      v.x = data.x;
+      v.z = data.z;
+      v.yaw = data.yaw;
     } catch {}
   },
 
