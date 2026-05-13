@@ -438,8 +438,15 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
 
   return (
     <div className="fixed inset-0 bg-black">
-      {/* Canvas + its click area. Clicks here re-lock when applicable. */}
-      <div className="absolute inset-0" onClick={handleCanvasMaybeRelock}>
+      {/* Canvas + its click area. Clicks here re-lock when applicable.
+          touch-action:none + select-none prevents pinch-zoom / page
+          scroll / text selection from competing with drag-look on
+          mobile. */}
+      <div
+        className="absolute inset-0 select-none"
+        style={{ touchAction: "none" }}
+        onClick={handleCanvasMaybeRelock}
+      >
         <Canvas
           camera={{ fov: 70, near: 0.1, far: 240, position: [0, EYE_HEIGHT, 8] }}
           // Cap the device pixel ratio.
@@ -1280,6 +1287,12 @@ export function useDownsampledTexture(
   return texture;
 }
 
+// Squared pixel-distance threshold above which a pointerdown→pointerup
+// pair is treated as a drag (rather than a click). Big enough to absorb
+// touchscreen jitter and brief drag-look swipes; small enough that an
+// intentional tap still opens the work.
+const CLICK_DRAG_THRESHOLD_SQ = 8 * 8;
+
 function WorkPlane({
   placed,
   onHover,
@@ -1294,6 +1307,7 @@ function WorkPlane({
     WORK_TEXTURE_MAX,
   );
   const [hovered, setHovered] = useState(false);
+  const downPosRef = useRef({ x: 0, y: 0 });
 
   const size = placed.size;
   const halo = size * 1.06;
@@ -1338,10 +1352,21 @@ function WorkPlane({
           setHovered(false);
           onHover(null);
         }}
+        onPointerDown={(e) => {
+          downPosRef.current = {
+            x: (e.nativeEvent as PointerEvent).clientX,
+            y: (e.nativeEvent as PointerEvent).clientY,
+          };
+        }}
         onClick={(e) => {
+          // Suppress click if the pointer moved more than the threshold
+          // between down and up — that's a drag (drag-look or touch
+          // pan), not an intentional click on the work.
+          const d = downPosRef.current;
+          const dx = (e.nativeEvent as PointerEvent).clientX - d.x;
+          const dy = (e.nativeEvent as PointerEvent).clientY - d.y;
+          if (dx * dx + dy * dy > CLICK_DRAG_THRESHOLD_SQ) return;
           e.stopPropagation();
-          // Also stop the underlying DOM click from bubbling to the
-          // canvas wrapper (which would try to re-lock the cursor).
           e.nativeEvent.stopPropagation();
           onSelect(placed);
         }}
@@ -1382,6 +1407,7 @@ function SceneSculpture({
   onSelect: (placed: PlacedWork) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const downPosRef = useRef({ x: 0, y: 0 });
 
   const { scene, center, scale } = useMemo(() => {
     let parsed: SceneSpec | null = null;
@@ -1468,7 +1494,17 @@ function SceneSculpture({
           setHovered(false);
           onHover(null);
         }}
+        onPointerDown={(e) => {
+          downPosRef.current = {
+            x: (e.nativeEvent as PointerEvent).clientX,
+            y: (e.nativeEvent as PointerEvent).clientY,
+          };
+        }}
         onClick={(e) => {
+          const d = downPosRef.current;
+          const dx = (e.nativeEvent as PointerEvent).clientX - d.x;
+          const dy = (e.nativeEvent as PointerEvent).clientY - d.y;
+          if (dx * dx + dy * dy > CLICK_DRAG_THRESHOLD_SQ) return;
           e.stopPropagation();
           e.nativeEvent.stopPropagation();
           onSelect(placed);
@@ -1677,6 +1713,7 @@ export function VirtualJoystick({
   const baseRef = useRef<HTMLDivElement>(null);
   const [knobOffset, setKnobOffset] = useState({ x: 0, y: 0 });
   const activeRef = useRef(false);
+  const pointerIdRef = useRef(-1);
   const RADIUS = 52; // px — max knob deflection from center
 
   function setFromPointer(clientX: number, clientY: number) {
@@ -1700,42 +1737,51 @@ export function VirtualJoystick({
 
   function release() {
     activeRef.current = false;
+    pointerIdRef.current = -1;
     setKnobOffset({ x: 0, y: 0 });
     joystickRef.current.forward = 0;
     joystickRef.current.strafe = 0;
   }
+
+  // Window-level pointer listeners. The joystick element-level handlers
+  // alone aren't enough — on mobile, finger lifts that land outside the
+  // joystick (or even off-canvas) can fail to fire pointerup on the
+  // joystick, leaving it stuck at full deflection. Listening on window
+  // catches the release no matter where it happens.
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      if (!activeRef.current) return;
+      if (e.pointerId !== pointerIdRef.current) return;
+      setFromPointer(e.clientX, e.clientY);
+    }
+    function onEnd(e: PointerEvent) {
+      if (e.pointerId !== pointerIdRef.current) return;
+      release();
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onEnd);
+    window.addEventListener("pointercancel", onEnd);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
       ref={baseRef}
       onPointerDown={(e) => {
         activeRef.current = true;
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId);
-        } catch {
-          // ignored
-        }
+        pointerIdRef.current = e.pointerId;
         setFromPointer(e.clientX, e.clientY);
       }}
-      onPointerMove={(e) => {
-        if (!activeRef.current) return;
-        setFromPointer(e.clientX, e.clientY);
-      }}
-      onPointerUp={(e) => {
-        try {
-          e.currentTarget.releasePointerCapture(e.pointerId);
-        } catch {
-          // ignored
-        }
-        release();
-      }}
-      onPointerCancel={() => release()}
       className="pointer-events-auto absolute w-32 h-32 rounded-full border border-mna-white/25 bg-black/40 backdrop-blur-[2px] select-none z-20"
       style={{
         // iOS Safari floats its URL bar over the bottom of the viewport
         // in landscape; without safe-area padding the home-indicator zone
-        // partially covers the joystick. calc(...) so we still have a
-        // visible margin on devices that report no inset.
+        // partially covers the joystick.
         bottom: "calc(1.5rem + env(safe-area-inset-bottom))",
         left: "calc(1.5rem + env(safe-area-inset-left))",
         touchAction: "none",

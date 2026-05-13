@@ -126,7 +126,11 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
 
   return (
     <div className="fixed inset-0 bg-black">
-      <div className="absolute inset-0" onClick={handleCanvasMaybeRelock}>
+      <div
+        className="absolute inset-0 select-none"
+        style={{ touchAction: "none" }}
+        onClick={handleCanvasMaybeRelock}
+      >
         <Canvas
           camera={{
             fov: 60,
