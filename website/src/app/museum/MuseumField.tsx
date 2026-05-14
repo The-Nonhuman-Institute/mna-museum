@@ -55,6 +55,9 @@ import {
 import {
   CONSTELLATION_CONFIGS,
   constellationStars,
+  pillarStars,
+  PILLAR_EDGES,
+  PILLAR_MAGNITUDES,
   type ConstellationConfig,
   type ConstellationStar,
 } from "@/lib/gallery-constellations";
@@ -861,10 +864,35 @@ function Constellations({
       galleryId: string;
       config: ConstellationConfig;
       stars: ConstellationStar[];
+      edges?: ReadonlyArray<readonly [number, number]>;
+      magnitudes?: ReadonlyArray<number>;
+      starSize?: number;
+      haloFactor?: number;
     }> = [];
     for (const g of galleries) {
       const config = CONSTELLATION_CONFIGS[g.id];
       if (!config) continue;
+      // Hand-designed asterisms for named galleries — Solo Exhibition
+      // reads as a pillar (one sustained voice). Other galleries fall
+      // back to the procedural closed-loop generator until they get
+      // their own named figure.
+      if (g.id === "solo_exhibition") {
+        out.push({
+          galleryId: g.id,
+          config,
+          stars: pillarStars(
+            config.direction.yaw,
+            config.direction.altitude,
+            config.distance,
+            14, // pillar height in metres → ~5.9° of sky at 135m
+          ),
+          edges: PILLAR_EDGES,
+          magnitudes: PILLAR_MAGNITUDES,
+          starSize: 0.45,
+          haloFactor: 2.4,
+        });
+        continue;
+      }
       out.push({
         galleryId: g.id,
         config,
@@ -922,6 +950,10 @@ function Constellations({
           name={galleryNamesById.get(c.galleryId) ?? c.galleryId}
           config={c.config}
           stars={c.stars}
+          edges={c.edges}
+          magnitudes={c.magnitudes}
+          starSize={c.starSize}
+          haloFactor={c.haloFactor}
         />
       ))}
     </>

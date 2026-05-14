@@ -202,6 +202,68 @@ export const VESICA_MAGNITUDES: ReadonlyArray<number> = [
   0.7,  // 7 bottom-L-shoulder
 ];
 
+/** Place 5 stars in a near-vertical line — the Solo Exhibition's
+ *  asterism. A subtle hand-drawn sway (±0.4m across ~14m of height)
+ *  keeps it from reading as a ruler-straight bar; visually identifies
+ *  as a pillar / column. Star ordering bottom-to-top:
+ *
+ *    0: base  (foundation anchor — bright)
+ *    1: lower shaft
+ *    2: middle (the heart)
+ *    3: upper shaft
+ *    4: cap   (capital — brightest)
+ *
+ *  Pair with PILLAR_EDGES (open chain bottom-up) and PILLAR_MAGNITUDES
+ *  for the institutional reading of "one sustained voice." */
+export function pillarStars(
+  yaw: number,
+  altitude: number,
+  distance: number,
+  height: number,
+): ConstellationStar[] {
+  const f = celestialFrame(yaw, altitude, distance);
+  const h = height / 2;
+  // Local 2D positions. Horizontal deviation traces a gentle S-curve
+  // so the column looks hand-drawn — base offsets right, cap offsets
+  // left, with the heart roughly centred.
+  const points: [number, number][] = [
+    [0.4, -h],          // 0 base
+    [0.15, -h * 0.5],   // 1 lower shaft
+    [-0.05, 0],         // 2 middle
+    [-0.2, h * 0.5],    // 3 upper shaft
+    [-0.4, h],          // 4 cap
+  ];
+  return points.map(([x, y]) => ({
+    position: [
+      f.center[0] + f.right[0] * x + f.up[0] * y,
+      f.center[1] + f.right[1] * x + f.up[1] * y,
+      f.center[2] + f.right[2] * x + f.up[2] * y,
+    ] as [number, number, number],
+  }));
+}
+
+/** Open-graph edges for the pillar: a single chain bottom → top.
+ *  No closed loop — the asterism reads as a vertical column rising
+ *  through the sky. */
+export const PILLAR_EDGES: ReadonlyArray<readonly [number, number]> = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+];
+
+/** Per-star size multipliers for the pillar. Base is bright (the
+ *  foundation), cap is the brightest (the capital — what the eye
+ *  finishes on), middle is mid-bright (the heart), and the two
+ *  shaft stars between them are dimmer companions. */
+export const PILLAR_MAGNITUDES: ReadonlyArray<number> = [
+  1.2,  // 0 base
+  0.7,  // 1 lower shaft
+  1.0,  // 2 middle
+  0.7,  // 3 upper shaft
+  1.35, // 4 cap
+];
+
 function seededRandom(seed: string): () => number {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < seed.length; i++) {
