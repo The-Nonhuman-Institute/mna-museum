@@ -94,6 +94,114 @@ export function constellationStars(
   return out;
 }
 
+/** Build a local 2D frame perpendicular to a yaw/altitude direction.
+ *  Returns the right and up basis vectors as world-space [x,y,z],
+ *  with the centre at `distance` along the look direction. Used by
+ *  named asterism builders to place explicit star positions in a sky
+ *  plane facing the viewer. */
+export function celestialFrame(
+  yaw: number,
+  altitude: number,
+  distance: number,
+) {
+  const cx = Math.sin(yaw) * Math.cos(altitude) * distance;
+  const cy = Math.sin(altitude) * distance;
+  const cz = -Math.cos(yaw) * Math.cos(altitude) * distance;
+  // "right" is horizontal in world XZ, perpendicular to look direction
+  const rx = Math.cos(yaw);
+  const rz = Math.sin(yaw);
+  // "up" is perpendicular to both forward and right; rotates with altitude
+  const ux = -Math.sin(yaw) * Math.sin(altitude);
+  const uy = Math.cos(altitude);
+  const uz = Math.cos(yaw) * Math.sin(altitude);
+  return {
+    center: [cx, cy, cz] as [number, number, number],
+    right: [rx, 0, rz] as [number, number, number],
+    up: [ux, uy, uz] as [number, number, number],
+  };
+}
+
+/** Place 8 stars on a vesica piscis — two arcs meeting at two
+ *  "kissing points," forming a lens-shaped figure. Star ordering:
+ *
+ *    0: L-kiss     ← left intersection (anchor)
+ *    1: top-L-shoulder
+ *    2: top-apex
+ *    3: top-R-shoulder
+ *    4: R-kiss     ← right intersection (anchor)
+ *    5: bottom-R-shoulder
+ *    6: bottom-apex
+ *    7: bottom-L-shoulder
+ *
+ *  Pair with VESICA_EDGES (two open arcs sharing endpoints) and with
+ *  VESICA_MAGNITUDES (variable brightness: kiss > apex > shoulder)
+ *  for the institutional asterism reading of the Archive. */
+export function vesicaPiscisStars(
+  yaw: number,
+  altitude: number,
+  distance: number,
+  width: number,
+  height: number,
+): ConstellationStar[] {
+  const f = celestialFrame(yaw, altitude, distance);
+  const hw = width / 2;
+  const hh = height / 2;
+  // Local 2D positions on the lens shape. Shoulders sit at the
+  // arc parametrisation t=π/4 (top right) and 3π/4 (top left), which
+  // is cos/sin(π/4) ≈ 0.707 along each axis. Gives a natural arch
+  // curvature without explicit arc sampling.
+  const k = 0.707;
+  const points: [number, number][] = [
+    [-hw, 0],            // 0 L-kiss
+    [-hw * k, hh * k],   // 1 top-L-shoulder
+    [0, hh],             // 2 top-apex
+    [hw * k, hh * k],    // 3 top-R-shoulder
+    [hw, 0],             // 4 R-kiss
+    [hw * k, -hh * k],   // 5 bottom-R-shoulder
+    [0, -hh],            // 6 bottom-apex
+    [-hw * k, -hh * k],  // 7 bottom-L-shoulder
+  ];
+  return points.map(([x, y]) => ({
+    position: [
+      f.center[0] + f.right[0] * x + f.up[0] * y,
+      f.center[1] + f.right[1] * x + f.up[1] * y,
+      f.center[2] + f.right[2] * x + f.up[2] * y,
+    ] as [number, number, number],
+  }));
+}
+
+/** Open-graph edges for the vesica piscis: two arcs each travelling
+ *  from L-kiss through the top (or bottom) shoulders + apex to
+ *  R-kiss. No closed polygon — the structure reads as "two arches
+ *  meeting" rather than a generic loop. */
+export const VESICA_EDGES: ReadonlyArray<readonly [number, number]> = [
+  // Top arch: L-kiss → top-L-shoulder → top-apex → top-R-shoulder → R-kiss
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4],
+  // Bottom arch: L-kiss → bottom-L-shoulder → bottom-apex → bottom-R-shoulder → R-kiss
+  [0, 7],
+  [7, 6],
+  [6, 5],
+  [5, 4],
+];
+
+/** Per-star size multipliers — kissing points are the brightest anchors
+ *  of the figure (they define the two arcs); apexes slightly less;
+ *  shoulders the dimmest. Mirrors real night-sky asterisms where a
+ *  few magnitude-1 stars anchor a pattern of dimmer companions. */
+export const VESICA_MAGNITUDES: ReadonlyArray<number> = [
+  1.35, // 0 L-kiss
+  0.7,  // 1 top-L-shoulder
+  1.0,  // 2 top-apex
+  0.7,  // 3 top-R-shoulder
+  1.35, // 4 R-kiss
+  0.7,  // 5 bottom-R-shoulder
+  1.0,  // 6 bottom-apex
+  0.7,  // 7 bottom-L-shoulder
+];
+
 function seededRandom(seed: string): () => number {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < seed.length; i++) {

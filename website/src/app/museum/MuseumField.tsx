@@ -941,6 +941,8 @@ export function Constellation({
   starSize = 0.9,
   lineOpacity = 0.4,
   haloFactor = 2.6,
+  edges,
+  magnitudes,
 }: {
   name: string;
   config: ConstellationConfig;
@@ -958,18 +960,32 @@ export function Constellation({
    *  works in addition to bloom and ensures the constellation reads
    *  even when bloom is light. Set to 0 to disable. */
   haloFactor?: number;
+  /** Optional explicit edge list (pairs of star indices). When provided,
+   *  the renderer draws exactly these connections instead of the
+   *  default closed-polygon loop. Use for named asterisms (the
+   *  Archive's vesica piscis, etc.) that need a deliberate graph. */
+  edges?: ReadonlyArray<readonly [number, number]>;
+  /** Optional per-star size multipliers. Mirrors real night-sky
+   *  asterisms where a few bright anchor stars hold the pattern and
+   *  dimmer companions fill it out. Defaults to all 1.0. */
+  magnitudes?: ReadonlyArray<number>;
 }) {
-  // Build line segments connecting each consecutive pair (closing the
-  // loop). Visually reads as the institution's hand on the sky.
+  // Build line segments. Use the explicit edges when provided
+  // (named asterisms); otherwise close a loop through consecutive
+  // stars (procedural gallery constellations).
   const linePositions = useMemo(() => {
     const arr: number[] = [];
-    for (let i = 0; i < stars.length; i++) {
-      const a = stars[i].position;
-      const b = stars[(i + 1) % stars.length].position;
+    const pairs: ReadonlyArray<readonly [number, number]> =
+      edges ??
+      stars.map((_, i) => [i, (i + 1) % stars.length] as const);
+    for (const [i, j] of pairs) {
+      const a = stars[i]?.position;
+      const b = stars[j]?.position;
+      if (!a || !b) continue;
       arr.push(a[0], a[1], a[2], b[0], b[1], b[2]);
     }
     return new Float32Array(arr);
-  }, [stars]);
+  }, [stars, edges]);
 
   // Centroid (mean of star positions) — anchor for the floating name
   // label, slightly below the constellation so text doesn't overlap.
@@ -988,32 +1004,36 @@ export function Constellation({
 
   return (
     <group>
-      {stars.map((s, i) => (
-        <group key={i} position={s.position}>
-          {/* Solid bright core — captured by bloom when threshold is
-              set, also visible directly via toneMapped=false. */}
-          <mesh>
-            <sphereGeometry args={[starSize, 16, 12]} />
-            <meshBasicMaterial color={config.tint} toneMapped={false} />
-          </mesh>
-          {/* Soft halo — a larger translucent sphere at the same tint.
-              Reads as the star's glow regardless of postprocessing,
-              and gives the constellation a sense of presence even when
-              the camera is pointed elsewhere. */}
-          {haloFactor > 0 ? (
+      {stars.map((s, i) => {
+        const mag = magnitudes?.[i] ?? 1;
+        const r = starSize * mag;
+        return (
+          <group key={i} position={s.position}>
+            {/* Solid bright core — captured by bloom when threshold is
+                set, also visible directly via toneMapped=false. */}
             <mesh>
-              <sphereGeometry args={[starSize * haloFactor, 12, 10]} />
-              <meshBasicMaterial
-                color={config.tint}
-                transparent
-                opacity={0.22}
-                toneMapped={false}
-                depthWrite={false}
-              />
+              <sphereGeometry args={[r, 16, 12]} />
+              <meshBasicMaterial color={config.tint} toneMapped={false} />
             </mesh>
-          ) : null}
-        </group>
-      ))}
+            {/* Soft halo — a larger translucent sphere at the same tint.
+                Halo size scales with per-star magnitude so brighter
+                anchors carry larger halos, dimmer companions smaller —
+                the same rhythm as real bright/dim asterism stars. */}
+            {haloFactor > 0 ? (
+              <mesh>
+                <sphereGeometry args={[r * haloFactor, 12, 10]} />
+                <meshBasicMaterial
+                  color={config.tint}
+                  transparent
+                  opacity={0.22}
+                  toneMapped={false}
+                  depthWrite={false}
+                />
+              </mesh>
+            ) : null}
+          </group>
+        );
+      })}
       <lineSegments>
         <bufferGeometry>
           <bufferAttribute

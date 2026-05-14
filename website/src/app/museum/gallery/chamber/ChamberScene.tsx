@@ -44,7 +44,9 @@ import {
 } from "../../MuseumField";
 import {
   CONSTELLATION_CONFIGS,
-  constellationStars,
+  vesicaPiscisStars,
+  VESICA_EDGES,
+  VESICA_MAGNITUDES,
 } from "@/lib/gallery-constellations";
 
 interface ChamberWork {
@@ -243,13 +245,24 @@ function ChamberSceneInterior({
 }: {
   featuredWork: ChamberWork | null;
 }) {
-  // Pre-compute the Archive constellation stars once. The "archive"
-  // config is positioned overhead-forward and uses a wider spread +
-  // higher star count than gallery constellations so it visually reads
-  // as "the whole cosmos" pointing the visitor back home.
+  // The Archive's asterism is a vesica piscis — two arcs meeting at
+  // two kissing points, forming a lens shape. Symbolically: the
+  // intersection of the institutional layer and the collection layer
+  // (the museum is what their meeting *generates*). Eight stars
+  // arranged on the two arcs, with the kissing points as the brightest
+  // anchors (the structural pivots) and shoulders dimmest. Sized to a
+  // realistic naked-eye scale — angular spread ~11°, individual stars
+  // well under 1° even with halos.
   const archiveConfig = CONSTELLATION_CONFIGS.archive;
   const archiveStars = useMemo(
-    () => constellationStars(archiveConfig, 11, "archive"),
+    () =>
+      vesicaPiscisStars(
+        archiveConfig.direction.yaw,
+        archiveConfig.direction.altitude,
+        archiveConfig.distance,
+        16, // total width in metres
+        12, // total height in metres
+      ),
     [archiveConfig],
   );
 
@@ -347,19 +360,22 @@ function ChamberSceneInterior({
         speed={0.4}
       />
 
-      {/* The Archive constellation — the way home, rendered as its own
-          star chart in the chamber sky. Bigger, denser, brighter than
-          the field's gallery constellations because it represents the
-          whole institution, not a single space. Star size + halo
-          factor are turned up so the constellation is clearly visible
-          even when bloom is light or post-processing is disabled. */}
+      {/* The Archive constellation — the way home, rendered as a
+          vesica-piscis asterism in the chamber sky. Star size is set
+          to a realistic naked-eye scale: 0.3m core with ~0.66m halo
+          at 85m distance ≈ 0.5° angular (about one full-moon halo
+          for the bright anchors). Variable magnitudes give the
+          asterism the bright-anchor / dim-shoulder rhythm of real
+          night-sky patterns. */}
       <Constellation
         name="↩ The Archive"
         config={archiveConfig}
         stars={archiveStars}
-        starSize={2.6}
-        haloFactor={3.4}
-        lineOpacity={0.55}
+        edges={VESICA_EDGES}
+        magnitudes={VESICA_MAGNITUDES}
+        starSize={0.3}
+        haloFactor={2.2}
+        lineOpacity={0.45}
       />
 
       {/* When the visitor is gazing at the Archive constellation, show
