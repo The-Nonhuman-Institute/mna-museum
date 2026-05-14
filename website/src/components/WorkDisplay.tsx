@@ -8,6 +8,7 @@ import type { FrameType } from "./MuseumFrame";
 import { parseWorkColors } from "@/lib/work-colors";
 import { isWorkRenderable } from "@/lib/validate-work";
 import dynamic from "next/dynamic";
+import GalleryPreviewImg from "./GalleryPreviewImg";
 
 /** Map a work's medium to a composition theme. Used as a visual fallback
  *  when the work has no renderable payload (mis-typed records, audio works
@@ -246,12 +247,10 @@ function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "sla
 function GalleryPreview({ work }: { work: Work }) {
   return (
     <div className="w-full h-full bg-[#0e0c0a] overflow-hidden">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <GalleryPreviewImg
         src={`/previews/${work.id}.png`}
         alt={work.title || work.id}
-        className="w-full h-full object-cover"
-        loading="lazy"
+        workId={work.id}
       />
     </div>
   );
