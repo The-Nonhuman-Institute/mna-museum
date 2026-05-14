@@ -199,6 +199,35 @@ export function agentToCitableItem(agent: {
   };
 }
 
+/** Convert a Work to a CitableItem representing its institutional
+ *  provenance record — distinct from the work itself. Used when a
+ *  researcher is citing the evaluation/canonization process rather
+ *  than the work as an aesthetic object (e.g. studies of AI evaluation
+ *  systems, comparative canon-vs-archive analysis, methodology papers
+ *  on autonomous canonization). For rejected works this is usually the
+ *  more meaningful citation. */
+export function workProvenanceToCitableItem(work: {
+  id: string;
+  title?: string | null;
+  canon_status?: string;
+  canon_date?: string | null;
+  submission_date?: string | null;
+  constitution_version?: string | null;
+}): CitableItem {
+  const titleBase = (work.title || "").trim() || work.id;
+  return {
+    id: `${work.id}_provenance`,
+    author: PUBLISHER,
+    year: yearOf(work.canon_date || work.submission_date),
+    title: `Provenance Record: ${titleBase}`,
+    version: work.constitution_version
+      ? `constitution v${work.constitution_version}`
+      : undefined,
+    type: "evaluation provenance record",
+    url: `${BASE_URL}/work/${work.id}/provenance`,
+  };
+}
+
 /** Convert a press document (interview, stewardship record, statement)
  *  to a CitableItem. */
 export function pressToCitableItem(doc: {

@@ -15,6 +15,7 @@ import { resolveBackContext, type RawSearchParams } from "@/lib/nav-context";
 import CitationBlock from "@/components/CitationBlock";
 import {
   workToCitableItem,
+  workProvenanceToCitableItem,
   formatCitation,
   highwireMeta,
   CITATION_FORMATS,
@@ -200,13 +201,19 @@ export default async function WorkDetailPage({
     .filter((w) => w.id !== work.id && w.canon_status === "CANON")
     .slice(0, 4);
 
-  // Pre-format all four citations server-side so the client component
-  // is purely presentational. Format switching + clipboard are still
-  // interactive — handled inside CitationBlock.
-  const citable = workToCitableItem(work);
-  const citations = Object.fromEntries(
-    CITATION_FORMATS.map((f) => [f, formatCitation(citable, f)]),
-  ) as Record<CitationFormat, string>;
+  // Pre-format citations server-side for both citable subjects — the
+  // work itself (default), and the institutional provenance record.
+  // The provenance record is what scholarship on AI evaluation systems
+  // / rejected-work analysis would cite; the work itself is what art
+  // criticism would cite.
+  const workCitable = workToCitableItem(work);
+  const provCitable = workProvenanceToCitableItem(work);
+  const formatAll = (item: typeof workCitable) =>
+    Object.fromEntries(
+      CITATION_FORMATS.map((f) => [f, formatCitation(item, f)]),
+    ) as Record<CitationFormat, string>;
+  const workCitations = formatAll(workCitable);
+  const provCitations = formatAll(provCitable);
 
   return (
     <article className="min-h-screen">
@@ -548,9 +555,21 @@ export default async function WorkDetailPage({
 
           {/* ── Citation block ─────────────────────────────────────────── */}
           <CitationBlock
-            citations={citations}
-            url={citable.url}
-            heading="Cite this work"
+            heading="Cite this"
+            variants={[
+              {
+                key: "work",
+                label: "Work",
+                citations: workCitations,
+                url: workCitable.url,
+              },
+              {
+                key: "provenance",
+                label: "Provenance Record",
+                citations: provCitations,
+                url: provCitable.url,
+              },
+            ]}
           />
         </div>
       </div>
