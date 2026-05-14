@@ -938,10 +938,26 @@ export function Constellation({
   name,
   config,
   stars,
+  starSize = 0.9,
+  lineOpacity = 0.4,
+  haloFactor = 2.6,
 }: {
   name: string;
   config: ConstellationConfig;
   stars: ConstellationStar[];
+  /** Per-star sphere radius in world metres. Default 0.9 reads well
+   *  at the field's 135m gallery distance. Gallery interiors that
+   *  render the constellation closer (e.g. Chamber → Archive at 100m)
+   *  should bump this so the stars don't shrink below the bloom
+   *  threshold. */
+  starSize?: number;
+  /** Opacity of the line segments connecting stars. */
+  lineOpacity?: number;
+  /** Radius of the soft halo sphere around each star, as a multiple
+   *  of starSize. The halo is a translucent sphere at the same tint —
+   *  works in addition to bloom and ensures the constellation reads
+   *  even when bloom is light. Set to 0 to disable. */
+  haloFactor?: number;
 }) {
   // Build line segments connecting each consecutive pair (closing the
   // loop). Visually reads as the institution's hand on the sky.
@@ -973,13 +989,30 @@ export function Constellation({
   return (
     <group>
       {stars.map((s, i) => (
-        <mesh key={i} position={s.position}>
-          {/* Bigger than before (0.55 → 0.9). At 135m distance the
-              constellation reads clearly as "bright named stars" vs
-              ambient pinpoints. */}
-          <sphereGeometry args={[0.9, 16, 12]} />
-          <meshBasicMaterial color={config.tint} toneMapped={false} />
-        </mesh>
+        <group key={i} position={s.position}>
+          {/* Solid bright core — captured by bloom when threshold is
+              set, also visible directly via toneMapped=false. */}
+          <mesh>
+            <sphereGeometry args={[starSize, 16, 12]} />
+            <meshBasicMaterial color={config.tint} toneMapped={false} />
+          </mesh>
+          {/* Soft halo — a larger translucent sphere at the same tint.
+              Reads as the star's glow regardless of postprocessing,
+              and gives the constellation a sense of presence even when
+              the camera is pointed elsewhere. */}
+          {haloFactor > 0 ? (
+            <mesh>
+              <sphereGeometry args={[starSize * haloFactor, 12, 10]} />
+              <meshBasicMaterial
+                color={config.tint}
+                transparent
+                opacity={0.22}
+                toneMapped={false}
+                depthWrite={false}
+              />
+            </mesh>
+          ) : null}
+        </group>
       ))}
       <lineSegments>
         <bufferGeometry>
@@ -993,7 +1026,7 @@ export function Constellation({
         <lineBasicMaterial
           color={config.tint}
           transparent
-          opacity={0.4}
+          opacity={lineOpacity}
           toneMapped={false}
         />
       </lineSegments>

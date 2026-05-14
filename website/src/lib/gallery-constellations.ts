@@ -46,16 +46,16 @@ export const CONSTELLATION_CONFIGS: Record<string, ConstellationConfig> = {
   /* Archive — the "way home" constellation rendered inside gallery
      scenes (Chamber, Solo Exhibition, etc.) to point back at the main
      field. Bigger spread and a brighter neutral tint so it visually
-     reads as "the whole cosmos, not a single gallery." Slightly closer
-     so its stars feel more present and the lines between them are
-     legible. Star count is supplied by the caller; gallery scenes
-     should pass 10–12 so it visually dominates. */
+     reads as "the whole cosmos, not a single gallery." Pulled in to
+     85m so the constellation feels present and the lines between
+     stars are legible. Star count is supplied by the caller; gallery
+     scenes should pass 10–12 so it visually dominates. */
   archive: {
     id: "archive",
     direction: { yaw: 0, altitude: 0.55 }, // overhead-forward, ~32°
-    distance: 120,
-    tint: "#e8e4dc", // warm white — matches the institutional palette
-    spread: 0.18,
+    distance: 85,
+    tint: "#f5f0e6", // warm white, slightly brighter than e8e4dc
+    spread: 0.22,
   },
 };
 

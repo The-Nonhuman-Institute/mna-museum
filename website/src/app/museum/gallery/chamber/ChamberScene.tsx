@@ -162,7 +162,7 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
           camera={{
             fov: 60,
             near: 0.1,
-            far: 220,
+            far: 300,
             position: [0, EYE_HEIGHT, CAMERA_START_DISTANCE],
           }}
           dpr={isTouch ? 1 : [1, 1.5]}
@@ -200,11 +200,11 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
               budget that previously crashed the field. */}
           <EffectComposer>
             <Bloom
-              luminanceThreshold={0.55}
+              luminanceThreshold={0.35}
               luminanceSmoothing={0.9}
-              intensity={0.55}
+              intensity={0.85}
             />
-            <Vignette eskil={false} offset={0.5} darkness={0.28} />
+            <Vignette eskil={false} offset={0.55} darkness={0.22} />
           </EffectComposer>
         </Canvas>
       </div>
@@ -256,7 +256,12 @@ function ChamberSceneInterior({
   return (
     <>
       <color attach="background" args={["#06050a"]} />
-      <fog attach="fog" args={["#06050a", 24, 120]} />
+      {/* Fog pushed out from (24, 120) to (50, 240) so the bright
+          Stars layer (radius 95, depth 45 — sits 50–140m out) and
+          the Archive constellation (now 85m) aren't eaten by fog
+          before they hit the camera. Also makes the room feel
+          cathedral-sized instead of closet-sized. */}
+      <fog attach="fog" args={["#06050a", 50, 240]} />
 
       {/* Three-light institutional ambient + directional setup so the
           chamber reads as "same cosmos, smaller room." Ambient is
@@ -345,11 +350,16 @@ function ChamberSceneInterior({
       {/* The Archive constellation — the way home, rendered as its own
           star chart in the chamber sky. Bigger, denser, brighter than
           the field's gallery constellations because it represents the
-          whole institution, not a single space. */}
+          whole institution, not a single space. Star size + halo
+          factor are turned up so the constellation is clearly visible
+          even when bloom is light or post-processing is disabled. */}
       <Constellation
         name="↩ The Archive"
         config={archiveConfig}
         stars={archiveStars}
+        starSize={2.6}
+        haloFactor={3.4}
+        lineOpacity={0.55}
       />
 
       {/* When the visitor is gazing at the Archive constellation, show
@@ -369,7 +379,7 @@ function ChamberSceneInterior({
         position={[0, 0, 0]}
         receiveShadow
       >
-        <planeGeometry args={[120, 120]} />
+        <planeGeometry args={[260, 260]} />
         <MeshReflectorMaterial
           blur={[80, 20]}
           resolution={256}
