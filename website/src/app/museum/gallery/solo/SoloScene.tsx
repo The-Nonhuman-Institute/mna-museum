@@ -267,11 +267,20 @@ function SoloSceneInterior({
     [archiveConfig],
   );
 
-  // Chamber's gallery constellation rendered in its proper sky
-  // direction (yaw 0, altitude 0.32 — due forward, low in the sky).
-  // Stays procedural for now since the Chamber's named asterism is
-  // still TBD; cheap to upgrade later by swapping in a fixed builder.
-  const chamberConfig = CONSTELLATION_CONFIGS.chamber;
+  // Chamber's constellation — visible from the Solo Hall, but
+  // repositioned to a different sky direction than the field's view.
+  // The field's chamber config sits at yaw 0 (due-north of the
+  // field's centre), which from inside the Solo Hall would collide
+  // visually with the Archive vesica (also at yaw 0). Place it
+  // back-right of the visitor so the two constellations occupy
+  // genuinely distinct parts of the sky.
+  const chamberConfig = useMemo(
+    () => ({
+      ...CONSTELLATION_CONFIGS.chamber,
+      direction: { yaw: 1.7, altitude: 0.35 },
+    }),
+    [],
+  );
   const chamberStars = useMemo(
     () => constellationStars(chamberConfig, 5, "chamber"),
     [chamberConfig],
@@ -377,7 +386,7 @@ function SoloSceneInterior({
             key={work.id}
             work={work}
             position={[side * HALL_OFFSET_X, 2.6, z]}
-            facing={-side}
+            side={side}
           />
         );
       })}
@@ -398,15 +407,20 @@ function SoloSceneInterior({
 function WorkPlaque({
   work,
   position,
-  facing,
+  side,
 }: {
   work: SoloWork;
   position: [number, number, number];
-  /** -1: face -X (right side, looking left towards aisle). +1: face +X. */
-  facing: number;
+  /** -1: work is on the LEFT wall of the aisle (x = -HALL_OFFSET_X)
+   *  and faces +X (toward the visitor). +1: work is on the RIGHT
+   *  wall, faces -X. */
+  side: number;
 }) {
   const texture = useDownsampledTexture(`/previews/${work.id}.png`, 512);
-  const rotY = facing > 0 ? -Math.PI / 2 : Math.PI / 2;
+  // Plane geometry's default normal is +Z. To face the aisle:
+  //   side=-1 → normal must point +X → rotateY = +π/2
+  //   side=+1 → normal must point -X → rotateY = -π/2
+  const rotY = -side * (Math.PI / 2);
   return (
     <group position={position} rotation={[0, rotY, 0]}>
       {/* Backing plate — keeps the work readable even when its texture
