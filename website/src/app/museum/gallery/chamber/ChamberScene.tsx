@@ -18,6 +18,11 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, PointerLockControls, Stars } from "@react-three/drei";
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+} from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import Link from "next/link";
@@ -181,6 +186,21 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             enabled={locked || (pointerLockFailed && started)}
             joystickRef={joystickRef}
           />
+
+          {/* Matches the main field's postprocessing — Bloom is what
+              makes the bright stars and the Archive constellation glow
+              into legible halos. Without it the constellation stars at
+              120m read as a pixel or two, invisible at any real FOV.
+              Kept light (no mipmapBlur) to stay within the OOM
+              budget that previously crashed the field. */}
+          <EffectComposer>
+            <Bloom
+              luminanceThreshold={0.55}
+              luminanceSmoothing={0.9}
+              intensity={0.55}
+            />
+            <Vignette eskil={false} offset={0.5} darkness={0.28} />
+          </EffectComposer>
         </Canvas>
       </div>
 
@@ -233,42 +253,64 @@ function ChamberSceneInterior({
       <color attach="background" args={["#06050a"]} />
       <fog attach="fog" args={["#06050a", 24, 120]} />
 
-      {/* Match the main field's three-light ambient + directional setup
-          so the chamber reads as "same cosmos, smaller room." Without
-          these the institutional spotlight is the only light hitting
-          the statue and everything outside the beam crushes to black. */}
-      <ambientLight intensity={0.14} color="#bcc6d0" />
+      {/* Three-light institutional ambient + directional setup so the
+          chamber reads as "same cosmos, smaller room." Ambient is
+          warmer and slightly stronger than the field's so geometry
+          outside the spotlight cone has readable form rather than
+          crushing to black. */}
+      <ambientLight intensity={0.32} color="#cdd2dc" />
       <directionalLight
         position={[40, 30, 10]}
-        intensity={0.32}
+        intensity={0.6}
         color="#d8c4a0"
       />
       <directionalLight
         position={[-30, 20, -25]}
-        intensity={0.14}
+        intensity={0.3}
         color="#8aa0bc"
       />
 
       {/* Warm spotlight from above the work — the institutional beam.
           Sits on top of the directional fill, giving the statue rim
-          light + a centred altar beam. */}
+          light + a centred altar beam. Brighter + slightly wider cone
+          than v1 since the new ambient is now stronger. */}
       <spotLight
         position={[0, 16, 0.5]}
-        angle={0.4}
+        angle={0.48}
         penumbra={0.45}
-        intensity={2.6}
+        intensity={3.6}
         color={CHAMBER_TINT}
-        distance={32}
-        decay={1.4}
+        distance={36}
+        decay={1.3}
         target-position={[0, WORK_HEIGHT / 2 + 1, 0]}
+      />
+
+      {/* Close-in key light at viewer eye level, slightly in front of
+          the statue. This is what actually shows the silhouette to
+          someone walking around — pure directional fill aimed across
+          the figure. Without it the side facing the camera is always
+          in shadow because the spotlight is straight down. */}
+      <pointLight
+        position={[3.5, 3, 6]}
+        intensity={1.4}
+        color="#e6d4ad"
+        distance={22}
+        decay={1.6}
+      />
+      <pointLight
+        position={[-4, 4, -3]}
+        intensity={0.9}
+        color="#a5b8d0"
+        distance={18}
+        decay={1.6}
       />
 
       {/* Soft fill light from below, in the same tint family. */}
       <pointLight
         position={[0, 0.6, 4]}
-        intensity={0.45}
+        intensity={0.55}
         color={CHAMBER_TINT}
-        distance={12}
+        distance={14}
         decay={1.8}
       />
 
