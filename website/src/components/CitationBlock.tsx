@@ -115,7 +115,7 @@ export default function CitationBlock({
                     type="button"
                     onClick={() => setActiveVariantKey(v.key)}
                     aria-pressed={isActive}
-                    className={`pb-0.5 border-b transition-colors ${
+                    className={`pb-0.5 border-b transition-colors uppercase tracking-[0.22em] ${
                       isActive
                         ? "border-mna-white text-mna-white"
                         : "border-transparent text-mna-white/55 hover:text-mna-white/85"
@@ -139,7 +139,7 @@ export default function CitationBlock({
               key={f}
               type="button"
               onClick={() => setActive(f)}
-              className={`pb-1 border-b transition-colors ${
+              className={`pb-1 border-b transition-colors uppercase tracking-[0.22em] ${
                 isActive
                   ? "border-mna-white text-mna-white"
                   : "border-transparent text-mna-white/55 hover:text-mna-white/85"
@@ -170,7 +170,7 @@ export default function CitationBlock({
         <button
           type="button"
           onClick={onCopy}
-          className="text-mna-white/65 hover:text-mna-white transition-colors border-b border-mna-white/35 pb-0.5"
+          className="text-mna-white/65 hover:text-mna-white transition-colors border-b border-mna-white/35 pb-0.5 uppercase tracking-[0.22em]"
         >
           {copied ? "Copied ✓" : "Copy →"}
         </button>
