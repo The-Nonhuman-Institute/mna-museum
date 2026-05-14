@@ -934,7 +934,7 @@ function Constellations({
  *  longer have to discover that the stars are interactive by aiming
  *  blindly; they can see "✦ The Chamber" in the sky and aim with
  *  intent. */
-function Constellation({
+export function Constellation({
   name,
   config,
   stars,

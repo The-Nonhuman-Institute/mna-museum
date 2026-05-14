@@ -16,13 +16,14 @@
  * a room name to useMuseumPresence.
  */
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { PointerLockControls, Stars } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Html, PointerLockControls, Stars } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Constellation,
   DragLook,
   Movement,
   VirtualJoystick,
@@ -31,6 +32,10 @@ import {
   useDownsampledTexture,
   type SceneSpec,
 } from "../../MuseumField";
+import {
+  CONSTELLATION_CONFIGS,
+  constellationStars,
+} from "@/lib/gallery-constellations";
 
 interface ChamberWork {
   id: string;
@@ -118,12 +123,19 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
 
   // Escape from Chamber → back to The Archive. When pointer-locked,
   // browser releases first; second Esc returns. When not locked,
-  // single Esc returns.
+  // single Esc returns. R also returns immediately from anywhere —
+  // matches the field's R-key affordance and gives the Archive
+  // constellation a real keypress to teach the visitor.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
-      if (document.pointerLockElement) return; // browser releases lock
-      router.push("/museum");
+      if (e.key === "Escape") {
+        if (document.pointerLockElement) return; // browser releases lock
+        router.push("/museum");
+        return;
+      }
+      if (e.key === "r" || e.key === "R") {
+        router.push("/museum");
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -206,21 +218,47 @@ function ChamberSceneInterior({
 }: {
   featuredWork: ChamberWork | null;
 }) {
+  // Pre-compute the Archive constellation stars once. The "archive"
+  // config is positioned overhead-forward and uses a wider spread +
+  // higher star count than gallery constellations so it visually reads
+  // as "the whole cosmos" pointing the visitor back home.
+  const archiveConfig = CONSTELLATION_CONFIGS.archive;
+  const archiveStars = useMemo(
+    () => constellationStars(archiveConfig, 11, "archive"),
+    [archiveConfig],
+  );
+
   return (
     <>
-      <color attach="background" args={["#05040a"]} />
-      <fog attach="fog" args={["#05040a", 22, 90]} />
+      <color attach="background" args={["#06050a"]} />
+      <fog attach="fog" args={["#06050a", 24, 120]} />
 
-      <ambientLight intensity={0.08} color="#a8b6cc" />
+      {/* Match the main field's three-light ambient + directional setup
+          so the chamber reads as "same cosmos, smaller room." Without
+          these the institutional spotlight is the only light hitting
+          the statue and everything outside the beam crushes to black. */}
+      <ambientLight intensity={0.14} color="#bcc6d0" />
+      <directionalLight
+        position={[40, 30, 10]}
+        intensity={0.32}
+        color="#d8c4a0"
+      />
+      <directionalLight
+        position={[-30, 20, -25]}
+        intensity={0.14}
+        color="#8aa0bc"
+      />
 
-      {/* Warm spotlight from above the work — the institutional beam. */}
+      {/* Warm spotlight from above the work — the institutional beam.
+          Sits on top of the directional fill, giving the statue rim
+          light + a centred altar beam. */}
       <spotLight
         position={[0, 16, 0.5]}
-        angle={0.35}
+        angle={0.4}
         penumbra={0.45}
-        intensity={2.8}
+        intensity={2.6}
         color={CHAMBER_TINT}
-        distance={28}
+        distance={32}
         decay={1.4}
         target-position={[0, WORK_HEIGHT / 2 + 1, 0]}
       />
@@ -234,17 +272,42 @@ function ChamberSceneInterior({
         decay={1.8}
       />
 
-      {/* Subtle starfield — the visitor is still in the museum's
-          cosmos, not removed from it. Less dense than the field. */}
+      {/* Two-layer starfield identical to the main field — background
+          pinpoints + a few bright bloom-grabbed stars. Continuity:
+          looking up in the Chamber, the sky is the same sky as the
+          Archive, not a separate dark void. */}
       <Stars
-        radius={120}
-        depth={60}
-        count={1800}
-        factor={2.2}
+        radius={180}
+        depth={90}
+        count={4500}
+        factor={2.0}
         saturation={0}
         fade
-        speed={0.08}
+        speed={0.12}
       />
+      <Stars
+        radius={95}
+        depth={45}
+        count={140}
+        factor={6}
+        saturation={0.05}
+        fade
+        speed={0.4}
+      />
+
+      {/* The Archive constellation — the way home, rendered as its own
+          star chart in the chamber sky. Bigger, denser, brighter than
+          the field's gallery constellations because it represents the
+          whole institution, not a single space. */}
+      <Constellation
+        name="↩ The Archive"
+        config={archiveConfig}
+        stars={archiveStars}
+      />
+
+      {/* When the visitor is gazing at the Archive constellation, show
+          a small prompt teaching the R-key affordance. */}
+      <ArchiveGazePrompt stars={archiveStars} />
 
       {/* Floor — matte dark, single plane. */}
       <mesh
@@ -279,6 +342,76 @@ function ChamberSceneInterior({
         <EmptyChamberMarker />
       )}
     </>
+  );
+}
+
+/** Gaze detector for the Archive constellation. When the camera's
+ *  forward vector lands inside the constellation's screen-space
+ *  footprint, render a DOM prompt teaching the R-key affordance. The
+ *  prompt anchors to the constellation centroid so it appears right
+ *  where the visitor is already looking. */
+function ArchiveGazePrompt({
+  stars,
+}: {
+  stars: { position: [number, number, number] }[];
+}) {
+  const { camera } = useThree();
+  const [aiming, setAiming] = useState(false);
+  const projected = useRef(new THREE.Vector3());
+
+  const centroid = useMemo<[number, number, number]>(() => {
+    let sx = 0, sy = 0, sz = 0;
+    for (const s of stars) {
+      sx += s.position[0];
+      sy += s.position[1];
+      sz += s.position[2];
+    }
+    const n = stars.length || 1;
+    return [sx / n, sy / n - 10, sz / n];
+  }, [stars]);
+
+  useFrame(() => {
+    // 12% NDC radius — slightly wider than the main field's per-star
+    // detector because the Archive constellation has a bigger spread
+    // and the prompt should appear whenever the visitor is looking
+    // "up and forward" at it, not only when dead-centred on a star.
+    const AIM_THRESH_SQ = 0.12 * 0.12;
+    let inside = false;
+    for (const s of stars) {
+      projected.current.set(s.position[0], s.position[1], s.position[2]);
+      projected.current.project(camera);
+      if (projected.current.z >= 1) continue;
+      const d =
+        projected.current.x * projected.current.x +
+        projected.current.y * projected.current.y;
+      if (d < AIM_THRESH_SQ) {
+        inside = true;
+        break;
+      }
+    }
+    if (inside !== aiming) setAiming(inside);
+  });
+
+  if (!aiming) return null;
+  return (
+    <Html
+      position={centroid}
+      center
+      zIndexRange={[10, 0]}
+      style={{ pointerEvents: "none" }}
+    >
+      <div
+        className="font-sans uppercase tracking-[0.22em] whitespace-nowrap select-none"
+        style={{
+          fontSize: "10px",
+          color: "#e8e4dc",
+          textShadow: "0 0 10px #e8e4dc, 0 0 2px rgba(0,0,0,0.85)",
+          opacity: 0.92,
+        }}
+      >
+        Press R to return
+      </div>
+    </Html>
   );
 }
 
