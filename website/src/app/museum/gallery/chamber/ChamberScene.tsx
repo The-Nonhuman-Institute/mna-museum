@@ -17,7 +17,12 @@
  */
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html, PointerLockControls, Stars } from "@react-three/drei";
+import {
+  Html,
+  MeshReflectorMaterial,
+  PointerLockControls,
+  Stars,
+} from "@react-three/drei";
 import {
   EffectComposer,
   Bloom,
@@ -351,17 +356,32 @@ function ChamberSceneInterior({
           a small prompt teaching the R-key affordance. */}
       <ArchiveGazePrompt stars={archiveStars} />
 
-      {/* Floor — matte dark, single plane. */}
+      {/* Floor — polished obsidian reflector. The single biggest
+          atmosphere lift in a chamber-sized space: the statue, beam,
+          and stars catch softly in the floor and the room reads as a
+          cathedral interior rather than a black box. Smaller plane
+          and lower reflector resolution than the main field since the
+          chamber is a single focal scene with no other geometry to
+          mirror. Roughness kept high so it's a "polished stone"
+          surface, not a mirror. */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, 0, 0]}
         receiveShadow
       >
         <planeGeometry args={[120, 120]} />
-        <meshStandardMaterial
-          color="#0a0809"
-          roughness={0.95}
-          metalness={0.05}
+        <MeshReflectorMaterial
+          blur={[80, 20]}
+          resolution={256}
+          mixBlur={1.4}
+          mixStrength={0.85}
+          mirror={0.4}
+          roughness={0.92}
+          depthScale={0.5}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.2}
+          color="#0a0808"
+          metalness={0.22}
         />
       </mesh>
 
