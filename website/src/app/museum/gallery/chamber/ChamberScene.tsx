@@ -47,6 +47,9 @@ import {
   vesicaPiscisStars,
   VESICA_EDGES,
   VESICA_MAGNITUDES,
+  pillarStars,
+  PILLAR_EDGES,
+  PILLAR_MAGNITUDES,
 } from "@/lib/gallery-constellations";
 
 interface ChamberWork {
@@ -75,11 +78,22 @@ const CHAMBER_TINT = "#e6c890";
 
 type PLCHandle = { lock: () => void; unlock: () => void } | null;
 
+interface NavTarget {
+  id: string;
+  label: string;
+  route: string;
+}
+
 export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
   const [started, setStarted] = useState(false);
   const [locked, setLocked] = useState(false);
   const [pointerLockFailed, setPointerLockFailed] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
+  const [aimedTarget, setAimedTarget] = useState<NavTarget | null>(null);
+  const aimedTargetRef = useRef<NavTarget | null>(null);
+  useEffect(() => {
+    aimedTargetRef.current = aimedTarget;
+  }, [aimedTarget]);
   const router = useRouter();
 
   useEffect(() => {
@@ -146,7 +160,8 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
         return;
       }
       if (e.key === "r" || e.key === "R") {
-        router.push("/museum");
+        const target = aimedTargetRef.current;
+        router.push(target?.route ?? "/museum");
       }
     }
     window.addEventListener("keydown", onKey);
@@ -177,7 +192,10 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             gl.domElement.addEventListener("webglcontextlost", onLost);
           }}
         >
-          <ChamberSceneInterior featuredWork={featuredWork} />
+          <ChamberSceneInterior
+            featuredWork={featuredWork}
+            onAim={setAimedTarget}
+          />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -242,8 +260,10 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
 
 function ChamberSceneInterior({
   featuredWork,
+  onAim,
 }: {
   featuredWork: ChamberWork | null;
+  onAim: (t: NavTarget | null) => void;
 }) {
   // The Archive's asterism is a vesica piscis — two arcs meeting at
   // two kissing points, forming a lens shape. Symbolically: the
@@ -264,6 +284,22 @@ function ChamberSceneInterior({
         12, // total height in metres
       ),
     [archiveConfig],
+  );
+
+  // Solo Exhibition pillar — pre-compute so the gaze router can detect
+  // it the same way it detects the Archive. Built with the same helper
+  // the field uses, so the chamber sees the constellation in exactly
+  // the same position as the field's view of it.
+  const soloConfig = CONSTELLATION_CONFIGS.solo_exhibition;
+  const soloStars = useMemo(
+    () =>
+      pillarStars(
+        soloConfig.direction.yaw,
+        soloConfig.direction.altitude,
+        soloConfig.distance,
+        14,
+      ),
+    [soloConfig],
   );
 
   return (
@@ -378,9 +414,29 @@ function ChamberSceneInterior({
         lineOpacity={0.45}
       />
 
-      {/* When the visitor is gazing at the Archive constellation, show
-          a small prompt teaching the R-key affordance. */}
-      <ArchiveGazePrompt stars={archiveStars} />
+      {/* Solo Exhibition Hall — visible from the Chamber in its own
+          sky direction (yaw 2.35, ~26° up). Mirrors the field's view
+          of the same constellation so each gallery feels like it
+          shares the same sky rather than a private bubble. */}
+      <Constellation
+        name="✦ Solo Exhibition Hall"
+        config={soloConfig}
+        stars={soloStars}
+        edges={PILLAR_EDGES}
+        magnitudes={PILLAR_MAGNITUDES}
+        starSize={0.32}
+        haloFactor={2.4}
+        lineOpacity={0.4}
+      />
+
+      {/* Gaze router — when the visitor's view is centred on a
+          constellation, surface the press-R affordance and push the
+          aimed target up to the page so R navigates correctly. */}
+      <ConstellationGazeRouter
+        archiveStars={archiveStars}
+        soloStars={soloStars}
+        onAim={onAim}
+      />
 
       {/* Floor — polished obsidian reflector. The single biggest
           atmosphere lift in a chamber-sized space: the statue, beam,
@@ -433,57 +489,97 @@ function ChamberSceneInterior({
   );
 }
 
-/** Gaze detector for the Archive constellation. When the camera's
- *  forward vector lands inside the constellation's screen-space
- *  footprint, render a DOM prompt teaching the R-key affordance. The
- *  prompt anchors to the constellation centroid so it appears right
- *  where the visitor is already looking. */
-function ArchiveGazePrompt({
-  stars,
+/** Multi-target gaze router. Detects which constellation (Archive,
+ *  Solo Exhibition, …) the camera is currently centred on, surfaces
+ *  the press-R prompt at that constellation's centroid, and pushes
+ *  the corresponding NavTarget up to the parent so the R-key handler
+ *  knows where to send the visitor. */
+function ConstellationGazeRouter({
+  archiveStars,
+  soloStars,
+  onAim,
 }: {
-  stars: { position: [number, number, number] }[];
+  archiveStars: { position: [number, number, number] }[];
+  soloStars: { position: [number, number, number] }[];
+  onAim: (t: NavTarget | null) => void;
 }) {
   const { camera } = useThree();
-  const [aiming, setAiming] = useState(false);
   const projected = useRef(new THREE.Vector3());
+  const [aimed, setAimed] = useState<{
+    target: NavTarget;
+    centroid: [number, number, number];
+  } | null>(null);
+  const lastAimedId = useRef<string | null>(null);
 
-  const centroid = useMemo<[number, number, number]>(() => {
-    let sx = 0, sy = 0, sz = 0;
-    for (const s of stars) {
-      sx += s.position[0];
-      sy += s.position[1];
-      sz += s.position[2];
+  const groups = useMemo(() => {
+    function centroid(
+      stars: { position: [number, number, number] }[],
+      labelDrop = 10,
+    ): [number, number, number] {
+      let sx = 0, sy = 0, sz = 0;
+      for (const s of stars) {
+        sx += s.position[0];
+        sy += s.position[1];
+        sz += s.position[2];
+      }
+      const n = stars.length || 1;
+      return [sx / n, sy / n - labelDrop, sz / n];
     }
-    const n = stars.length || 1;
-    return [sx / n, sy / n - 10, sz / n];
-  }, [stars]);
+    return [
+      {
+        target: {
+          id: "archive",
+          label: "Press R to return",
+          route: "/museum",
+        } satisfies NavTarget,
+        stars: archiveStars,
+        centroid: centroid(archiveStars),
+      },
+      {
+        target: {
+          id: "solo",
+          label: "Press R for Solo Exhibition",
+          route: "/museum/gallery/solo",
+        } satisfies NavTarget,
+        stars: soloStars,
+        centroid: centroid(soloStars),
+      },
+    ];
+  }, [archiveStars, soloStars]);
 
   useFrame(() => {
-    // 12% NDC radius — slightly wider than the main field's per-star
-    // detector because the Archive constellation has a bigger spread
-    // and the prompt should appear whenever the visitor is looking
-    // "up and forward" at it, not only when dead-centred on a star.
+    // 12% NDC radius — wide enough that "looking up at the
+    // constellation" counts as aim even when not perfectly centred.
     const AIM_THRESH_SQ = 0.12 * 0.12;
-    let inside = false;
-    for (const s of stars) {
-      projected.current.set(s.position[0], s.position[1], s.position[2]);
-      projected.current.project(camera);
-      if (projected.current.z >= 1) continue;
-      const d =
-        projected.current.x * projected.current.x +
-        projected.current.y * projected.current.y;
-      if (d < AIM_THRESH_SQ) {
-        inside = true;
-        break;
+    let best: { target: NavTarget; centroid: [number, number, number] } | null =
+      null;
+    let bestDist = AIM_THRESH_SQ;
+    for (const g of groups) {
+      for (const s of g.stars) {
+        projected.current.set(s.position[0], s.position[1], s.position[2]);
+        projected.current.project(camera);
+        if (projected.current.z >= 1) continue;
+        const d =
+          projected.current.x * projected.current.x +
+          projected.current.y * projected.current.y;
+        if (d < bestDist) {
+          bestDist = d;
+          best = { target: g.target, centroid: g.centroid };
+        }
       }
     }
-    if (inside !== aiming) setAiming(inside);
+    const id = best?.target.id ?? null;
+    if (id !== lastAimedId.current) {
+      lastAimedId.current = id;
+      setAimed(best);
+      onAim(best?.target ?? null);
+    }
   });
 
-  if (!aiming) return null;
+  if (!aimed) return null;
   return (
     <Html
-      position={centroid}
+      position={aimed.centroid}
       center
       zIndexRange={[10, 0]}
       style={{ pointerEvents: "none" }}
@@ -497,7 +593,7 @@ function ArchiveGazePrompt({
           opacity: 0.92,
         }}
       >
-        Press R to return
+        {aimed.target.label}
       </div>
     </Html>
   );

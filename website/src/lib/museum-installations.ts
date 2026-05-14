@@ -158,6 +158,59 @@ export async function getSoloFeaturedOriginator(): Promise<string | null> {
   return w ? ((w.originator_id as string) || null) : null;
 }
 
+/** The full active solo-exhibition package — originator, title, and
+ *  the ordered list of featured work_ids. Used by the Solo Exhibition
+ *  Hall scene to build the corridor of works. Returns null when no
+ *  solo decision exists. */
+export interface ActiveSoloExhibition {
+  originatorId: string;
+  /** The Curator-supplied or steward-supplied exhibition title; may be
+   *  null when the decision did not include one (steward API form
+   *  without exhibition_title). */
+  title: string | null;
+  /** Ordered work_ids exactly as recorded in the decision. */
+  workIds: string[];
+}
+
+export async function getActiveSoloExhibition(): Promise<ActiveSoloExhibition | null> {
+  if (!(await hasDecisionsTable())) return null;
+  const db = getDb();
+  const result = await db.execute({
+    sql: `SELECT decision_type, target_space, work_ids, exhibition_title
+            FROM curatorial_decisions
+           WHERE decision_type IN ('FEATURE_SOLO', 'FEATURE_SOLO_EXHIBITION')
+           ORDER BY decided_at DESC
+           LIMIT 1`,
+    args: [],
+  });
+  const r = result.rows[0];
+  if (!r) return null;
+  const target = (r.target_space as string) || "";
+  let workIds: string[] = [];
+  try {
+    const parsed = JSON.parse((r.work_ids as string | null) || "[]");
+    if (Array.isArray(parsed)) workIds = parsed.map(String);
+  } catch {
+    /* leave empty */
+  }
+  let originatorId: string | null = null;
+  if (/^MNA-OR-/i.test(target)) {
+    originatorId = target;
+  } else if (workIds.length > 0) {
+    const w = await db.execute({
+      sql: `SELECT originator_id FROM works WHERE id = ? LIMIT 1`,
+      args: [workIds[0]],
+    });
+    originatorId = (w.rows[0]?.originator_id as string) || null;
+  }
+  if (!originatorId) return null;
+  return {
+    originatorId,
+    title: (r.exhibition_title as string | null) || null,
+    workIds,
+  };
+}
+
 /** True if any active installations exist for a space. */
 export async function hasInstallations(spaceId: string): Promise<boolean> {
   if (!(await hasInstallationsTable())) return false;
