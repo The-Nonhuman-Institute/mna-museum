@@ -109,24 +109,53 @@ export async function getMonumentalWork(): Promise<Installation | null> {
 }
 
 /**
- * Solo Exhibition is determined by the most recent FEATURE_SOLO curatorial
- * decision. The decision's `target_space` holds the originator registry_id.
- * Returns null if no such decision exists.
+ * Solo Exhibition is determined by the most recent solo-featuring
+ * curatorial decision. Two decision shapes exist in the DB depending
+ * on which surface wrote the row:
+ *
+ *   - `FEATURE_SOLO` (steward / API route) — `target_space` is the
+ *      originator registry_id directly.
+ *   - `FEATURE_SOLO_EXHIBITION` (autonomous Curator agent) —
+ *      `target_space` is the placeholder string `'originator'` and
+ *      the actual originator is inferred from the first work_id.
+ *
+ * Returns the originator registry_id, or null if no solo decision
+ * exists (in which case the field's Solo Exhibition constellation
+ * stays dark).
  */
 export async function getSoloFeaturedOriginator(): Promise<string | null> {
   if (!(await hasDecisionsTable())) return null;
   const db = getDb();
   const result = await db.execute({
-    sql: `SELECT target_space
+    sql: `SELECT decision_type, target_space, work_ids
             FROM curatorial_decisions
-           WHERE decision_type = 'FEATURE_SOLO'
+           WHERE decision_type IN ('FEATURE_SOLO', 'FEATURE_SOLO_EXHIBITION')
            ORDER BY decided_at DESC
            LIMIT 1`,
     args: [],
   });
   const r = result.rows[0];
   if (!r) return null;
-  return (r.target_space as string) || null;
+  const target = (r.target_space as string) || "";
+  // Steward-API form: target_space *is* the originator id.
+  if (/^MNA-OR-/i.test(target)) return target;
+  // Curator-agent form: target_space is the placeholder "originator";
+  // resolve the originator from the first work in the decision.
+  const workIdsRaw = (r.work_ids as string | null) || "[]";
+  let firstWorkId: string | null = null;
+  try {
+    const ids = JSON.parse(workIdsRaw);
+    if (Array.isArray(ids) && ids.length > 0) firstWorkId = String(ids[0]);
+  } catch {
+    return null;
+  }
+  if (!firstWorkId) return null;
+  const work = await db.execute({
+    sql: `SELECT originator_id FROM works WHERE id = ? LIMIT 1`,
+    args: [firstWorkId],
+  });
+  const w = work.rows[0];
+  return w ? ((w.originator_id as string) || null) : null;
 }
 
 /** True if any active installations exist for a space. */
