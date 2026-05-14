@@ -60,10 +60,10 @@ interface SoloSceneProps {
 }
 
 const EYE_HEIGHT = 1.7;
-const CAMERA_START_Z = 9;
-const HALL_WORK_SPACING = 7; // metres between consecutive works along Z
-const HALL_OFFSET_X = 4.2;   // metres left/right of centre for each work
-const WORK_PLANE_SIZE = 3.4; // metres — each work plane
+const CAMERA_START_Z = 0.1; // start at the rotunda's centre, looking -Z
+const ROTUNDA_RADIUS = 12; // distance from centre to each work, in metres
+const WORK_PLANE_SIZE = 3.2; // metres — each work plane
+const WORK_HEIGHT_Y = 2.6;  // y-position of work centre
 
 type PLCHandle = { lock: () => void; unlock: () => void } | null;
 
@@ -375,29 +375,38 @@ function SoloSceneInterior({
         />
       </mesh>
 
-      {/* The corridor — works alternating left/right at fixed spacing. */}
+      {/* Rotunda — works evenly distributed around the visitor on the
+          inner wall of a circular hall, all facing the centre. The
+          visitor stands inside the body of work and turns to take it
+          in. Reads as "the originator's voice surrounds you," vs. a
+          corridor's "walk past the works." */}
       {works.map((work, i) => {
-        // Left side for even i, right for odd. Walks the visitor's
-        // gaze through the body of work like a real exhibition hall.
-        const side = i % 2 === 0 ? -1 : 1;
-        const z = -(i + 1) * HALL_WORK_SPACING;
+        // Angle from -Z axis (front of room), going clockwise. With N
+        // evenly-spaced works the first lands directly ahead.
+        const theta = (i / Math.max(1, works.length)) * Math.PI * 2;
+        const x = Math.sin(theta) * ROTUNDA_RADIUS;
+        const z = -Math.cos(theta) * ROTUNDA_RADIUS;
         return (
           <WorkPlaque
             key={work.id}
             work={work}
-            position={[side * HALL_OFFSET_X, 2.6, z]}
-            side={side}
+            position={[x, WORK_HEIGHT_Y, z]}
+            theta={theta}
           />
         );
       })}
 
-      {/* End plaque at the far end of the procession — the originator's
-          name + the exhibition title, the institutional sign-off. */}
-      {works.length > 0 ? (
-        <EndPlaque
-          z={-(works.length + 1) * HALL_WORK_SPACING}
+      {/* Centrepiece — a low warm ring on the floor anchors the
+          visitor's standpoint and marks the institutional vantage. */}
+      <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.4, 1.55, 64]} />
+        <meshBasicMaterial
+          color="#e6c890"
+          transparent
+          opacity={0.4}
+          toneMapped={false}
         />
-      ) : null}
+      </mesh>
     </>
   );
 }
@@ -407,20 +416,19 @@ function SoloSceneInterior({
 function WorkPlaque({
   work,
   position,
-  side,
+  theta,
 }: {
   work: SoloWork;
   position: [number, number, number];
-  /** -1: work is on the LEFT wall of the aisle (x = -HALL_OFFSET_X)
-   *  and faces +X (toward the visitor). +1: work is on the RIGHT
-   *  wall, faces -X. */
-  side: number;
+  /** Angle around the rotunda, measured from the -Z axis going
+   *  clockwise (so theta=0 is the work directly ahead of the visitor
+   *  on entry). The work faces back toward the rotunda's centre. */
+  theta: number;
 }) {
   const texture = useDownsampledTexture(`/previews/${work.id}.png`, 512);
-  // Plane geometry's default normal is +Z. To face the aisle:
-  //   side=-1 → normal must point +X → rotateY = +π/2
-  //   side=+1 → normal must point -X → rotateY = -π/2
-  const rotY = -side * (Math.PI / 2);
+  // Plane geometry default normal is +Z. Rotating Y by -theta turns
+  // that normal to point inward toward the rotunda centre.
+  const rotY = -theta;
   return (
     <group position={position} rotation={[0, rotY, 0]}>
       {/* Backing plate — keeps the work readable even when its texture
@@ -476,34 +484,6 @@ function WorkPlaque({
               {work.title}
             </div>
           ) : null}
-        </div>
-      </Html>
-    </group>
-  );
-}
-
-/* ─── End-of-hall plaque ─────────────────────────────────────────────────── */
-
-function EndPlaque({ z }: { z: number }) {
-  return (
-    <group position={[0, 2.4, z]}>
-      <Html
-        position={[0, 0, 0]}
-        center
-        transform
-        distanceFactor={6}
-        style={{ pointerEvents: "none" }}
-      >
-        <div
-          className="font-sans uppercase tracking-[0.26em] whitespace-nowrap select-none text-center"
-          style={{
-            fontSize: "11px",
-            color: "#e8e4dc",
-            opacity: 0.75,
-            textShadow: "0 0 8px rgba(0,0,0,0.85)",
-          }}
-        >
-          End of Procession
         </div>
       </Html>
     </group>
