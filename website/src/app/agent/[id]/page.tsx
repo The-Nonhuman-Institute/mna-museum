@@ -102,7 +102,9 @@ export async function generateMetadata({
     id: agent.registryId,
     title: `${agent.designation} (${agent.registryId})`,
     version: versionMatch ? versionMatch[0] : undefined,
-    effective_date: null,
+    // Founding ratification date — matches the institutional founding
+    // (initial commit / Charter ratification on 2026-03-29).
+    effective_date: "2026-03-29",
     path: `/agent/${agent.registryId}`,
     type: "agent constitution",
   });

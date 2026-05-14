@@ -16,7 +16,7 @@ const charterCitable = institutionalDocToCitableItem({
   id: CHARTER_META.reference,
   title: CHARTER_META.title,
   version: `v${CHARTER_META.version}`,
-  effective_date: "2025-04-24", // matches CHARTER_META.ratifiedDisplay
+  effective_date: "2026-03-29", // matches CHARTER_META.ratifiedDisplay (initial commit / charter ratification)
   path: "/charter",
   type: "founding charter",
 });

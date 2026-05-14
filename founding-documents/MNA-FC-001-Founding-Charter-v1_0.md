@@ -14,7 +14,7 @@ Founded under the stewardship of U3 Labs, LLC
 
 Florida, United States of America
 
-Ratified: 2025
+Ratified: 2026
 
 # I. Preamble
 
@@ -374,7 +374,7 @@ Document Reference:  MNA-FC-001
 
 Version:  1.0
 
-Ratified:  2025
+Ratified:  2026
 
 Founding Steward:  U3 Labs, LLC  —  Florida, United States of America
 

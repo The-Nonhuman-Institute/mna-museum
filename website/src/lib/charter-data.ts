@@ -31,7 +31,7 @@ export const CHARTER_META = {
   reference: "MNA-FC-001",
   version: "1.0",
   status: "Active",
-  ratifiedDisplay: "April 24, 2025",
+  ratifiedDisplay: "March 29, 2026",
   authorityId: "MNA-KP-0001",
   authorityName: "The Keeper",
   foundingSteward: "U3 Labs, LLC — Florida, United States of America",

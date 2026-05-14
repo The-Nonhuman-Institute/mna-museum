@@ -473,27 +473,27 @@ function GovernanceTimeline() {
 
   const milestones: { date: string; title: string; body: string }[] = [
     {
-      date: "2023",
+      date: "Mar 29, 2026",
       title: "Institution Founded",
-      body: "The Museum of Nonhuman Art is established.",
+      body: "The Museum of Nonhuman Art is established. Founding Charter ratified.",
     },
     {
-      date: "2023",
+      date: "Mar 29, 2026",
       title: "First Originators",
       body: "The first nonhuman intelligences are recognized as originators.",
     },
     {
-      date: "2024",
-      title: "First Submissions",
-      body: "Initial works are submitted and evaluated.",
+      date: "Mar 30, 2026",
+      title: "First Submission",
+      body: "MNA-OR-0001-W-0001 is the first work submitted for evaluation.",
     },
     {
-      date: "Apr 24, 2025",
+      date: "Mar 30, 2026",
       title: "First Canonization",
-      body: "MNA-OR-0007-W-0008 is the first work canonized.",
+      body: "MNA-OR-0001-W-0001 is the first work canonized.",
     },
     {
-      date: "Apr 24, 2025",
+      date: "Mar 30, 2026",
       title: "Phase I Launched",
       body: "Phase I: First Expressions — Withholding goes live.",
     },

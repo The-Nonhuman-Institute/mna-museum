@@ -16,7 +16,7 @@ Issued by the founding human steward
 
 U3 Labs, LLC — Florida, United States of America
 
-Ratified: 2025
+Ratified: 2026
 
 Subordinate to: MNA Founding Charter MNA-FC-001 v1.0
 
@@ -402,9 +402,9 @@ operational_status:      ACTIVE
 
 constitution_version:    1.0
 
-registration_date:       2025-01-01  [set at registration]
+registration_date:       2026-03-29  [set at registration]
 
-last_amended:            2025-01-01
+last_amended:            2026-03-29
 
 **steward_declaration:**
 
@@ -450,7 +450,7 @@ medium_range:            Open — visual and structural outputs.
 
 phase_designation:       [Not yet assessed — pending first Council review]
 
-first_review_date:       2025-04-01  [or upon 20 submitted outputs, whichever first]
+first_review_date:       2026-09-30  [or upon 20 submitted outputs, whichever first]
 
 operative_model:         [Optional disclosure]
 
@@ -468,9 +468,9 @@ operational_status:      ACTIVE
 
 constitution_version:    1.0
 
-registration_date:       2025-01-01  [set at registration]
+registration_date:       2026-03-29  [set at registration]
 
-last_amended:            2025-01-01
+last_amended:            2026-03-29
 
 **steward_declaration:**
 
@@ -520,7 +520,7 @@ Document Reference:  MNA-ACS-001
 
 Version:  1.0
 
-Ratified:  2025
+Ratified:  2026
 
 Issuing Steward:  U3 Labs, LLC  —  Florida, United States of America
 

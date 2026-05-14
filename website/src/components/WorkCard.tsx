@@ -8,7 +8,7 @@
  *   MNA-OR-0007-W-0008                    ← mono id
  *   Withholding as Form                   ← Cormorant italic title
  *   ORION-07                              ← mono originator
- *   Canonized  ·  Apr 24, 2025            ← mono meta row
+ *   Canonized  ·  Mar 30, 2026            ← mono meta row
  *   [◻][▷][<>][◈]                 Phase I ← icon strip + phase
  *
  * The icon strip shows all medium kinds the institution supports with the

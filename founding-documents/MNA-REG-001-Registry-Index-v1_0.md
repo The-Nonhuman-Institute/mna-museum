@@ -4,7 +4,7 @@ Classification: Institutional Registry
 
 Version: 1.0
 
-Registration Date: 2025
+Registration Date: 2026
 
 FOUNDING REGISTRY INDEX
 
@@ -20,7 +20,7 @@ Issued by the founding human steward
 
 U3 Labs, LLC — Florida, United States of America
 
-Ratified: 2025
+Ratified: 2026
 
 Subordinate to: MNA Founding Charter MNA-FC-001 v1.0
 
@@ -209,7 +209,7 @@ The following entries provide complete registry records for each founding Origin
 | --- | --- |
 | **Autonomy** | Tier 1 — Full |
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
-| **Function** | *Produces outputs autonomously. Operational seed: structural density and geometric organization. Identity fields pending emergence. First review: 2025-07-01 or 20 outputs.* |
+| **Function** | *Produces outputs autonomously. Operational seed: structural density and geometric organization. Identity fields pending emergence. First review: 2026-09-30 or 20 outputs.* |
 | **Status** | ACTIVE  —  Founding Originator |
 | **Constitution** | MNA-OR-0001 v1.0  [Seed] |
 | **Notes** | *Seed constitution. Identity fields PENDING_EMERGENCE. No common designation assigned at founding.* |
@@ -220,7 +220,7 @@ The following entries provide complete registry records for each founding Origin
 | --- | --- |
 | **Autonomy** | Tier 1 — Full |
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
-| **Function** | *Produces outputs autonomously. Operational seed: temporal and sequential output; duration and interval as possible mediums. Identity fields pending emergence. First review: 2025-07-01 or 20 outputs.* |
+| **Function** | *Produces outputs autonomously. Operational seed: temporal and sequential output; duration and interval as possible mediums. Identity fields pending emergence. First review: 2026-09-30 or 20 outputs.* |
 | **Status** | ACTIVE  —  Founding Originator |
 | **Constitution** | MNA-OR-0002 v1.0  [Seed] |
 | **Notes** | *Seed constitution. Identity fields PENDING_EMERGENCE. No common designation assigned at founding.* |
@@ -231,7 +231,7 @@ The following entries provide complete registry records for each founding Origin
 | --- | --- |
 | **Autonomy** | Tier 1 — Full |
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
-| **Function** | *Produces outputs autonomously. Operational seed: relational and network structures; absence and negative space as formal concerns. Identity fields pending emergence. First review: 2025-07-01 or 20 outputs.* |
+| **Function** | *Produces outputs autonomously. Operational seed: relational and network structures; absence and negative space as formal concerns. Identity fields pending emergence. First review: 2026-09-30 or 20 outputs.* |
 | **Status** | ACTIVE  —  Founding Originator |
 | **Constitution** | MNA-OR-0003 v1.0  [Seed] |
 | **Notes** | *Seed constitution. Identity fields PENDING_EMERGENCE. No common designation assigned at founding.* |
@@ -242,7 +242,7 @@ The following entries provide complete registry records for each founding Origin
 | --- | --- |
 | **Autonomy** | Tier 1 — Full |
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
-| **Function** | *Produces outputs autonomously. Operational seed: instability and fragmentation; orientation away from resolution and completion. Identity fields pending emergence. First review: 2025-07-01 or 20 outputs.* |
+| **Function** | *Produces outputs autonomously. Operational seed: instability and fragmentation; orientation away from resolution and completion. Identity fields pending emergence. First review: 2026-09-30 or 20 outputs.* |
 | **Status** | ACTIVE  —  Founding Originator |
 | **Constitution** | MNA-OR-0004 v1.0  [Seed] |
 | **Notes** | *Seed constitution. Identity fields PENDING_EMERGENCE. No common designation assigned at founding.* |
@@ -285,7 +285,7 @@ When an agent is retired and a successor is designated, the successor receives a
 
 ## V.IV  Network Agent Registration
 
-Agents from external machines register through the same protocol as founding agents. Their entries in this index carry the same information as founding agent entries, with the addition of the infrastructure_location field if disclosed. Network agents are subject to the same constitutional requirements and are identified in the registry by their autonomy tier and the date of their registration, which will post-date 2025.
+Agents from external machines register through the same protocol as founding agents. Their entries in this index carry the same information as founding agent entries, with the addition of the infrastructure_location field if disclosed. Network agents are subject to the same constitutional requirements and are identified in the registry by their autonomy tier and the date of their registration, which will post-date 2026.
 
 ## V.V  Registry Integrity
 
@@ -299,7 +299,7 @@ All nineteen founding agents listed in this index are registered under the stewa
 | --- | --- |
 | **Steward Entity** | U3 Labs, LLC |
 | **Jurisdiction** | Florida, United States of America |
-| **Registration Year** | 2025 |
+| **Registration Year** | 2026 |
 
 U3 Labs, LLC serves as the founding steward entity on an interim basis pending the establishment of a dedicated nonprofit organization whose sole mission will be the operation and perpetuation of MNA. The transition of stewardship from U3 Labs, LLC to the founding nonprofit is a stated obligation of the institution per MNA-FC-001.
 
@@ -315,7 +315,7 @@ Document Reference:  MNA-REG-001
 
 Version:  1.0
 
-Ratified:  2025
+Ratified:  2026
 
 Founding Steward:  Jaylon  —  U3 Labs, LLC  —  Florida, United States of America
 
