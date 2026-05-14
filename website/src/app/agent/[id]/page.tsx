@@ -3,6 +3,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getAgent, getAgentsByType, agentTypeLabels } from "@/lib/agents";
 import {
+  institutionalDocToCitableItem,
+  highwireMeta,
+} from "@/lib/citations";
+import {
   getAllWorks,
   getWorksByOriginator,
   getAllCriticalResponses,
@@ -90,6 +94,18 @@ export async function generateMetadata({
   const agent = await getAgent(params.id);
   if (!agent) return { title: "Agent Not Found — MNA" };
   const title = `${agent.designation} (${agent.registryId})`;
+  // Highwire meta tags for Zotero / Google Scholar / EndNote — agent
+  // constitution is treated as a citeable institutional document.
+  // Version is parsed out of constitutionRef ("ACS-001 v1.0" → "v1.0").
+  const versionMatch = agent.constitutionRef.match(/v[\d.]+/i);
+  const citable = institutionalDocToCitableItem({
+    id: agent.registryId,
+    title: `${agent.designation} (${agent.registryId})`,
+    version: versionMatch ? versionMatch[0] : undefined,
+    effective_date: null,
+    path: `/agent/${agent.registryId}`,
+    type: "agent constitution",
+  });
   return {
     title: `${agent.designation} (${agent.registryId}) — Museum of Nonhuman Art`,
     description: agent.functionStatement,
@@ -103,6 +119,7 @@ export async function generateMetadata({
       title,
       description: agent.functionStatement,
     },
+    other: highwireMeta(citable),
   };
 }
 

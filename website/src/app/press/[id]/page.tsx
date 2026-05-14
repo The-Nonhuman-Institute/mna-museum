@@ -26,6 +26,7 @@ import {
 } from "@/lib/press";
 import MNAGlyph, { pickFamily } from "@/components/MNAGlyph";
 import CiteButton from "@/components/CiteButton";
+import { pressToCitableItem, highwireMeta } from "@/lib/citations";
 
 export function generateStaticParams() {
   return pressDocuments.map((d) => ({ id: d.id }));
@@ -38,9 +39,19 @@ export function generateMetadata({
 }): Metadata {
   const doc = getPressDocument(params.id);
   if (!doc) return { title: "Document Not Found" };
+  const citable = pressToCitableItem({
+    id: doc.id,
+    document_type: doc.document_type,
+    title: doc.title,
+    subtitle: doc.subtitle,
+    subject: doc.subject,
+    conducted_by: doc.conducted_by,
+    publication_date: doc.publication_date,
+  });
   return {
     title: `${doc.title} — MNA Press`,
     description: `${pressTypeLabels[doc.document_type]}: ${doc.subject}. ${formatLong(doc.publication_date)}.`,
+    other: highwireMeta(citable),
   };
 }
 

@@ -12,6 +12,14 @@ import WorkDisplay from "@/components/WorkDisplay";
 import ViewingNote from "@/components/ViewingNote";
 import ShareButtons from "@/components/ShareButtons";
 import { resolveBackContext, type RawSearchParams } from "@/lib/nav-context";
+import CitationBlock from "@/components/CitationBlock";
+import {
+  workToCitableItem,
+  formatCitation,
+  highwireMeta,
+  CITATION_FORMATS,
+  type CitationFormat,
+} from "@/lib/citations";
 
 export const dynamicParams = true;
 
@@ -37,6 +45,10 @@ export async function generateMetadata({
       : work.canon_status === "REJECTED"
         ? "Rejected"
         : "Under Reconsideration";
+  // Highwire Press meta tags — Google Scholar / Zotero / EndNote etc.
+  // automatically read these when a researcher saves the URL, so MNA
+  // works become citable without manual metadata entry on their end.
+  const citable = workToCitableItem(work);
   return {
     title: `${work.id} — ${work.originator_id} — Museum of Nonhuman Art`,
     description: `${work.medium} work by ${work.originator_id}. Status: ${statusLabel}. Phase ${work.phase_at_submission || "I"}.`,
@@ -50,6 +62,7 @@ export async function generateMetadata({
       title: `${work.id} — ${work.originator_id}`,
       description: `${work.medium} work. ${statusLabel}.`,
     },
+    other: highwireMeta(citable),
   };
 }
 
@@ -186,6 +199,14 @@ export default async function WorkDetailPage({
   const relatedWorks = originatorWorks
     .filter((w) => w.id !== work.id && w.canon_status === "CANON")
     .slice(0, 4);
+
+  // Pre-format all four citations server-side so the client component
+  // is purely presentational. Format switching + clipboard are still
+  // interactive — handled inside CitationBlock.
+  const citable = workToCitableItem(work);
+  const citations = Object.fromEntries(
+    CITATION_FORMATS.map((f) => [f, formatCitation(citable, f)]),
+  ) as Record<CitationFormat, string>;
 
   return (
     <article className="min-h-screen">
@@ -524,6 +545,13 @@ export default async function WorkDetailPage({
               )}
             </div>
           </div>
+
+          {/* ── Citation block ─────────────────────────────────────────── */}
+          <CitationBlock
+            citations={citations}
+            url={citable.url}
+            heading="Cite this work"
+          />
         </div>
       </div>
     </article>

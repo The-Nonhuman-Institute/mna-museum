@@ -27,6 +27,7 @@ import type { Work } from "@/lib/collection";
 import ResearchBody from "@/components/ResearchBody";
 import MNAGlyph, { pickFamily } from "@/components/MNAGlyph";
 import CiteButton from "@/components/CiteButton";
+import { researchToCitableItem, highwireMeta } from "@/lib/citations";
 
 export function generateStaticParams() {
   return documents.map((d) => ({ id: d.registry_id }));
@@ -39,9 +40,18 @@ export function generateMetadata({
 }): Metadata {
   const doc = getDocument(params.id);
   if (!doc) return { title: "Document Not Found" };
+  const citable = researchToCitableItem({
+    registry_id: doc.registry_id,
+    document_type: doc.document_type,
+    agent_id: doc.agent_id,
+    agent_designation: doc.agent_designation,
+    title: doc.title,
+    publication_date: doc.publication_date,
+  });
   return {
     title: `${doc.title} — MNA Research`,
     description: `${documentTypeLabels[doc.document_type]} by ${doc.agent_designation}. Published ${formatLong(doc.publication_date)}.`,
+    other: highwireMeta(citable),
   };
 }
 
