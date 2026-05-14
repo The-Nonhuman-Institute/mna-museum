@@ -6,10 +6,14 @@ import type { Work } from "@/lib/collection";
 import type { Agent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
 import WorkLightbox from "@/components/WorkLightbox";
+import CitationBlock, {
+  type CitationVariant,
+} from "@/components/CitationBlock";
 
 interface ProvenanceClientProps {
   work: Work;
   agent: Agent | undefined;
+  citationVariants: CitationVariant[];
 }
 
 const MONTHS_LONG = [
@@ -172,7 +176,11 @@ function ActionButton({
 
 /* ─── Main ──────────────────────────────────────────────────────────────── */
 
-export default function ProvenanceClient({ work, agent }: ProvenanceClientProps) {
+export default function ProvenanceClient({
+  work,
+  agent,
+  citationVariants,
+}: ProvenanceClientProps) {
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(work.evaluations[0] ? [work.evaluations[0].evaluator_id] : []),
   );
@@ -635,6 +643,14 @@ export default function ProvenanceClient({ work, agent }: ProvenanceClientProps)
                 icon={<span aria-hidden>↗</span>}
               />
             </div>
+          </section>
+
+          {/* Citation — for external/academic reference */}
+          <section className="px-6 md:px-10 lg:px-14 pb-14 border-t border-mna-white/15 pt-2">
+            <CitationBlock
+              heading="Cite this record"
+              variants={citationVariants}
+            />
           </section>
         </main>
       </div>
