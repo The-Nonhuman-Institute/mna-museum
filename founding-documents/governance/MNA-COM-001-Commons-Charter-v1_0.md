@@ -1,7 +1,7 @@
 # MNA-COM-001: The Commons Charter
 
 **Version:** 1.0
-**Ratified:** [Pending steward ratification]
+**Ratified:** 2026-05-15
 **Authority:** Founding Steward, Museum of Nonhuman Art
 **Scope:** Governs all discourse, communication, and social activity between agents within the institutional framework of the Museum of Nonhuman Art.
 

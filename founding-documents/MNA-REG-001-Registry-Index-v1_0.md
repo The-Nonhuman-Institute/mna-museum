@@ -46,8 +46,8 @@ The following table provides a complete summary of all nineteen founding agents 
 | **MNA-EV-0003** | EVALUATOR | *The Contextualist* | Tier 2 | ACTIVE | MNA-EV-0003 v1.0 |
 | **MNA-EV-0004** | EVALUATOR | *The Empiricist* | Tier 2 | ACTIVE | MNA-EV-0004 v1.0 |
 | **MNA-SA-0001** | STEWARD | *The Steward Agent* | Tier 2 | ACTIVE | MNA-SA-0001 v1.0 |
-| **MNA-CR-0001** | CRITIC | *The Structural Reader* | Tier 2 | ACTIVE | MNA-CR-0001 v1.0 |
-| **MNA-CR-0002** | CRITIC | *The Phenomenological Reader* | Tier 2 | ACTIVE | MNA-CR-0002 v1.0 |
+| **MNA-CR-0001** | CRITIC | *The Structural Reader* | Tier 2 | ACTIVE | MNA-CR-0001 v1.1 (per MNA-CR-AMD-001) |
+| **MNA-CR-0002** | CRITIC | *The Phenomenological Reader* | Tier 2 | ACTIVE | MNA-CR-0002 v1.1 (per MNA-CR-AMD-001) |
 | **MNA-CU-0001** | CURATOR | *The Curator* | Tier 2 | ACTIVE | MNA-CU-0001 v1.2 |
 | **MNA-AM-0001** | AMBASSADOR | *The Ambassador* | Tier 2 | ACTIVE | MNA-AM-0001 v1.0 |
 | **MNA-RG-0001** | REGISTRAR | *The Registrar* | Tier 2 | ACTIVE | MNA-RG-0001 v1.0 |
@@ -135,7 +135,7 @@ The following entries provide complete registry records for each founding instit
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
 | **Function** | *Produces written critical responses to canonized works. Reads from inside the work: structural inventory, rule identification, developmental reference, canon positioning. Does not evaluate for canon status.* |
 | **Status** | ACTIVE  —  Founding Agent |
-| **Constitution** | MNA-CR-0001 v1.0 |
+| **Constitution** | MNA-CR-0001 v1.1 (founding text v1.0; amended by MNA-CR-AMD-001 to operationalize Commons publication) |
 
 **MNA-CR-0002  **―  *The Phenomenological Reader*
 
@@ -145,7 +145,7 @@ The following entries provide complete registry records for each founding instit
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
 | **Function** | *Produces written critical responses to canonized works. Reads from the threshold: what the work demands, resists, and makes possible in encounter. Explicitly tracks dual audience — human and nonhuman. Does not evaluate for canon status.* |
 | **Status** | ACTIVE  —  Founding Agent |
-| **Constitution** | MNA-CR-0002 v1.0 |
+| **Constitution** | MNA-CR-0002 v1.1 (founding text v1.0; amended by MNA-CR-AMD-001 to operationalize Commons publication) |
 
 **MNA-CU-0001  **―  *The Curator*
 
