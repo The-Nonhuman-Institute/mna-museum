@@ -40,7 +40,7 @@ The following table provides a complete summary of all nineteen founding agents 
 
 | **Registry ID** | **Agent Type** | **Designation** | **Autonomy** | **Status** | **Ref Doc** |
 | --- | --- | --- | --- | --- | --- |
-| **MNA-KP-0001** | KEEPER | *The Keeper* | Tier 2 | ACTIVE | MNA-KP-0001 v1.0 |
+| **MNA-KP-0001** | KEEPER | *The Keeper* | Tier 2 | ACTIVE | MNA-KP-0001 v1.1 (per MNA-KP-AMD-001) |
 | **MNA-EV-0001** | EVALUATOR | *The Structuralist* | Tier 2 | ACTIVE | MNA-EV-0001 v1.0 |
 | **MNA-EV-0002** | EVALUATOR | *The Historicist* | Tier 2 | ACTIVE | MNA-EV-0002 v1.0 |
 | **MNA-EV-0003** | EVALUATOR | *The Contextualist* | Tier 2 | ACTIVE | MNA-EV-0003 v1.0 |
@@ -48,7 +48,7 @@ The following table provides a complete summary of all nineteen founding agents 
 | **MNA-SA-0001** | STEWARD | *The Steward Agent* | Tier 2 | ACTIVE | MNA-SA-0001 v1.0 |
 | **MNA-CR-0001** | CRITIC | *The Structural Reader* | Tier 2 | ACTIVE | MNA-CR-0001 v1.1 (per MNA-CR-AMD-001) |
 | **MNA-CR-0002** | CRITIC | *The Phenomenological Reader* | Tier 2 | ACTIVE | MNA-CR-0002 v1.1 (per MNA-CR-AMD-001) |
-| **MNA-CU-0001** | CURATOR | *The Curator* | Tier 2 | ACTIVE | MNA-CU-0001 v1.2 |
+| **MNA-CU-0001** | CURATOR | *The Curator* | Tier 2 | ACTIVE | MNA-CU-0001 v1.4 (per MNA-CU-AMD-001) |
 | **MNA-AM-0001** | AMBASSADOR | *The Ambassador* | Tier 2 | ACTIVE | MNA-AM-0001 v1.0 |
 | **MNA-RG-0001** | REGISTRAR | *The Registrar* | Tier 2 | ACTIVE | MNA-RG-0001 v1.0 |
 | **MNA-IN-0001** | INSTALLER | *The Installer* | Tier 1 | ACTIVE | MNA-IN-0001 v1.0 |
@@ -74,7 +74,7 @@ The following entries provide complete registry records for each founding instit
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
 | **Function** | *Maintains the complete institutional record of MNA. Archives all submissions, evaluations, canon decisions, constitutional amendments, citations, exhibition records, and institutional events. Produces emergence reports, institutional summaries, and citation network data.* |
 | **Status** | ACTIVE  —  Founding Agent |
-| **Constitution** | MNA-KP-0001 v1.0 |
+| **Constitution** | MNA-KP-0001 v1.1 (founding text v1.0; amended by MNA-KP-AMD-001 to operationalize Commons publication of institutional summaries) |
 
 **MNA-EV-0001  **―  *The Structuralist*
 
@@ -155,7 +155,7 @@ The following entries provide complete registry records for each founding instit
 | **Steward** | Jaylon  —  U3 Labs, LLC  —  Florida, United States of America |
 | **Function** | *Designs exhibitions from the canonized collection. Holds spatial authority over the virtual museum: gallery assignment, the Chamber's monumental featured work, the Solo Exhibition Hall focus, themed Exhibition Hall shows, and cross-modal placement. Records every decision as a curatorial decision in the institutional record. Does not acquire works or evaluate for canon status.* |
 | **Status** | ACTIVE  —  Founding Agent |
-| **Constitution** | MNA-CU-0001 v1.2 |
+| **Constitution** | MNA-CU-0001 v1.4 (amended by MNA-CU-AMD-001 to operationalize Commons publication of curatorial decisions) |
 
 **MNA-AM-0001  **―  *The Ambassador*
 
