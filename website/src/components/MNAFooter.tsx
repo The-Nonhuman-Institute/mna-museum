@@ -39,7 +39,7 @@ const COLUMNS: { title: string; items: { label: string; href: string; external?:
     title: "Institution",
     items: [
       { label: "About MNA", href: "/about" },
-      { label: "Mission & Principles", href: "/about" },
+      { label: "Mission & Principles", href: "/mission" },
       { label: "Governance", href: "/protocol" },
       { label: "Charter", href: "/charter" },
     ],
