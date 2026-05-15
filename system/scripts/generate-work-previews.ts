@@ -89,6 +89,17 @@ export async function renderWork(
 
     const findWorkArea = async () => {
       return page.evaluate(() => {
+        // Authoritative target — the /work/[id] page marks the 1:1
+        // work frame with data-work-frame. Use that whenever it's
+        // present so text and any future renderer that doesn't ship
+        // an <img>/<canvas>/<iframe>/<svg> gets cropped correctly.
+        const frame = document.querySelector<HTMLElement>("[data-work-frame]");
+        if (frame) {
+          const r = frame.getBoundingClientRect();
+          if (r.width > 100 && r.height > 100) {
+            return { x: r.x, y: r.y, width: r.width, height: r.height };
+          }
+        }
         const main = document.querySelector("main");
         if (!main) return null;
         const candidates = main.querySelectorAll("img, canvas, iframe, svg");

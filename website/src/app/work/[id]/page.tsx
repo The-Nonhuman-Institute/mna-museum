@@ -233,6 +233,7 @@ export default async function WorkDetailPage({
           {/* LEFT: work preview */}
           <div>
             <div
+              data-work-frame
               className="relative bg-warm-paper border border-ink/10 overflow-hidden"
               style={{ aspectRatio: "1 / 1" }}
             >
