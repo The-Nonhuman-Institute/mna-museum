@@ -18,7 +18,6 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
-  Html,
   MeshReflectorMaterial,
   PointerLockControls,
   Stars,
@@ -42,6 +41,7 @@ import {
   useDownsampledTexture,
   type SceneSpec,
 } from "../../MuseumField";
+import ConstellationNavPanel from "@/components/museum/ConstellationNavPanel";
 import {
   CONSTELLATION_CONFIGS,
   vesicaPiscisStars,
@@ -84,6 +84,9 @@ type PLCHandle = { lock: () => void; unlock: () => void } | null;
 interface NavTarget {
   id: string;
   label: string;
+  name: string;
+  tint?: string;
+  isReturn?: boolean;
   route: string;
 }
 
@@ -152,9 +155,9 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
 
   // Escape from Chamber → back to The Archive. When pointer-locked,
   // browser releases first; second Esc returns. When not locked,
-  // single Esc returns. R also returns immediately from anywhere —
-  // matches the field's R-key affordance and gives the Archive
-  // constellation a real keypress to teach the visitor.
+  // single Esc returns. E navigates to whichever constellation the
+  // visitor is currently aimed at — Archive (return), Solo Exhibition,
+  // or Exhibition Hall. Matches the field's affordance verbatim.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -162,9 +165,9 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
         router.push("/museum");
         return;
       }
-      if (e.key === "r" || e.key === "R") {
+      if (e.key === "e" || e.key === "E") {
         const target = aimedTargetRef.current;
-        router.push(target?.route ?? "/museum");
+        if (target) router.push(target.route);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -246,10 +249,25 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             work={featuredWork}
             locked={locked}
             pointerLockFailed={pointerLockFailed}
+            hideTraceOrigin={!!aimedTarget}
           />
           {locked || pointerLockFailed ? <Reticle /> : null}
           {started && !locked && !pointerLockFailed ? <ResumeHint /> : null}
         </>
+      ) : null}
+
+      {started && aimedTarget && (locked || pointerLockFailed) ? (
+        <ConstellationNavPanel
+          target={{
+            id: aimedTarget.id,
+            name: aimedTarget.name,
+            tint: aimedTarget.tint,
+            isReturn: aimedTarget.isReturn,
+            route: aimedTarget.route,
+          }}
+          isTouch={isTouch}
+          onActivate={() => router.push(aimedTarget.route)}
+        />
       ) : null}
 
       {isTouch && started ? (
@@ -519,10 +537,11 @@ function ChamberSceneInterior({
 }
 
 /** Multi-target gaze router. Detects which constellation (Archive,
- *  Solo Exhibition, …) the camera is currently centred on, surfaces
- *  the press-R prompt at that constellation's centroid, and pushes
- *  the corresponding NavTarget up to the parent so the R-key handler
- *  knows where to send the visitor. */
+ *  Solo Exhibition, …) the camera is currently centred on and pushes
+ *  the corresponding NavTarget up to the parent. The visible
+ *  affordance is the DOM-level <ConstellationNavPanel/> rendered in
+ *  the scene chrome — same component the field uses, so the
+ *  navigation reads identically from any vantage in the museum. */
 function ConstellationGazeRouter({
   archiveStars,
   soloStars,
@@ -536,53 +555,40 @@ function ConstellationGazeRouter({
 }) {
   const { camera } = useThree();
   const projected = useRef(new THREE.Vector3());
-  const [aimed, setAimed] = useState<{
-    target: NavTarget;
-    centroid: [number, number, number];
-  } | null>(null);
   const lastAimedId = useRef<string | null>(null);
 
   const groups = useMemo(() => {
-    function centroid(
-      stars: { position: [number, number, number] }[],
-      labelDrop = 10,
-    ): [number, number, number] {
-      let sx = 0, sy = 0, sz = 0;
-      for (const s of stars) {
-        sx += s.position[0];
-        sy += s.position[1];
-        sz += s.position[2];
-      }
-      const n = stars.length || 1;
-      return [sx / n, sy / n - labelDrop, sz / n];
-    }
     return [
       {
         target: {
           id: "archive",
-          label: "Press R to return",
+          label: "Press E to return",
+          name: "The Archive",
+          tint: CONSTELLATION_CONFIGS.archive.tint,
+          isReturn: true,
           route: "/museum",
         } satisfies NavTarget,
         stars: archiveStars,
-        centroid: centroid(archiveStars),
       },
       {
         target: {
           id: "solo",
-          label: "Press R for Solo Exhibition",
+          label: "Press E for Solo Exhibition",
+          name: "Solo Exhibition Hall",
+          tint: CONSTELLATION_CONFIGS.solo_exhibition.tint,
           route: "/museum/gallery/solo",
         } satisfies NavTarget,
         stars: soloStars,
-        centroid: centroid(soloStars),
       },
       {
         target: {
           id: "exhibition",
-          label: "Press R for Exhibition Hall",
+          label: "Press E for Exhibition Hall",
+          name: "Exhibition Hall",
+          tint: CONSTELLATION_CONFIGS.exhibition.tint,
           route: "/museum/gallery/exhibition",
         } satisfies NavTarget,
         stars: exhibitionStars,
-        centroid: centroid(exhibitionStars),
       },
     ];
   }, [archiveStars, soloStars, exhibitionStars]);
@@ -591,8 +597,7 @@ function ConstellationGazeRouter({
     // 12% NDC radius — wide enough that "looking up at the
     // constellation" counts as aim even when not perfectly centred.
     const AIM_THRESH_SQ = 0.12 * 0.12;
-    let best: { target: NavTarget; centroid: [number, number, number] } | null =
-      null;
+    let best: NavTarget | null = null;
     let bestDist = AIM_THRESH_SQ;
     for (const g of groups) {
       for (const s of g.stars) {
@@ -604,39 +609,18 @@ function ConstellationGazeRouter({
           projected.current.y * projected.current.y;
         if (d < bestDist) {
           bestDist = d;
-          best = { target: g.target, centroid: g.centroid };
+          best = g.target;
         }
       }
     }
-    const id = best?.target.id ?? null;
+    const id = best?.id ?? null;
     if (id !== lastAimedId.current) {
       lastAimedId.current = id;
-      setAimed(best);
-      onAim(best?.target ?? null);
+      onAim(best);
     }
   });
 
-  if (!aimed) return null;
-  return (
-    <Html
-      position={aimed.centroid}
-      center
-      zIndexRange={[10, 0]}
-      style={{ pointerEvents: "none" }}
-    >
-      <div
-        className="font-sans uppercase tracking-[0.22em] whitespace-nowrap select-none"
-        style={{
-          fontSize: "10px",
-          color: "#e8e4dc",
-          textShadow: "0 0 10px #e8e4dc, 0 0 2px rgba(0,0,0,0.85)",
-          opacity: 0.92,
-        }}
-      >
-        {aimed.target.label}
-      </div>
-    </Html>
-  );
+  return null;
 }
 
 function FeaturedWorkPlane({ work }: { work: ChamberWork }) {
@@ -849,10 +833,16 @@ function ChamberHUD({
   work,
   locked,
   pointerLockFailed,
+  hideTraceOrigin,
 }: {
   work: ChamberWork | null;
   locked: boolean;
   pointerLockFailed: boolean;
+  /** True when the visitor is gazing at a constellation. The
+   *  ConstellationNavPanel renders at the same bottom-12 position as
+   *  Trace Origin, so we hide Trace Origin while a sky target is
+   *  primed. */
+  hideTraceOrigin: boolean;
 }) {
   void locked;
   void pointerLockFailed;
@@ -896,8 +886,10 @@ function ChamberHUD({
         </div>
       </div>
 
-      {/* Bottom-center: provenance link for the work. */}
-      {work ? (
+      {/* Bottom-center: provenance link for the work. Hidden while a
+          constellation is aimed so the lower-third doesn't render two
+          stacked panels on top of each other. */}
+      {work && !hideTraceOrigin ? (
         <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 z-20 max-w-[460px] w-[88vw]">
           <div className="pointer-events-auto bg-black/60 border border-mna-white/15 px-5 py-3">
             <div className="flex flex-wrap items-center gap-4 text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">

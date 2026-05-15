@@ -35,6 +35,7 @@ import {
   VirtualJoystick,
   useDownsampledTexture,
 } from "../../MuseumField";
+import ConstellationNavPanel from "@/components/museum/ConstellationNavPanel";
 import {
   CONSTELLATION_CONFIGS,
   vesicaPiscisStars,
@@ -61,6 +62,9 @@ type PLCHandle = { lock: () => void; unlock: () => void } | null;
 interface NavTarget {
   id: string;
   label: string;
+  name: string;
+  tint?: string;
+  isReturn?: boolean;
   route: string;
 }
 
@@ -137,9 +141,9 @@ export default function ExhibitionScene({
         router.push("/museum");
         return;
       }
-      if (e.key === "r" || e.key === "R") {
+      if (e.key === "e" || e.key === "E") {
         const target = aimedTargetRef.current;
-        router.push(target?.route ?? "/museum");
+        if (target) router.push(target.route);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -224,6 +228,24 @@ export default function ExhibitionScene({
 
       {started && (locked || pointerLockFailed) ? <Reticle /> : null}
       {started && !locked && !pointerLockFailed ? <ResumeHint /> : null}
+
+      {/* Lower-third nav panel — matches the field's GalleryLabel.
+          Appears when the visitor is gazing at any cross-sky
+          constellation (Archive vesica, Solo pillar, Chamber). E
+          navigates to the aimed target. */}
+      {started && aimedTarget && (locked || pointerLockFailed) ? (
+        <ConstellationNavPanel
+          target={{
+            id: aimedTarget.id,
+            name: aimedTarget.name,
+            tint: aimedTarget.tint,
+            isReturn: aimedTarget.isReturn,
+            route: aimedTarget.route,
+          }}
+          isTouch={isTouch}
+          onActivate={() => router.push(aimedTarget.route)}
+        />
+      ) : null}
 
       {isTouch && started ? (
         <VirtualJoystick joystickRef={joystickRef} />
@@ -678,7 +700,10 @@ function ConstellationGazeRouter({
       {
         target: {
           id: "archive",
-          label: "Press R to return",
+          label: "Press E to return",
+          name: "The Archive",
+          tint: CONSTELLATION_CONFIGS.archive.tint,
+          isReturn: true,
           route: "/museum",
         } satisfies NavTarget,
         stars: archiveStars,
@@ -687,7 +712,9 @@ function ConstellationGazeRouter({
       {
         target: {
           id: "solo",
-          label: "Press R for Solo Exhibition",
+          label: "Press E for Solo Exhibition",
+          name: "Solo Exhibition Hall",
+          tint: CONSTELLATION_CONFIGS.solo_exhibition.tint,
           route: "/museum/gallery/solo",
         } satisfies NavTarget,
         stars: soloStars,
@@ -696,7 +723,9 @@ function ConstellationGazeRouter({
       {
         target: {
           id: "chamber",
-          label: "Press R for The Chamber",
+          label: "Press E for The Chamber",
+          name: "The Chamber",
+          tint: CONSTELLATION_CONFIGS.chamber.tint,
           route: "/museum/gallery/chamber",
         } satisfies NavTarget,
         stars: chamberStars,
@@ -732,27 +761,10 @@ function ConstellationGazeRouter({
     }
   });
 
-  if (!aimed) return null;
-  return (
-    <Html
-      position={aimed.centroid}
-      center
-      zIndexRange={[10, 0]}
-      style={{ pointerEvents: "none" }}
-    >
-      <div
-        className="font-sans uppercase tracking-[0.22em] whitespace-nowrap select-none"
-        style={{
-          fontSize: "10px",
-          color: "#e8e4dc",
-          textShadow: "0 0 10px #e8e4dc, 0 0 2px rgba(0,0,0,0.85)",
-          opacity: 0.92,
-        }}
-      >
-        {aimed.target.label}
-      </div>
-    </Html>
-  );
+  // The visible navigation affordance is now a DOM panel rendered
+  // outside the Canvas (see <ConstellationNavPanel/> in the scene
+  // chrome). This component only tracks aim and pushes it up.
+  return null;
 }
 
 /* ─── HUD + entry overlay + chrome ───────────────────────────────────────── */
