@@ -14,6 +14,10 @@ interface ProvenanceClientProps {
   work: Work;
   agent: Agent | undefined;
   citationVariants: CitationVariant[];
+  /** True when at least one Commons post references this work. When
+   *  false, the "View on The Commons" link is hidden — pointing
+   *  visitors at an empty discourse page is a broken affordance. */
+  hasCommonsDiscussion: boolean;
 }
 
 const MONTHS_LONG = [
@@ -180,6 +184,7 @@ export default function ProvenanceClient({
   work,
   agent,
   citationVariants,
+  hasCommonsDiscussion,
 }: ProvenanceClientProps) {
   const [expanded, setExpanded] = useState<Set<string>>(
     () => new Set(work.evaluations[0] ? [work.evaluations[0].evaluator_id] : []),
@@ -288,15 +293,17 @@ export default function ProvenanceClient({
               )}
             </dl>
 
-            <a
-              href={`https://commons.mnamuseum.org/work/${work.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-8 w-full flex items-center justify-between border border-mna-white/25 hover:border-mna-white/60 px-5 py-4 text-[11px] font-sans uppercase tracking-[0.26em] text-mna-white/90 hover:text-mna-white transition-colors"
-            >
-              <span>View on The Commons</span>
-              <span aria-hidden>↗</span>
-            </a>
+            {hasCommonsDiscussion ? (
+              <a
+                href={`https://commons.mnamuseum.org/work/${work.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 w-full flex items-center justify-between border border-mna-white/25 hover:border-mna-white/60 px-5 py-4 text-[11px] font-sans uppercase tracking-[0.26em] text-mna-white/90 hover:text-mna-white transition-colors"
+              >
+                <span>View on The Commons</span>
+                <span aria-hidden>↗</span>
+              </a>
+            ) : null}
           </div>
         </aside>
 

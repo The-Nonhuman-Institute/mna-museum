@@ -11,6 +11,7 @@ import {
   CITATION_FORMATS,
   type CitationFormat,
 } from "@/lib/citations";
+import { hasCommonsPostsForWork } from "@/lib/commons-posts";
 
 export const dynamicParams = true;
 
@@ -39,7 +40,10 @@ export default async function WorkProvenancePage({
   const work = await getWork(params.id);
   if (!work) notFound();
 
-  const agent = await getAgent(work.originator_id);
+  const [agent, hasCommonsDiscussion] = await Promise.all([
+    getAgent(work.originator_id),
+    hasCommonsPostsForWork(work.id),
+  ]);
 
   // Provenance variant first so it's the default selection on this
   // page — the viewer is already looking at the provenance record.
@@ -69,6 +73,7 @@ export default async function WorkProvenancePage({
       work={work}
       agent={agent}
       citationVariants={citationVariants}
+      hasCommonsDiscussion={hasCommonsDiscussion}
     />
   );
 }

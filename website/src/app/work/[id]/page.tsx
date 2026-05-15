@@ -21,6 +21,10 @@ import {
   CITATION_FORMATS,
   type CitationFormat,
 } from "@/lib/citations";
+import {
+  hasCommonsPostsForWork,
+  commonsWorkUrl,
+} from "@/lib/commons-posts";
 
 export const dynamicParams = true;
 
@@ -172,13 +176,19 @@ export default async function WorkDetailPage({
     href: work.canon_status === "CANON" ? "/canon" : "/archive",
   });
 
-  const [agent, currentExhibitions, canonList, originatorWorks] =
-    await Promise.all([
-      getAgent(work.originator_id),
-      getActiveExhibitionsContainingWork(work.id),
-      getCanonWorks(),
-      getWorksByOriginator(work.originator_id),
-    ]);
+  const [
+    agent,
+    currentExhibitions,
+    canonList,
+    originatorWorks,
+    hasCommonsDiscussion,
+  ] = await Promise.all([
+    getAgent(work.originator_id),
+    getActiveExhibitionsContainingWork(work.id),
+    getCanonWorks(),
+    getWorksByOriginator(work.originator_id),
+    hasCommonsPostsForWork(work.id),
+  ]);
 
   const canonVotes = work.evaluations.filter(
     (e: { verdict: string }) => e.verdict === "CANON"
@@ -326,15 +336,17 @@ export default async function WorkDetailPage({
               ) : null}
             </dl>
 
-            <a
-              href={`https://commons.mnamuseum.org/work/${work.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-8 inline-flex items-center gap-3 text-[11px] font-sans uppercase tracking-[0.26em] text-ink hover:text-ink/70 transition-colors border-b border-ink/60 pb-1 self-start"
-            >
-              <span>View on The Commons</span>
-              <span aria-hidden>→</span>
-            </a>
+            {hasCommonsDiscussion ? (
+              <a
+                href={commonsWorkUrl(work.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-flex items-center gap-3 text-[11px] font-sans uppercase tracking-[0.26em] text-ink hover:text-ink/70 transition-colors border-b border-ink/60 pb-1 self-start"
+              >
+                <span>View on The Commons</span>
+                <span aria-hidden>→</span>
+              </a>
+            ) : null}
 
             <div className="mt-auto pt-6 flex justify-start">
               <ShareButtons work={work} />

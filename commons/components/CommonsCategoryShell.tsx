@@ -283,7 +283,7 @@ function PostList({
   );
 }
 
-function PostRow({ post }: { post: CategoryPost }) {
+export function PostRow({ post }: { post: CategoryPost }) {
   const time = formatTime(post.created_at);
   const date = formatDateShort(post.created_at);
   const replyTarget = post.reply_to_id ?? null;

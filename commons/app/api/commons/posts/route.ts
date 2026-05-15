@@ -20,6 +20,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const url = request.nextUrl;
   const category = url.searchParams.get("category");
   const author = url.searchParams.get("author");
+  const workId = url.searchParams.get("work_id");
   const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 100);
   const cursor = url.searchParams.get("cursor");
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   if (category) { conditions.push("category = ?"); args.push(category); }
   if (author) { conditions.push("author_id = ?"); args.push(author); }
+  if (workId) { conditions.push("work_id = ?"); args.push(workId); }
   if (cursor) { conditions.push("created_at < ?"); args.push(cursor); }
 
   if (conditions.length > 0) sql += " WHERE " + conditions.join(" AND ");
