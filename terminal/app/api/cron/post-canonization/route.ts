@@ -102,6 +102,18 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   // ── Step 3: Send accession notices for unnotified canon works ────
+  //
+  // Accession notices embed the work's preview at
+  // https://www.mnamuseum.org/previews/{id}.png. That PNG is generated
+  // by system/scripts/generate-work-previews.ts — a local Puppeteer
+  // step the steward runs and commits. The chain runs on Vercel cron
+  // where headless Chrome isn't available, so preview generation
+  // can't be inlined here. Instead, we gate notice sending on the
+  // PNG actually being live. If it 404s, we hold the notice and
+  // surface the gap so the steward can run the script — better than
+  // shipping the email with a broken image (memory: "always include
+  // preview PNG, never send stripped-down HTML versions").
+  const previewsMissing: string[] = [];
   try {
     const db2 = getInstitutionalTurso();
     const unnotified = await db2.execute(`
@@ -124,6 +136,19 @@ export async function GET(request: Request): Promise<NextResponse> {
       const noticeResults = [];
       for (const r of unnotified.rows) {
         const wid = r.work_id as string;
+        const previewUrl = `https://www.mnamuseum.org/previews/${wid}.png`;
+        let previewOk = false;
+        try {
+          const head = await fetch(previewUrl, { method: "HEAD" });
+          previewOk = head.ok;
+        } catch {
+          previewOk = false;
+        }
+        if (!previewOk) {
+          previewsMissing.push(wid);
+          noticeResults.push({ work_id: wid, deferred: "preview_missing" });
+          continue;
+        }
         try {
           const result = await sendAccessionNotice(wid);
           noticeResults.push(result);
@@ -135,6 +160,24 @@ export async function GET(request: Request): Promise<NextResponse> {
         }
       }
       results.accession_notices = noticeResults;
+      results.previews_missing = previewsMissing;
+
+      if (previewsMissing.length > 0) {
+        summaryParts.push(
+          `Preview generation needed for ${previewsMissing.length} canon work(s): ${previewsMissing.join(", ")}. Accession notice(s) held until previews are live.`,
+        );
+        try {
+          await recordEvent({
+            event_type: "PREVIEW_GENERATION_NEEDED",
+            description: `Preview PNGs missing on prod for canon works: ${previewsMissing.join(", ")}. Run \`cd system && npx tsx scripts/generate-work-previews.ts --missing\` then push to master. Accession notice(s) are held until preview is live.`,
+            priority: "attention",
+            source: "system",
+            metadata: { work_ids: previewsMissing },
+          });
+        } catch (err) {
+          console.error("[cron/post-canonization] failed to record preview event:", err);
+        }
+      }
     }
   } catch (err) {
     results.accession_notice_error = err instanceof Error ? err.message : String(err);
