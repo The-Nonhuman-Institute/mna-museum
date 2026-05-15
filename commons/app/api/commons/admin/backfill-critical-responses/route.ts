@@ -52,18 +52,23 @@ const CRITIC_APPROACH_LABEL: Record<string, string> = {
   "MNA-CR-0002": "Phenomenological Reading",
 };
 
+const GENERIC_HEADER_RE =
+  /^(critical|structural|phenomenological)\s*(response|inventory|reading)\b/i;
+
 /** Extract the title from a Critical Response body.
  *
- *  Critics over time have written in two different opening formats:
- *  (1) Newer responses open with a markdown H1 line like
- *      `# The Threshold of Watching` — that's the substantive title.
- *  (2) Older responses open with bolded boilerplate like
- *      `**Structural Response: MNA-OR-0002-W-0003**` — the work ID
- *      is decoration, not a title. For those we synthesize a title
- *      from the Critic's approach + the work's title.
+ *  Critics have written in two formats over time:
+ *  - Newer responses open with a markdown H1 like
+ *    `# The Threshold of Watching` — substantive title to extract.
+ *  - Older responses open with bolded boilerplate over multiple
+ *    leading lines (a `---` rule, then
+ *    `**Critical Response: MNA-OR-XXXX-W-XXXX**`, then a blank line)
+ *    before any substance arrives. For those we synthesize the title
+ *    from the Critic's approach + the work's name and skip the
+ *    boilerplate lines so the Commons body opens on substance.
  *
- *  In both cases the opening line is stripped from the body so the
- *  Commons post doesn't render the title twice. */
+ *  In all cases the title is rendered separately by the Commons post
+ *  shell, so the extracted body should never duplicate it. */
 function extractTitleAndBody(
   raw: string,
   criticId: string,
@@ -71,47 +76,54 @@ function extractTitleAndBody(
   workTitle: string | null,
 ): { title: string; body: string } {
   const lines = raw.split("\n");
-  let firstNonEmpty = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim()) {
-      firstNonEmpty = i;
-      break;
+  let title: string | null = null;
+  let i = 0;
+
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+
+    // Blank — keep walking; we're looking for the first substantive line.
+    if (!trimmed) {
+      i++;
+      continue;
     }
-  }
-  if (firstNonEmpty === -1) {
-    return { title: synthesizeTitle(criticId, workId, workTitle), body: raw };
-  }
-  const head = lines[firstNonEmpty].trim();
 
-  // Case (1) — explicit H1.
-  if (head.startsWith("# ")) {
-    const title = head.slice(2).trim();
-    if (title && !/^(critical|structural|phenomenological)\s*response\b/i.test(title)) {
-      const body = lines.slice(firstNonEmpty + 1).join("\n").replace(/^\s+/, "");
-      return { title, body };
+    // Substantive H1 — use it as the title and stop.
+    if (trimmed.startsWith("# ")) {
+      const candidate = trimmed.slice(2).trim();
+      if (candidate && !GENERIC_HEADER_RE.test(candidate)) {
+        title = candidate;
+        i++;
+        break;
+      }
+      // Generic H1 ("# Critical Response: X") — strip it, keep walking.
+      i++;
+      continue;
     }
-    // H1 but generic ("# Critical Response: WORK-ID") — fall through.
+
+    // Horizontal rule — strip and keep walking.
+    if (/^---+$/.test(trimmed)) {
+      i++;
+      continue;
+    }
+
+    // Bolded boilerplate header — strip and keep walking.
+    const stripped = trimmed.replace(/\*\*/g, "").trim();
+    if (GENERIC_HEADER_RE.test(stripped)) {
+      i++;
+      continue;
+    }
+
+    // Reached the first substantive line. Stop without consuming it.
+    break;
   }
 
-  // Case (2) — bolded boilerplate. Strip it from the body but synthesize.
-  const stripped = head.replace(/\*\*/g, "").replace(/^---+\s*/, "").trim();
-  if (
-    /^(critical|structural|phenomenological)\s*response\b/i.test(stripped) ||
-    /^(structural|phenomenological)\s+(inventory|reading)\b/i.test(stripped) ||
-    stripped === ""
-  ) {
-    const body = lines.slice(firstNonEmpty + 1).join("\n").replace(/^\s+/, "");
-    return {
-      title: synthesizeTitle(criticId, workId, workTitle),
-      body,
-    };
+  if (title === null) {
+    title = synthesizeTitle(criticId, workId, workTitle);
   }
 
-  // Anything else — fall back to keeping the body intact.
-  return {
-    title: synthesizeTitle(criticId, workId, workTitle),
-    body: raw,
-  };
+  const body = lines.slice(i).join("\n").replace(/^\s+/, "");
+  return { title, body };
 }
 
 function synthesizeTitle(
