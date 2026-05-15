@@ -119,6 +119,36 @@ export async function critiqueWork(workId: string): Promise<CritiqueResult> {
     });
   }
 
+  // Mirror the freshly-written rows onto the Commons as
+  // category=critical_response posts tagged with work_id. This
+  // realizes the Response endpoint defined in MNA-CR-AMD-001 §III.IV
+  // (Commons Publication). The admin backfill endpoint is idempotent
+  // — it only writes (critic, work) pairs that aren't already
+  // mirrored — so calling it after each critique safely posts only
+  // the new rows.
+  try {
+    const adminKey = sanitize(process.env.MNA_ADMIN_KEY);
+    const commonsBase =
+      sanitize(process.env.COMMONS_ORIGIN) || "https://commons.mnamuseum.org";
+    if (adminKey) {
+      await fetch(
+        `${commonsBase}/api/commons/admin/backfill-critical-responses`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${adminKey}`,
+          },
+          body: JSON.stringify({ dry_run: false }),
+        },
+      );
+    }
+  } catch (err) {
+    // Commons mirror failure shouldn't block the institutional record.
+    // The next post-canonization cron will retry through idempotency.
+    console.error("[critic] commons mirror failed:", err);
+  }
+
   // Notify the agent that critics have responded
   const originatorId = work.originator_id as string;
   try {
