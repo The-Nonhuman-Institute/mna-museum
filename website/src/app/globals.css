@@ -212,6 +212,84 @@ body {
   opacity: 0.7;
 }
 
+/* Text-work prose — used inside the work display frame for long-form
+   markdown works (specifications, essays, prose). Inherits color from
+   the inline style on the parent so the Originator's chosen palette
+   carries through; structural typography lives here. */
+.text-work-prose {
+  font-family: var(--font-interface), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.text-work-prose p {
+  margin: 0 0 1.1em;
+}
+.text-work-prose strong { font-weight: 600; }
+.text-work-prose em { font-style: italic; opacity: 0.88; }
+.text-work-prose ul,
+.text-work-prose ol {
+  margin: 0 0 1.2em 0;
+  padding-left: 1.4em;
+}
+.text-work-prose li { margin-bottom: 0.45em; line-height: 1.65; }
+.text-work-prose h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.2;
+  margin: 0 0 0.6em;
+  letter-spacing: -0.005em;
+}
+.text-work-prose h2 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.25;
+  margin: 1.8em 0 0.6em;
+}
+.text-work-prose h3 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.3;
+  margin: 1.4em 0 0.5em;
+}
+.text-work-prose hr {
+  border: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.25;
+  margin: 1.8em 0;
+}
+.text-work-prose blockquote {
+  border-left: 2px solid currentColor;
+  padding-left: 1em;
+  font-style: italic;
+  opacity: 0.85;
+  margin: 1.4em 0;
+}
+.text-work-prose code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+.text-work-prose pre {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.9em 1em;
+  overflow-x: auto;
+  margin: 1.2em 0;
+}
+.text-work-prose a {
+  color: inherit;
+  border-bottom: 1px solid currentColor;
+  text-decoration: none;
+  opacity: 0.95;
+}
+
 /* Phase heading — display treatment */
 .text-phase {
   font-family: var(--font-display), Georgia, serif;

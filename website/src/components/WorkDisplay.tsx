@@ -2,10 +2,10 @@ import MuseumFrame from "./MuseumFrame";
 import MuseumPlinth from "./MuseumPlinth";
 import { frames } from "./MuseumFrame";
 import SvgRenderer from "./renderers/SvgRenderer";
+import TextRenderer from "./renderers/TextRenderer";
 import MNAComposition, { type CompositionTheme } from "./MNAComposition";
 import type { Work } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
-import { parseWorkColors } from "@/lib/work-colors";
 import { isWorkRenderable } from "@/lib/validate-work";
 import dynamic from "next/dynamic";
 import GalleryPreviewImg from "./GalleryPreviewImg";
@@ -86,46 +86,12 @@ function calculateWidth(frameType: FrameType, size: string): number {
   return Math.round(Math.sqrt(area * aspect));
 }
 
-function textClasses(work: Work, size: string): string {
-  const len = work.output_payload.length;
-  const lines = work.output_payload.trim().split("\n").length;
-  const maxLine = Math.max(
-    ...work.output_payload.split("\n").map((l) => l.length)
-  );
-
-  const isSmall = size === "gallery" || size === "carousel";
-
-  if (len < 50 && lines <= 5) {
-    return size === "lightbox"
-      ? "text-2xl md:text-4xl"
-      : size === "detail"
-        ? "text-xl md:text-2xl"
-        : "text-[9px] md:text-xs";
-  }
-
-  if (len < 200 && maxLine <= 50) {
-    return size === "lightbox"
-      ? "text-base md:text-xl"
-      : size === "detail"
-        ? "text-sm md:text-base"
-        : "text-[7px] md:text-[9px]";
-  }
-
-  if (isSmall) {
-    return "text-[5px] md:text-[7px]";
-  }
-
-  return size === "lightbox"
-    ? "text-sm md:text-base"
-    : "text-xs md:text-sm";
-}
-
 function WorkContent({
   work,
   size,
 }: {
   work: Work;
-  size: string;
+  size: "gallery" | "detail" | "lightbox";
 }) {
   switch (work.output_type) {
     case "svg":
@@ -163,25 +129,12 @@ function WorkContent({
           </div>
         );
       }
-      const colors = parseWorkColors(work.output_payload, work.output_type);
       return (
-        <div
-          className="w-full h-full flex items-center justify-center p-2 md:p-3 overflow-hidden"
-          style={{ backgroundColor: colors.bg }}
-        >
-          <pre
-            className={`whitespace-pre-wrap break-words text-center max-w-full ${textClasses(work, size)}`}
-            style={{
-              color: colors.fg,
-              lineHeight: "1.4",
-              maxHeight: "100%",
-              overflow: "hidden",
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-            }}
-          >
-            {colors.payload}
-          </pre>
-        </div>
+        <TextRenderer
+          payload={work.output_payload}
+          outputType={work.output_type === "ascii" ? "ascii" : "text"}
+          size={size}
+        />
       );
     }
   }
@@ -245,12 +198,21 @@ function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "sla
  *  work into /public/previews/{id}.png, chosen at a moment of visual
  *  peak via smart animation capture. */
 function GalleryPreview({ work }: { work: Work }) {
+  const isText = work.output_type === "text" || work.output_type === "ascii";
   return (
     <div className="w-full h-full bg-[#0e0c0a] overflow-hidden">
       <GalleryPreviewImg
         src={`/previews/${work.id}.png`}
         alt={work.title || work.id}
         workId={work.id}
+        textPayload={isText ? work.output_payload : null}
+        textOutputType={
+          work.output_type === "ascii"
+            ? "ascii"
+            : work.output_type === "text"
+              ? "text"
+              : null
+        }
       />
     </div>
   );
