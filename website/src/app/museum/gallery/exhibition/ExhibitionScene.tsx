@@ -677,25 +677,8 @@ function ConstellationGazeRouter({
   const { camera } = useThree();
   const projected = useRef(new THREE.Vector3());
   const lastAimedId = useRef<string | null>(null);
-  const [aimed, setAimed] = useState<{
-    target: NavTarget;
-    centroid: [number, number, number];
-  } | null>(null);
 
   const groups = useMemo(() => {
-    function centroid(
-      stars: { position: [number, number, number] }[],
-      drop = 8,
-    ): [number, number, number] {
-      let sx = 0, sy = 0, sz = 0;
-      for (const s of stars) {
-        sx += s.position[0];
-        sy += s.position[1];
-        sz += s.position[2];
-      }
-      const n = stars.length || 1;
-      return [sx / n, sy / n - drop, sz / n];
-    }
     return [
       {
         target: {
@@ -707,7 +690,6 @@ function ConstellationGazeRouter({
           route: "/museum",
         } satisfies NavTarget,
         stars: archiveStars,
-        centroid: centroid(archiveStars, 10),
       },
       {
         target: {
@@ -718,7 +700,6 @@ function ConstellationGazeRouter({
           route: "/museum/gallery/solo",
         } satisfies NavTarget,
         stars: soloStars,
-        centroid: centroid(soloStars),
       },
       {
         target: {
@@ -729,15 +710,13 @@ function ConstellationGazeRouter({
           route: "/museum/gallery/chamber",
         } satisfies NavTarget,
         stars: chamberStars,
-        centroid: centroid(chamberStars),
       },
     ];
   }, [archiveStars, soloStars, chamberStars]);
 
   useFrame(() => {
     const AIM_THRESH_SQ = 0.12 * 0.12;
-    let best: { target: NavTarget; centroid: [number, number, number] } | null =
-      null;
+    let best: NavTarget | null = null;
     let bestDist = AIM_THRESH_SQ;
     for (const g of groups) {
       for (const s of g.stars) {
@@ -749,15 +728,14 @@ function ConstellationGazeRouter({
           projected.current.y * projected.current.y;
         if (d < bestDist) {
           bestDist = d;
-          best = { target: g.target, centroid: g.centroid };
+          best = g.target;
         }
       }
     }
-    const id = best?.target.id ?? null;
+    const id = best?.id ?? null;
     if (id !== lastAimedId.current) {
       lastAimedId.current = id;
-      setAimed(best);
-      onAim(best?.target ?? null);
+      onAim(best);
     }
   });
 
