@@ -43,6 +43,13 @@ export const CONSTELLATION_CONFIGS: Record<string, ConstellationConfig> = {
     tint: "#a5c4d8", // cool slate
     spread: 0.06,
   },
+  exhibition: {
+    id: "exhibition",
+    direction: { yaw: 4.7, altitude: 0.40 }, // W, ~23° above horizon
+    distance: 135,
+    tint: "#c8b8d8", // soft lavender — distinct from amber + slate
+    spread: 0.08,
+  },
   /* Archive — the "way home" constellation rendered inside gallery
      scenes (Chamber, Solo Exhibition, etc.) to point back at the main
      field. Bigger spread and a brighter neutral tint so it visually
@@ -262,6 +269,64 @@ export const PILLAR_MAGNITUDES: ReadonlyArray<number> = [
   1.0,  // 2 middle
   0.7,  // 3 upper shaft
   1.35, // 4 cap
+];
+
+/** Place `count` stars on a closed ring — the Exhibition Hall's
+ *  asterism. Reads as "the space that holds": a closed enclosure with
+ *  no apex, distinct from the open-arch shapes of the Solo pillar and
+ *  the Archive vesica. Use 7 stars by default; the asterism remains
+ *  legible from 5 to 9. Pair with ringEdges(count) for the closed
+ *  loop connecting consecutive stars. */
+export function ringStars(
+  yaw: number,
+  altitude: number,
+  distance: number,
+  radius: number,
+  count = 7,
+): ConstellationStar[] {
+  const f = celestialFrame(yaw, altitude, distance);
+  const out: ConstellationStar[] = [];
+  for (let i = 0; i < count; i++) {
+    const theta = (i / count) * Math.PI * 2 - Math.PI / 2; // start at top
+    const x = Math.cos(theta) * radius;
+    const y = Math.sin(theta) * radius;
+    out.push({
+      position: [
+        f.center[0] + f.right[0] * x + f.up[0] * y,
+        f.center[1] + f.right[1] * x + f.up[1] * y,
+        f.center[2] + f.right[2] * x + f.up[2] * y,
+      ] as [number, number, number],
+    });
+  }
+  return out;
+}
+
+/** Closed-loop edges connecting consecutive ring stars. The ring is
+ *  the one closed asterism in MNA's sky vocabulary — every other
+ *  named figure (vesica, pillar) is an open graph. The closure is
+ *  intentional: it speaks the exhibition's argument back at the sky. */
+export function ringEdges(
+  count: number,
+): ReadonlyArray<readonly [number, number]> {
+  const edges: Array<[number, number]> = [];
+  for (let i = 0; i < count; i++) {
+    edges.push([i, (i + 1) % count]);
+  }
+  return edges;
+}
+
+/** Magnitudes for a 7-star ring. One brightest anchor at top
+ *  (asterism's visual entry), gentle variation around the ring to
+ *  avoid mechanical symmetry. Real constellations never have
+ *  uniform brightness. */
+export const RING_MAGNITUDES_7: ReadonlyArray<number> = [
+  1.3,  // 0 top anchor
+  0.85, // 1
+  1.05, // 2
+  0.85, // 3
+  1.1,  // 4 bottom-ish
+  0.85, // 5
+  1.05, // 6
 ];
 
 function seededRandom(seed: string): () => number {

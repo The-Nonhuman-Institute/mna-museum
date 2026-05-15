@@ -18,6 +18,7 @@ import { getCanonWorks, getWork, getWorksByOriginator } from "@/lib/collection";
 import {
   getMonumentalWork,
   getSoloFeaturedOriginator,
+  getActiveThemedExhibition,
 } from "@/lib/museum-installations";
 import { starsForScope } from "@/lib/gallery-constellations";
 
@@ -55,6 +56,18 @@ async function getActiveGalleries(): Promise<ActiveGallery[]> {
         ? `Featured: ${work.title}`
         : `Featured Work · ${monumental.work_id}`,
       route: "/museum/gallery/chamber",
+    });
+  }
+
+  // Exhibition Hall — current themed group exhibition.
+  const themed = await getActiveThemedExhibition();
+  if (themed && themed.workIds.length > 0) {
+    galleries.push({
+      id: "exhibition",
+      name: "Exhibition Hall",
+      starCount: 7,
+      featuredLabel: themed.title || `${themed.workIds.length} works`,
+      route: "/museum/gallery/exhibition",
     });
   }
 

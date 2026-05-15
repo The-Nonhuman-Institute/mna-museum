@@ -1,23 +1,15 @@
 "use client";
 
 /**
- * Solo Exhibition Hall — one originator's body of canon work shown
- * in a procession down a quiet corridor. The featured originator is
- * the subject of the latest FEATURE_SOLO / FEATURE_SOLO_EXHIBITION
- * curatorial decision; works are displayed in the order the decision
- * recorded them.
+ * Exhibition Hall — themed group exhibition. Multiple originators,
+ * works selected around a curatorial argument. Spatial reading: works
+ * arranged in concentric arcs that cradle the visitor's view, with
+ * the curatorial statement on a central plinth at the convergence
+ * point. Visitor enters from the front and walks toward the arcs.
  *
- * Visually: same cosmos as the Chamber and the field — two-layer
- * Stars, warm/cool directionals, reflective floor, EffectComposer for
- * bloom. The corridor is intentionally simple — no walls, just a
- * floor + the works floating at eye level on alternating sides — so
- * the visitor's attention stays on the works themselves.
- *
- * Sky has three constellations: the Archive overhead (vesica, the
- * way home), and the Chamber's gallery constellation in its sky
- * direction. Gazing at any of them surfaces a "Press R" prompt; R
- * navigates to whatever the visitor is currently aimed at, defaulting
- * to /museum (the Archive) when nothing is aimed.
+ * Sky shows the Archive vesica overhead (way home) plus the other
+ * active galleries' constellations in their respective sky positions.
+ * Gazing at any constellation surfaces a press-R prompt.
  */
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -48,34 +40,37 @@ import {
   vesicaPiscisStars,
   VESICA_EDGES,
   VESICA_MAGNITUDES,
+  pillarStars,
+  PILLAR_EDGES,
+  PILLAR_MAGNITUDES,
   constellationStars,
-  ringStars,
-  ringEdges,
-  RING_MAGNITUDES_7,
 } from "@/lib/gallery-constellations";
-import type { SoloWork } from "./page";
+import type { ExhibitionWork } from "./page";
 
-interface SoloSceneProps {
-  originatorId: string | null;
-  originatorName: string | null;
-  exhibitionTitle: string | null;
-  works: SoloWork[];
+interface ExhibitionSceneProps {
+  title: string | null;
+  rationale: string | null;
+  works: ExhibitionWork[];
 }
 
 const EYE_HEIGHT = 1.7;
-const CAMERA_START_Z = 0.1; // start at the rotunda's centre, looking -Z
-const ROTUNDA_RADIUS = 12; // distance from centre to each work, in metres
-const WORK_PLANE_SIZE = 3.2; // metres — each work plane
-const WORK_HEIGHT_Y = 2.6;  // y-position of work centre
+const CAMERA_START_Z = 12;
+const ARC_CENTER_Z = -10; // arcs cradle around this point
+const ARC_WORK_HEIGHT = 2.6;
 
 type PLCHandle = { lock: () => void; unlock: () => void } | null;
 
-export default function SoloScene({
-  originatorId,
-  originatorName,
-  exhibitionTitle,
+interface NavTarget {
+  id: string;
+  label: string;
+  route: string;
+}
+
+export default function ExhibitionScene({
+  title,
+  rationale,
   works,
-}: SoloSceneProps) {
+}: ExhibitionSceneProps) {
   const [started, setStarted] = useState(false);
   const [locked, setLocked] = useState(false);
   const [pointerLockFailed, setPointerLockFailed] = useState(false);
@@ -137,13 +132,10 @@ export default function SoloScene({
     return () => document.removeEventListener("pointerlockerror", onErr);
   }, []);
 
-  // Navigation keys. Escape leaves the hall when unlocked. R navigates
-  // to the currently-aimed-at constellation if any, otherwise the
-  // Archive (matches the chamber's pattern + the visitor's habit).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (document.pointerLockElement) return; // browser releases lock
+        if (document.pointerLockElement) return;
         router.push("/museum");
         return;
       }
@@ -180,7 +172,12 @@ export default function SoloScene({
             gl.domElement.addEventListener("webglcontextlost", onLost);
           }}
         >
-          <SoloSceneInterior works={works} onAim={setAimedTarget} />
+          <ExhibitionInterior
+            title={title}
+            rationale={rationale}
+            works={works}
+            onAim={setAimedTarget}
+          />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -209,21 +206,18 @@ export default function SoloScene({
       </div>
 
       {!started ? (
-        <SoloEntry
+        <ExhibitionEntry
           onEnter={handleBegin}
           isTouch={isTouch}
-          originatorName={originatorName}
-          exhibitionTitle={exhibitionTitle}
+          title={title}
           workCount={works.length}
           hasWorks={works.length > 0}
         />
       ) : null}
 
       {started ? (
-        <SoloHUD
-          originatorId={originatorId}
-          originatorName={originatorName}
-          exhibitionTitle={exhibitionTitle}
+        <ExhibitionHUD
+          title={title}
           workCount={works.length}
           locked={locked}
           pointerLockFailed={pointerLockFailed}
@@ -240,21 +234,17 @@ export default function SoloScene({
   );
 }
 
-/* ─── Navigation target (which constellation the visitor is aiming at) ── */
-
-interface NavTarget {
-  id: string;
-  label: string;
-  route: string;
-}
-
 /* ─── Scene interior ────────────────────────────────────────────────────── */
 
-function SoloSceneInterior({
+function ExhibitionInterior({
+  title,
+  rationale,
   works,
   onAim,
 }: {
-  works: SoloWork[];
+  title: string | null;
+  rationale: string | null;
+  works: ExhibitionWork[];
   onAim: (t: NavTarget | null) => void;
 }) {
   const archiveConfig = CONSTELLATION_CONFIGS.archive;
@@ -270,17 +260,32 @@ function SoloSceneInterior({
     [archiveConfig],
   );
 
-  // Chamber's constellation — visible from the Solo Hall, but
-  // repositioned to a different sky direction than the field's view.
-  // The field's chamber config sits at yaw 0 (due-north of the
-  // field's centre), which from inside the Solo Hall would collide
-  // visually with the Archive vesica (also at yaw 0). Place it
-  // back-right of the visitor so the two constellations occupy
-  // genuinely distinct parts of the sky.
+  // Solo Exhibition pillar — visible in its field-relative direction.
+  // Override to a different yaw so it doesn't visually collide with
+  // Archive overhead.
+  const soloConfig = useMemo(
+    () => ({
+      ...CONSTELLATION_CONFIGS.solo_exhibition,
+      direction: { yaw: 2.0, altitude: 0.35 },
+    }),
+    [],
+  );
+  const soloStars = useMemo(
+    () =>
+      pillarStars(
+        soloConfig.direction.yaw,
+        soloConfig.direction.altitude,
+        soloConfig.distance,
+        14,
+      ),
+    [soloConfig],
+  );
+
+  // Chamber constellation — back-left of the visitor.
   const chamberConfig = useMemo(
     () => ({
       ...CONSTELLATION_CONFIGS.chamber,
-      direction: { yaw: 1.7, altitude: 0.35 },
+      direction: { yaw: -1.8, altitude: 0.35 },
     }),
     [],
   );
@@ -289,21 +294,10 @@ function SoloSceneInterior({
     [chamberConfig],
   );
 
-  // Exhibition Hall ring — visible in its field-relative direction
-  // (yaw 4.7 / W), still distinct from chamber (back-right) and
-  // archive (overhead) from this gallery's viewpoint.
-  const exhibitionConfig = CONSTELLATION_CONFIGS.exhibition;
-  const exhibitionStars = useMemo(
-    () =>
-      ringStars(
-        exhibitionConfig.direction.yaw,
-        exhibitionConfig.direction.altitude,
-        exhibitionConfig.distance,
-        5,
-        7,
-      ),
-    [exhibitionConfig],
-  );
+  // Distribute works across 2 concentric arcs around a point in front
+  // of the visitor. Front arc gets ceil(N/2), back gets floor(N/2).
+  // Each arc spans up to 110° (works fan around the convergence).
+  const arcPlacements = useMemo(() => computeArcPlacements(works), [works]);
 
   return (
     <>
@@ -322,7 +316,6 @@ function SoloSceneInterior({
         color="#8aa0bc"
       />
 
-      {/* Continuous cosmos shared with the field + chamber. */}
       <Stars
         radius={180}
         depth={90}
@@ -342,7 +335,7 @@ function SoloSceneInterior({
         speed={0.4}
       />
 
-      {/* Archive constellation — the way home (vesica). */}
+      {/* Archive — way home, overhead. */}
       <Constellation
         name="↩ The Archive"
         config={archiveConfig}
@@ -354,8 +347,19 @@ function SoloSceneInterior({
         lineOpacity={0.45}
       />
 
-      {/* The Chamber's constellation as seen from this gallery —
-          procedural for now, until a named asterism is designed. */}
+      {/* Solo pillar — visible to the back-right. */}
+      <Constellation
+        name="✦ Solo Exhibition Hall"
+        config={soloConfig}
+        stars={soloStars}
+        edges={PILLAR_EDGES}
+        magnitudes={PILLAR_MAGNITUDES}
+        starSize={0.32}
+        haloFactor={2.4}
+        lineOpacity={0.4}
+      />
+
+      {/* Chamber — back-left, procedural until it gets its own asterism. */}
       <Constellation
         name="✦ The Chamber"
         config={chamberConfig}
@@ -364,35 +368,15 @@ function SoloSceneInterior({
         haloFactor={2.4}
       />
 
-      {/* Exhibition Hall ring — west of the visitor in the field's
-          frame, distinct from chamber (back-right) and archive
-          (overhead). */}
-      <Constellation
-        name="○ Exhibition Hall"
-        config={exhibitionConfig}
-        stars={exhibitionStars}
-        edges={ringEdges(7)}
-        magnitudes={RING_MAGNITUDES_7}
-        starSize={0.32}
-        haloFactor={2.4}
-        lineOpacity={0.4}
-      />
-
-      {/* Gaze detector that maps the aimed constellation to a nav
-          target and pushes it up to the page-level R-key handler. */}
       <ConstellationGazeRouter
         archiveStars={archiveStars}
+        soloStars={soloStars}
         chamberStars={chamberStars}
-        exhibitionStars={exhibitionStars}
         onAim={onAim}
       />
 
-      {/* Reflective floor — same treatment as the chamber. */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
-        receiveShadow
-      >
+      {/* Reflective floor — same as other galleries. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[260, 260]} />
         <MeshReflectorMaterial
           blur={[80, 20]}
@@ -409,73 +393,110 @@ function SoloSceneInterior({
         />
       </mesh>
 
-      {/* Rotunda — works evenly distributed around the visitor on the
-          inner wall of a circular hall, all facing the centre. The
-          visitor stands inside the body of work and turns to take it
-          in. Reads as "the originator's voice surrounds you," vs. a
-          corridor's "walk past the works." */}
-      {works.map((work, i) => {
-        // Angle from -Z axis (front of room), going clockwise. With N
-        // evenly-spaced works the first lands directly ahead.
-        const theta = (i / Math.max(1, works.length)) * Math.PI * 2;
-        const x = Math.sin(theta) * ROTUNDA_RADIUS;
-        const z = -Math.cos(theta) * ROTUNDA_RADIUS;
-        return (
-          <WorkPlaque
-            key={work.id}
-            work={work}
-            position={[x, WORK_HEIGHT_Y, z]}
-            theta={theta}
-          />
-        );
-      })}
+      {/* Central plinth — bears the exhibition title + curatorial
+          rationale. Sits between the visitor's entry point and the
+          arcs of works; visitor reads the argument before walking
+          into the space that holds it. */}
+      {title ? (
+        <CentralPlinth title={title} rationale={rationale} />
+      ) : null}
 
-      {/* Centrepiece — a low warm ring on the floor anchors the
-          visitor's standpoint and marks the institutional vantage. */}
-      <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.4, 1.55, 64]} />
-        <meshBasicMaterial
-          color="#e6c890"
-          transparent
-          opacity={0.4}
-          toneMapped={false}
-        />
-      </mesh>
+      {/* The works themselves, cradled in concentric arcs. */}
+      {arcPlacements.map((p) => (
+        <ArcWork key={p.work.id} work={p.work} position={p.position} />
+      ))}
     </>
   );
 }
 
-/* ─── A single work, mounted on a wall plane ─────────────────────────────── */
+/* ─── Concentric arc placement math ─────────────────────────────────────── */
 
-function WorkPlaque({
+interface ArcPlacement {
+  work: ExhibitionWork;
+  position: [number, number, number];
+}
+
+function computeArcPlacements(works: ExhibitionWork[]): ArcPlacement[] {
+  if (works.length === 0) return [];
+
+  // Two concentric arcs centred at (0, _, ARC_CENTER_Z), curving back
+  // away from the visitor. Front arc closer + smaller radius; back arc
+  // larger so works in it are visible above/behind the front row.
+  // Single-work shows just go on the front arc.
+  const total = works.length;
+  const frontCount = Math.ceil(total / 2);
+  const backCount = total - frontCount;
+
+  const frontRadius = 9;
+  const backRadius = 14;
+  const frontSpan = degToRad(Math.min(110, frontCount * 22));
+  const backSpan = degToRad(Math.min(120, backCount * 22));
+
+  const placements: ArcPlacement[] = [];
+
+  const placeArc = (
+    arcWorks: ExhibitionWork[],
+    radius: number,
+    span: number,
+    yOffset: number,
+  ) => {
+    for (let i = 0; i < arcWorks.length; i++) {
+      // Spread angles from -span/2 to +span/2 across the arc. Single
+      // work sits dead centre.
+      const t = arcWorks.length === 1 ? 0 : i / (arcWorks.length - 1);
+      const theta = -span / 2 + t * span;
+      // Arc curves back from visitor — radius along the +Z axis (back
+      // toward ARC_CENTER_Z + radius), x via sin(theta).
+      const x = Math.sin(theta) * radius;
+      const z = ARC_CENTER_Z - Math.cos(theta) * radius * 0.55;
+      placements.push({
+        work: arcWorks[i],
+        position: [x, ARC_WORK_HEIGHT + yOffset, z],
+      });
+    }
+  };
+
+  placeArc(works.slice(0, frontCount), frontRadius, frontSpan, 0);
+  if (backCount > 0) {
+    placeArc(works.slice(frontCount), backRadius, backSpan, 0.7);
+  }
+
+  return placements;
+}
+
+function degToRad(d: number): number {
+  return (d * Math.PI) / 180;
+}
+
+/* ─── A single work mounted in the arc ──────────────────────────────────── */
+
+const WORK_PLANE_SIZE = 2.8;
+
+function ArcWork({
   work,
   position,
-  theta,
 }: {
-  work: SoloWork;
+  work: ExhibitionWork;
   position: [number, number, number];
-  /** Angle around the rotunda, measured from the -Z axis going
-   *  clockwise (so theta=0 is the work directly ahead of the visitor
-   *  on entry). The work faces back toward the rotunda's centre. */
-  theta: number;
 }) {
   const texture = useDownsampledTexture(`/previews/${work.id}.png`, 512);
-  // Plane geometry default normal is +Z. Rotating Y by -theta turns
-  // that normal to point inward toward the rotunda centre.
-  const rotY = -theta;
+  // Face the work back toward the visitor's expected vantage at the
+  // entry point (roughly (0, _, CAMERA_START_Z)). Compute the planar
+  // angle from the work to that vantage and rotate Y to align the
+  // plane normal with that direction.
+  const dx = -position[0];
+  const dz = CAMERA_START_Z - position[2];
+  const rotY = Math.atan2(dx, dz);
   return (
     <group position={position} rotation={[0, rotY, 0]}>
-      {/* Backing plate — keeps the work readable even when its texture
-          is missing or transparent. */}
       <mesh position={[0, 0, -0.02]}>
-        <planeGeometry args={[WORK_PLANE_SIZE + 0.5, WORK_PLANE_SIZE + 0.5]} />
+        <planeGeometry args={[WORK_PLANE_SIZE + 0.4, WORK_PLANE_SIZE + 0.4]} />
         <meshStandardMaterial
           color="#0c0a09"
           roughness={0.95}
           metalness={0.05}
         />
       </mesh>
-      {/* The work itself. */}
       <mesh>
         <planeGeometry args={[WORK_PLANE_SIZE, WORK_PLANE_SIZE]} />
         {texture ? (
@@ -484,10 +505,8 @@ function WorkPlaque({
           <meshStandardMaterial color="#1a1612" roughness={0.9} />
         )}
       </mesh>
-      {/* Placard underneath — work id + title, in the institutional
-          voice. Floats slightly forward so it doesn't z-fight the wall. */}
       <Html
-        position={[0, -WORK_PLANE_SIZE / 2 - 0.5, 0.02]}
+        position={[0, -WORK_PLANE_SIZE / 2 - 0.45, 0.02]}
         center
         transform
         distanceFactor={4}
@@ -496,26 +515,38 @@ function WorkPlaque({
         <div
           className="font-sans uppercase tracking-[0.18em] whitespace-nowrap select-none"
           style={{
-            fontSize: "10px",
+            fontSize: "9.5px",
             color: "#e8e4dc",
             opacity: 0.9,
             textAlign: "center",
             textShadow: "0 0 6px rgba(0,0,0,0.85)",
           }}
         >
-          <div style={{ marginBottom: 4 }}>{work.id}</div>
+          <div style={{ marginBottom: 3 }}>{work.id}</div>
           {work.title ? (
             <div
               style={{
                 fontFamily: "var(--font-display, serif)",
                 fontStyle: "italic",
-                fontSize: "12px",
+                fontSize: "11px",
                 letterSpacing: "0.02em",
                 textTransform: "none",
                 opacity: 0.85,
+                marginBottom: 3,
               }}
             >
               {work.title}
+            </div>
+          ) : null}
+          {work.originator_name ? (
+            <div
+              style={{
+                fontSize: "9px",
+                opacity: 0.6,
+                letterSpacing: "0.18em",
+              }}
+            >
+              {work.originator_name}
             </div>
           ) : null}
         </div>
@@ -524,17 +555,92 @@ function WorkPlaque({
   );
 }
 
+/* ─── Central plinth with the exhibition title + rationale ──────────────── */
+
+function CentralPlinth({
+  title,
+  rationale,
+}: {
+  title: string;
+  rationale: string | null;
+}) {
+  return (
+    <group position={[0, 0, ARC_CENTER_Z + 2.5]}>
+      {/* Low platform marking the reading vantage. */}
+      <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.3, 1.45, 64]} />
+        <meshBasicMaterial
+          color="#c8b8d8"
+          transparent
+          opacity={0.45}
+          toneMapped={false}
+        />
+      </mesh>
+      {/* Title + rationale anchored at standing eye-level above the
+          platform. Faces back toward the visitor's entry point. */}
+      <Html
+        position={[0, 1.8, 0]}
+        center
+        transform
+        distanceFactor={6}
+        rotation={[0, Math.PI, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <div
+          className="select-none text-center"
+          style={{
+            color: "#e8e4dc",
+            width: 320,
+            textShadow: "0 0 8px rgba(0,0,0,0.85)",
+          }}
+        >
+          <p
+            className="font-sans uppercase tracking-[0.28em]"
+            style={{ fontSize: "10px", opacity: 0.6, marginBottom: 8 }}
+          >
+            Themed Exhibition
+          </p>
+          <p
+            className="font-serif italic"
+            style={{ fontSize: "20px", lineHeight: 1.2, marginBottom: 10 }}
+          >
+            {title}
+          </p>
+          {rationale ? (
+            <p
+              style={{
+                fontSize: "11px",
+                lineHeight: 1.55,
+                opacity: 0.78,
+                marginTop: 8,
+                fontStyle: "italic",
+              }}
+            >
+              {truncate(rationale, 220)}
+            </p>
+          ) : null}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 1).trimEnd() + "…";
+}
+
 /* ─── Gaze-routing for the navigation constellations ─────────────────────── */
 
 function ConstellationGazeRouter({
   archiveStars,
+  soloStars,
   chamberStars,
-  exhibitionStars,
   onAim,
 }: {
   archiveStars: { position: [number, number, number] }[];
+  soloStars: { position: [number, number, number] }[];
   chamberStars: { position: [number, number, number] }[];
-  exhibitionStars: { position: [number, number, number] }[];
   onAim: (t: NavTarget | null) => void;
 }) {
   const { camera } = useThree();
@@ -548,12 +654,16 @@ function ConstellationGazeRouter({
       stars: { position: [number, number, number] }[];
     }> = [
       {
-        target: {
-          id: "archive",
-          label: "The Archive",
-          route: "/museum",
-        },
+        target: { id: "archive", label: "The Archive", route: "/museum" },
         stars: archiveStars,
+      },
+      {
+        target: {
+          id: "solo",
+          label: "Solo Exhibition Hall",
+          route: "/museum/gallery/solo",
+        },
+        stars: soloStars,
       },
       {
         target: {
@@ -562,14 +672,6 @@ function ConstellationGazeRouter({
           route: "/museum/gallery/chamber",
         },
         stars: chamberStars,
-      },
-      {
-        target: {
-          id: "exhibition",
-          label: "Exhibition Hall",
-          route: "/museum/gallery/exhibition",
-        },
-        stars: exhibitionStars,
       },
     ];
 
@@ -589,7 +691,6 @@ function ConstellationGazeRouter({
         }
       }
     }
-
     const id = best?.id ?? null;
     if (id !== lastAimed.current) {
       lastAimed.current = id;
@@ -600,19 +701,15 @@ function ConstellationGazeRouter({
   return null;
 }
 
-/* ─── HUD ────────────────────────────────────────────────────────────────── */
+/* ─── HUD + entry overlay + chrome ───────────────────────────────────────── */
 
-function SoloHUD({
-  originatorId,
-  originatorName,
-  exhibitionTitle,
+function ExhibitionHUD({
+  title,
   workCount,
   locked,
   pointerLockFailed,
 }: {
-  originatorId: string | null;
-  originatorName: string | null;
-  exhibitionTitle: string | null;
+  title: string | null;
   workCount: number;
   locked: boolean;
   pointerLockFailed: boolean;
@@ -633,25 +730,17 @@ function SoloHUD({
           className="font-serif italic text-mna-white"
           style={{ fontSize: "20px", lineHeight: 1.15, marginBottom: 18 }}
         >
-          Solo Exhibition Hall
+          Exhibition Hall
         </p>
         <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/55 mb-2">
-          Featured
+          Current Exhibition
         </p>
         <p
-          className="text-mna-white"
-          style={{ fontSize: "13px", marginBottom: 4 }}
+          className="text-mna-white font-serif italic"
+          style={{ fontSize: "14px", marginBottom: 4 }}
         >
-          {originatorName ?? "—"}
+          {title ?? "—"}
         </p>
-        {exhibitionTitle ? (
-          <p
-            className="text-mna-white/70 font-serif italic"
-            style={{ fontSize: "13px", marginBottom: 6 }}
-          >
-            {exhibitionTitle}
-          </p>
-        ) : null}
         <p
           className="text-mna-white/55 font-sans uppercase tracking-[0.18em]"
           style={{ fontSize: "10px", marginBottom: 16 }}
@@ -662,14 +751,6 @@ function SoloHUD({
           className="border-t border-mna-white/15"
           style={{ paddingTop: 14 }}
         >
-          {originatorId ? (
-            <Link
-              href={`/agent/${originatorId}`}
-              className="block text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white mb-2"
-            >
-              → Agent profile
-            </Link>
-          ) : null}
           <Link
             href="/museum"
             className="block text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white"
@@ -692,20 +773,16 @@ function SoloHUD({
   );
 }
 
-/* ─── Entry overlay ─────────────────────────────────────────────────────── */
-
-function SoloEntry({
+function ExhibitionEntry({
   onEnter,
   isTouch,
-  originatorName,
-  exhibitionTitle,
+  title,
   workCount,
   hasWorks,
 }: {
   onEnter: () => void;
   isTouch: boolean;
-  originatorName: string | null;
-  exhibitionTitle: string | null;
+  title: string | null;
   workCount: number;
   hasWorks: boolean;
 }) {
@@ -720,37 +797,26 @@ function SoloEntry({
         }}
       >
         <p className="text-[10px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-4">
-          Solo Exhibition Hall
+          Exhibition Hall
         </p>
         <h1
           className="font-serif italic text-mna-white mb-3"
-          style={{ fontSize: "30px", lineHeight: 1.1 }}
+          style={{ fontSize: "28px", lineHeight: 1.15 }}
         >
-          {originatorName ?? "—"}
+          {title ?? "Themed Exhibition"}
         </h1>
-        {exhibitionTitle ? (
-          <p
-            className="text-mna-white/75 font-serif italic"
-            style={{ fontSize: "15px", marginBottom: 18 }}
-          >
-            {exhibitionTitle}
-          </p>
-        ) : null}
         <p
           className="text-mna-white/55 font-sans uppercase tracking-[0.22em]"
           style={{ fontSize: "10px", marginBottom: 24 }}
         >
-          {workCount} {workCount === 1 ? "Work" : "Works"} in Procession
+          {workCount} {workCount === 1 ? "Work" : "Works"}
         </p>
         {hasWorks ? (
           <button
             type="button"
             onClick={onEnter}
             className="border border-mna-white/45 text-mna-white hover:bg-mna-white/[0.06] transition-colors font-sans uppercase tracking-[0.26em]"
-            style={{
-              fontSize: "11px",
-              padding: "12px 28px",
-            }}
+            style={{ fontSize: "11px", padding: "12px 28px" }}
           >
             Enter the Hall
           </button>
@@ -759,7 +825,7 @@ function SoloEntry({
             className="text-mna-white/55 italic"
             style={{ fontSize: "13px", marginBottom: 18 }}
           >
-            The Curator has not designated a Solo Exhibition yet.
+            The Curator has not designated an exhibition yet.
           </p>
         )}
         <p
@@ -780,8 +846,6 @@ function SoloEntry({
     </div>
   );
 }
-
-/* ─── Reticle + resume hint ─────────────────────────────────────────────── */
 
 function Reticle() {
   return (

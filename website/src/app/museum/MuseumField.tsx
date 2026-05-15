@@ -58,6 +58,9 @@ import {
   pillarStars,
   PILLAR_EDGES,
   PILLAR_MAGNITUDES,
+  ringStars,
+  ringEdges,
+  RING_MAGNITUDES_7,
   type ConstellationConfig,
   type ConstellationStar,
 } from "@/lib/gallery-constellations";
@@ -889,6 +892,24 @@ function Constellations({
           edges: PILLAR_EDGES,
           magnitudes: PILLAR_MAGNITUDES,
           starSize: 0.45,
+          haloFactor: 2.4,
+        });
+        continue;
+      }
+      if (g.id === "exhibition") {
+        out.push({
+          galleryId: g.id,
+          config,
+          stars: ringStars(
+            config.direction.yaw,
+            config.direction.altitude,
+            config.distance,
+            5, // ring radius in metres → ~4.2° diameter at 135m
+            7,
+          ),
+          edges: ringEdges(7),
+          magnitudes: RING_MAGNITUDES_7,
+          starSize: 0.42,
           haloFactor: 2.4,
         });
         continue;

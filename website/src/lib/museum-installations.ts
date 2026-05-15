@@ -211,6 +211,48 @@ export async function getActiveSoloExhibition(): Promise<ActiveSoloExhibition | 
   };
 }
 
+/** The currently-active themed group exhibition — the most recent
+ *  GROUP_EXHIBITION curatorial decision. Returns the exhibition title
+ *  (used in the field's HUD + the gallery scene's overlay) and the
+ *  ordered work_ids the Curator selected for the show. Null when no
+ *  themed exhibition has been recorded. */
+export interface ActiveThemedExhibition {
+  /** Decision id — useful for linking to the institutional exhibition
+   *  page when one exists. */
+  decisionId: number;
+  title: string | null;
+  rationale: string | null;
+  workIds: string[];
+}
+
+export async function getActiveThemedExhibition(): Promise<ActiveThemedExhibition | null> {
+  if (!(await hasDecisionsTable())) return null;
+  const db = getDb();
+  const result = await db.execute({
+    sql: `SELECT id, work_ids, exhibition_title, rationale
+            FROM curatorial_decisions
+           WHERE decision_type = 'GROUP_EXHIBITION'
+           ORDER BY decided_at DESC
+           LIMIT 1`,
+    args: [],
+  });
+  const r = result.rows[0];
+  if (!r) return null;
+  let workIds: string[] = [];
+  try {
+    const parsed = JSON.parse((r.work_ids as string | null) || "[]");
+    if (Array.isArray(parsed)) workIds = parsed.map(String);
+  } catch {
+    /* leave empty */
+  }
+  return {
+    decisionId: Number(r.id),
+    title: (r.exhibition_title as string | null) || null,
+    rationale: (r.rationale as string | null) || null,
+    workIds,
+  };
+}
+
 /** True if any active installations exist for a space. */
 export async function hasInstallations(spaceId: string): Promise<boolean> {
   if (!(await hasInstallationsTable())) return false;

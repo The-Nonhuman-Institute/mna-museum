@@ -50,6 +50,9 @@ import {
   pillarStars,
   PILLAR_EDGES,
   PILLAR_MAGNITUDES,
+  ringStars,
+  ringEdges,
+  RING_MAGNITUDES_7,
 } from "@/lib/gallery-constellations";
 
 interface ChamberWork {
@@ -302,6 +305,20 @@ function ChamberSceneInterior({
     [soloConfig],
   );
 
+  // Exhibition Hall ring — visible to the west of the chamber.
+  const exhibitionConfig = CONSTELLATION_CONFIGS.exhibition;
+  const exhibitionStars = useMemo(
+    () =>
+      ringStars(
+        exhibitionConfig.direction.yaw,
+        exhibitionConfig.direction.altitude,
+        exhibitionConfig.distance,
+        5,
+        7,
+      ),
+    [exhibitionConfig],
+  );
+
   return (
     <>
       <color attach="background" args={["#06050a"]} />
@@ -429,12 +446,25 @@ function ChamberSceneInterior({
         lineOpacity={0.4}
       />
 
+      {/* Exhibition Hall ring — west of the chamber. */}
+      <Constellation
+        name="○ Exhibition Hall"
+        config={exhibitionConfig}
+        stars={exhibitionStars}
+        edges={ringEdges(7)}
+        magnitudes={RING_MAGNITUDES_7}
+        starSize={0.32}
+        haloFactor={2.4}
+        lineOpacity={0.4}
+      />
+
       {/* Gaze router — when the visitor's view is centred on a
           constellation, surface the press-R affordance and push the
           aimed target up to the page so R navigates correctly. */}
       <ConstellationGazeRouter
         archiveStars={archiveStars}
         soloStars={soloStars}
+        exhibitionStars={exhibitionStars}
         onAim={onAim}
       />
 
@@ -497,10 +527,12 @@ function ChamberSceneInterior({
 function ConstellationGazeRouter({
   archiveStars,
   soloStars,
+  exhibitionStars,
   onAim,
 }: {
   archiveStars: { position: [number, number, number] }[];
   soloStars: { position: [number, number, number] }[];
+  exhibitionStars: { position: [number, number, number] }[];
   onAim: (t: NavTarget | null) => void;
 }) {
   const { camera } = useThree();
@@ -544,8 +576,17 @@ function ConstellationGazeRouter({
         stars: soloStars,
         centroid: centroid(soloStars),
       },
+      {
+        target: {
+          id: "exhibition",
+          label: "Press R for Exhibition Hall",
+          route: "/museum/gallery/exhibition",
+        } satisfies NavTarget,
+        stars: exhibitionStars,
+        centroid: centroid(exhibitionStars),
+      },
     ];
-  }, [archiveStars, soloStars]);
+  }, [archiveStars, soloStars, exhibitionStars]);
 
   useFrame(() => {
     // 12% NDC radius — wide enough that "looking up at the
