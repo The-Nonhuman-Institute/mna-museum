@@ -38,12 +38,14 @@ export default function LayoutShell({
   // both break immersion and float at wrong positions over the canvas.
   const isMuseum = pathname === "/museum" || pathname.startsWith("/museum/");
   const isCapture = pathname.startsWith("/capture");
-  /* /standards/[id]/print and /agent/[id]/constitution/print are
-     chromeless routes used by the build-time PDF generator. No nav,
-     no footer — just the printable doc. */
+  /* Chromeless routes used by the build-time PDF generator. No nav,
+     no footer — just the printable doc, so what Puppeteer captures
+     and what the user sees if they open the route directly is the
+     same institutional document. */
   const isPrint =
     /^\/standards\/[^/]+\/print$/.test(pathname) ||
-    /^\/agent\/[^/]+\/constitution\/print$/.test(pathname);
+    /^\/agent\/[^/]+\/constitution\/print$/.test(pathname) ||
+    /^\/research\/[^/]+\/print$/.test(pathname);
 
   if (isMuseum || isCapture || isPrint) {
     return <>{children}</>;

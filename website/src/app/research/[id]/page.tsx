@@ -448,8 +448,10 @@ function CitePanel({ doc }: { doc: ResearchDocument }) {
 
 function DownloadPanel({ doc }: { doc: ResearchDocument }) {
   return (
-    <Link
-      href={`/research/${doc.registry_id}/print`}
+    <a
+      href={`/research/${doc.registry_id}.pdf`}
+      target="_blank"
+      rel="noopener"
       className="border border-mna-white/15 p-5 flex items-center justify-between text-mna-white hover:border-mna-white/30 transition-colors"
     >
       <span className="text-[10.5px] uppercase tracking-[0.26em]">
@@ -459,7 +461,7 @@ function DownloadPanel({ doc }: { doc: ResearchDocument }) {
         <path d="M8 2 L8 11 M4 7 L8 11 L12 7" stroke="currentColor" strokeWidth="1.2" />
         <line x1="3" y1="13" x2="13" y2="13" stroke="currentColor" strokeWidth="1.2" />
       </svg>
-    </Link>
+    </a>
   );
 }
 
