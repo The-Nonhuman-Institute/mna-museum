@@ -54,7 +54,7 @@ interface ExhibitionSceneProps {
 }
 
 const EYE_HEIGHT = 1.7;
-const CAMERA_START_Z = 0.1; // visitor spawns near centre — exhibition gravitates around them
+const CAMERA_START_Z = 8; // visitor spawns just outside the suspended cluster, looking in
 
 type PLCHandle = { lock: () => void; unlock: () => void } | null;
 
@@ -437,7 +437,10 @@ function computeArcPlacements(works: ExhibitionWork[]): ArcPlacement[] {
   //
   // Heights and radii alternate through small banks so the
   // composition reads layered and dimensional rather than flat.
-  const radiusBank = [7, 9.5, 12, 8, 10.5];
+  // Larger, deliberately uneven radii so works occupy real depth in
+  // the room rather than clustering near the centre. Visitor walks
+  // forward to engage rather than spawning inside the cluster.
+  const radiusBank = [11, 16, 13, 18, 14, 20, 12];
   const heightBank = [2.2, 3.6, 5.2, 4.4, 3.0, 5.8];
 
   return works.map((work, i) => {
@@ -650,38 +653,62 @@ function ConstellationGazeRouter({
   onAim: (t: NavTarget | null) => void;
 }) {
   const { camera } = useThree();
-  const lastAimed = useRef<string | null>(null);
   const projected = useRef(new THREE.Vector3());
+  const lastAimedId = useRef<string | null>(null);
+  const [aimed, setAimed] = useState<{
+    target: NavTarget;
+    centroid: [number, number, number];
+  } | null>(null);
 
-  useFrame(() => {
-    const AIM_THRESH_SQ = 0.12 * 0.12;
-    const groups: Array<{
-      target: NavTarget;
-      stars: { position: [number, number, number] }[];
-    }> = [
+  const groups = useMemo(() => {
+    function centroid(
+      stars: { position: [number, number, number] }[],
+      drop = 8,
+    ): [number, number, number] {
+      let sx = 0, sy = 0, sz = 0;
+      for (const s of stars) {
+        sx += s.position[0];
+        sy += s.position[1];
+        sz += s.position[2];
+      }
+      const n = stars.length || 1;
+      return [sx / n, sy / n - drop, sz / n];
+    }
+    return [
       {
-        target: { id: "archive", label: "The Archive", route: "/museum" },
+        target: {
+          id: "archive",
+          label: "Press R to return",
+          route: "/museum",
+        } satisfies NavTarget,
         stars: archiveStars,
+        centroid: centroid(archiveStars, 10),
       },
       {
         target: {
           id: "solo",
-          label: "Solo Exhibition Hall",
+          label: "Press R for Solo Exhibition",
           route: "/museum/gallery/solo",
-        },
+        } satisfies NavTarget,
         stars: soloStars,
+        centroid: centroid(soloStars),
       },
       {
         target: {
           id: "chamber",
-          label: "The Chamber",
+          label: "Press R for The Chamber",
           route: "/museum/gallery/chamber",
-        },
+        } satisfies NavTarget,
         stars: chamberStars,
+        centroid: centroid(chamberStars),
       },
     ];
+  }, [archiveStars, soloStars, chamberStars]);
 
-    let best: NavTarget | null = null;
+  useFrame(() => {
+    const AIM_THRESH_SQ = 0.12 * 0.12;
+    let best: { target: NavTarget; centroid: [number, number, number] } | null =
+      null;
     let bestDist = AIM_THRESH_SQ;
     for (const g of groups) {
       for (const s of g.stars) {
@@ -693,18 +720,39 @@ function ConstellationGazeRouter({
           projected.current.y * projected.current.y;
         if (d < bestDist) {
           bestDist = d;
-          best = g.target;
+          best = { target: g.target, centroid: g.centroid };
         }
       }
     }
-    const id = best?.id ?? null;
-    if (id !== lastAimed.current) {
-      lastAimed.current = id;
-      onAim(best);
+    const id = best?.target.id ?? null;
+    if (id !== lastAimedId.current) {
+      lastAimedId.current = id;
+      setAimed(best);
+      onAim(best?.target ?? null);
     }
   });
 
-  return null;
+  if (!aimed) return null;
+  return (
+    <Html
+      position={aimed.centroid}
+      center
+      zIndexRange={[10, 0]}
+      style={{ pointerEvents: "none" }}
+    >
+      <div
+        className="font-sans uppercase tracking-[0.22em] whitespace-nowrap select-none"
+        style={{
+          fontSize: "10px",
+          color: "#e8e4dc",
+          textShadow: "0 0 10px #e8e4dc, 0 0 2px rgba(0,0,0,0.85)",
+          opacity: 0.92,
+        }}
+      >
+        {aimed.target.label}
+      </div>
+    </Html>
+  );
 }
 
 /* ─── HUD + entry overlay + chrome ───────────────────────────────────────── */

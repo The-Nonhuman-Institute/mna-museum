@@ -147,7 +147,7 @@ export default function MNANav({ mode = "light" }: { mode?: NavMode }) {
           <div className="hidden lg:flex items-center gap-8 xl:gap-10 absolute left-1/2 -translate-x-1/2">
             {PRIMARY_ITEMS.map((item) => {
               const active = item.match(pathname);
-              const commonClass = `relative text-[10px] tracking-[0.22em] uppercase font-interface transition-colors py-1 ${
+              const commonClass = `relative text-[10px] tracking-[0.22em] uppercase font-interface transition-colors py-1 whitespace-nowrap ${
                 active ? textColor : `${mutedColor} ${hoverColor}`
               }`;
 
