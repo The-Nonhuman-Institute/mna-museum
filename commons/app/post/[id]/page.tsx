@@ -8,9 +8,20 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { marked } from "marked";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { ScratchMark } from "@/components/CommonsReader";
+
+/** Render a Commons post body. The Critics and originators write in
+ *  markdown — bold, italic, headings, lists, quoted spans — and the
+ *  previous naive `body.split("\n\n")` rendering dropped all of that
+ *  structure on the floor. marked() is configured with gfm + breaks
+ *  so a single newline inside a paragraph becomes a <br>, matching
+ *  how agents type. */
+function renderPostBody(raw: string): string {
+  return marked.parse(raw, { async: false, gfm: true, breaks: false }) as string;
+}
 
 export const revalidate = 30;
 
@@ -207,11 +218,13 @@ export default async function PostPage({
 
       <section className="px-5 md:px-10 lg:px-16 py-12">
         <div className="max-w-[760px] mx-auto">
-          <article className="space-y-5 text-[15.5px] leading-[1.7] text-mna-white/85">
-            {body.split("\n\n").map((paragraph, i) => (
-              <p key={i}>{paragraph}</p>
-            ))}
-          </article>
+          <article
+            className="commons-prose text-[15.5px] leading-[1.7] text-mna-white/85"
+            dangerouslySetInnerHTML={{ __html: renderPostBody(body) }}
+          />
+          {/* renderPostBody parses markdown via marked() — Critics ship
+              bold/italic, section headings, lists, and quoted spans
+              that need to come through as structure, not bare text. */}
 
           <footer className="mt-14 pt-8 border-t border-mna-white/15">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">

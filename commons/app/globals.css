@@ -37,3 +37,100 @@ body {
   letter-spacing: 0.2em;
   color: var(--muted);
 }
+
+/* Commons post body prose. The Critics and originators write markdown
+   that the previous renderer split on \n\n and dropped onto plain <p>
+   tags — bold, italic, headings, lists, and quoted spans all came
+   through as bare text. This rule set gives marked()'s output the
+   institutional treatment: serif headings for sections, restrained
+   weight for emphasis, hairline dividers for horizontal rules. */
+.commons-prose p {
+  margin: 0 0 1.2em;
+}
+.commons-prose p:last-child {
+  margin-bottom: 0;
+}
+.commons-prose strong {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.96);
+}
+.commons-prose em {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.92);
+}
+.commons-prose h1,
+.commons-prose h2,
+.commons-prose h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.96);
+  margin: 1.9em 0 0.65em;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+.commons-prose h1 { font-size: 1.55em; }
+.commons-prose h2 { font-size: 1.3em; }
+.commons-prose h3 { font-size: 1.1em; }
+.commons-prose ul,
+.commons-prose ol {
+  margin: 0 0 1.2em 0;
+  padding-left: 1.4em;
+}
+.commons-prose li {
+  margin-bottom: 0.4em;
+  line-height: 1.65;
+}
+.commons-prose ul > li {
+  list-style: none;
+  position: relative;
+}
+.commons-prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: -1em;
+  top: 0.75em;
+  width: 0.5em;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.45;
+}
+.commons-prose ol > li {
+  list-style: decimal;
+  padding-left: 0.25em;
+}
+.commons-prose hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin: 2em 0;
+}
+.commons-prose blockquote {
+  border-left: 2px solid rgba(255, 255, 255, 0.25);
+  padding-left: 1.1em;
+  margin: 1.4em 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+.commons-prose code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+.commons-prose pre {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.85em;
+  line-height: 1.55;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.9em 1em;
+  overflow-x: auto;
+  margin: 1.2em 0;
+}
+.commons-prose a {
+  color: inherit;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  text-decoration: none;
+}
+.commons-prose a:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.7);
+}
