@@ -49,9 +49,9 @@ import {
   VESICA_EDGES,
   VESICA_MAGNITUDES,
   constellationStars,
-  ringStars,
-  ringEdges,
-  RING_MAGNITUDES_7,
+  arrowStars,
+  ARROW_EDGES,
+  ARROW_MAGNITUDES,
 } from "@/lib/gallery-constellations";
 import type { SoloWork } from "./page";
 
@@ -295,12 +295,11 @@ function SoloSceneInterior({
   const exhibitionConfig = CONSTELLATION_CONFIGS.exhibition;
   const exhibitionStars = useMemo(
     () =>
-      ringStars(
+      arrowStars(
         exhibitionConfig.direction.yaw,
         exhibitionConfig.direction.altitude,
         exhibitionConfig.distance,
-        5,
-        7,
+        14,
       ),
     [exhibitionConfig],
   );
@@ -364,15 +363,15 @@ function SoloSceneInterior({
         haloFactor={2.4}
       />
 
-      {/* Exhibition Hall ring — west of the visitor in the field's
+      {/* Exhibition Hall arrow — west of the visitor in the field's
           frame, distinct from chamber (back-right) and archive
           (overhead). */}
       <Constellation
-        name="○ Exhibition Hall"
+        name="↗ Exhibition Hall"
         config={exhibitionConfig}
         stars={exhibitionStars}
-        edges={ringEdges(7)}
-        magnitudes={RING_MAGNITUDES_7}
+        edges={ARROW_EDGES}
+        magnitudes={ARROW_MAGNITUDES}
         starSize={0.32}
         haloFactor={2.4}
         lineOpacity={0.4}

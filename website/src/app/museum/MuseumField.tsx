@@ -58,9 +58,9 @@ import {
   pillarStars,
   PILLAR_EDGES,
   PILLAR_MAGNITUDES,
-  ringStars,
-  ringEdges,
-  RING_MAGNITUDES_7,
+  arrowStars,
+  ARROW_EDGES,
+  ARROW_MAGNITUDES,
   type ConstellationConfig,
   type ConstellationStar,
 } from "@/lib/gallery-constellations";
@@ -900,15 +900,14 @@ function Constellations({
         out.push({
           galleryId: g.id,
           config,
-          stars: ringStars(
+          stars: arrowStars(
             config.direction.yaw,
             config.direction.altitude,
             config.distance,
-            5, // ring radius in metres → ~4.2° diameter at 135m
-            7,
+            14, // tip-to-tail length → ~5.9° of sky at 135m
           ),
-          edges: ringEdges(7),
-          magnitudes: RING_MAGNITUDES_7,
+          edges: ARROW_EDGES,
+          magnitudes: ARROW_MAGNITUDES,
           starSize: 0.42,
           haloFactor: 2.4,
         });

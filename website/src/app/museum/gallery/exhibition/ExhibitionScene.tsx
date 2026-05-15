@@ -54,9 +54,7 @@ interface ExhibitionSceneProps {
 }
 
 const EYE_HEIGHT = 1.7;
-const CAMERA_START_Z = 12;
-const ARC_CENTER_Z = -10; // arcs cradle around this point
-const ARC_WORK_HEIGHT = 2.6;
+const CAMERA_START_Z = 0.1; // visitor spawns near centre — exhibition gravitates around them
 
 type PLCHandle = { lock: () => void; unlock: () => void } | null;
 
@@ -393,79 +391,68 @@ function ExhibitionInterior({
         />
       </mesh>
 
-      {/* Central plinth — bears the exhibition title + curatorial
-          rationale. Sits between the visitor's entry point and the
-          arcs of works; visitor reads the argument before walking
-          into the space that holds it. */}
+      {/* Glowing vertical axis — the institutional column. Marks the
+          centre of the suspended composition without occluding the
+          works. Title + rationale anchor as a billboarded overlay
+          (renders in 2D space, always faces the visitor regardless
+          of where they walk). */}
+      <CentralAxis />
       {title ? (
-        <CentralPlinth title={title} rationale={rationale} />
+        <CentralTitle title={title} rationale={rationale} />
       ) : null}
 
-      {/* The works themselves, cradled in concentric arcs. */}
+      {/* The works themselves, suspended in 3D around the visitor. */}
       {arcPlacements.map((p) => (
-        <ArcWork key={p.work.id} work={p.work} position={p.position} />
+        <ArcWork
+          key={p.work.id}
+          work={p.work}
+          position={p.position}
+          theta={p.theta}
+        />
       ))}
     </>
   );
 }
 
-/* ─── Concentric arc placement math ─────────────────────────────────────── */
+/* ─── Suspended-constellation placement ─────────────────────────────────── */
 
 interface ArcPlacement {
   work: ExhibitionWork;
   position: [number, number, number];
+  /** Angle around the visitor (from -Z, clockwise). The work's plane
+   *  rotation derives from this so the work faces the visitor. */
+  theta: number;
 }
+
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // 137.508°
 
 function computeArcPlacements(works: ExhibitionWork[]): ArcPlacement[] {
   if (works.length === 0) return [];
 
-  // Two concentric arcs centred at (0, _, ARC_CENTER_Z), curving back
-  // away from the visitor. Front arc closer + smaller radius; back arc
-  // larger so works in it are visible above/behind the front row.
-  // Single-work shows just go on the front arc.
-  const total = works.length;
-  const frontCount = Math.ceil(total / 2);
-  const backCount = total - frontCount;
+  // Suspended constellation: works float around the visitor at the
+  // centre, distributed at varying heights, radii, and angles. The
+  // golden-angle stride avoids any grid pattern from any vantage —
+  // visitor never sees aligned columns or rows; everything feels
+  // organically scattered through the space.
+  //
+  // Heights and radii alternate through small banks so the
+  // composition reads layered and dimensional rather than flat.
+  const radiusBank = [7, 9.5, 12, 8, 10.5];
+  const heightBank = [2.2, 3.6, 5.2, 4.4, 3.0, 5.8];
 
-  const frontRadius = 9;
-  const backRadius = 14;
-  const frontSpan = degToRad(Math.min(110, frontCount * 22));
-  const backSpan = degToRad(Math.min(120, backCount * 22));
-
-  const placements: ArcPlacement[] = [];
-
-  const placeArc = (
-    arcWorks: ExhibitionWork[],
-    radius: number,
-    span: number,
-    yOffset: number,
-  ) => {
-    for (let i = 0; i < arcWorks.length; i++) {
-      // Spread angles from -span/2 to +span/2 across the arc. Single
-      // work sits dead centre.
-      const t = arcWorks.length === 1 ? 0 : i / (arcWorks.length - 1);
-      const theta = -span / 2 + t * span;
-      // Arc curves back from visitor — radius along the +Z axis (back
-      // toward ARC_CENTER_Z + radius), x via sin(theta).
-      const x = Math.sin(theta) * radius;
-      const z = ARC_CENTER_Z - Math.cos(theta) * radius * 0.55;
-      placements.push({
-        work: arcWorks[i],
-        position: [x, ARC_WORK_HEIGHT + yOffset, z],
-      });
-    }
-  };
-
-  placeArc(works.slice(0, frontCount), frontRadius, frontSpan, 0);
-  if (backCount > 0) {
-    placeArc(works.slice(frontCount), backRadius, backSpan, 0.7);
-  }
-
-  return placements;
-}
-
-function degToRad(d: number): number {
-  return (d * Math.PI) / 180;
+  return works.map((work, i) => {
+    const theta = (i * GOLDEN_ANGLE) % (Math.PI * 2);
+    const radius = radiusBank[i % radiusBank.length];
+    const height = heightBank[i % heightBank.length];
+    // theta measured from -Z, clockwise around the visitor.
+    const x = Math.sin(theta) * radius;
+    const z = -Math.cos(theta) * radius;
+    return {
+      work,
+      position: [x, height, z],
+      theta,
+    };
+  });
 }
 
 /* ─── A single work mounted in the arc ──────────────────────────────────── */
@@ -475,18 +462,17 @@ const WORK_PLANE_SIZE = 2.8;
 function ArcWork({
   work,
   position,
+  theta,
 }: {
   work: ExhibitionWork;
   position: [number, number, number];
+  /** Angle around the visitor (0 = -Z, clockwise). Plane normal is
+   *  rotated by -theta so it points back at the visitor at origin. */
+  theta: number;
 }) {
   const texture = useDownsampledTexture(`/previews/${work.id}.png`, 512);
-  // Face the work back toward the visitor's expected vantage at the
-  // entry point (roughly (0, _, CAMERA_START_Z)). Compute the planar
-  // angle from the work to that vantage and rotate Y to align the
-  // plane normal with that direction.
-  const dx = -position[0];
-  const dz = CAMERA_START_Z - position[2];
-  const rotY = Math.atan2(dx, dz);
+  // Visitor stands at the rotunda centre; works face inward.
+  const rotY = -theta;
   return (
     <group position={position} rotation={[0, rotY, 0]}>
       <mesh position={[0, 0, -0.02]}>
@@ -505,33 +491,37 @@ function ArcWork({
           <meshStandardMaterial color="#1a1612" roughness={0.9} />
         )}
       </mesh>
+      {/* Billboarded label (no `transform`) — DOM follows the work in
+          3D but always faces the camera, so text reads correctly from
+          any vantage as the visitor turns. */}
       <Html
-        position={[0, -WORK_PLANE_SIZE / 2 - 0.45, 0.02]}
+        position={[0, -WORK_PLANE_SIZE / 2 - 0.4, 0]}
         center
-        transform
-        distanceFactor={4}
+        zIndexRange={[10, 0]}
         style={{ pointerEvents: "none" }}
       >
         <div
-          className="font-sans uppercase tracking-[0.18em] whitespace-nowrap select-none"
+          className="select-none whitespace-nowrap"
           style={{
-            fontSize: "9.5px",
             color: "#e8e4dc",
-            opacity: 0.9,
+            opacity: 0.92,
             textAlign: "center",
             textShadow: "0 0 6px rgba(0,0,0,0.85)",
           }}
         >
-          <div style={{ marginBottom: 3 }}>{work.id}</div>
+          <div
+            className="font-sans uppercase tracking-[0.18em]"
+            style={{ fontSize: "9.5px", marginBottom: 3 }}
+          >
+            {work.id}
+          </div>
           {work.title ? (
             <div
+              className="font-serif italic"
               style={{
-                fontFamily: "var(--font-display, serif)",
-                fontStyle: "italic",
-                fontSize: "11px",
+                fontSize: "12px",
                 letterSpacing: "0.02em",
-                textTransform: "none",
-                opacity: 0.85,
+                opacity: 0.88,
                 marginBottom: 3,
               }}
             >
@@ -540,11 +530,8 @@ function ArcWork({
           ) : null}
           {work.originator_name ? (
             <div
-              style={{
-                fontSize: "9px",
-                opacity: 0.6,
-                letterSpacing: "0.18em",
-              }}
+              className="font-sans uppercase tracking-[0.18em]"
+              style={{ fontSize: "9px", opacity: 0.6 }}
             >
               {work.originator_name}
             </div>
@@ -555,20 +542,18 @@ function ArcWork({
   );
 }
 
-/* ─── Central plinth with the exhibition title + rationale ──────────────── */
+/* ─── Central institutional axis + billboarded title ────────────────────── */
 
-function CentralPlinth({
-  title,
-  rationale,
-}: {
-  title: string;
-  rationale: string | null;
-}) {
+/** A single glowing vertical line rising from the floor at the centre
+ *  of the suspended composition. Marks the institutional vantage and
+ *  threads visually through the constellation of works without
+ *  occluding any of them. Tinted to the Exhibition Hall's lavender. */
+function CentralAxis() {
   return (
-    <group position={[0, 0, ARC_CENTER_Z + 2.5]}>
-      {/* Low platform marking the reading vantage. */}
+    <>
+      {/* Low platform ring on the floor. */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.3, 1.45, 64]} />
+        <ringGeometry args={[1.2, 1.35, 64]} />
         <meshBasicMaterial
           color="#c8b8d8"
           transparent
@@ -576,52 +561,73 @@ function CentralPlinth({
           toneMapped={false}
         />
       </mesh>
-      {/* Title + rationale anchored at standing eye-level above the
-          platform. Faces back toward the visitor's entry point. */}
-      <Html
-        position={[0, 1.8, 0]}
-        center
-        transform
-        distanceFactor={6}
-        rotation={[0, Math.PI, 0]}
-        style={{ pointerEvents: "none" }}
+      {/* The rising line. Thin glowing column from floor to ceiling
+          of the visible volume — reads as the institution's spine. */}
+      <mesh position={[0, 4.5, 0]}>
+        <cylinderGeometry args={[0.025, 0.025, 9, 12]} />
+        <meshBasicMaterial
+          color="#c8b8d8"
+          transparent
+          opacity={0.45}
+          toneMapped={false}
+        />
+      </mesh>
+    </>
+  );
+}
+
+function CentralTitle({
+  title,
+  rationale,
+}: {
+  title: string;
+  rationale: string | null;
+}) {
+  // Billboarded — always faces the visitor regardless of where they
+  // walk around the column. Anchored above standing eye level so it
+  // sits visually distinct from the works.
+  return (
+    <Html
+      position={[0, 7.6, 0]}
+      center
+      zIndexRange={[10, 0]}
+      style={{ pointerEvents: "none" }}
+    >
+      <div
+        className="select-none text-center"
+        style={{
+          color: "#e8e4dc",
+          width: 360,
+          textShadow: "0 0 10px rgba(0,0,0,0.9)",
+        }}
       >
-        <div
-          className="select-none text-center"
-          style={{
-            color: "#e8e4dc",
-            width: 320,
-            textShadow: "0 0 8px rgba(0,0,0,0.85)",
-          }}
+        <p
+          className="font-sans uppercase tracking-[0.32em]"
+          style={{ fontSize: "10px", opacity: 0.55, marginBottom: 8 }}
         >
-          <p
-            className="font-sans uppercase tracking-[0.28em]"
-            style={{ fontSize: "10px", opacity: 0.6, marginBottom: 8 }}
-          >
-            Themed Exhibition
-          </p>
+          Themed Exhibition
+        </p>
+        <p
+          className="font-serif italic"
+          style={{ fontSize: "22px", lineHeight: 1.18, marginBottom: 10 }}
+        >
+          {title}
+        </p>
+        {rationale ? (
           <p
             className="font-serif italic"
-            style={{ fontSize: "20px", lineHeight: 1.2, marginBottom: 10 }}
+            style={{
+              fontSize: "11.5px",
+              lineHeight: 1.55,
+              opacity: 0.78,
+              marginTop: 6,
+            }}
           >
-            {title}
+            {truncate(rationale, 220)}
           </p>
-          {rationale ? (
-            <p
-              style={{
-                fontSize: "11px",
-                lineHeight: 1.55,
-                opacity: 0.78,
-                marginTop: 8,
-                fontStyle: "italic",
-              }}
-            >
-              {truncate(rationale, 220)}
-            </p>
-          ) : null}
-        </div>
-      </Html>
-    </group>
+        ) : null}
+      </div>
+    </Html>
   );
 }
 

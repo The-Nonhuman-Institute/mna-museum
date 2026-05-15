@@ -50,9 +50,9 @@ import {
   pillarStars,
   PILLAR_EDGES,
   PILLAR_MAGNITUDES,
-  ringStars,
-  ringEdges,
-  RING_MAGNITUDES_7,
+  arrowStars,
+  ARROW_EDGES,
+  ARROW_MAGNITUDES,
 } from "@/lib/gallery-constellations";
 
 interface ChamberWork {
@@ -309,12 +309,11 @@ function ChamberSceneInterior({
   const exhibitionConfig = CONSTELLATION_CONFIGS.exhibition;
   const exhibitionStars = useMemo(
     () =>
-      ringStars(
+      arrowStars(
         exhibitionConfig.direction.yaw,
         exhibitionConfig.direction.altitude,
         exhibitionConfig.distance,
-        5,
-        7,
+        14,
       ),
     [exhibitionConfig],
   );
@@ -446,13 +445,13 @@ function ChamberSceneInterior({
         lineOpacity={0.4}
       />
 
-      {/* Exhibition Hall ring — west of the chamber. */}
+      {/* Exhibition Hall arrow — west of the chamber. */}
       <Constellation
-        name="○ Exhibition Hall"
+        name="↗ Exhibition Hall"
         config={exhibitionConfig}
         stars={exhibitionStars}
-        edges={ringEdges(7)}
-        magnitudes={RING_MAGNITUDES_7}
+        edges={ARROW_EDGES}
+        magnitudes={ARROW_MAGNITUDES}
         starSize={0.32}
         haloFactor={2.4}
         lineOpacity={0.4}

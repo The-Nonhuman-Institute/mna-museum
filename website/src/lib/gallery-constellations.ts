@@ -329,6 +329,96 @@ export const RING_MAGNITUDES_7: ReadonlyArray<number> = [
   1.05, // 6
 ];
 
+/** Place 7 stars in an arrow asterism — the Exhibition Hall's figure.
+ *  Modelled on Sagitta (the classical arrow constellation): a closed-
+ *  triangle head + an open shaft + open fletching at the tail. Reads
+ *  agentic (directional, intentional) and dimensional (variable
+ *  brightness anchors a clear visual axis from tip to tail). Star
+ *  ordering:
+ *
+ *    0: tip               (brightest — the spearhead anchor)
+ *    1: left barb
+ *    2: right barb
+ *    3: nock              (head-shaft junction)
+ *    4: tail              (shaft terminus)
+ *    5: left fletching
+ *    6: right fletching
+ *
+ *  `pointingAngle` rotates the arrow in its local sky plane; 0 = up,
+ *  +π/6 ≈ 30° clockwise. A slight tilt off-vertical gives the
+ *  asterism dynamic motion vs. the Solo pillar's stillness. */
+export function arrowStars(
+  yaw: number,
+  altitude: number,
+  distance: number,
+  length: number,
+  pointingAngle: number = Math.PI / 9, // 20° clockwise from vertical
+): ConstellationStar[] {
+  const f = celestialFrame(yaw, altitude, distance);
+  const halfLen = length / 2;
+  const headLen = length * 0.32;
+  const fletchLen = length * 0.16;
+  const barbWidth = length * 0.16;
+  const fletchWidth = length * 0.12;
+
+  // Arrow geometry in local 2D, pointing +Y before rotation.
+  const local: [number, number][] = [
+    [0, halfLen],                                  // 0 tip
+    [-barbWidth, halfLen - headLen],               // 1 left barb
+    [barbWidth, halfLen - headLen],                // 2 right barb
+    [0, halfLen - headLen * 0.95],                 // 3 nock
+    [0, -halfLen + fletchLen],                     // 4 tail
+    [-fletchWidth, -halfLen],                      // 5 left fletching
+    [fletchWidth, -halfLen],                       // 6 right fletching
+  ];
+
+  const cos = Math.cos(pointingAngle);
+  const sin = Math.sin(pointingAngle);
+  const rotated = local.map(
+    ([x, y]) => [x * cos - y * sin, x * sin + y * cos] as [number, number],
+  );
+
+  return rotated.map(([x, y]) => ({
+    position: [
+      f.center[0] + f.right[0] * x + f.up[0] * y,
+      f.center[1] + f.right[1] * x + f.up[1] * y,
+      f.center[2] + f.right[2] * x + f.up[2] * y,
+    ] as [number, number, number],
+  }));
+}
+
+/** Edges for the arrow asterism. Closed-triangle head (tip → barbs →
+ *  nock) marks the figure's directional anchor; open shaft + open
+ *  fletching trail behind. Mixed open/closed structure is what reads
+ *  as "an arrow flying" rather than "a generic polygon." */
+export const ARROW_EDGES: ReadonlyArray<readonly [number, number]> = [
+  // Arrowhead — a closed triangle.
+  [0, 1], // tip → left barb
+  [0, 2], // tip → right barb
+  [1, 3], // left barb → nock
+  [2, 3], // right barb → nock
+  // Shaft.
+  [3, 4],
+  // Fletching — open V at the tail.
+  [4, 5],
+  [4, 6],
+];
+
+/** Per-star magnitudes. The spearhead carries the most weight (the
+ *  curator's primary statement); the shaft and tail are quieter; the
+ *  barbs and fletchings are accents. Real Sagitta has its brightest
+ *  star at the tail (γ Sge), but for institutional reading we put the
+ *  weight at the tip — the asterism announces its direction. */
+export const ARROW_MAGNITUDES: ReadonlyArray<number> = [
+  1.4,  // 0 tip
+  0.75, // 1 left barb
+  0.75, // 2 right barb
+  1.0,  // 3 nock
+  1.15, // 4 tail
+  0.7,  // 5 left fletching
+  0.7,  // 6 right fletching
+];
+
 function seededRandom(seed: string): () => number {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < seed.length; i++) {
