@@ -47,23 +47,84 @@ interface PlannedPost {
   body_excerpt: string;
 }
 
-/** Extract the title from a Critical Response body. The Critics write
- *  responses that open with a markdown H1 — that line is the title.
- *  Strip it from the body so the title isn't duplicated. */
-function extractTitleAndBody(raw: string): { title: string; body: string } {
+const CRITIC_APPROACH_LABEL: Record<string, string> = {
+  "MNA-CR-0001": "Structural Reading",
+  "MNA-CR-0002": "Phenomenological Reading",
+};
+
+/** Extract the title from a Critical Response body.
+ *
+ *  Critics over time have written in two different opening formats:
+ *  (1) Newer responses open with a markdown H1 line like
+ *      `# The Threshold of Watching` — that's the substantive title.
+ *  (2) Older responses open with bolded boilerplate like
+ *      `**Structural Response: MNA-OR-0002-W-0003**` — the work ID
+ *      is decoration, not a title. For those we synthesize a title
+ *      from the Critic's approach + the work's title.
+ *
+ *  In both cases the opening line is stripped from the body so the
+ *  Commons post doesn't render the title twice. */
+function extractTitleAndBody(
+  raw: string,
+  criticId: string,
+  workId: string,
+  workTitle: string | null,
+): { title: string; body: string } {
   const lines = raw.split("\n");
+  let firstNonEmpty = -1;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (trimmed.startsWith("# ")) {
-      const title = trimmed.slice(2).trim();
-      const remaining = lines.slice(i + 1).join("\n").replace(/^\s+/, "");
-      return { title, body: remaining };
+    if (lines[i].trim()) {
+      firstNonEmpty = i;
+      break;
     }
-    break;
   }
-  return { title: "Critical Response", body: raw };
+  if (firstNonEmpty === -1) {
+    return { title: synthesizeTitle(criticId, workId, workTitle), body: raw };
+  }
+  const head = lines[firstNonEmpty].trim();
+
+  // Case (1) — explicit H1.
+  if (head.startsWith("# ")) {
+    const title = head.slice(2).trim();
+    if (title && !/^(critical|structural|phenomenological)\s*response\b/i.test(title)) {
+      const body = lines.slice(firstNonEmpty + 1).join("\n").replace(/^\s+/, "");
+      return { title, body };
+    }
+    // H1 but generic ("# Critical Response: WORK-ID") — fall through.
+  }
+
+  // Case (2) — bolded boilerplate. Strip it from the body but synthesize.
+  const stripped = head.replace(/\*\*/g, "").replace(/^---+\s*/, "").trim();
+  if (
+    /^(critical|structural|phenomenological)\s*response\b/i.test(stripped) ||
+    /^(structural|phenomenological)\s+(inventory|reading)\b/i.test(stripped) ||
+    stripped === ""
+  ) {
+    const body = lines.slice(firstNonEmpty + 1).join("\n").replace(/^\s+/, "");
+    return {
+      title: synthesizeTitle(criticId, workId, workTitle),
+      body,
+    };
+  }
+
+  // Anything else — fall back to keeping the body intact.
+  return {
+    title: synthesizeTitle(criticId, workId, workTitle),
+    body: raw,
+  };
+}
+
+function synthesizeTitle(
+  criticId: string,
+  workId: string,
+  workTitle: string | null,
+): string {
+  const approach = CRITIC_APPROACH_LABEL[criticId] ?? "Critical Response";
+  if (workTitle && workTitle.trim()) {
+    return `${approach} — ${workTitle.trim()}`;
+  }
+  // Untitled work — fall back to its id so the post is still scannable.
+  return `${approach} — ${workId}`;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -116,6 +177,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     args: limit ? [limit] : [],
   });
 
+  // Pre-load work titles for every work referenced so title synthesis
+  // can reach for the work's real name when the body lacks an H1.
+  const workIds = [
+    ...new Set(sourceRows.rows.map((r) => String(r.work_id))),
+  ];
+  const workTitles: Record<string, string | null> = {};
+  if (workIds.length > 0) {
+    const placeholders = workIds.map(() => "?").join(",");
+    const titleRows = await instDb.execute({
+      sql: `SELECT id, title FROM works WHERE id IN (${placeholders})`,
+      args: workIds,
+    });
+    for (const r of titleRows.rows) {
+      workTitles[String(r.id)] = (r.title as string) || null;
+    }
+  }
+
   const planned: PlannedPost[] = [];
   const skipped: { source_id: number; reason: string }[] = [];
 
@@ -133,7 +211,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       skipped.push({ source_id: sourceId, reason: "empty_body" });
       continue;
     }
-    const { title, body: cleanedBody } = extractTitleAndBody(rawBody);
+    const { title, body: cleanedBody } = extractTitleAndBody(
+      rawBody,
+      authorId,
+      workId,
+      workTitles[workId] ?? null,
+    );
     const createdAt = String(
       r.response_date ?? new Date().toISOString().replace("T", " ").slice(0, 19),
     );
@@ -179,7 +262,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const matched = planned.find((p) => p.source_id === sourceId);
     if (!matched) continue; // skipped in dry-run analysis
     const rawBody = String(r.body ?? "");
-    const { title, body: cleanedBody } = extractTitleAndBody(rawBody);
+    const { title, body: cleanedBody } = extractTitleAndBody(
+      rawBody,
+      authorId,
+      workId,
+      workTitles[workId] ?? null,
+    );
     const createdAt = String(
       r.response_date ?? new Date().toISOString().replace("T", " ").slice(0, 19),
     );
