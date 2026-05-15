@@ -273,6 +273,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       skipped.push({ source_id: sourceId, reason: "empty_rationale" });
       continue;
     }
+    // Test/verification entries — the steward sometimes records
+    // these to exercise the API. They aren't substantive curatorial
+    // arguments and shouldn't pollute the institutional record on
+    // the public Commons.
+    if (
+      /\b(test decision|verification call|smoke test|not an actual)\b/i.test(
+        rationale,
+      )
+    ) {
+      skipped.push({ source_id: sourceId, reason: "test_entry" });
+      continue;
+    }
 
     let originatorName: string | null = null;
     if (
