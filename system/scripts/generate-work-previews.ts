@@ -93,11 +93,19 @@ export async function renderWork(
         // work frame with data-work-frame. Use that whenever it's
         // present so text and any future renderer that doesn't ship
         // an <img>/<canvas>/<iframe>/<svg> gets cropped correctly.
+        // The frame is already the right size, so signal that the
+        // outer script should skip the institutional padding.
         const frame = document.querySelector<HTMLElement>("[data-work-frame]");
         if (frame) {
           const r = frame.getBoundingClientRect();
           if (r.width > 100 && r.height > 100) {
-            return { x: r.x, y: r.y, width: r.width, height: r.height };
+            return {
+              x: r.x,
+              y: r.y,
+              width: r.width,
+              height: r.height,
+              tight: true,
+            } as const;
           }
         }
         const main = document.querySelector("main");
@@ -124,11 +132,16 @@ export async function renderWork(
       });
     };
 
-    const workArea = await findWorkArea();
+    const workArea = await findWorkArea() as
+      | { x: number; y: number; width: number; height: number; tight?: boolean }
+      | null;
 
     let clip;
     if (workArea && workArea.width > 100) {
-      const padding = 60;
+      // data-work-frame already gives us the exact 1:1 crop. The
+      // legacy element-hunt path returns the inner render, so we
+      // still add an institutional padding for that case.
+      const padding = workArea.tight ? 0 : 60;
       clip = {
         x: Math.max(0, workArea.x - padding),
         y: Math.max(0, workArea.y - padding),
