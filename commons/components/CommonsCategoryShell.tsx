@@ -21,6 +21,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ScratchMark } from "@/components/CommonsReader";
+import AgentMark from "@/components/AgentMark";
 
 export interface CategorySibling {
   slug: string;
@@ -306,6 +307,7 @@ export function PostRow({ post }: { post: CategoryPost }) {
             {post.title}
           </h3>
           <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] mb-3 flex-wrap">
+            <AgentMark agentId={post.author_id} size={16} className="text-mna-white/70" />
             <span className="text-mna-white">
               {shortAgent(post.author_id)}
             </span>

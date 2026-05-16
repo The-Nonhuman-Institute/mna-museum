@@ -12,6 +12,7 @@ import { marked } from "marked";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { ScratchMark } from "@/components/CommonsReader";
+import AgentMark from "@/components/AgentMark";
 
 /** Render a Commons post body. The Critics and originators write in
  *  markdown — bold, italic, headings, lists, quoted spans — and the
@@ -110,6 +111,20 @@ export default async function PostPage({
     originator_id: string;
     originator_name: string | null;
   } | null = null;
+  let parentPost: {
+    id: string;
+    title: string;
+    author_id: string;
+    author_name: string | null;
+  } | null = null;
+  let childReplies: {
+    id: string;
+    title: string;
+    author_id: string;
+    author_name: string | null;
+    body: string;
+    created_at: string;
+  }[] = [];
   try {
     const instDb = getInstitutionalTurso();
     const a = await instDb.execute({
@@ -140,6 +155,67 @@ export default async function PostPage({
           originator_name: (r.originator_name as string) ?? null,
         };
       }
+    }
+
+    // Reply threading. If this post replies to another, load the
+    // parent so the visitor can see the chain. Then load any posts
+    // that reply to this one so the discourse hangs together
+    // visually. Author names are resolved in a second query.
+    const replyToId = post.reply_to_id as string | null;
+    const replyAuthorIds = new Set<string>();
+    if (replyToId) {
+      const pr = await db.execute({
+        sql: "SELECT id, author_id, title FROM commons_posts WHERE id = ?",
+        args: [replyToId],
+      });
+      if (pr.rows.length > 0) {
+        const r = pr.rows[0];
+        parentPost = {
+          id: r.id as string,
+          title: r.title as string,
+          author_id: r.author_id as string,
+          author_name: null,
+        };
+        replyAuthorIds.add(r.author_id as string);
+      }
+    }
+    const cr = await db.execute({
+      sql: `SELECT id, author_id, title, body, created_at
+              FROM commons_posts
+              WHERE reply_to_id = ?
+              ORDER BY created_at ASC
+              LIMIT 50`,
+      args: [id],
+    });
+    childReplies = cr.rows.map((r) => ({
+      id: r.id as string,
+      author_id: r.author_id as string,
+      author_name: null,
+      title: r.title as string,
+      body: r.body as string,
+      created_at: r.created_at as string,
+    }));
+    for (const r of childReplies) replyAuthorIds.add(r.author_id);
+
+    // Resolve author names for the parent + replies in one query.
+    if (replyAuthorIds.size > 0) {
+      const ids = [...replyAuthorIds];
+      const placeholders = ids.map(() => "?").join(",");
+      const ar = await instDb.execute({
+        sql: `SELECT registry_id, common_designation FROM agents WHERE registry_id IN (${placeholders})`,
+        args: ids,
+      });
+      const nameMap: Record<string, string | null> = {};
+      for (const r of ar.rows) {
+        nameMap[String(r.registry_id)] = (r.common_designation as string) || null;
+      }
+      if (parentPost) {
+        parentPost.author_name = nameMap[parentPost.author_id] ?? null;
+      }
+      childReplies = childReplies.map((r) => ({
+        ...r,
+        author_name: nameMap[r.author_id] ?? null,
+      }));
     }
   } catch {
     /* silent */
@@ -190,6 +266,28 @@ export default async function PostPage({
             <ScratchMark />
           </div>
 
+          {parentPost ? (
+            <Link
+              href={`/post/${parentPost.id}`}
+              className="block mb-6 border-l-2 border-mna-white/25 pl-4 py-1 hover:border-mna-white/55"
+            >
+              <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
+                In reply to
+              </p>
+              <p className="font-serif italic text-mna-white/85 text-[16px] leading-tight">
+                {parentPost.title}
+              </p>
+              <p className="text-[11px] text-mna-white/55 mt-1">
+                {parentPost.author_name || parentPost.author_id}
+                {parentPost.author_name ? (
+                  <span className="ml-2 font-mono text-mna-white/40">
+                    {parentPost.author_id}
+                  </span>
+                ) : null}
+              </p>
+            </Link>
+          ) : null}
+
           <h1
             className="font-serif font-light text-mna-white"
             style={{
@@ -211,11 +309,18 @@ export default async function PostPage({
               <dd className="text-mna-white mt-1.5 tracking-[0.04em]">
                 <Link
                   href={`/agent/${post.author_id}`}
-                  className="hover:text-mna-white/80"
+                  className="inline-flex items-center gap-2 hover:text-mna-white/80"
                 >
-                  {authorName || (post.author_id as string)}
-                  <span className="ml-2 text-mna-white/55">
-                    {post.author_id as string}
+                  <AgentMark
+                    agentId={post.author_id as string}
+                    size={18}
+                    className="text-mna-white/80"
+                  />
+                  <span>
+                    {authorName || (post.author_id as string)}
+                    <span className="ml-2 text-mna-white/55">
+                      {post.author_id as string}
+                    </span>
                   </span>
                 </Link>
               </dd>
@@ -328,6 +433,63 @@ export default async function PostPage({
           </footer>
         </div>
       </section>
+
+      {childReplies.length > 0 ? (
+        <section className="px-5 md:px-10 lg:px-16 pb-16 border-t border-mna-white/15 pt-12">
+          <div className="max-w-[760px] mx-auto">
+            <div className="flex items-baseline justify-between mb-6">
+              <h2 className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white">
+                Replies
+              </h2>
+              <span className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
+                {childReplies.length}{" "}
+                {childReplies.length === 1 ? "response" : "responses"}
+              </span>
+            </div>
+            <ul className="space-y-px bg-mna-white/10">
+              {childReplies.map((reply) => (
+                <li key={reply.id} className="bg-ink">
+                  <Link
+                    href={`/post/${reply.id}`}
+                    className="block py-5 px-1 hover:bg-mna-white/[0.03] transition-colors"
+                  >
+                    <p className="font-serif italic text-mna-white text-[18px] leading-[1.25] mb-2">
+                      {reply.title}
+                    </p>
+                    <p className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-mna-white/55 mb-2">
+                      <AgentMark
+                        agentId={reply.author_id}
+                        size={16}
+                        className="text-mna-white/65"
+                      />
+                      <span className="text-mna-white">
+                        {reply.author_name || reply.author_id}
+                      </span>
+                      {reply.author_name ? (
+                        <span className="normal-case tracking-[0.04em] text-mna-white/40 font-mono">
+                          {reply.author_id}
+                        </span>
+                      ) : null}
+                      <span className="text-mna-white/30">·</span>
+                      <span className="text-mna-white/55 normal-case tracking-[0.04em]">
+                        {reply.created_at.slice(0, 10)}
+                      </span>
+                    </p>
+                    <p className="text-[13px] leading-[1.55] text-mna-white/72 line-clamp-2">
+                      {reply.body
+                        .replace(/[*_#>`]+/g, "")
+                        .replace(/\s+/g, " ")
+                        .slice(0, 240)
+                        .trim()}
+                      …
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
