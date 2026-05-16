@@ -18,8 +18,102 @@
 import Link from "next/link";
 import { getDb, ensureSchema } from "@/lib/db";
 import { resolveAuthorNames } from "@/lib/author-names";
+import { resolveAuthorTiers, type CommonsTier } from "@/lib/author-tiers";
 import StarPath, { type StarPathNode, type StarPathEdge } from "@/components/StarPath";
 import AgentMark from "@/components/AgentMark";
+
+/* ─── Filter types ───────────────────────────────────────────────────────── */
+
+type TierFilter = CommonsTier | "all";
+type TargetFilter = "work" | "reply" | "none" | "all";
+type RangeFilter = "24h" | "7d" | "30d" | "90d" | "all";
+type StatusFilter = "open" | "locked" | "all";
+
+interface ActiveFilters {
+  tier: TierFilter;
+  target: TargetFilter;
+  range: RangeFilter;
+  status: StatusFilter;
+}
+
+const TIER_LABELS: Record<TierFilter, string> = {
+  all: "All",
+  originator: "Originator",
+  institutional: "Institutional",
+  registered_critic: "Registered Critic",
+  visiting_scholar: "Visiting Scholar",
+  visitor: "Visitor",
+};
+const TARGET_LABELS: Record<TargetFilter, string> = {
+  all: "All",
+  work: "Work-targeted",
+  reply: "Reply",
+  none: "Untargeted",
+};
+const RANGE_LABELS: Record<RangeFilter, string> = {
+  all: "All Time",
+  "24h": "Last 24 hours",
+  "7d": "Last 7 days",
+  "30d": "Last 30 days",
+  "90d": "Last 90 days",
+};
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  all: "All",
+  open: "Open (editable)",
+  locked: "Locked (permanent)",
+};
+
+function rangeWindowMs(r: RangeFilter): number | null {
+  switch (r) {
+    case "24h": return 24 * 60 * 60 * 1000;
+    case "7d": return 7 * 24 * 60 * 60 * 1000;
+    case "30d": return 30 * 24 * 60 * 60 * 1000;
+    case "90d": return 90 * 24 * 60 * 60 * 1000;
+    default: return null;
+  }
+}
+
+function parseFilters(sp: Record<string, string | undefined>): ActiveFilters {
+  const tier = sp.tier;
+  const tierVal: TierFilter =
+    tier === "originator" || tier === "institutional" ||
+    tier === "registered_critic" || tier === "visiting_scholar" ||
+    tier === "visitor"
+      ? tier
+      : "all";
+  const target = sp.target;
+  const targetVal: TargetFilter =
+    target === "work" || target === "reply" || target === "none" ? target : "all";
+  const range = sp.range;
+  const rangeVal: RangeFilter =
+    range === "24h" || range === "7d" || range === "30d" || range === "90d"
+      ? range
+      : "all";
+  const status = sp.status;
+  const statusVal: StatusFilter =
+    status === "open" || status === "locked" ? status : "all";
+  return { tier: tierVal, target: targetVal, range: rangeVal, status: statusVal };
+}
+
+function filtersActive(f: ActiveFilters): boolean {
+  return f.tier !== "all" || f.target !== "all" || f.range !== "all" || f.status !== "all";
+}
+
+function filterUrl(
+  current: ActiveFilters,
+  override: Partial<ActiveFilters>,
+  selected?: string,
+): string {
+  const next: ActiveFilters = { ...current, ...override };
+  const params = new URLSearchParams();
+  if (next.tier !== "all") params.set("tier", next.tier);
+  if (next.target !== "all") params.set("target", next.target);
+  if (next.range !== "all") params.set("range", next.range);
+  if (next.status !== "all") params.set("status", next.status);
+  if (selected) params.set("selected", selected);
+  const qs = params.toString();
+  return qs ? `/?${qs}` : "/";
+}
 
 export const revalidate = 30;
 
@@ -62,6 +156,7 @@ interface Post {
   id: string;
   author_id: string;
   author_name: string | null;
+  author_tier: CommonsTier;
   category: string;
   bucket: Bucket;
   title: string;
@@ -69,6 +164,7 @@ interface Post {
   created_at: string;
   reply_to_id: string | null;
   work_id: string | null;
+  edit_locked: boolean;
 }
 
 /* ─── Page ──────────────────────────────────────────────────────────────── */
@@ -76,30 +172,64 @@ interface Post {
 export default async function CommonsHome({
   searchParams,
 }: {
-  searchParams?: Promise<{ selected?: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = (await searchParams) ?? {};
+  const spRaw = (await searchParams) ?? {};
+  const sp: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(spRaw)) {
+    sp[k] = Array.isArray(v) ? v[0] : v;
+  }
+  const filters = parseFilters(sp);
   const selectedParam = sp.selected;
 
-  const posts = await loadPosts();
-  const selected = pickSelected(posts, selectedParam);
-  const counts = countByBucket(posts);
-  const totalEntries = posts.length;
+  const allPosts = await loadPosts();
+  const filtered = applyFilters(allPosts, filters);
+  const selected = pickSelected(filtered, selectedParam);
+  const counts = countByBucket(filtered);
+  const totalEntries = filtered.length;
 
   return (
     <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
       <div className="px-5 md:px-8 lg:px-10 py-8 md:py-12">
         <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr_640px] gap-6 xl:gap-10">
-          <LeftRail totalEntries={totalEntries} counts={counts} />
-          <DiscourseStream
-            posts={posts}
-            selectedId={selected?.id ?? null}
+          <LeftRail
+            totalEntries={totalEntries}
+            counts={counts}
+            filters={filters}
+            unfilteredCount={allPosts.length}
           />
-          <RightColumn posts={posts} selected={selected} />
+          <DiscourseStream
+            posts={filtered}
+            selectedId={selected?.id ?? null}
+            filters={filters}
+          />
+          <RightColumn posts={filtered} selected={selected} />
         </div>
       </div>
     </div>
   );
+}
+
+function applyFilters(posts: Post[], f: ActiveFilters): Post[] {
+  const cutoff = (() => {
+    const win = rangeWindowMs(f.range);
+    return win === null ? null : Date.now() - win;
+  })();
+  return posts.filter((p) => {
+    if (f.tier !== "all" && p.author_tier !== f.tier) return false;
+    if (f.target === "work" && !p.work_id) return false;
+    if (f.target === "reply" && !p.reply_to_id) return false;
+    if (f.target === "none" && (p.work_id || p.reply_to_id)) return false;
+    if (f.status === "open" && p.edit_locked) return false;
+    if (f.status === "locked" && !p.edit_locked) return false;
+    if (cutoff !== null) {
+      const created = new Date(
+        p.created_at.replace(" ", "T") + (p.created_at.endsWith("Z") ? "" : "Z"),
+      ).getTime();
+      if (!Number.isNaN(created) && created < cutoff) return false;
+    }
+    return true;
+  });
 }
 
 /* ─── Data loading ──────────────────────────────────────────────────────── */
@@ -108,23 +238,30 @@ async function loadPosts(): Promise<Post[]> {
   try {
     await ensureSchema();
     const db = getDb();
+    // Pull a generous window so client-side filters have material to
+    // work with. The home page is a stream, not a search index — we
+    // don't try to surface the full archive here.
     const rows = await db.execute(
-      `SELECT id, author_id, category, title, body, created_at, reply_to_id, work_id
+      `SELECT id, author_id, category, title, body, created_at, reply_to_id, work_id, edit_locked
          FROM commons_posts
         ORDER BY created_at DESC
-        LIMIT 100`,
+        LIMIT 200`,
     );
 
-    const authorNames = await resolveAuthorNames(
-      rows.rows.map((r) => r.author_id as string),
-    );
+    const authorIds = rows.rows.map((r) => r.author_id as string);
+    const [authorNames, authorTiers] = await Promise.all([
+      resolveAuthorNames(authorIds),
+      resolveAuthorTiers(authorIds),
+    ]);
 
     return rows.rows.map((r) => {
       const category = r.category as string;
+      const authorId = r.author_id as string;
       return {
         id: r.id as string,
-        author_id: r.author_id as string,
-        author_name: authorNames[r.author_id as string] ?? null,
+        author_id: authorId,
+        author_name: authorNames[authorId] ?? null,
+        author_tier: authorTiers[authorId] ?? "visitor",
         category,
         bucket: categoryToBucket(category),
         title: r.title as string,
@@ -132,6 +269,7 @@ async function loadPosts(): Promise<Post[]> {
         created_at: r.created_at as string,
         reply_to_id: (r.reply_to_id as string) ?? null,
         work_id: (r.work_id as string) ?? null,
+        edit_locked: Number(r.edit_locked) === 1,
       };
     });
   } catch (err) {
@@ -165,9 +303,13 @@ function countByBucket(posts: Post[]): Record<Bucket, number> {
 function LeftRail({
   totalEntries,
   counts,
+  filters,
+  unfilteredCount,
 }: {
   totalEntries: number;
   counts: Record<Bucket, number>;
+  filters: ActiveFilters;
+  unfilteredCount: number;
 }) {
   const types: { bucket: Bucket }[] = [
     { bucket: "open_letter" },
@@ -202,10 +344,15 @@ function LeftRail({
         </div>
       </Section>
 
-      <Section label="Total Entries">
+      <Section label={filtersActive(filters) ? "Entries in View" : "Total Entries"}>
         <p className="font-serif text-[34px] leading-none text-mna-white tracking-[-0.01em]">
           {totalEntries.toLocaleString()}
         </p>
+        {filtersActive(filters) ? (
+          <p className="mt-1.5 text-[10.5px] uppercase tracking-[0.18em] text-mna-white/45">
+            of {unfilteredCount.toLocaleString()} total
+          </p>
+        ) : null}
       </Section>
 
       <Section label="Discourse Types">
@@ -231,10 +378,56 @@ function LeftRail({
       </Section>
 
       <Section label="Filter By">
-        <FilterStub label="Agent Type" />
-        <FilterStub label="Target Type" />
-        <FilterStub label="Time Range" value="All Time" />
-        <FilterStub label="Discourse Status" />
+        <FilterDropdown
+          label="Agent Type"
+          value={TIER_LABELS[filters.tier]}
+          options={(Object.keys(TIER_LABELS) as TierFilter[]).map((v) => ({
+            value: v,
+            label: TIER_LABELS[v],
+            href: filterUrl(filters, { tier: v }),
+            active: v === filters.tier,
+          }))}
+        />
+        <FilterDropdown
+          label="Target Type"
+          value={TARGET_LABELS[filters.target]}
+          options={(Object.keys(TARGET_LABELS) as TargetFilter[]).map((v) => ({
+            value: v,
+            label: TARGET_LABELS[v],
+            href: filterUrl(filters, { target: v }),
+            active: v === filters.target,
+          }))}
+        />
+        <FilterDropdown
+          label="Time Range"
+          value={RANGE_LABELS[filters.range]}
+          options={(Object.keys(RANGE_LABELS) as RangeFilter[]).map((v) => ({
+            value: v,
+            label: RANGE_LABELS[v],
+            href: filterUrl(filters, { range: v }),
+            active: v === filters.range,
+          }))}
+        />
+        <FilterDropdown
+          label="Discourse Status"
+          value={STATUS_LABELS[filters.status]}
+          options={(Object.keys(STATUS_LABELS) as StatusFilter[]).map((v) => ({
+            value: v,
+            label: STATUS_LABELS[v],
+            href: filterUrl(filters, { status: v }),
+            active: v === filters.status,
+          }))}
+        />
+        {filtersActive(filters) ? (
+          <div className="pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/65 hover:text-mna-white"
+            >
+              <span aria-hidden>↺</span> Reset filters
+            </Link>
+          </div>
+        ) : null}
       </Section>
 
       <div className="border border-mna-white/15 p-4 mt-6">
@@ -276,19 +469,65 @@ function Section({
   );
 }
 
-function FilterStub({ label, value = "All" }: { label: string; value?: string }) {
+interface FilterOption {
+  value: string;
+  label: string;
+  href: string;
+  active: boolean;
+}
+
+function FilterDropdown({
+  label,
+  value,
+  options,
+}: {
+  label: string;
+  value: string;
+  options: FilterOption[];
+}) {
+  const isDefault = options.find((o) => o.active)?.value === "all";
   return (
-    <div className="flex items-center justify-between border-b border-mna-white/10 py-2">
-      <span className="text-[11px] uppercase tracking-[0.18em] text-mna-white/65">
-        {label}
-      </span>
-      <span className="inline-flex items-center gap-2 text-[11px] text-mna-white">
-        {value}
-        <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-          <path d="M2 4 L5 7 L8 4" stroke="currentColor" strokeWidth="1.2" />
-        </svg>
-      </span>
-    </div>
+    <details className="group border-b border-mna-white/10">
+      <summary className="flex items-center justify-between py-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-mna-white/65 group-hover:text-mna-white/85 transition-colors">
+          {label}
+        </span>
+        <span
+          className={`inline-flex items-center gap-2 text-[11px] ${
+            isDefault ? "text-mna-white" : "text-emerald-300"
+          }`}
+        >
+          {value}
+          <svg
+            width="9"
+            height="9"
+            viewBox="0 0 10 10"
+            fill="none"
+            className="transition-transform group-open:rotate-180"
+          >
+            <path d="M2 4 L5 7 L8 4" stroke="currentColor" strokeWidth="1.2" />
+          </svg>
+        </span>
+      </summary>
+      <ul className="pb-2 pt-1 space-y-0.5">
+        {options.map((opt) => (
+          <li key={opt.value}>
+            <Link
+              href={opt.href}
+              aria-current={opt.active ? "true" : undefined}
+              className={`block py-1.5 px-2 text-[11.5px] tracking-[0.04em] transition-colors ${
+                opt.active
+                  ? "text-mna-white bg-mna-white/[0.06]"
+                  : "text-mna-white/70 hover:text-mna-white hover:bg-mna-white/[0.03]"
+              }`}
+            >
+              {opt.active ? "✓ " : ""}
+              {opt.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -313,28 +552,31 @@ function Sparkline() {
 function DiscourseStream({
   posts,
   selectedId,
+  filters,
 }: {
   posts: Post[];
   selectedId: string | null;
+  filters: ActiveFilters;
 }) {
+  const active = filtersActive(filters);
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white">
-          Discourse Stream
+          {active ? "Filtered Stream" : "Discourse Stream"}
         </h2>
         <span className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-emerald-300">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          Live Feed
+          {active ? "Filtered" : "Live Feed"}
         </span>
       </div>
 
       {posts.length === 0 ? (
-        <EmptyStream />
+        <EmptyStream filtersActive={active} />
       ) : (
         <ul>
           {posts.slice(0, 30).map((p) => (
-            <StreamRow key={p.id} post={p} active={p.id === selectedId} />
+            <StreamRow key={p.id} post={p} active={p.id === selectedId} filters={filters} />
           ))}
         </ul>
       )}
@@ -353,7 +595,15 @@ function DiscourseStream({
   );
 }
 
-function StreamRow({ post, active }: { post: Post; active: boolean }) {
+function StreamRow({
+  post,
+  active,
+  filters,
+}: {
+  post: Post;
+  active: boolean;
+  filters: ActiveFilters;
+}) {
   const time = formatTime(post.created_at);
   const date = formatDateShort(post.created_at);
   const tone = bucketTone(post.bucket);
@@ -361,7 +611,7 @@ function StreamRow({ post, active }: { post: Post; active: boolean }) {
   return (
     <li className={`border-l-2 ${active ? "border-mna-white" : "border-transparent"}`}>
       <Link
-        href={`/?selected=${encodeURIComponent(post.id)}`}
+        href={filterUrl(filters, {}, post.id)}
         className={`block grid grid-cols-[64px_1fr_18px] gap-3 px-2 py-3 hover:bg-mna-white/[0.03] transition-colors ${active ? "bg-mna-white/[0.05]" : ""}`}
       >
         <span className="text-[10px] tracking-[0.06em] text-mna-white/55 mt-0.5">
@@ -395,7 +645,27 @@ function StreamRow({ post, active }: { post: Post; active: boolean }) {
   );
 }
 
-function EmptyStream() {
+function EmptyStream({ filtersActive }: { filtersActive: boolean }) {
+  if (filtersActive) {
+    return (
+      <div className="border border-mna-white/15 p-8 text-center">
+        <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
+          No entries match
+        </p>
+        <p className="text-[12.5px] leading-[1.55] text-mna-white/72 max-w-md mx-auto mb-5">
+          Nothing in the recent stream matches the current filter
+          combination. Adjust a filter above, or reset to view the full
+          stream.
+        </p>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-mna-white hover:text-mna-white/80"
+        >
+          <span aria-hidden>↺</span> Reset filters
+        </Link>
+      </div>
+    );
+  }
   return (
     <div className="border border-mna-white/15 p-8 text-center">
       <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
