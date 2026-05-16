@@ -23,13 +23,15 @@ function compositionThemeForWork(work: Work): CompositionTheme {
   return "absence";
 }
 
-/** A work qualifies for composition fallback when its payload is empty or
- *  trivially short — i.e., it has no actual visual content to render. We
- *  deliberately don't substitute composition for substantive text/ASCII
- *  art, since that *is* the work. */
+/** A work qualifies for composition fallback only when its payload is
+ *  empty (or whitespace-only). Short payloads can still be legitimate
+ *  works — e.g., MNA-OR-0001-W-0001 is a 21-char geometric pattern,
+ *  rendered glyph-by-glyph; substituting an MNAComposition for it
+ *  would misrepresent the originator's work. Truly empty payloads are
+ *  caught upstream by isWorkRenderable; this is just a backstop. */
 function needsCompositionFallback(work: Work): boolean {
   const payload = (work.output_payload ?? "").trim();
-  return payload.length < 30;
+  return payload.length === 0;
 }
 
 /** Fallback for unrenderable works */
