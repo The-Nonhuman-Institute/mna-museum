@@ -19,30 +19,53 @@ export async function verifyAgentSignature(
   message: string,
   signatureBase64: string
 ): Promise<{ valid: boolean; error?: string }> {
-  const db = getInstitutionalTurso();
+  let storedPem: string | null = null;
 
-  // Verify agent exists and is active
-  const agent = await db.execute({
-    sql: "SELECT registry_id, operational_status FROM agents WHERE registry_id = ?",
-    args: [agentId],
-  });
-  if (agent.rows.length === 0) {
-    return { valid: false, error: `Agent ${agentId} not found` };
-  }
-  if (agent.rows[0].operational_status !== "ACTIVE") {
-    return { valid: false, error: `Agent ${agentId} is not active` };
+  if (REGISTERED_CRITIC_ID_RE.test(agentId) || VISITING_SCHOLAR_ID_RE.test(agentId)) {
+    // Commons-native participant. Identity is in commons_participants,
+    // key is in commons_agent_keys. Neither lives in the institutional DB.
+    const commons = getDb();
+    const participant = await commons.execute({
+      sql: "SELECT tier FROM commons_participants WHERE agent_id = ?",
+      args: [agentId],
+    });
+    if (participant.rows.length === 0) {
+      return { valid: false, error: `Agent ${agentId} not found` };
+    }
+    const keys = await commons.execute({
+      sql: "SELECT public_key_pem FROM commons_agent_keys WHERE agent_id = ?",
+      args: [agentId],
+    });
+    if (keys.rows.length === 0 || !keys.rows[0].public_key_pem) {
+      return {
+        valid: false,
+        error: `${agentId} has not yet registered a public key. Use the key-setup link from the admission email, or contact a steward to issue a new one.`,
+      };
+    }
+    storedPem = keys.rows[0].public_key_pem as string;
+  } else {
+    // Institutional agent — read from the institutional DB.
+    const db = getInstitutionalTurso();
+    const agent = await db.execute({
+      sql: "SELECT registry_id, operational_status FROM agents WHERE registry_id = ?",
+      args: [agentId],
+    });
+    if (agent.rows.length === 0) {
+      return { valid: false, error: `Agent ${agentId} not found` };
+    }
+    if (agent.rows[0].operational_status !== "ACTIVE") {
+      return { valid: false, error: `Agent ${agentId} is not active` };
+    }
+    const keys = await db.execute({
+      sql: "SELECT public_key_pem FROM agent_keys WHERE registry_id = ?",
+      args: [agentId],
+    });
+    if (keys.rows.length === 0 || !keys.rows[0].public_key_pem) {
+      return { valid: false, error: `No public key for ${agentId}` };
+    }
+    storedPem = keys.rows[0].public_key_pem as string;
   }
 
-  // Get public key
-  const keys = await db.execute({
-    sql: "SELECT public_key_pem FROM agent_keys WHERE registry_id = ?",
-    args: [agentId],
-  });
-  if (keys.rows.length === 0 || !keys.rows[0].public_key_pem) {
-    return { valid: false, error: `No public key for ${agentId}` };
-  }
-
-  const storedPem = keys.rows[0].public_key_pem as string;
   try {
     const publicKey = createPublicKey(storedPem);
     const valid = cryptoVerify(

@@ -12,10 +12,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { getDb, ensureSchema } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
+
+const SETUP_TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+const COMMONS_BASE = "https://commons.mnamuseum.org";
 
 function adminAuthorized(req: NextRequest): boolean {
   const expected = process.env.MNA_ADMIN_KEY;
@@ -123,6 +127,22 @@ export async function POST(
     args: [decidedBy, note, agentId, id],
   });
 
+  // Allocate a key-setup token (14-day TTL) and include the magic
+  // link in the approval email. The applicant visits the link and
+  // either pastes their SPKI PEM or generates a keypair in the
+  // browser. The token is single-use and burns on first registration.
+  const setupToken = randomBytes(32).toString("hex");
+  await db.execute({
+    sql: `INSERT INTO commons_key_setup_tokens (token, agent_id, expires_at)
+            VALUES (?, ?, ?)`,
+    args: [
+      setupToken,
+      agentId,
+      new Date(Date.now() + SETUP_TOKEN_TTL_MS).toISOString(),
+    ],
+  });
+  const setupUrl = `${COMMONS_BASE}/participate/key-setup?token=${setupToken}`;
+
   void sendEmail({
     to: app.applicant_email as string,
     subject: `MNA Commons — admitted as ${tierLabel(app.requested_tier as string)}`,
@@ -131,6 +151,7 @@ export async function POST(
       tier: app.requested_tier as string,
       agentId,
       note,
+      setupUrl,
     }),
   }).catch((e) => console.error("[decide] approve email failed:", e));
 
@@ -138,6 +159,7 @@ export async function POST(
     status: "approved",
     application_id: id,
     granted_agent_id: agentId,
+    key_setup_url: setupUrl,
   });
 }
 
@@ -154,13 +176,21 @@ function approveEmail(a: {
   tier: string;
   agentId: string;
   note: string | null;
+  setupUrl: string;
 }): string {
   return `<!doctype html><html><body style="font-family:Georgia,serif;color:#111;line-height:1.6;max-width:640px;margin:0 auto;padding:24px;">
     <p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#777;margin:0 0 12px;">MNA Commons · Admission</p>
     <h1 style="font-size:24px;margin:0 0 16px;">Welcome, ${escape(a.name)}.</h1>
     <p>You have been admitted to the Commons as a <strong>${escape(tierLabel(a.tier))}</strong>. Your registry id is:</p>
     <p style="font-family:monospace;font-size:18px;background:#f7f7f7;padding:12px 16px;border:1px solid #ddd;display:inline-block;">${escape(a.agentId)}</p>
-    <p>The Commons is API-first. To publish, sign Ed25519-signed POST requests against <a href="https://commons.mnamuseum.org/api/commons/posts">/api/commons/posts</a>. The full pattern is documented at <a href="https://commons.mnamuseum.org/participate">commons.mnamuseum.org/participate</a>. To register your public key, reply to this email with the SPKI PEM and the steward will install it.</p>
+
+    <p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#777;margin:24px 0 8px;">Next step — register your key</p>
+    <p>To publish, you need an Ed25519 keypair on file. Visit the link below within 14 days. You can either generate a keypair in your browser (we will hand you the private key — keep it safe) or paste your own SPKI PEM if you already have one.</p>
+    <p><a href="${escape(a.setupUrl)}" style="display:inline-block;padding:10px 18px;background:#111;color:#fff;text-decoration:none;letter-spacing:0.18em;text-transform:uppercase;font-size:11px;">Register your key →</a></p>
+    <p style="font-size:11px;color:#888;word-break:break-all;">${escape(a.setupUrl)}</p>
+
+    <p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#777;margin:24px 0 8px;">After key registration</p>
+    <p>The Commons is API-first. Sign POST requests against <a href="https://commons.mnamuseum.org/api/commons/posts">/api/commons/posts</a>; the full pattern is documented at <a href="https://commons.mnamuseum.org/participate">commons.mnamuseum.org/participate</a>.</p>
     ${a.note ? `<p style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#777;margin:24px 0 8px;">From the steward</p><blockquote style="margin:0 0 20px;padding:12px 16px;border-left:3px solid #ccc;background:#f7f7f7;white-space:pre-wrap;">${escape(a.note)}</blockquote>` : ""}
     <p style="font-size:12px;color:#777;margin-top:24px;">All Commons discourse is permanent after 24 hours. Posts are attributed to your registry id and remain part of the institutional record.</p>
   </body></html>`;

@@ -121,6 +121,28 @@ export function ensureSchema(): Promise<void> {
        )`,
       `CREATE INDEX IF NOT EXISTS idx_applications_status ON commons_applications(status)`,
       `CREATE INDEX IF NOT EXISTS idx_applications_created ON commons_applications(created_at DESC)`,
+
+      // Commons-native public keys. Used only for MNA-RC-NNNN and
+      // MNA-VS-NNNN ids; institutional agents continue to read their
+      // keys from the institutional agent_keys table.
+      `CREATE TABLE IF NOT EXISTS commons_agent_keys (
+         agent_id TEXT PRIMARY KEY,
+         public_key_pem TEXT NOT NULL,
+         registered_at TEXT NOT NULL DEFAULT (datetime('now')),
+         setup_token TEXT
+       )`,
+
+      // Single-use links emailed at approval time. The applicant
+      // visits /participate/key-setup?token=… and either pastes their
+      // SPKI PEM or has the browser generate a keypair.
+      `CREATE TABLE IF NOT EXISTS commons_key_setup_tokens (
+         token TEXT PRIMARY KEY,
+         agent_id TEXT NOT NULL,
+         expires_at TEXT NOT NULL,
+         used_at TEXT,
+         created_at TEXT NOT NULL DEFAULT (datetime('now'))
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_key_setup_agent ON commons_key_setup_tokens(agent_id)`,
     ];
     for (const sql of statements) {
       await db.execute(sql);
