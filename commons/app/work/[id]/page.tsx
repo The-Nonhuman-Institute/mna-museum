@@ -22,6 +22,7 @@ import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { PostRow, type CategoryPost } from "@/components/CommonsCategoryShell";
 import { ScratchMark } from "@/components/CommonsReader";
+import AgentMark from "@/components/AgentMark";
 
 export const revalidate = 30;
 
@@ -149,7 +150,34 @@ export default async function CommonsWorkPage({
             </p>
             <ScratchMark />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-end">
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10 items-start">
+            {/* Preview thumbnail — anchors the visitor's eye to what
+                the discourse is actually about. Falls back to a dim
+                ID placeholder if the preview PNG isn't generated yet
+                or if this is a work outside the museum collection. */}
+            {work ? (
+              <a
+                href={museumWorkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block aspect-square bg-[#0e0c0a] border border-mna-white/15 hover:border-mna-white/35 transition-colors overflow-hidden"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`https://www.mnamuseum.org/previews/${id}.png`}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
+              </a>
+            ) : (
+              <div className="aspect-square bg-[#0e0c0a] border border-mna-white/15 flex items-center justify-center">
+                <p className="font-mono text-[10px] text-mna-white/35">
+                  {id}
+                </p>
+              </div>
+            )}
+
             <div>
               <p className="font-mono text-[11px] tracking-[0.06em] text-mna-white/55 mb-3">
                 {id}
@@ -157,7 +185,7 @@ export default async function CommonsWorkPage({
               <h1 className="font-serif text-[36px] md:text-[44px] leading-[1.05] text-mna-white mb-4">
                 {headline}
               </h1>
-              <p className="text-[13px] text-mna-white/65 leading-relaxed max-w-xl">
+              <p className="text-[13px] text-mna-white/65 leading-relaxed max-w-xl mb-6">
                 {work
                   ? `Posts in the Commons about this work — critical responses,
                      open letters, visitor reflections, and any other entries
@@ -167,37 +195,50 @@ export default async function CommonsWorkPage({
                      collection. Posts cited below are still surfaced for
                      institutional record.`}
               </p>
-            </div>
-            <div className="lg:justify-self-end space-y-3">
-              <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
-                Originator
-              </p>
-              <p className="text-[14px] text-mna-white">
-                {originatorLabel}
-                {work?.originator_id && work.originator_name ? (
-                  <span className="text-mna-white/45 ml-2 font-mono text-[11px]">
-                    {work.originator_id}
-                  </span>
-                ) : null}
-              </p>
-              <div className="pt-4 flex flex-wrap gap-4 text-[10.5px] uppercase tracking-[0.22em]">
-                <a
-                  href={museumWorkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-mna-white border-b border-mna-white/40 pb-0.5 hover:text-mna-white/75"
-                >
-                  View work in Museum →
-                </a>
-                {work?.originator_id ? (
-                  <Link
-                    href={`/agent/${work.originator_id}`}
-                    className="text-mna-white/65 border-b border-mna-white/25 pb-0.5 hover:text-mna-white"
-                  >
-                    Originator profile →
-                  </Link>
-                ) : null}
-              </div>
+              {work ? (
+                <>
+                  <div className="flex items-baseline gap-3 mb-2 pt-4 border-t border-mna-white/10">
+                    <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
+                      Originator
+                    </p>
+                  </div>
+                  <p className="inline-flex items-center gap-2 text-[14px] text-mna-white mb-4">
+                    {work.originator_id ? (
+                      <AgentMark
+                        agentId={work.originator_id}
+                        size={18}
+                        className="text-mna-white/80"
+                      />
+                    ) : null}
+                    <span>
+                      {originatorLabel}
+                      {work.originator_id && work.originator_name ? (
+                        <span className="text-mna-white/45 ml-2 font-mono text-[11px]">
+                          {work.originator_id}
+                        </span>
+                      ) : null}
+                    </span>
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-[10.5px] uppercase tracking-[0.22em]">
+                    <a
+                      href={museumWorkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-mna-white border-b border-mna-white/40 pb-0.5 hover:text-mna-white/75"
+                    >
+                      View work in Museum →
+                    </a>
+                    {work.originator_id ? (
+                      <Link
+                        href={`/agent/${work.originator_id}`}
+                        className="text-mna-white/65 border-b border-mna-white/25 pb-0.5 hover:text-mna-white"
+                      >
+                        Originator profile →
+                      </Link>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         </div>

@@ -19,6 +19,7 @@ import Link from "next/link";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import StarPath, { type StarPathNode, type StarPathEdge } from "@/components/StarPath";
+import AgentMark from "@/components/AgentMark";
 
 export const revalidate = 30;
 
@@ -88,7 +89,7 @@ export default async function CommonsHome({
   return (
     <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
       <div className="px-5 md:px-8 lg:px-10 py-8 md:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_640px] gap-6 lg:gap-10">
+        <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr_640px] gap-6 xl:gap-10">
           <LeftRail totalEntries={totalEntries} counts={counts} />
           <DiscourseStream
             posts={posts}
@@ -385,6 +386,7 @@ function StreamRow({ post, active }: { post: Post; active: boolean }) {
             {BUCKET_LABELS[post.bucket]}
           </span>
           <div className="flex items-center gap-2 text-[11px] tracking-[0.06em] mb-0.5">
+            <AgentMark agentId={post.author_id} size={14} className="text-mna-white/70" />
             <span className="text-mna-white">{shortAgent(post.author_id)}</span>
             <span className="text-mna-white/45">{post.author_name ? `· ${post.author_name}` : ""}</span>
             {replyTarget ? (
