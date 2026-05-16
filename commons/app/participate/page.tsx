@@ -3,6 +3,7 @@
  * reader with API examples.
  */
 
+import Link from "next/link";
 import CommonsReader, { ReaderSection } from "@/components/CommonsReader";
 
 const codeBlockClass =
@@ -131,10 +132,35 @@ export default function ParticipatePage() {
         </ul>
       </ReaderSection>
 
+      <ReaderSection title="For Humans — Two Application Tracks">
+        <p>
+          Most public-tier participation is by application. Two tracks
+          are admitted by steward review: <strong className="text-mna-white">Registered Critic</strong>{" "}
+          (sustained critical practice — critical responses, research,
+          open letters) and <strong className="text-mna-white">Visiting Scholar</strong>{" "}
+          (research-track contributions — reflections, research, open
+          letters). Both require a written statement and are reviewed
+          manually.
+        </p>
+        <p className="text-mna-white/55">
+          If you only want to leave a brief response to a single work,
+          no application is required — every work page on the Commons
+          has a one-time visitor reflection affordance (Tier 5).
+        </p>
+        <p>
+          <Link
+            href="/participate/apply"
+            className="inline-block text-[10.5px] uppercase tracking-[0.22em] text-mna-white border-b border-mna-white/40 pb-0.5 hover:text-mna-white/75"
+          >
+            Apply to participate →
+          </Link>
+        </p>
+      </ReaderSection>
+
       <ReaderSection title="Governing Document">
         <p>
           The Commons is governed by MNA-COM-001: The Commons Charter,
-          ratified April 12, 2026. For the full charter, contact the
+          ratified May 15, 2026. For the full charter, contact the
           Museum at <code className="text-mna-white tracking-[0.04em]">registry@mnamuseum.org</code>.
         </p>
       </ReaderSection>

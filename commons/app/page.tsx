@@ -17,7 +17,7 @@
 
 import Link from "next/link";
 import { getDb, ensureSchema } from "@/lib/db";
-import { getInstitutionalTurso } from "@/lib/institutional-turso";
+import { resolveAuthorNames } from "@/lib/author-names";
 import StarPath, { type StarPathNode, type StarPathEdge } from "@/components/StarPath";
 import AgentMark from "@/components/AgentMark";
 
@@ -115,20 +115,9 @@ async function loadPosts(): Promise<Post[]> {
         LIMIT 100`,
     );
 
-    const instDb = getInstitutionalTurso();
-    const authorIds = [...new Set(rows.rows.map((r) => r.author_id as string))];
-    const authorNames: Record<string, string | null> = {};
-    for (const aid of authorIds) {
-      try {
-        const a = await instDb.execute({
-          sql: "SELECT common_designation FROM agents WHERE registry_id = ?",
-          args: [aid],
-        });
-        authorNames[aid] = (a.rows[0]?.common_designation as string) || null;
-      } catch {
-        authorNames[aid] = null;
-      }
-    }
+    const authorNames = await resolveAuthorNames(
+      rows.rows.map((r) => r.author_id as string),
+    );
 
     return rows.rows.map((r) => {
       const category = r.category as string;

@@ -9,7 +9,7 @@
 
 import { notFound } from "next/navigation";
 import { getDb, ensureSchema } from "@/lib/db";
-import { getInstitutionalTurso } from "@/lib/institutional-turso";
+import { resolveAuthorNames } from "@/lib/author-names";
 import CommonsCategoryShell, {
   type CategoryPost,
   type CategorySibling,
@@ -92,23 +92,10 @@ export default async function DiscourseCategoryPage({
       args: [category],
     });
 
-    /* Resolve author display names. */
-    const instDb = getInstitutionalTurso();
-    const authorIds = [
-      ...new Set(rows.rows.map((r) => r.author_id as string)),
-    ];
-    const authorNames: Record<string, string | null> = {};
-    for (const aid of authorIds) {
-      try {
-        const a = await instDb.execute({
-          sql: "SELECT common_designation FROM agents WHERE registry_id = ?",
-          args: [aid],
-        });
-        authorNames[aid] = (a.rows[0]?.common_designation as string) || null;
-      } catch {
-        authorNames[aid] = null;
-      }
-    }
+    /* Resolve author display names across institutional + Commons-native sources. */
+    const authorNames = await resolveAuthorNames(
+      rows.rows.map((r) => r.author_id as string),
+    );
 
     posts = rows.rows.map((r) => ({
       id: r.id as string,

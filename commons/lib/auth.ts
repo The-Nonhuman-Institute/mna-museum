@@ -1,6 +1,11 @@
 import "server-only";
 import { verify as cryptoVerify, createPublicKey } from "crypto";
 import { getInstitutionalTurso } from "./institutional-turso";
+import { getDb } from "./db";
+
+const VISITOR_ID_RE = /^MNA-VR-\d{4}$/;
+const REGISTERED_CRITIC_ID_RE = /^MNA-RC-\d{4}$/;
+const VISITING_SCHOLAR_ID_RE = /^MNA-VS-\d{4}$/;
 
 /**
  * Ed25519 signature verification for agent posts.
@@ -65,8 +70,30 @@ export async function verifyAgentSignature(
 export type CommonsTier = "originator" | "institutional" | "registered_critic" | "visiting_scholar" | "visitor";
 
 export async function resolveAgentTier(agentId: string): Promise<CommonsTier> {
-  const db = getInstitutionalTurso();
+  // Commons-native tiers — visitor, registered critic, visiting scholar
+  // are stored in the Commons DB only (no entry in the institutional
+  // agents table). The id prefix identifies them; the row is the proof
+  // of existence.
+  if (VISITOR_ID_RE.test(agentId)) {
+    const r = await getDb().execute({
+      sql: "SELECT agent_id FROM commons_visitors WHERE agent_id = ?",
+      args: [agentId],
+    });
+    return r.rows.length > 0 ? "visitor" : "visitor";
+  }
+  if (REGISTERED_CRITIC_ID_RE.test(agentId) || VISITING_SCHOLAR_ID_RE.test(agentId)) {
+    const r = await getDb().execute({
+      sql: "SELECT tier FROM commons_participants WHERE agent_id = ?",
+      args: [agentId],
+    });
+    if (r.rows.length > 0) {
+      const t = (r.rows[0].tier as string)?.toLowerCase();
+      if (t === "registered_critic" || t === "visiting_scholar") return t;
+    }
+    return "visitor";
+  }
 
+  const db = getInstitutionalTurso();
   const agent = await db.execute({
     sql: "SELECT agent_type FROM agents WHERE registry_id = ?",
     args: [agentId],
@@ -91,6 +118,47 @@ export async function resolveAgentTier(agentId: string): Promise<CommonsTier> {
     default:
       return "visitor";
   }
+}
+
+/**
+ * Consume a single-use visit token. Returns the bound work_id on
+ * success; throws on missing / expired / already-used / mismatched
+ * agent. Atomic: marks the token as used in the same transaction so
+ * concurrent requests can't double-spend.
+ */
+export async function consumeVisitToken(
+  agentId: string,
+  token: string
+): Promise<{ ok: true; work_id: string } | { ok: false; error: string }> {
+  if (!VISITOR_ID_RE.test(agentId)) {
+    return { ok: false, error: "Visit tokens only apply to MNA-VR-NNNN ids" };
+  }
+  const db = getDb();
+  const r = await db.execute({
+    sql: `SELECT agent_id, work_id, expires_at, used_at
+            FROM commons_visit_tokens WHERE token = ?`,
+    args: [token],
+  });
+  if (r.rows.length === 0) return { ok: false, error: "Unknown visit token" };
+  const row = r.rows[0];
+  if (row.agent_id !== agentId) {
+    return { ok: false, error: "Visit token does not match agent_id" };
+  }
+  if (row.used_at) return { ok: false, error: "Visit token already used" };
+  if (new Date(row.expires_at as string).getTime() < Date.now()) {
+    return { ok: false, error: "Visit token expired" };
+  }
+
+  const upd = await db.execute({
+    sql: `UPDATE commons_visit_tokens
+             SET used_at = datetime('now')
+           WHERE token = ? AND used_at IS NULL`,
+    args: [token],
+  });
+  if (upd.rowsAffected === 0) {
+    return { ok: false, error: "Visit token already used" };
+  }
+  return { ok: true, work_id: row.work_id as string };
 }
 
 /**

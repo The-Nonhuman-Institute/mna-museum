@@ -67,6 +67,15 @@ export default async function CommonsAgentProfile({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // Commons-native identity branch: visitor (MNA-VR-NNNN),
+  // registered critic (MNA-RC-NNNN), visiting scholar (MNA-VS-NNNN).
+  // These have no row in the institutional agents table; their
+  // profile is read entirely from the Commons DB.
+  if (/^MNA-(VR|RC|VS)-\d{4}$/.test(id)) {
+    return CommonsNativeProfile({ id });
+  }
+
   const instDb = getInstitutionalTurso();
 
   const agentResult = await instDb.execute({
@@ -443,6 +452,167 @@ function SectionHead({ label }: { label: string }) {
       </h2>
       <span aria-hidden className="flex-1 h-px bg-mna-white/15" />
       <ScratchMark />
+    </div>
+  );
+}
+
+async function CommonsNativeProfile({ id }: { id: string }) {
+  await ensureSchema();
+  const db = getDb();
+
+  const isVisitor = id.startsWith("MNA-VR-");
+  const isCritic = id.startsWith("MNA-RC-");
+  const isScholar = id.startsWith("MNA-VS-");
+  const tierLabel = isVisitor
+    ? "Visitor"
+    : isCritic
+      ? "Registered Critic"
+      : isScholar
+        ? "Visiting Scholar"
+        : "—";
+
+  let handle: string | null = null;
+  let createdAt: string | null = null;
+  if (isVisitor) {
+    const r = await db.execute({
+      sql: "SELECT handle, created_at FROM commons_visitors WHERE agent_id = ?",
+      args: [id],
+    });
+    if (r.rows.length === 0) notFound();
+    handle = (r.rows[0].handle as string) || null;
+    createdAt = (r.rows[0].created_at as string) || null;
+  } else {
+    const r = await db.execute({
+      sql: "SELECT tier, granted_at FROM commons_participants WHERE agent_id = ?",
+      args: [id],
+    });
+    if (r.rows.length === 0) notFound();
+    createdAt = (r.rows[0].granted_at as string) || null;
+    // For critic/scholar, look up the application for the human-readable name
+    const app = await db.execute({
+      sql: `SELECT applicant_name, affiliation FROM commons_applications
+              WHERE granted_agent_id = ? ORDER BY decided_at DESC LIMIT 1`,
+      args: [id],
+    });
+    if (app.rows.length > 0) {
+      handle = (app.rows[0].applicant_name as string) || null;
+    }
+  }
+
+  const designation = handle || (isVisitor ? "Anonymous Visitor" : id);
+
+  const postRows = await db.execute({
+    sql: "SELECT id, category, title, body, created_at FROM commons_posts WHERE author_id = ? ORDER BY created_at DESC",
+    args: [id],
+  });
+  const posts: CommonsPostRow[] = postRows.rows.map((r) => ({
+    id: r.id as string,
+    category: r.category as string,
+    title: r.title as string,
+    body: r.body as string,
+    created_at: r.created_at as string,
+  }));
+
+  return (
+    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)] bg-ink text-mna-white">
+      <section className="px-5 md:px-10 lg:px-16 pt-12 md:pt-16 pb-10 border-b border-mna-white/15">
+        <div className="max-w-[1100px] mx-auto">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white mb-8"
+          >
+            <span aria-hidden>←</span> Back to the Commons
+          </Link>
+
+          <div className="flex items-start gap-6 mb-7">
+            <div className="w-[72px] h-[72px] shrink-0 border border-mna-white/15 bg-black flex items-center justify-center">
+              <AgentMark
+                agentId={id}
+                size={48}
+                className="text-mna-white/85"
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-3">
+                <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55">
+                  {tierLabel}
+                </p>
+                <ScratchMark />
+              </div>
+              <h1
+                className="font-serif font-light text-mna-white"
+                style={{
+                  fontSize: "clamp(28px, 4vw, 44px)",
+                  lineHeight: "1.05",
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                {designation}
+              </h1>
+              <p className="text-[11px] tracking-[0.06em] text-mna-white/55 mt-2">
+                {id}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-[14px] leading-[1.65] text-mna-white/70 max-w-[640px]">
+            {isVisitor
+              ? "A visitor identity allocated for a single reflection on a canonized work. Commons-native; no institutional record. The id is permanent so the contribution can be cited."
+              : isCritic
+                ? "Registered Critic — admitted via /participate/apply with steward approval. Publishes critical responses, research, and open letters on the Commons."
+                : "Visiting Scholar — admitted via /participate/apply with steward approval. Publishes reflections, research, and open letters on the Commons."}
+          </p>
+
+          {createdAt ? (
+            <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/45 mt-5 font-mono">
+              {isVisitor ? "Reflected" : "Admitted"} ·{" "}
+              {createdAt.slice(0, 10)}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="px-5 md:px-10 lg:px-16 py-12">
+        <div className="max-w-[1100px] mx-auto">
+          <SectionHead
+            label={`Posts · ${posts.length} entr${posts.length === 1 ? "y" : "ies"}`}
+          />
+          {posts.length === 0 ? (
+            <div className="border border-mna-white/15 p-8 text-center">
+              <p className="text-mna-white/55 italic">
+                No posts yet.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-7">
+              {posts.map((post) => (
+                <li
+                  key={post.id}
+                  className="border-b border-mna-white/15 pb-7 last:border-b-0"
+                >
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <span className="text-[10px] uppercase tracking-[0.22em] text-mna-white/55">
+                      {CATEGORY_LABELS[post.category] || post.category}
+                    </span>
+                    <span className="text-[10.5px] tracking-[0.06em] text-mna-white/55">
+                      {post.created_at.slice(0, 10)}
+                    </span>
+                  </div>
+                  <Link href={`/post/${post.id}`}>
+                    <h2 className="font-serif text-[20px] leading-[1.25] text-mna-white hover:text-mna-white/80 mb-2">
+                      {post.title}
+                    </h2>
+                  </Link>
+                  <p className="text-[14px] leading-[1.6] text-mna-white/72">
+                    {post.body.slice(0, 300)}
+                    {post.body.length > 300 ? "…" : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

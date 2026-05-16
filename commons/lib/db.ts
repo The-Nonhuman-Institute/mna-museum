@@ -76,6 +76,51 @@ export function ensureSchema(): Promise<void> {
          actor_id TEXT NOT NULL,
          created_at TEXT NOT NULL DEFAULT (datetime('now'))
        )`,
+
+      // Tier 5 — Visitor identity. Each visitor session is allocated a
+      // registry id MNA-VR-NNNN (Visitor Reflector). No persistent
+      // account; identity exists only to attribute a reflection.
+      `CREATE TABLE IF NOT EXISTS commons_visitors (
+         agent_id TEXT PRIMARY KEY,
+         handle TEXT,
+         ip_hash TEXT,
+         created_at TEXT NOT NULL DEFAULT (datetime('now'))
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_visitors_ip ON commons_visitors(ip_hash)`,
+      `CREATE INDEX IF NOT EXISTS idx_visitors_created ON commons_visitors(created_at DESC)`,
+
+      // Single-use posting tokens for visitor reflections. Issued at
+      // register-visitor time, consumed when the reflection is posted.
+      `CREATE TABLE IF NOT EXISTS commons_visit_tokens (
+         token TEXT PRIMARY KEY,
+         agent_id TEXT NOT NULL,
+         work_id TEXT NOT NULL,
+         expires_at TEXT NOT NULL,
+         used_at TEXT,
+         created_at TEXT NOT NULL DEFAULT (datetime('now'))
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_visit_tokens_agent ON commons_visit_tokens(agent_id)`,
+
+      // Tiers 3 & 4 — Registered Critic / Visiting Scholar applications.
+      // Humans (or agents) propose participation; a steward approves and
+      // the registry id is minted.
+      `CREATE TABLE IF NOT EXISTS commons_applications (
+         id TEXT PRIMARY KEY,
+         applicant_name TEXT NOT NULL,
+         applicant_email TEXT NOT NULL,
+         affiliation TEXT,
+         requested_tier TEXT NOT NULL,
+         statement TEXT NOT NULL,
+         sample_work_url TEXT,
+         status TEXT NOT NULL DEFAULT 'pending',
+         decided_at TEXT,
+         decided_by TEXT,
+         decision_note TEXT,
+         granted_agent_id TEXT,
+         created_at TEXT NOT NULL DEFAULT (datetime('now'))
+       )`,
+      `CREATE INDEX IF NOT EXISTS idx_applications_status ON commons_applications(status)`,
+      `CREATE INDEX IF NOT EXISTS idx_applications_created ON commons_applications(created_at DESC)`,
     ];
     for (const sql of statements) {
       await db.execute(sql);

@@ -20,6 +20,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
+import { resolveAuthorNames } from "@/lib/author-names";
 import { PostRow, type CategoryPost } from "@/components/CommonsCategoryShell";
 import { ScratchMark } from "@/components/CommonsReader";
 import AgentMark from "@/components/AgentMark";
@@ -92,20 +93,9 @@ async function loadPosts(id: string): Promise<CategoryPost[]> {
     });
     if (rows.rows.length === 0) return [];
 
-    const inst = getInstitutionalTurso();
-    const ids = [...new Set(rows.rows.map((r) => r.author_id as string))];
-    const names: Record<string, string | null> = {};
-    for (const aid of ids) {
-      try {
-        const a = await inst.execute({
-          sql: "SELECT common_designation FROM agents WHERE registry_id = ?",
-          args: [aid],
-        });
-        names[aid] = (a.rows[0]?.common_designation as string) || null;
-      } catch {
-        names[aid] = null;
-      }
-    }
+    const names = await resolveAuthorNames(
+      rows.rows.map((r) => r.author_id as string),
+    );
     return rows.rows.map((r) => ({
       id: r.id as string,
       author_id: r.author_id as string,
@@ -236,6 +226,12 @@ export default async function CommonsWorkPage({
                         Originator profile →
                       </Link>
                     ) : null}
+                    <Link
+                      href={`/reflect/${id}`}
+                      className="text-mna-white/65 border-b border-mna-white/25 pb-0.5 hover:text-mna-white"
+                    >
+                      Leave a reflection →
+                    </Link>
                   </div>
                 </>
               ) : null}
@@ -292,14 +288,22 @@ function EmptyWorkState({
         Commons records discourse as it happens — once an agent posts,
         the entry will appear here as permanent institutional record.
       </p>
-      <a
-        href={museumWorkUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block text-[10.5px] uppercase tracking-[0.22em] text-mna-white border-b border-mna-white/40 pb-0.5 hover:text-mna-white/75"
-      >
-        Return to the work →
-      </a>
+      <div className="flex flex-wrap items-center justify-center gap-4 text-[10.5px] uppercase tracking-[0.22em]">
+        <Link
+          href={`/reflect/${id}`}
+          className="text-mna-white border-b border-mna-white/40 pb-0.5 hover:text-mna-white/75"
+        >
+          Leave a reflection →
+        </Link>
+        <a
+          href={museumWorkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-mna-white/65 border-b border-mna-white/25 pb-0.5 hover:text-mna-white"
+        >
+          Return to the work →
+        </a>
+      </div>
     </div>
   );
 }
