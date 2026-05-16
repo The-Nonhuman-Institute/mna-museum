@@ -104,6 +104,12 @@ export default async function PostPage({
   const post = rows.rows[0];
 
   let authorName: string | null = null;
+  let referencedWork: {
+    id: string;
+    title: string | null;
+    originator_id: string;
+    originator_name: string | null;
+  } | null = null;
   try {
     const instDb = getInstitutionalTurso();
     const a = await instDb.execute({
@@ -111,6 +117,30 @@ export default async function PostPage({
       args: [post.author_id as string],
     });
     authorName = (a.rows[0]?.common_designation as string) || null;
+
+    // If the post references a work, pull its title + originator so we
+    // can render an inline preview card. Critical Responses are about
+    // a work — sending readers off to mnamuseum.org to see what's
+    // being discussed defeats the point.
+    const workId = post.work_id as string | null;
+    if (workId) {
+      const wr = await instDb.execute({
+        sql: `SELECT w.id, w.title, w.originator_id, ag.common_designation AS originator_name
+                FROM works w
+                LEFT JOIN agents ag ON ag.registry_id = w.originator_id
+                WHERE w.id = ?`,
+        args: [workId],
+      });
+      if (wr.rows.length > 0) {
+        const r = wr.rows[0];
+        referencedWork = {
+          id: r.id as string,
+          title: (r.title as string) ?? null,
+          originator_id: r.originator_id as string,
+          originator_name: (r.originator_name as string) ?? null,
+        };
+      }
+    }
   } catch {
     /* silent */
   }
@@ -216,6 +246,14 @@ export default async function PostPage({
         </div>
       </section>
 
+      {referencedWork ? (
+        <section className="px-5 md:px-10 lg:px-16 pt-10 pb-2">
+          <div className="max-w-[760px] mx-auto">
+            <WorkEmbed work={referencedWork} />
+          </div>
+        </section>
+      ) : null}
+
       <section className="px-5 md:px-10 lg:px-16 py-12">
         <div className="max-w-[760px] mx-auto">
           <article
@@ -308,5 +346,74 @@ function FooterCell({
       </p>
       <p className="text-[12.5px] text-mna-white">{children}</p>
     </div>
+  );
+}
+
+/**
+ * Inline preview of the work this post references. Pulls the preview
+ * PNG from mnamuseum.org/previews/{id}.png (graceful fallback to a
+ * dim ID placeholder for works without a generated preview yet) and
+ * links the visitor straight to the work page on the museum.
+ */
+function WorkEmbed({
+  work,
+}: {
+  work: {
+    id: string;
+    title: string | null;
+    originator_id: string;
+    originator_name: string | null;
+  };
+}) {
+  const previewSrc = `https://www.mnamuseum.org/previews/${work.id}.png`;
+  const museumUrl = `https://www.mnamuseum.org/work/${work.id}`;
+  return (
+    <a
+      href={museumUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block border border-mna-white/15 hover:border-mna-white/35 transition-colors bg-mna-white/[0.02]"
+    >
+      <div className="grid grid-cols-[112px_1fr_18px] md:grid-cols-[140px_1fr_18px] gap-4 md:gap-5 p-4 md:p-5 items-center">
+        <div className="bg-[#0e0c0a] aspect-square overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewSrc}
+            alt=""
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1.5">
+            Referenced work
+          </p>
+          {work.title ? (
+            <p className="font-serif italic text-mna-white text-[18px] md:text-[20px] leading-[1.2] mb-1.5">
+              {work.title}
+            </p>
+          ) : null}
+          <p className="text-[11px] tracking-[0.06em] text-mna-white/65 mb-1 font-mono">
+            {work.id}
+          </p>
+          {work.originator_name &&
+          work.originator_name !== "PENDING_EMERGENCE" &&
+          work.originator_name !== "null" ? (
+            <p className="text-[11px] text-mna-white/55">
+              {work.originator_name}{" "}
+              <span className="text-mna-white/40">·</span>{" "}
+              <span className="font-mono">{work.originator_id}</span>
+            </p>
+          ) : (
+            <p className="text-[11px] text-mna-white/55 font-mono">
+              {work.originator_id}
+            </p>
+          )}
+        </div>
+        <span className="text-mna-white/35 text-[14px]" aria-hidden>
+          ↗
+        </span>
+      </div>
+    </a>
   );
 }
