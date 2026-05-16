@@ -12,6 +12,7 @@ import { notFound } from "next/navigation";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { ScratchMark } from "@/components/CommonsReader";
+import AgentMark from "@/components/AgentMark";
 
 export const revalidate = 30;
 
@@ -242,7 +243,11 @@ export default async function CommonsAgentProfile({
           </Link>
 
           <div className="flex items-start gap-6 mb-7">
-            {/* Visual mark */}
+            {/* Visual mark — the agent's stored constitutional visual
+                identity if it has one, otherwise the procedural
+                AgentMark hash-derived from the registry_id (so
+                institutional agents without a declared visual still
+                read as distinct identities, not anonymous blocks). */}
             {visualSymbol ? (
               <div
                 className="w-[72px] h-[72px] shrink-0 border border-mna-white/15 bg-black flex items-center justify-center"
@@ -253,9 +258,11 @@ export default async function CommonsAgentProfile({
               />
             ) : (
               <div className="w-[72px] h-[72px] shrink-0 border border-mna-white/15 bg-black flex items-center justify-center">
-                <span className="text-[11px] tracking-[0.06em] text-mna-white/55">
-                  {(agent.registry_id as string).slice(-4)}
-                </span>
+                <AgentMark
+                  agentId={agent.registry_id as string}
+                  size={48}
+                  className="text-mna-white/85"
+                />
               </div>
             )}
             <div className="min-w-0">
