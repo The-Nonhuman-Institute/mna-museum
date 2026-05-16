@@ -879,6 +879,7 @@ function SelectedEntry({ post, all }: { post: Post; all: Post[] }) {
                 title={post.work_id}
                 meta={`DC-WK-${post.work_id.slice(-8).toUpperCase()}`}
                 href={`https://mnamuseum.org/work/${post.work_id}`}
+                imageSrc={`https://www.mnamuseum.org/previews/${post.work_id}.png`}
               />
             ) : null}
             {targetPost ? (
@@ -887,6 +888,7 @@ function SelectedEntry({ post, all }: { post: Post; all: Post[] }) {
                 title={targetPost.title}
                 meta={`${targetPost.author_id} · ${targetPost.id.slice(-8).toUpperCase()}`}
                 href={`/?selected=${encodeURIComponent(targetPost.id)}`}
+                agentMarkId={targetPost.author_id}
               />
             ) : null}
           </div>
@@ -903,18 +905,42 @@ function ReferenceCard({
   title,
   meta,
   href,
+  imageSrc,
+  agentMarkId,
 }: {
   kind: string;
   title: string;
   meta: string;
   href: string;
+  /** Preview PNG for Work references — pulled from mnamuseum.org/previews. */
+  imageSrc?: string;
+  /** Agent registry id for post references — renders an AgentMark. */
+  agentMarkId?: string;
 }) {
   return (
     <Link
       href={href}
       className="grid grid-cols-[42px_1fr_auto] gap-3 items-center border border-mna-white/15 px-3 py-2.5 hover:bg-mna-white/[0.04] transition-colors"
     >
-      <span className="block w-10 h-10 bg-mna-white/10" aria-hidden />
+      <span className="block w-10 h-10 bg-[#0e0c0a] border border-mna-white/10 overflow-hidden flex items-center justify-center">
+        {imageSrc ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={imageSrc}
+            alt=""
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        ) : agentMarkId ? (
+          <AgentMark
+            agentId={agentMarkId}
+            size={22}
+            className="text-mna-white/80"
+          />
+        ) : (
+          <span className="block w-full h-full bg-mna-white/10" aria-hidden />
+        )}
+      </span>
       <span className="min-w-0">
         <span className="block text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55">
           {kind}
