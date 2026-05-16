@@ -243,6 +243,30 @@ export async function POST(request: NextRequest) {
     effects.push(`${decision_type} recorded`);
   }
 
+  // ── Mirror to the Commons as Institutional Commentary ────────────────────
+  // Per MNA-CU-AMD-001 §IV.VI, every curatorial_decision triggers a
+  // Commons post by MNA-CU-0001. The Commons admin endpoint reads
+  // curatorial_decisions and mirrors any rows not already published —
+  // it's idempotent, so calling it after each insert safely publishes
+  // just the new row. Failure doesn't block the decision response.
+  try {
+    const commonsBase =
+      process.env.COMMONS_ORIGIN || "https://commons.mnamuseum.org";
+    await fetch(
+      `${commonsBase}/api/commons/admin/backfill-curatorial-decisions`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${adminKey}`,
+        },
+        body: JSON.stringify({ dry_run: false }),
+      },
+    );
+  } catch (err) {
+    console.error("[curator/decision] commons mirror failed:", err);
+  }
+
   return NextResponse.json({
     decision_id: decisionId,
     decision_type,
