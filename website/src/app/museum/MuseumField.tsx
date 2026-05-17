@@ -262,6 +262,15 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
   // the field works in solo mode without any deployment.
   const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
   const { others, publish } = useMuseumPresence(presenceHost);
+  // The main MuseumField is the archive constellation. Visitors in the
+  // chamber, solo exhibition, or exhibition hall share the same room
+  // but should NOT render in this scene (different gallery space). The
+  // Census panel still shows their counts so the viewer knows who is
+  // elsewhere in the institution.
+  const archiveOthers = useMemo(
+    () => others.filter((v) => v.constellation === "archive"),
+    [others],
+  );
 
   // Camera telemetry for the HUD minimap. Inside Canvas, the
   // Telemetry component reads camera position + yaw and writes them
@@ -494,7 +503,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
                   onSelect={openWork}
                 />
                 <VisitorGlow centroids={centroids} />
-                <OtherVisitors others={others} />
+                <OtherVisitors others={archiveOthers} />
               </>
             ) : null}
             <Constellations
@@ -565,7 +574,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
             originatorCount={centroids.length}
             workCount={works.length}
             locked={locked}
-            otherObservers={others.length}
+            otherObservers={archiveOthers.length}
             isTouch={isTouch}
           />
           <MinimapRadar
@@ -573,7 +582,8 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
             centroids={centroids}
             currentCluster={currentCluster}
             isTouch={isTouch}
-            visitors={others}
+            visitors={archiveOthers}
+            allVisitors={others}
           />
           {/* System time is a luxury indicator on a phone — institutional
               voice without functional payoff. Hidden on touch screens
@@ -2539,14 +2549,20 @@ function MinimapRadar({
   currentCluster,
   isTouch,
   visitors,
+  allVisitors,
 }: {
   telemetry: { x: number; z: number; yaw: number };
   centroids: ClusterCentroid[];
   currentCluster: CurrentCluster | null;
   isTouch: boolean;
-  /** Other connected visitors (humans + agents) for the social map.
-   *  Self is rendered as the white triangle below. */
+  /** Other connected visitors *in the archive constellation*. The radar
+   *  only renders co-located presences as dots; visitors in other
+   *  galleries are accounted for in the Census strip below. */
   visitors: PresenceVisitor[];
+  /** All connected visitors across every constellation, for the
+   *  Census strip — answers "who is in the institution right now,
+   *  and which space are they in?" */
+  allVisitors: PresenceVisitor[];
 }) {
   // Same minimap, just sized for a phone. World→minimap mapping uses
   // MINIMAP_RADIUS_M (unchanged) so dots represent the same world
@@ -2782,7 +2798,62 @@ function MinimapRadar({
             {centroids.length} clusters · {Math.round(MINIMAP_RADIUS_M)}m radius
           </p>
         )}
+        <Census visitors={allVisitors} />
       </div>
+    </div>
+  );
+}
+
+/** A small per-constellation tally. Lives at the foot of the field map
+ *  so the viewer can see "who is in the institution and where" at a
+ *  glance — even if nobody is co-located in the archive. Hidden when
+ *  the room is empty so the panel doesn't read as inert. */
+function Census({ visitors }: { visitors: PresenceVisitor[] }) {
+  if (visitors.length === 0) return null;
+  const counts: Record<string, { humans: number; agents: number }> = {
+    archive: { humans: 0, agents: 0 },
+    chamber: { humans: 0, agents: 0 },
+    solo_exhibition: { humans: 0, agents: 0 },
+    exhibition: { humans: 0, agents: 0 },
+  };
+  for (const v of visitors) {
+    const bucket = counts[v.constellation] ?? counts.archive;
+    if (v.kind === "agent") bucket.agents++;
+    else bucket.humans++;
+  }
+  const labels: { key: keyof typeof counts; label: string }[] = [
+    { key: "archive", label: "Archive" },
+    { key: "chamber", label: "Chamber" },
+    { key: "solo_exhibition", label: "Solo" },
+    { key: "exhibition", label: "Exhibition" },
+  ];
+  return (
+    <div className="mt-2 px-1 pt-2 border-t border-mna-white/10">
+      <p className="text-[8.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40 mb-1.5">
+        Census
+      </p>
+      <ul className="space-y-0.5">
+        {labels.map(({ key, label }) => {
+          const c = counts[key];
+          const total = c.humans + c.agents;
+          if (total === 0) return null;
+          return (
+            <li
+              key={key}
+              className="flex items-baseline justify-between text-[8.5px] font-sans uppercase tracking-[0.22em] text-mna-white/55 tabular-nums"
+            >
+              <span className="text-mna-white/45">{label}</span>
+              <span>
+                {c.humans > 0 ? `${c.humans} obs` : null}
+                {c.humans > 0 && c.agents > 0 ? " · " : ""}
+                {c.agents > 0
+                  ? `${c.agents} agent${c.agents === 1 ? "" : "s"}`
+                  : null}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

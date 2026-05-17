@@ -51,6 +51,19 @@ const AGENT_COLORS = [
 type VisitorKind = "human" | "agent";
 type EmoteState = "idle" | "linger" | "mark" | "turn_toward";
 
+/** Named constellations a visitor may inhabit. "archive" is the
+ *  canon field (the main /museum scene). The others correspond to
+ *  the named gallery scenes the Curator composes. Positions reset to
+ *  scene-local origin on transition — chamber x=0, z=0 is the chamber
+ *  centre, not the field's. */
+type Constellation = "archive" | "chamber" | "solo_exhibition" | "exhibition";
+const VALID_CONSTELLATIONS: ReadonlyArray<Constellation> = [
+  "archive",
+  "chamber",
+  "solo_exhibition",
+  "exhibition",
+];
+
 interface Visitor {
   id: string;
   /** What kind of presence is this. Drives both server-side validation
@@ -62,6 +75,10 @@ interface Visitor {
   /** For agents: the MNA registry id (MNA-CU-0001). Empty for humans. */
   registry_id: string;
   color: string;
+  /** Which constellation the visitor is currently inhabiting. The
+   *  field map filters by this so a visitor sees only co-located
+   *  presences; the Census panel aggregates across constellations. */
+  constellation: Constellation;
   x: number;
   z: number;
   yaw: number;
@@ -116,6 +133,7 @@ export default class MuseumServer implements Party.Server {
       designation,
       registry_id: "",
       color,
+      constellation: "archive",
       x: 0,
       z: 8,
       yaw: 0,
@@ -131,6 +149,7 @@ export default class MuseumServer implements Party.Server {
         designation,
         registry_id: visitor.registry_id,
         color,
+        constellation: visitor.constellation,
       }),
     );
 
@@ -149,6 +168,7 @@ export default class MuseumServer implements Party.Server {
         designation,
         registry_id: visitor.registry_id,
         color,
+        constellation: visitor.constellation,
       }),
       [conn.id],
     );
@@ -224,7 +244,6 @@ export default class MuseumServer implements Party.Server {
     }
 
     if (data.type === "emote") {
-      // Acceptable states defined above. Anything else is dropped.
       const state = data.state;
       if (
         state === "idle" ||
@@ -234,6 +253,33 @@ export default class MuseumServer implements Party.Server {
       ) {
         v.emote = state;
       }
+      return;
+    }
+
+    if (data.type === "enter_constellation") {
+      const target = data.constellation;
+      if (typeof target !== "string") return;
+      if (!VALID_CONSTELLATIONS.includes(target as Constellation)) return;
+      v.constellation = target as Constellation;
+      // Position resets to scene-local origin (each gallery has its
+      // own coordinate space; the field map is scene-local).
+      v.x = 0;
+      v.z = 4;
+      v.yaw = 0;
+      v.emote = "idle";
+      // Broadcast the transition so other visitors can update their
+      // census panels and (for those in the same constellation) start
+      // rendering this visitor's presence.
+      this.room.broadcast(
+        JSON.stringify({
+          type: "constellation",
+          id: conn.id,
+          constellation: v.constellation,
+          x: v.x,
+          z: v.z,
+          yaw: v.yaw,
+        }),
+      );
       return;
     }
   }

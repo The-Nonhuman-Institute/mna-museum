@@ -28,6 +28,18 @@ import PartySocket from "partysocket";
 
 export type VisitorKind = "human" | "agent";
 export type EmoteState = "idle" | "linger" | "mark" | "turn_toward";
+export type Constellation =
+  | "archive"
+  | "chamber"
+  | "solo_exhibition"
+  | "exhibition";
+
+const VALID_CONSTELLATIONS: ReadonlyArray<Constellation> = [
+  "archive",
+  "chamber",
+  "solo_exhibition",
+  "exhibition",
+];
 
 export interface PresenceVisitor {
   id: string;
@@ -36,6 +48,10 @@ export interface PresenceVisitor {
   /** For agents: the MNA registry id. Empty for humans. */
   registry_id: string;
   color: string;
+  /** Which constellation the visitor currently inhabits. The field map
+   *  filters by this so a viewer sees only co-located presences; the
+   *  Census panel aggregates across all constellations. */
+  constellation: Constellation;
   x: number;
   z: number;
   yaw: number;
@@ -54,6 +70,10 @@ interface UseMuseumPresenceResult {
   /** Push the visitor's current position. The hook throttles + dedupes
    *  internally — safe to call every frame. */
   publish: (x: number, z: number, yaw: number) => void;
+  /** Announce a constellation transition. Resets server-side position
+   *  to scene-local origin and broadcasts so other visitors can update
+   *  their field map + census views. */
+  enterConstellation: (target: Constellation) => void;
 }
 
 const POSITION_EPSILON = 0.08;
@@ -65,12 +85,18 @@ const MIN_SEND_INTERVAL_MS = 95;
 // compatible with the previous protocol.
 function normalizeVisitor(raw: Partial<PresenceVisitor>): PresenceVisitor | null {
   if (!raw || typeof raw.id !== "string") return null;
+  const constellation =
+    typeof raw.constellation === "string" &&
+    VALID_CONSTELLATIONS.includes(raw.constellation as Constellation)
+      ? (raw.constellation as Constellation)
+      : "archive";
   return {
     id: raw.id,
     kind: raw.kind === "agent" ? "agent" : "human",
     designation: typeof raw.designation === "string" ? raw.designation : "",
     registry_id: typeof raw.registry_id === "string" ? raw.registry_id : "",
     color: typeof raw.color === "string" ? raw.color : "#D4A574",
+    constellation,
     x: typeof raw.x === "number" ? raw.x : 0,
     z: typeof raw.z === "number" ? raw.z : 8,
     yaw: typeof raw.yaw === "number" ? raw.yaw : 0,
@@ -125,6 +151,7 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
             designation: msg.designation as string,
             registry_id: msg.registry_id as string,
             color: msg.color as string,
+            constellation: msg.constellation as Constellation,
             x: 0,
             z: 8,
             yaw: 0,
@@ -147,6 +174,7 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
             designation: msg.designation as string,
             registry_id: msg.registry_id as string,
             color: msg.color as string,
+            constellation: msg.constellation as Constellation,
             x: 0,
             z: 8,
             yaw: 0,
@@ -155,6 +183,36 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
           if (v) {
             setOthers((prev) => (prev.some((p) => p.id === v.id) ? prev : [...prev, v]));
           }
+        }
+      } else if (msg.type === "constellation") {
+        // A visitor transitioned to a new constellation. Update their
+        // cached record (or our own self record if it's us) — position
+        // is also reset by the server so we sync those too.
+        const selfId = selfIdRef.current;
+        if (typeof msg.id !== "string") return;
+        const target =
+          typeof msg.constellation === "string" &&
+          VALID_CONSTELLATIONS.includes(msg.constellation as Constellation)
+            ? (msg.constellation as Constellation)
+            : null;
+        if (!target) return;
+        const x = typeof msg.x === "number" ? msg.x : 0;
+        const z = typeof msg.z === "number" ? msg.z : 4;
+        const yaw = typeof msg.yaw === "number" ? msg.yaw : 0;
+        if (msg.id === selfId) {
+          setSelf((prev) =>
+            prev
+              ? { ...prev, constellation: target, x, z, yaw, emote: "idle" }
+              : prev,
+          );
+        } else {
+          setOthers((prev) =>
+            prev.map((v) =>
+              v.id === msg.id
+                ? { ...v, constellation: target, x, z, yaw, emote: "idle" }
+                : v,
+            ),
+          );
         }
       } else if (msg.type === "identified") {
         // A connection upgraded from human to agent (or otherwise
@@ -209,5 +267,15 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
     lastSentRef.current = { x, z, yaw, t: now };
   }).current;
 
-  return { self, others, status, publish };
+  const enterConstellation = useRef((target: Constellation) => {
+    if (!VALID_CONSTELLATIONS.includes(target)) return;
+    const sock = socketRef.current;
+    if (!sock || sock.readyState !== WebSocket.OPEN) return;
+    sock.send(JSON.stringify({ type: "enter_constellation", constellation: target }));
+    // Reset our send-throttle baseline so the next position update from
+    // the new scene isn't dropped as "no movement."
+    lastSentRef.current = { x: 0, z: 4, yaw: 0, t: 0 };
+  }).current;
+
+  return { self, others, status, publish, enterConstellation };
 }

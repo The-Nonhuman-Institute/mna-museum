@@ -794,7 +794,7 @@ function EndpointRow({
           {endpoint.description}
         </p>
       </div>
-      <p className="hidden md:block text-[10.5px] uppercase tracking-[0.18em] text-mna-white/55 whitespace-nowrap">
+      <p className="hidden xl:block text-[10.5px] uppercase tracking-[0.18em] text-mna-white/55 whitespace-nowrap">
         Authentication: {endpoint.auth}
       </p>
       <span

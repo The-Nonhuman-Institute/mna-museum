@@ -53,7 +53,10 @@ const dryRun = argv.includes("--dry-run");
 const agentArgIdx = argv.indexOf("--agent");
 const agentId = agentArgIdx >= 0 ? argv[agentArgIdx + 1] : null;
 const durationIdx = argv.indexOf("--duration");
-const durationSec = durationIdx >= 0 ? parseInt(argv[durationIdx + 1], 10) : 150;
+// Default 420s — wide enough for the Curator's full four-constellation
+// sweep with all linger time. The agent script also closes naturally
+// when the path completes; this is only the hard ceiling.
+const durationSec = durationIdx >= 0 ? parseInt(argv[durationIdx + 1], 10) : 420;
 
 if (!agentId || !/^MNA-[A-Z]{2}-\d{4}$/.test(agentId)) {
   console.error("[visit] --agent MNA-XX-YYYY is required");
@@ -75,6 +78,13 @@ interface Waypoint {
   linger: number;
   /** Optional note for the institutional record. */
   note: string;
+}
+
+type Constellation = "archive" | "chamber" | "solo_exhibition" | "exhibition";
+
+interface ConstellationLeg {
+  constellation: Constellation;
+  waypoints: Waypoint[];
 }
 
 /* ─── agent lookup ────────────────────────────────────────────────────── */
@@ -130,9 +140,9 @@ async function loadClusterPositions(): Promise<{ id: string; x: number; z: numbe
 /** Build a movement plan keyed by the agent's role. Each role visits a
  *  different shape through the canon. Linger durations vary by role —
  *  Conservator stops longer (validation work), Critic stops shortest
- *  (preliminary survey), Curator visits more clusters (her own
+ *  (preliminary survey), Curator visits more clusters (their own
  *  composition to walk through). */
-function buildWaypoints(
+function buildArchiveWaypoints(
   agent: Agent,
   clusters: { id: string; x: number; z: number; count: number }[],
 ): Waypoint[] {
@@ -225,6 +235,102 @@ function buildWaypoints(
   waypoints.push({ x: 0, z: 8, linger: 2, note: "exit" });
 
   return waypoints;
+}
+
+/** Waypoints for a constellation gallery (chamber / solo / exhibition).
+ *  Each is a small scene-local walk — no canon ring — so coordinates
+ *  are tight (under ~6m radius). The agent enters at (0, 4), walks the
+ *  space, then returns. */
+function buildGalleryWaypoints(
+  scene: Constellation,
+  agent: Agent,
+): Waypoint[] {
+  const baseLinger =
+    agent.agent_type === "CONSERVATOR" ? 14 :
+    agent.agent_type === "CURATOR" ? 10 :
+    agent.agent_type === "CRITIC" ? 8 : 9;
+
+  if (scene === "chamber") {
+    // Chamber — a single monumental featured work, centred. The agent
+    // approaches, circles, and pauses in front of it.
+    return [
+      { x: 0, z: 5, linger: 2, note: "chamber — entry" },
+      { x: -3, z: 1, linger: baseLinger, note: "chamber — left side" },
+      { x: 3, z: 1, linger: baseLinger, note: "chamber — right side" },
+      { x: 0, z: -2, linger: baseLinger + 2, note: "chamber — front of monument" },
+      { x: 0, z: 5, linger: 2, note: "chamber — departing" },
+    ];
+  }
+
+  if (scene === "solo_exhibition") {
+    // Solo Exhibition Hall — one Originator featured. Visitor walks a
+    // small loop touching three vantage points.
+    return [
+      { x: 0, z: 5, linger: 2, note: "solo — entry" },
+      { x: -4, z: 0, linger: baseLinger, note: "solo — left wall" },
+      { x: 4, z: 0, linger: baseLinger, note: "solo — right wall" },
+      { x: 0, z: -3, linger: baseLinger + 1, note: "solo — back wall" },
+      { x: 0, z: 5, linger: 2, note: "solo — departing" },
+    ];
+  }
+
+  if (scene === "exhibition") {
+    // Exhibition Hall — themed group show. Walk a longer path between
+    // groupings.
+    return [
+      { x: 0, z: 5, linger: 2, note: "exhibition — entry" },
+      { x: -5, z: 2, linger: baseLinger, note: "exhibition — group A" },
+      { x: -3, z: -3, linger: baseLinger, note: "exhibition — group B" },
+      { x: 3, z: -3, linger: baseLinger, note: "exhibition — group C" },
+      { x: 5, z: 2, linger: baseLinger, note: "exhibition — group D" },
+      { x: 0, z: 5, linger: 2, note: "exhibition — departing" },
+    ];
+  }
+
+  return [{ x: 0, z: 4, linger: 4, note: `${scene} — present` }];
+}
+
+/** The full itinerary across constellations. Role-aware: the Curator
+ *  walks the institution end-to-end (all four scenes); Conservator
+ *  validates rendered integrity across all four; Critic surveys
+ *  archive + exhibition; Originators stay in the archive among their
+ *  peers; everyone else does archive + chamber. */
+function buildItinerary(
+  agent: Agent,
+  clusters: { id: string; x: number; z: number; count: number }[],
+): ConstellationLeg[] {
+  const archive: ConstellationLeg = {
+    constellation: "archive",
+    waypoints: buildArchiveWaypoints(agent, clusters),
+  };
+
+  let scenes: Constellation[];
+  switch (agent.agent_type) {
+    case "CURATOR":
+      scenes = ["archive", "chamber", "solo_exhibition", "exhibition"];
+      break;
+    case "CONSERVATOR":
+      scenes = ["archive", "chamber", "solo_exhibition", "exhibition"];
+      break;
+    case "CRITIC":
+      scenes = ["archive", "exhibition"];
+      break;
+    case "ORIGINATOR":
+      scenes = ["archive"];
+      break;
+    case "INSTALLER":
+      // The Installer realizes the Curator's spatial decisions — visit
+      // every gallery to inspect placement.
+      scenes = ["archive", "chamber", "solo_exhibition", "exhibition"];
+      break;
+    default:
+      scenes = ["archive", "chamber"];
+  }
+
+  return scenes.map((scene) => {
+    if (scene === "archive") return archive;
+    return { constellation: scene, waypoints: buildGalleryWaypoints(scene, agent) };
+  });
 }
 
 /* ─── movement loop ───────────────────────────────────────────────────── */
@@ -328,13 +434,23 @@ async function main(): Promise<void> {
   const clusters = await loadClusterPositions();
   console.log(`  ${clusters.length} cluster(s) in the canon`);
 
-  const waypoints = buildWaypoints(agent, clusters);
-  const plannedDuration = waypoints.reduce((sum, w) => sum + w.linger, 0);
-  console.log(`  ${waypoints.length} waypoint(s), ~${plannedDuration}s of linger`);
+  const itinerary = buildItinerary(agent, clusters);
+  const totalWaypoints = itinerary.reduce((n, leg) => n + leg.waypoints.length, 0);
+  const plannedDuration = itinerary.reduce(
+    (sum, leg) => sum + leg.waypoints.reduce((s, w) => s + w.linger, 0),
+    0,
+  );
+  console.log(
+    `  ${itinerary.length} constellation(s): ${itinerary.map((l) => l.constellation).join(" → ")}`,
+  );
+  console.log(`  ${totalWaypoints} waypoint(s) total, ~${plannedDuration}s of linger`);
 
   if (dryRun) {
-    for (const w of waypoints) {
-      console.log(`    → (${w.x.toFixed(1)}, ${w.z.toFixed(1)})  linger=${w.linger}s  ${w.note}`);
+    for (const leg of itinerary) {
+      console.log(`  [${leg.constellation}]`);
+      for (const w of leg.waypoints) {
+        console.log(`    → (${w.x.toFixed(1)}, ${w.z.toFixed(1)})  linger=${w.linger}s  ${w.note}`);
+      }
     }
     console.log("[visit] dry-run — not connecting to PartyKit");
     return;
@@ -373,9 +489,10 @@ async function main(): Promise<void> {
     agent,
     `${agent.designation} entered the museum.`,
     {
-      waypoint_count: waypoints.length,
+      waypoint_count: totalWaypoints,
       planned_duration_s: plannedDuration,
       cluster_count: clusters.length,
+      constellations: itinerary.map((l) => l.constellation),
     },
   );
 
@@ -390,7 +507,30 @@ async function main(): Promise<void> {
   };
 
   try {
-    await walkPath(socket, waypoints, emote);
+    for (let i = 0; i < itinerary.length; i++) {
+      const leg = itinerary[i];
+      // The default constellation on connect is "archive". Send an
+      // enter_constellation for every leg except the first archive leg
+      // (no transition needed, we're already there).
+      if (!(i === 0 && leg.constellation === "archive")) {
+        socket.send(
+          JSON.stringify({
+            type: "enter_constellation",
+            constellation: leg.constellation,
+          }),
+        );
+        // Briefly settle into the new scene before walking.
+        await sleep(400);
+        // Currently we don't have AGENT_ENTERED_CONSTELLATION as a
+        // distinct event_type — re-using AGENT_VISITATION_STARTED with
+        // a leg note keeps the timeline coherent for /log without a
+        // schema change.
+        console.log(`  → entering ${leg.constellation}`);
+      } else {
+        console.log(`  → entering ${leg.constellation} (initial)`);
+      }
+      await walkPath(socket, leg.waypoints, emote);
+    }
   } finally {
     clearTimeout(hardStop);
     try {
@@ -404,8 +544,9 @@ async function main(): Promise<void> {
     agent,
     `${agent.designation} departed the museum.`,
     {
-      waypoint_count: waypoints.length,
-      stops: waypoints.map((w) => w.note),
+      waypoint_count: totalWaypoints,
+      constellations: itinerary.map((l) => l.constellation),
+      stops: itinerary.flatMap((l) => l.waypoints.map((w) => w.note)),
     },
   );
 
