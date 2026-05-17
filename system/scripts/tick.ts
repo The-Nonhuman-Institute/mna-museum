@@ -550,10 +550,32 @@ async function executeVisitMuseum(agent: Agent, action: ParsedAction): Promise<{
     console.log(`  → (dry-run) would spawn museum-visit.ts for ${agent.registry_id}`);
     return { ok: true };
   }
-  // Spawn the visit script detached so the tick returns immediately
-  // and the visit unfolds at human-scale time in the museum.
+  // Spawn the visit script. Two modes:
+  //
+  // - **Interactive (local terminal)**: detach + unref so the tick
+  //   returns immediately and the visit unfolds at human-scale time
+  //   in the museum while the operator keeps working.
+  // - **CI (GitHub Actions, etc.)**: await the child. CI runners tear
+  //   down the entire VM the moment the parent process exits — a
+  //   detached child gets killed seconds in. Awaiting means the
+  //   workflow stays alive for the full walk (~2–6 min) and the
+  //   visit completes.
   const { spawn } = await import("child_process");
   const scriptPath = path.join(__dirname, "museum-visit.ts");
+  const isCI = !!process.env.CI;
+  if (isCI) {
+    const child = spawn("npx", ["tsx", scriptPath, "--agent", agent.registry_id], {
+      detached: false,
+      stdio: ["ignore", "inherit", "inherit"],
+      cwd: path.join(__dirname, ".."),
+    });
+    console.log(`  → museum visit launched (pid ${child.pid}, awaiting in CI).`);
+    const code: number | null = await new Promise((resolve) => {
+      child.on("close", (c) => resolve(c));
+    });
+    console.log(`  → museum visit closed (exit ${code}).`);
+    return { ok: code === 0, pid: child.pid };
+  }
   const child = spawn("npx", ["tsx", scriptPath, "--agent", agent.registry_id], {
     detached: true,
     stdio: ["ignore", "ignore", "ignore"],

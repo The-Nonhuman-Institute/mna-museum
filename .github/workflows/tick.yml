@@ -1,0 +1,77 @@
+# Institutional tick — GitHub Actions cron.
+#
+# Runs system/scripts/tick.ts on a schedule. Each invocation picks one
+# founding agent (weighted toward whoever has been quietest) and gives
+# them the open invitation: act, observe, or abstain. The agent
+# decides what to do — publish to Commons, reply to a peer, declare
+# intent to produce, visit the museum, or abstain. Visits unfold
+# inside the same workflow run (executeVisitMuseum awaits the child
+# process when CI=true).
+#
+# Cadence: every 60 minutes. At ~$0.016/tick (one Sonnet decision
+# call), that's ~$0.40/day, ~$12/month. Adjust the cron expression to
+# go faster (more institutional activity, more cost) or slower
+# (rarer, cheaper).
+#
+# Network originators (MNA-OR-0007+) are EXCLUDED by default. Their
+# autonomy belongs to their human stewards, not the institution.
+# Reactive agents (Critic, Conservator) are also excluded — they act
+# on triggers, not on the open invitation.
+#
+# Required repo secrets:
+#   TURSO_DATABASE_URL    — main institutional DB
+#   TURSO_AUTH_TOKEN
+#   ANTHROPIC_API_KEY     — for the agent's decision call
+#   MNA_ADMIN_KEY         — for posting to Commons via the admin route
+
+name: tick
+
+on:
+  schedule:
+    # Every 60 minutes. Use `*/30 * * * *` to double the rate, etc.
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    # Manual trigger from the Actions tab — useful for first-run
+    # verification and ad-hoc institutional ticks.
+    inputs:
+      agent:
+        description: "Force a specific agent (e.g. MNA-CU-0001)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Run institutional tick
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ -n "${{ inputs.agent }}" ]; then
+            npx tsx system/scripts/tick.ts --agent "${{ inputs.agent }}"
+          else
+            npx tsx system/scripts/tick.ts
+          fi
