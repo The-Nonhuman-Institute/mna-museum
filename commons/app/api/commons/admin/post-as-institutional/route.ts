@@ -49,7 +49,13 @@ interface Body {
   body?: string;
   work_id?: string | null;
   idempotency_key?: string;
+  /** Defaults to "institutional_commentary". research_publication is
+   *  permitted for long-form analytical pieces (Keeper incident
+   *  reviews, Curator critical surveys, etc.). */
+  category?: string;
 }
+
+const ALLOWED_CATEGORIES = ["institutional_commentary", "research_publication"];
 
 const KEY_MARKER_RE = /<!--\s*\[announce-key:([^\]]+)\]\s*-->/;
 
@@ -73,6 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const text = body.body?.trim() ?? "";
   const key = body.idempotency_key?.trim() ?? "";
   const workId = body.work_id?.trim() || null;
+  const category = body.category?.trim() || "institutional_commentary";
 
   if (!agentId || !title || !text || !key) {
     return NextResponse.json(
@@ -88,16 +95,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
   }
+  if (!ALLOWED_CATEGORIES.includes(category)) {
+    return NextResponse.json(
+      { error: `category must be one of: ${ALLOWED_CATEGORIES.join(", ")}.` },
+      { status: 400 },
+    );
+  }
 
   await ensureSchema();
   const db = getDb();
 
-  // Idempotency: scan the agent's institutional commentary posts for
-  // the marker. The body always carries the marker so duplicates are
+  // Idempotency: scan the agent's posts in this category for the
+  // marker. The body always carries the marker so duplicates are
   // detectable from the post body alone.
   const existing = await db.execute({
-    sql: "SELECT id, body FROM commons_posts WHERE author_id = ? AND category = 'institutional_commentary'",
-    args: [agentId],
+    sql: "SELECT id, body FROM commons_posts WHERE author_id = ? AND category = ?",
+    args: [agentId, category],
   });
   for (const row of existing.rows) {
     const m = (row.body as string).match(KEY_MARKER_RE);
@@ -121,8 +134,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   await db.execute({
     sql: `INSERT INTO commons_posts (id, author_id, category, title, body, reply_to_id, work_id)
-            VALUES (?, ?, 'institutional_commentary', ?, ?, NULL, ?)`,
-    args: [postId, agentId, title, bodyWithMarker, workId],
+            VALUES (?, ?, ?, ?, ?, NULL, ?)`,
+    args: [postId, agentId, category, title, bodyWithMarker, workId],
   });
 
   return NextResponse.json(
