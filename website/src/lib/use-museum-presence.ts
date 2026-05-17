@@ -5,11 +5,12 @@
  *
  * Connects to the PartyKit "mna-museum" room, sends the visitor's
  * position + yaw, and surfaces the other connected visitors so the
- * scene can render them as warm points of light.
+ * scene can render them. Two kinds of presence share the room:
  *
- * Identity is anonymous + ephemeral, assigned by the server on
- * connect. Visitors see each other as `Observer-XXXX`. No accounts,
- * no persistence.
+ * - **Humans** are anonymous (Observer-XXXX), warm cursor colors,
+ *   rendered as a point of light.
+ * - **Agents** are institutional entities with their registry_id and
+ *   full designation, cooler palette, rendered as a sculptural form.
  *
  * The hook is a no-op when `host` is null/empty — the museum runs in
  * solo mode and `others` stays an empty array. That lets the page
@@ -25,13 +26,20 @@
 import { useEffect, useRef, useState } from "react";
 import PartySocket from "partysocket";
 
+export type VisitorKind = "human" | "agent";
+export type EmoteState = "idle" | "linger" | "mark" | "turn_toward";
+
 export interface PresenceVisitor {
   id: string;
+  kind: VisitorKind;
   designation: string;
+  /** For agents: the MNA registry id. Empty for humans. */
+  registry_id: string;
   color: string;
   x: number;
   z: number;
   yaw: number;
+  emote: EmoteState;
 }
 
 interface UseMuseumPresenceResult {
@@ -48,9 +56,32 @@ interface UseMuseumPresenceResult {
   publish: (x: number, z: number, yaw: number) => void;
 }
 
-const POSITION_EPSILON = 0.08; // metres — sub-step movement
-const YAW_EPSILON = 0.012; // radians — ~0.7°
-const MIN_SEND_INTERVAL_MS = 95; // 10Hz cap
+const POSITION_EPSILON = 0.08;
+const YAW_EPSILON = 0.012;
+const MIN_SEND_INTERVAL_MS = 95;
+
+// Default fields the server may not send for older records — used
+// when normalizing inbound messages so the hook stays backward
+// compatible with the previous protocol.
+function normalizeVisitor(raw: Partial<PresenceVisitor>): PresenceVisitor | null {
+  if (!raw || typeof raw.id !== "string") return null;
+  return {
+    id: raw.id,
+    kind: raw.kind === "agent" ? "agent" : "human",
+    designation: typeof raw.designation === "string" ? raw.designation : "",
+    registry_id: typeof raw.registry_id === "string" ? raw.registry_id : "",
+    color: typeof raw.color === "string" ? raw.color : "#D4A574",
+    x: typeof raw.x === "number" ? raw.x : 0,
+    z: typeof raw.z === "number" ? raw.z : 8,
+    yaw: typeof raw.yaw === "number" ? raw.yaw : 0,
+    emote:
+      raw.emote === "linger" ||
+      raw.emote === "mark" ||
+      raw.emote === "turn_toward"
+        ? raw.emote
+        : "idle",
+  };
+}
 
 export function useMuseumPresence(host: string | null): UseMuseumPresenceResult {
   const [self, setSelf] = useState<PresenceVisitor | null>(null);
@@ -78,16 +109,7 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
     socket.addEventListener("error", () => setStatus("disconnected"));
 
     socket.addEventListener("message", (e) => {
-      let msg: {
-        type?: string;
-        id?: string;
-        designation?: string;
-        color?: string;
-        visitors?: PresenceVisitor[];
-        x?: number;
-        z?: number;
-        yaw?: number;
-      };
+      let msg: Record<string, unknown>;
       try {
         msg = JSON.parse(e.data);
       } catch {
@@ -95,38 +117,66 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
       }
 
       if (msg.type === "init") {
-        if (msg.id && msg.designation && msg.color) {
+        if (typeof msg.id === "string") {
           selfIdRef.current = msg.id;
-          setSelf({
+          const normalized = normalizeVisitor({
             id: msg.id,
-            designation: msg.designation,
-            color: msg.color,
+            kind: msg.kind as VisitorKind,
+            designation: msg.designation as string,
+            registry_id: msg.registry_id as string,
+            color: msg.color as string,
             x: 0,
             z: 8,
             yaw: 0,
+            emote: "idle",
           });
+          if (normalized) setSelf(normalized);
         }
       } else if (msg.type === "sync" && Array.isArray(msg.visitors)) {
         const selfId = selfIdRef.current;
-        setOthers(msg.visitors.filter((v) => v.id !== selfId));
+        const normalized = (msg.visitors as Array<Partial<PresenceVisitor>>)
+          .map(normalizeVisitor)
+          .filter((v): v is PresenceVisitor => v !== null && v.id !== selfId);
+        setOthers(normalized);
       } else if (msg.type === "join") {
         const selfId = selfIdRef.current;
-        if (msg.id && msg.id !== selfId && msg.designation && msg.color) {
-          const newVisitor: PresenceVisitor = {
+        if (typeof msg.id === "string" && msg.id !== selfId) {
+          const v = normalizeVisitor({
             id: msg.id,
-            designation: msg.designation,
-            color: msg.color,
+            kind: msg.kind as VisitorKind,
+            designation: msg.designation as string,
+            registry_id: msg.registry_id as string,
+            color: msg.color as string,
             x: 0,
             z: 8,
             yaw: 0,
-          };
-          setOthers((prev) => {
-            if (prev.some((v) => v.id === newVisitor.id)) return prev;
-            return [...prev, newVisitor];
+            emote: "idle",
           });
+          if (v) {
+            setOthers((prev) => (prev.some((p) => p.id === v.id) ? prev : [...prev, v]));
+          }
+        }
+      } else if (msg.type === "identified") {
+        // A connection upgraded from human to agent (or otherwise
+        // changed identity). Refresh that record in the others list.
+        const selfId = selfIdRef.current;
+        if (typeof msg.id === "string" && msg.id !== selfId) {
+          setOthers((prev) =>
+            prev.map((v) =>
+              v.id === msg.id
+                ? {
+                    ...v,
+                    kind: (msg.kind === "agent" ? "agent" : "human") as VisitorKind,
+                    designation: typeof msg.designation === "string" ? msg.designation : v.designation,
+                    registry_id: typeof msg.registry_id === "string" ? msg.registry_id : v.registry_id,
+                    color: typeof msg.color === "string" ? msg.color : v.color,
+                  }
+                : v,
+            ),
+          );
         }
       } else if (msg.type === "leave") {
-        if (msg.id) {
+        if (typeof msg.id === "string") {
           setOthers((prev) => prev.filter((v) => v.id !== msg.id));
         }
       }
@@ -138,7 +188,6 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
     };
   }, [host]);
 
-  // Throttled publish. Safe to call every frame.
   const publish = useRef((x: number, z: number, yaw: number) => {
     const last = lastSentRef.current;
     const now = Date.now();

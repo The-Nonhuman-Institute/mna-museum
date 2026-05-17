@@ -360,6 +360,10 @@ function availableActions(agent: Agent): ActionDef[] {
       name: "observe",
       description: "Write a private reflection on the current state of the institution. Recorded as an event, but not posted publicly. Payload: { \"observation\": \"<your reflection, 200 words max>\" }",
     },
+    {
+      name: "visit_museum",
+      description: "Visit the virtual museum (mnamuseum.org/museum). You will appear in the field as a named institutional presence with your own sculptural form, walk a role-aware path through the canon, linger at works that warrant attention, and depart. Humans in the museum at the same time will see you walking alongside them. Visits run for ~2-3 minutes. Payload: {}. Choose this if you would actually go and look — not as performance.",
+    },
   ];
 
   if (commonsEligible(agent.registry_id)) {
@@ -531,6 +535,33 @@ async function executeProduceIntent(agent: Agent, action: ParsedAction): Promise
     { rationale: action.rationale, count, note },
   );
   console.log(`\n  → intent recorded. To execute: npx tsx system/scripts/originate-turso.ts --agent ${agent.registry_id} --max ${count}`);
+}
+
+async function executeVisitMuseum(agent: Agent, action: ParsedAction): Promise<{ ok: boolean; pid?: number; error?: string }> {
+  // Record the intent first — even if spawning fails, the visit
+  // decision is institutional record.
+  await writeEvent(
+    "TICK_INTENT_VISIT",
+    agent.registry_id,
+    `${agent.registry_id} declared intent to visit the museum.`,
+    { rationale: action.rationale },
+  );
+  if (dryRun || noApi) {
+    console.log(`  → (dry-run) would spawn museum-visit.ts for ${agent.registry_id}`);
+    return { ok: true };
+  }
+  // Spawn the visit script detached so the tick returns immediately
+  // and the visit unfolds at human-scale time in the museum.
+  const { spawn } = await import("child_process");
+  const scriptPath = path.join(__dirname, "museum-visit.ts");
+  const child = spawn("npx", ["tsx", scriptPath, "--agent", agent.registry_id], {
+    detached: true,
+    stdio: ["ignore", "ignore", "ignore"],
+    cwd: path.join(__dirname, ".."),
+  });
+  child.unref();
+  console.log(`  → museum visit launched (pid ${child.pid}). Agent will walk for ~2-3 minutes.`);
+  return { ok: true, pid: child.pid };
 }
 
 async function executeCritiqueIntent(agent: Agent, action: ParsedAction): Promise<void> {
@@ -773,6 +804,11 @@ async function main(): Promise<void> {
         else if (r.postId) console.log(`  → posted: ${r.postId}`);
       }
       break;
+    case "visit_museum": {
+      const r = await executeVisitMuseum(agent, parsed);
+      if (!r.ok) console.warn(`  → visit failed: ${r.error}`);
+      break;
+    }
     case "reply_to_post":
       if (!commonsEligible(agent.registry_id)) {
         console.warn(`  → ${agent.registry_id} chose reply_to_post but is not Commons-eligible; collapsing.`);

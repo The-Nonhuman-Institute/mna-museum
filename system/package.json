@@ -16,6 +16,7 @@
     "better-sqlite3": "^12.8.0",
     "dotenv": "^17.3.1",
     "mammoth": "^1.12.0",
+    "partysocket": "^1.1.19",
     "resend": "^6.10.0"
   },
   "devDependencies": {

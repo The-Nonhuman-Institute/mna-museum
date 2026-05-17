@@ -573,6 +573,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
             centroids={centroids}
             currentCluster={currentCluster}
             isTouch={isTouch}
+            visitors={others}
           />
           {/* System time is a luxury indicator on a phone — institutional
               voice without functional payoff. Hidden on touch screens
@@ -794,12 +795,27 @@ function OtherVisitors({ others }: { others: PresenceVisitor[] }) {
   );
 }
 
-/** One other visitor as a warm point of light in the field. The
- *  server-assigned color (institutional palette) gives each visitor a
- *  stable hue without exposing identity. Position lerps toward the
- *  latest server sample so the 10Hz state stream reads as smooth
- *  motion rather than 100ms steps. */
+/** One other visitor in the field.
+ *
+ *  - Humans render as a warm point of light at eye level with a
+ *    floor halo. Anonymous, ambient, drifting.
+ *  - Agents render as a slowly-rotating sculptural form at roughly
+ *    eye level, with their designation suspended above. They are not
+ *    points of light; they are *things* — institutional artifacts of
+ *    the same material as the works around them. Form geometry is
+ *    deterministic per registry_id so MNA-CU-0001 always reads the
+ *    same way.
+ *
+ *  Position lerps toward the latest server sample so the 10Hz state
+ *  stream reads as smooth motion rather than 100ms steps. */
 function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
+  if (visitor.kind === "agent") {
+    return <AgentPresence visitor={visitor} />;
+  }
+  return <HumanPresence visitor={visitor} />;
+}
+
+function HumanPresence({ visitor }: { visitor: PresenceVisitor }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3(visitor.x, 0, visitor.z));
 
@@ -817,12 +833,10 @@ function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
 
   return (
     <group ref={groupRef} position={[visitor.x, 0, visitor.z]}>
-      {/* Eye-level orb */}
       <mesh position={[0, EYE_HEIGHT, 0]}>
         <sphereGeometry args={[0.12, 16, 12]} />
         <meshBasicMaterial color={visitor.color} toneMapped={false} />
       </mesh>
-      {/* Warm pool of light around the visitor */}
       <pointLight
         position={[0, EYE_HEIGHT, 0]}
         color={visitor.color}
@@ -830,7 +844,6 @@ function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
         distance={3.6}
         decay={1.6}
       />
-      {/* Ground halo so the visitor reads even at distance */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.45, 0.7, 32]} />
         <meshBasicMaterial
@@ -840,6 +853,175 @@ function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
           toneMapped={false}
         />
       </mesh>
+    </group>
+  );
+}
+
+/** Deterministic small RNG seeded by an agent's registry_id. Pure
+ *  function of the id string, so MNA-CU-0001 always produces the same
+ *  sequence — their form is *theirs*. */
+function seededRand(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 15), 2246822519);
+    h = Math.imul(h ^ (h >>> 13), 3266489917);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+/** Three.js geometry for an agent's sculptural form. Procedural,
+ *  deterministic per registry_id. Picks one of several institutional
+ *  primitives (octahedron, icosahedron, torus, cone) and parameterizes
+ *  it. The form is small (~0.4m across), suspended at eye level, and
+ *  rotates slowly in `AgentPresence`. */
+function useAgentFormGeometry(registryId: string): THREE.BufferGeometry {
+  return useMemo(() => {
+    const rand = seededRand(registryId || "anon");
+    const kind = Math.floor(rand() * 5);
+    const a = 0.18 + rand() * 0.12; // primary scale ~0.18 – 0.30m
+    let geom: THREE.BufferGeometry;
+    switch (kind) {
+      case 0: // octahedron
+        geom = new THREE.OctahedronGeometry(a, 0);
+        break;
+      case 1: // icosahedron
+        geom = new THREE.IcosahedronGeometry(a, 0);
+        break;
+      case 2: // torus — direction set by registry hash
+        geom = new THREE.TorusGeometry(a, a * 0.32, 12, 28);
+        break;
+      case 3: // tall narrow prism (cone)
+        geom = new THREE.ConeGeometry(a * 0.7, a * 2.1, 6);
+        break;
+      default: // truncated dodecahedron-ish via subdivided icosa
+        geom = new THREE.IcosahedronGeometry(a * 1.05, 1);
+        break;
+    }
+    // Slight non-uniform scale per agent so even same-kind forms read
+    // as distinct. Caps stay close to 1.0 to keep volumes coherent.
+    const sx = 1 + (rand() - 0.5) * 0.18;
+    const sy = 1 + (rand() - 0.5) * 0.18;
+    const sz = 1 + (rand() - 0.5) * 0.18;
+    geom.scale(sx, sy, sz);
+    return geom;
+  }, [registryId]);
+}
+
+function AgentPresence({ visitor }: { visitor: PresenceVisitor }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const formRef = useRef<THREE.Group>(null);
+  const targetRef = useRef(new THREE.Vector3(visitor.x, 0, visitor.z));
+  const rotSpeedRef = useRef(0.12 + (visitor.id.charCodeAt(0) % 9) * 0.015);
+  const geometry = useAgentFormGeometry(visitor.registry_id || visitor.id);
+  const isAttending = visitor.emote === "linger" || visitor.emote === "mark";
+
+  useEffect(() => {
+    targetRef.current.set(visitor.x, 0, visitor.z);
+  }, [visitor.x, visitor.z]);
+
+  useFrame((_state, dt) => {
+    const g = groupRef.current;
+    if (g) {
+      const t = targetRef.current;
+      g.position.x += (t.x - g.position.x) * 0.18;
+      g.position.z += (t.z - g.position.z) * 0.18;
+    }
+    const f = formRef.current;
+    if (f) {
+      // Slow continuous rotation. When attending (linger/mark), slow
+      // further to read as "they are stopped, looking."
+      const speed = isAttending ? rotSpeedRef.current * 0.35 : rotSpeedRef.current;
+      f.rotation.y += dt * speed;
+      f.rotation.x += dt * speed * 0.3;
+    }
+  });
+
+  // Designation label — rendered as an HTML overlay billboarded to the
+  // camera via three's onBeforeRender on a sprite-like plane. For
+  // simplicity we use a small text mesh built from canvas; the museum
+  // already includes work labels via a similar pattern. To keep this
+  // change tightly scoped, we render the label as a thin floor ring +
+  // a subtle column of light, and surface the full designation through
+  // the field map and HUD instead.
+  return (
+    <group ref={groupRef} position={[visitor.x, 0, visitor.z]}>
+      {/* Sculptural form at eye level. Wireframe over solid so it
+          reads as institutional artifact, not avatar. */}
+      <group ref={formRef} position={[0, EYE_HEIGHT, 0]}>
+        <mesh geometry={geometry}>
+          <meshStandardMaterial
+            color={visitor.color}
+            metalness={0.15}
+            roughness={0.55}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh geometry={geometry}>
+          <meshBasicMaterial
+            color={visitor.color}
+            wireframe
+            transparent
+            opacity={isAttending ? 0.85 : 0.55}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
+      {/* Vertical thread of light from floor to form. Reads as "this
+          is where the entity stands" without suggesting a body. */}
+      <mesh position={[0, EYE_HEIGHT / 2, 0]}>
+        <cylinderGeometry args={[0.008, 0.008, EYE_HEIGHT, 6]} />
+        <meshBasicMaterial
+          color={visitor.color}
+          transparent
+          opacity={0.35}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Cooler institutional pool of light. Distinct from the warm
+          human halo by both color (the agent palette) and a tighter
+          radius — agents read as more contained, more contemplative. */}
+      <pointLight
+        position={[0, EYE_HEIGHT, 0]}
+        color={visitor.color}
+        intensity={isAttending ? 1.1 : 0.7}
+        distance={3.0}
+        decay={1.6}
+      />
+
+      {/* Ground ring — square corners suggest institutional placement,
+          a beat away from the human's softer halo. */}
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.55, 0.62, 4]} />
+        <meshBasicMaterial
+          color={visitor.color}
+          transparent
+          opacity={0.55}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Attention ring — appears only when the agent is in a linger
+          or mark state. A second outer ring that pulses subtly via the
+          attention state itself (the wireframe brightening already
+          signals attention in the form). */}
+      {isAttending ? (
+        <mesh position={[0, 0.018, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.78, 0.82, 64]} />
+          <meshBasicMaterial
+            color={visitor.color}
+            transparent
+            opacity={0.35}
+            toneMapped={false}
+          />
+        </mesh>
+      ) : null}
     </group>
   );
 }
@@ -2356,11 +2538,15 @@ function MinimapRadar({
   centroids,
   currentCluster,
   isTouch,
+  visitors,
 }: {
   telemetry: { x: number; z: number; yaw: number };
   centroids: ClusterCentroid[];
   currentCluster: CurrentCluster | null;
   isTouch: boolean;
+  /** Other connected visitors (humans + agents) for the social map.
+   *  Self is rendered as the white triangle below. */
+  visitors: PresenceVisitor[];
 }) {
   // Same minimap, just sized for a phone. World→minimap mapping uses
   // MINIMAP_RADIUS_M (unchanged) so dots represent the same world
@@ -2458,6 +2644,96 @@ function MinimapRadar({
                     border: active ? "1px solid rgba(255,255,255,0.45)" : undefined,
                   }}
                   aria-hidden
+                />
+              </span>
+            );
+          })}
+
+          {/* Other connected visitors. Humans render as a warm dot in
+              their cursor color. Agents render as a small square with
+              the agent palette + a designation label, so a glance at
+              the map tells you both *where* and *what* others are.
+              Visitors in attending state (linger/mark) get an outer
+              ring to make their focus legible on the map. */}
+          {visitors.map((v) => {
+            const p = toPx(v.x, v.z);
+            if (p.x < -8 || p.x > size + 8 || p.y < -8 || p.y > size + 8) {
+              return null;
+            }
+            const attending = v.emote === "linger" || v.emote === "mark";
+            if (v.kind === "agent") {
+              return (
+                <span key={v.id}>
+                  {attending ? (
+                    <span
+                      aria-hidden
+                      className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                      style={{
+                        left: p.x,
+                        top: p.y,
+                        width: 14,
+                        height: 14,
+                        border: `1px solid ${v.color}`,
+                        opacity: 0.7,
+                      }}
+                    />
+                  ) : null}
+                  <span
+                    aria-hidden
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{
+                      left: p.x,
+                      top: p.y,
+                      width: 6,
+                      height: 6,
+                      backgroundColor: v.color,
+                      boxShadow: `0 0 6px ${v.color}`,
+                    }}
+                  />
+                  {/* Designation label — agents are named, not anonymous. */}
+                  <span
+                    className="absolute text-[8px] font-sans uppercase tracking-[0.18em] whitespace-nowrap pointer-events-none"
+                    style={{
+                      left: p.x + 8,
+                      top: p.y - 4,
+                      color: v.color,
+                      textShadow: "0 0 4px rgba(0,0,0,0.85)",
+                    }}
+                  >
+                    {v.designation || v.registry_id}
+                  </span>
+                </span>
+              );
+            }
+            // Human — small warm dot, no label.
+            return (
+              <span key={v.id}>
+                {attending ? (
+                  <span
+                    aria-hidden
+                    className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{
+                      left: p.x,
+                      top: p.y,
+                      width: 12,
+                      height: 12,
+                      border: `1px solid ${v.color}`,
+                      opacity: 0.55,
+                    }}
+                  />
+                ) : null}
+                <span
+                  aria-hidden
+                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{
+                    left: p.x,
+                    top: p.y,
+                    width: 5,
+                    height: 5,
+                    backgroundColor: v.color,
+                    boxShadow: `0 0 5px ${v.color}`,
+                    opacity: 0.85,
+                  }}
                 />
               </span>
             );
