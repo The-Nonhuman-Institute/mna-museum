@@ -36,9 +36,11 @@ import {
   useDownsampledTexture,
   OtherVisitors,
   PositionPublisher,
+  Telemetry,
 } from "../../MuseumField";
 import { useGalleryPresence } from "@/lib/use-museum-presence";
 import ConstellationNavPanel from "@/components/museum/ConstellationNavPanel";
+import { GalleryMinimap } from "@/components/museum/GalleryMinimap";
 import {
   CONSTELLATION_CONFIGS,
   vesicaPiscisStars,
@@ -102,6 +104,7 @@ export default function ExhibitionScene({
   }, [aimedTarget]);
 
   const joystickRef = useRef({ forward: 0, strafe: 0 });
+  const telemetryRef = useRef({ x: 0, z: CAMERA_START_Z, yaw: 0 });
 
   // Realtime presence — scoped to the exhibition constellation.
   const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
@@ -189,6 +192,7 @@ export default function ExhibitionScene({
           />
           {started ? <OtherVisitors others={others} /> : null}
           <PositionPublisher publish={publish} />
+          <Telemetry telemetryRef={telemetryRef} />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -233,6 +237,15 @@ export default function ExhibitionScene({
           locked={locked}
           pointerLockFailed={pointerLockFailed}
           othersPresent={others.length}
+        />
+      ) : null}
+
+      {started ? (
+        <GalleryMinimap
+          telemetryRef={telemetryRef}
+          others={others}
+          galleryName="Exhibition"
+          isTouch={isTouch}
         />
       ) : null}
 

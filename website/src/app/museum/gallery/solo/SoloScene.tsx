@@ -44,9 +44,11 @@ import {
   useDownsampledTexture,
   OtherVisitors,
   PositionPublisher,
+  Telemetry,
 } from "../../MuseumField";
 import { useGalleryPresence } from "@/lib/use-museum-presence";
 import ConstellationNavPanel from "@/components/museum/ConstellationNavPanel";
+import { GalleryMinimap } from "@/components/museum/GalleryMinimap";
 import {
   CONSTELLATION_CONFIGS,
   vesicaPiscisStars,
@@ -106,6 +108,7 @@ export default function SoloScene({
   }, [aimedTarget]);
 
   const joystickRef = useRef({ forward: 0, strafe: 0 });
+  const telemetryRef = useRef({ x: 0, z: CAMERA_START_Z, yaw: 0 });
 
   // Realtime presence — scoped to the solo_exhibition constellation.
   const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
@@ -191,6 +194,7 @@ export default function SoloScene({
           <SoloSceneInterior works={works} onAim={setAimedTarget} />
           {started ? <OtherVisitors others={others} /> : null}
           <PositionPublisher publish={publish} />
+          <Telemetry telemetryRef={telemetryRef} />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -238,6 +242,15 @@ export default function SoloScene({
           locked={locked}
           pointerLockFailed={pointerLockFailed}
           othersPresent={others.length}
+        />
+      ) : null}
+
+      {started ? (
+        <GalleryMinimap
+          telemetryRef={telemetryRef}
+          others={others}
+          galleryName="Solo Hall"
+          isTouch={isTouch}
         />
       ) : null}
 

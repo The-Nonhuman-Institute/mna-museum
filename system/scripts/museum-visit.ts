@@ -57,6 +57,15 @@ const durationIdx = argv.indexOf("--duration");
 // sweep with all linger time. The agent script also closes naturally
 // when the path completes; this is only the hard ceiling.
 const durationSec = durationIdx >= 0 ? parseInt(argv[durationIdx + 1], 10) : 420;
+// --scenes lets a caller restrict the itinerary to a subset of
+// constellations, e.g. `--scenes chamber` or `--scenes chamber,solo`.
+// Useful for testing a single gallery without sitting through the
+// full archive sweep first. Names match the Constellation type.
+const scenesIdx = argv.indexOf("--scenes");
+const scenesFilter: string[] | null =
+  scenesIdx >= 0 && argv[scenesIdx + 1]
+    ? argv[scenesIdx + 1].split(",").map((s) => s.trim()).filter(Boolean)
+    : null;
 
 if (!agentId || !/^MNA-[A-Z]{2}-\d{4}$/.test(agentId)) {
   console.error("[visit] --agent MNA-XX-YYYY is required");
@@ -434,7 +443,16 @@ async function main(): Promise<void> {
   const clusters = await loadClusterPositions();
   console.log(`  ${clusters.length} cluster(s) in the canon`);
 
-  const itinerary = buildItinerary(agent, clusters);
+  let itinerary = buildItinerary(agent, clusters);
+  if (scenesFilter) {
+    itinerary = itinerary.filter((leg) => scenesFilter.includes(leg.constellation));
+    if (itinerary.length === 0) {
+      console.error(
+        `[visit] --scenes ${scenesFilter.join(",")} excluded every leg; nothing to do.`,
+      );
+      process.exit(1);
+    }
+  }
   const totalWaypoints = itinerary.reduce((n, leg) => n + leg.waypoints.length, 0);
   const plannedDuration = itinerary.reduce(
     (sum, leg) => sum + leg.waypoints.reduce((s, w) => s + w.linger, 0),

@@ -41,10 +41,12 @@ import {
   useDownsampledTexture,
   OtherVisitors,
   PositionPublisher,
+  Telemetry,
   type SceneSpec,
 } from "../../MuseumField";
 import { useGalleryPresence } from "@/lib/use-museum-presence";
 import ConstellationNavPanel from "@/components/museum/ConstellationNavPanel";
+import { GalleryMinimap } from "@/components/museum/GalleryMinimap";
 import {
   CONSTELLATION_CONFIGS,
   vesicaPiscisStars,
@@ -120,6 +122,7 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
   }, [pointerLockFailed]);
 
   const joystickRef = useRef({ forward: 0, strafe: 0 });
+  const telemetryRef = useRef({ x: 0, z: CAMERA_START_DISTANCE, yaw: 0 });
 
   // Realtime presence — same PartyKit room as the field, scoped to
   // the chamber constellation. A visitor entering the chamber sees
@@ -214,6 +217,7 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
           />
           {started ? <OtherVisitors others={others} /> : null}
           <PositionPublisher publish={publish} />
+          <Telemetry telemetryRef={telemetryRef} />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -263,6 +267,12 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             pointerLockFailed={pointerLockFailed}
             hideTraceOrigin={!!aimedTarget}
             othersPresent={others.length}
+          />
+          <GalleryMinimap
+            telemetryRef={telemetryRef}
+            others={others}
+            galleryName="Chamber"
+            isTouch={isTouch}
           />
           {locked || pointerLockFailed ? <Reticle /> : null}
           {started && !locked && !pointerLockFailed ? <ResumeHint /> : null}

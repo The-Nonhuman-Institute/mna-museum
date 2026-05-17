@@ -102,7 +102,7 @@ const ORIGINATOR_TINTS = [
   "#a6abc2", // pale violet
 ];
 
-function originatorTint(id: string): string {
+export function originatorTint(id: string): string {
   return ORIGINATOR_TINTS[stringHash(id) % ORIGINATOR_TINTS.length];
 }
 
@@ -646,7 +646,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
 
 /* ─── Telemetry (camera → HUD ref) ───────────────────────────────────────── */
 
-function Telemetry({
+export function Telemetry({
   telemetryRef,
 }: {
   telemetryRef: React.MutableRefObject<{ x: number; z: number; yaw: number }>;
