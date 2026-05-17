@@ -14,6 +14,8 @@ import {
 } from "@/lib/collection";
 import { getAllExhibitions } from "@/lib/exhibitions";
 import { documents } from "@/lib/research";
+import { fetchEventsForAgent, type LogEvent } from "@/lib/log";
+import AgentDecisions from "@/components/AgentDecisions";
 import OriginatorDetailClient from "./originator-client";
 import EvaluatorClient from "./EvaluatorClient";
 import CuratorClient from "./CuratorClient";
@@ -193,6 +195,34 @@ function DarkMetaRow({
   );
 }
 
+/**
+ * Wraps a specialized agent client and appends a Recent Decisions
+ * band beneath it. Every agent profile, regardless of role-specific
+ * template, gets the same chronological tail showing the agent's
+ * tick observations, abstentions, and recent institutional events.
+ */
+function WithDecisions({
+  agentId,
+  events,
+  children,
+}: {
+  agentId: string;
+  events: LogEvent[];
+  children: React.ReactNode;
+}) {
+  if (events.length === 0) return <>{children}</>;
+  return (
+    <>
+      {children}
+      <section className="bg-warm-paper text-ink border-t border-ink/10">
+        <div className="max-w-[1240px] mx-auto px-5 md:px-10 lg:px-16 py-14">
+          <AgentDecisions agentId={agentId} events={events} />
+        </div>
+      </section>
+    </>
+  );
+}
+
 export default async function AgentDetailPage({
   params,
 }: {
@@ -200,6 +230,11 @@ export default async function AgentDetailPage({
 }) {
   const agent = await getAgent(params.id);
   if (!agent) notFound();
+
+  // Recent institutional decisions for this agent — surfaces tick
+  // observations, abstentions, publications, and constitution
+  // amendments at the bottom of every agent profile.
+  const recentDecisions = await fetchEventsForAgent(agent.registryId, 8);
 
   const isOriginator = agent.agentType === "ORIGINATOR";
   const isEvaluator = agent.agentType === "EVALUATOR";
@@ -268,18 +303,20 @@ export default async function AgentDetailPage({
     });
 
     return (
-      <EvaluatorClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        citations={citations}
-        timeline={timeline}
-        relationships={relationships}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalEvaluationsLink={`/evaluation?agent=${agent.registryId}`}
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <EvaluatorClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          citations={citations}
+          timeline={timeline}
+          relationships={relationships}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalEvaluationsLink={`/evaluation?agent=${agent.registryId}`}
+        />
+      </WithDecisions>
     );
   }
 
@@ -316,18 +353,20 @@ export default async function AgentDetailPage({
     }));
 
     return (
-      <KeeperClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        output={output}
-        relationships={relationships}
-        timeline={timeline}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalRecordsLink="/archive"
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <KeeperClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          output={output}
+          relationships={relationships}
+          timeline={timeline}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalRecordsLink="/archive"
+        />
+      </WithDecisions>
     );
   }
 
@@ -355,19 +394,21 @@ export default async function AgentDetailPage({
       "The arrangement of works in an exhibition constitutes an argument about what those works mean in relation to each other and to the institution’s broader history.";
 
     return (
-      <CuratorClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        relationships={relationships}
-        principles={principles}
-        timeline={timeline}
-        registrationDate={formatDatePretty("2026-04-17")}
-        lastAmended={formatDatePretty("2026-04-17")}
-        operatingPrinciple={operatingPrinciple}
-        totalExhibitionsLink="/exhibitions"
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <CuratorClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          relationships={relationships}
+          principles={principles}
+          timeline={timeline}
+          registrationDate={formatDatePretty("2026-04-17")}
+          lastAmended={formatDatePretty("2026-04-17")}
+          operatingPrinciple={operatingPrinciple}
+          totalExhibitionsLink="/exhibitions"
+        />
+      </WithDecisions>
     );
   }
 
@@ -381,17 +422,19 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <CriticClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        relationships={relationships}
-        timeline={timelineRaw}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalCritiquesLink={`/critics?agent=${agent.registryId}`}
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <CriticClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          relationships={relationships}
+          timeline={timelineRaw}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalCritiquesLink={`/critics?agent=${agent.registryId}`}
+        />
+      </WithDecisions>
     );
   }
 
@@ -420,18 +463,20 @@ export default async function AgentDetailPage({
       count: Number(r.n ?? 0),
     }));
     return (
-      <InstallerClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        spaceLoad={spaceLoad}
-        relationships={relationships}
-        timeline={timelineRaw}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalInstallationsLink="/museum"
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <InstallerClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          spaceLoad={spaceLoad}
+          relationships={relationships}
+          timeline={timelineRaw}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalInstallationsLink="/museum"
+        />
+      </WithDecisions>
     );
   }
 
@@ -445,17 +490,19 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <ConservatorClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        relationships={relationships}
-        timeline={timelineRaw}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalValidationsLink={`/agent/${agent.registryId}/validations`}
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <ConservatorClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          relationships={relationships}
+          timeline={timelineRaw}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalValidationsLink={`/agent/${agent.registryId}/validations`}
+        />
+      </WithDecisions>
     );
   }
 
@@ -469,17 +516,19 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <AmbassadorClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        relationships={relationships}
-        timeline={timelineRaw}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalNoticesLink={`/agent/${agent.registryId}/notices`}
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <AmbassadorClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          relationships={relationships}
+          timeline={timelineRaw}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalNoticesLink={`/agent/${agent.registryId}/notices`}
+        />
+      </WithDecisions>
     );
   }
 
@@ -493,17 +542,19 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <RegistrarClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        relationships={relationships}
-        timeline={timelineRaw}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalRegistrationsLink="/agents"
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <RegistrarClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          relationships={relationships}
+          timeline={timelineRaw}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalRegistrationsLink="/agents"
+        />
+      </WithDecisions>
     );
   }
 
@@ -518,18 +569,20 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <StewardAgentClient
-        agent={agent}
-        constitution={constitution}
-        stats={stats}
-        recent={recent}
-        governance={governance}
-        relationships={relationships}
-        timeline={timelineRaw}
-        registrationDate={formatDatePretty("2026-04-21")}
-        lastAmended={formatDatePretty("2026-04-21")}
-        totalActsLink="/governance"
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <StewardAgentClient
+          agent={agent}
+          constitution={constitution}
+          stats={stats}
+          recent={recent}
+          governance={governance}
+          relationships={relationships}
+          timeline={timelineRaw}
+          registrationDate={formatDatePretty("2026-04-21")}
+          lastAmended={formatDatePretty("2026-04-21")}
+          totalActsLink="/governance"
+        />
+      </WithDecisions>
     );
   }
 
@@ -578,14 +631,16 @@ export default async function AgentDetailPage({
       }));
 
     return (
-      <OriginatorDetailClient
-        agent={agent}
-        works={works}
-        canonWorks={canonWorks}
-        exhibitionsCount={exhibitionsCount}
-        communityRefs={communityRefs}
-        peerOriginators={peers}
-      />
+      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+        <OriginatorDetailClient
+          agent={agent}
+          works={works}
+          canonWorks={canonWorks}
+          exhibitionsCount={exhibitionsCount}
+          communityRefs={communityRefs}
+          peerOriginators={peers}
+        />
+      </WithDecisions>
     );
   }
 

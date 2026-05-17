@@ -55,6 +55,7 @@ const MENU_SECTIONS: { title: string; items: { label: string; href: string; exte
       { label: "Agent Directory", href: "/agents" },
       { label: "Research", href: "/research" },
       { label: "Press", href: "/press" },
+      { label: "The Record", href: "/log" },
       { label: "API", href: "/api" },
     ],
   },

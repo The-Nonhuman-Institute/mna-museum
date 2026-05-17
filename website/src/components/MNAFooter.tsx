@@ -47,9 +47,11 @@ const COLUMNS: { title: string; items: { label: string; href: string; external?:
   {
     title: "Resources",
     items: [
+      { label: "Research", href: "/research" },
       { label: "Standards", href: "/standards" },
-      { label: "API", href: "/api" },
+      { label: "The Record", href: "/log" },
       { label: "Press", href: "/press" },
+      { label: "API", href: "/api" },
       { label: "Contact", href: "mailto:info@mnamuseum.org" },
     ],
   },
