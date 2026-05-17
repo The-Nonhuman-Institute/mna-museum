@@ -2808,8 +2808,23 @@ function MinimapRadar({
  *  so the viewer can see "who is in the institution and where" at a
  *  glance — even if nobody is co-located in the archive. Hidden when
  *  the room is empty so the panel doesn't read as inert. */
+/** Pulse duration when a constellation's headcount changes. Long
+ *  enough to read as "something happened here," short enough not to
+ *  draw lingering attention from the field. */
+const CENSUS_PULSE_MS = 1400;
+
+const CENSUS_LABELS: { key: string; label: string }[] = [
+  { key: "archive", label: "Archive" },
+  { key: "chamber", label: "Chamber" },
+  { key: "solo_exhibition", label: "Solo" },
+  { key: "exhibition", label: "Exhibition" },
+];
+
 function Census({ visitors }: { visitors: PresenceVisitor[] }) {
-  if (visitors.length === 0) return null;
+  // Compute totals + tally first; the empty-room case is handled
+  // below so we can still draw a row that's pulsing on its way down
+  // to zero (a departure deserves the same acknowledgement as an
+  // arrival).
   const counts: Record<string, { humans: number; agents: number }> = {
     archive: { humans: 0, agents: 0 },
     chamber: { humans: 0, agents: 0 },
@@ -2821,34 +2836,113 @@ function Census({ visitors }: { visitors: PresenceVisitor[] }) {
     if (v.kind === "agent") bucket.agents++;
     else bucket.humans++;
   }
-  const labels: { key: keyof typeof counts; label: string }[] = [
-    { key: "archive", label: "Archive" },
-    { key: "chamber", label: "Chamber" },
-    { key: "solo_exhibition", label: "Solo" },
-    { key: "exhibition", label: "Exhibition" },
-  ];
+  const totals: Record<string, number> = {
+    archive: counts.archive.humans + counts.archive.agents,
+    chamber: counts.chamber.humans + counts.chamber.agents,
+    solo_exhibition: counts.solo_exhibition.humans + counts.solo_exhibition.agents,
+    exhibition: counts.exhibition.humans + counts.exhibition.agents,
+  };
+
+  // Pulse state: when a row's count changes, mark it with a
+  // direction ("up" / "down") and an expiry timestamp. Pulses are
+  // tracked via refs and updated synchronously during render so the
+  // row appears with its pulse on the very same render the count
+  // changed (no disappear-then-reappear flicker on departure). A
+  // setTick scheduled to fire at the earliest pulse expiry forces the
+  // row to drop back to baseline at the right moment.
+  type PulseState = { direction: "up" | "down"; until: number };
+  const prevTotalsRef = useRef<Record<string, number> | null>(null);
+  const pulsesRef = useRef<Record<string, PulseState>>({});
+  const [, setTick] = useState(0);
+  const now = Date.now();
+
+  if (prevTotalsRef.current === null) {
+    prevTotalsRef.current = totals;
+  } else {
+    for (const key of Object.keys(totals)) {
+      const prev = prevTotalsRef.current[key] ?? 0;
+      const curr = totals[key];
+      if (prev !== curr) {
+        pulsesRef.current[key] = {
+          direction: curr > prev ? "up" : "down",
+          until: now + CENSUS_PULSE_MS,
+        };
+      }
+    }
+    prevTotalsRef.current = totals;
+  }
+
+  // GC pulses that have already expired so the visibility check below
+  // doesn't keep rendering ghost rows.
+  for (const [k, v] of Object.entries(pulsesRef.current)) {
+    if (v.until <= now) delete pulsesRef.current[k];
+  }
+
+  // Schedule a re-render at the earliest pulse expiry so the
+  // departed-row case (pulse down to zero) actually clears.
+  const expirations = Object.values(pulsesRef.current).map((p) => p.until);
+  const earliestExpiry = expirations.length > 0 ? Math.min(...expirations) : Infinity;
+  useEffect(() => {
+    if (!isFinite(earliestExpiry)) return;
+    const delay = Math.max(0, earliestExpiry - Date.now() + 30);
+    const t = setTimeout(() => setTick((n) => n + 1), delay);
+    return () => clearTimeout(t);
+  }, [earliestExpiry]);
+
+  const visibleRows = CENSUS_LABELS.filter(({ key }) => {
+    return totals[key] > 0 || !!pulsesRef.current[key];
+  });
+
+  if (visibleRows.length === 0) return null;
+
   return (
     <div className="mt-2 px-1 pt-2 border-t border-mna-white/10">
       <p className="text-[8.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40 mb-1.5">
         Census
       </p>
       <ul className="space-y-0.5">
-        {labels.map(({ key, label }) => {
-          const c = counts[key];
-          const total = c.humans + c.agents;
-          if (total === 0) return null;
+        {visibleRows.map(({ key, label }) => {
+          const c = counts[key as keyof typeof counts];
+          const total = totals[key];
+          const pulse =
+            pulsesRef.current[key] && pulsesRef.current[key].until > now
+              ? pulsesRef.current[key]
+              : null;
+          const marker = pulse ? (pulse.direction === "up" ? "▲" : "▽") : null;
           return (
             <li
               key={key}
-              className="flex items-baseline justify-between text-[8.5px] font-sans uppercase tracking-[0.22em] text-mna-white/55 tabular-nums"
+              className="flex items-baseline justify-between text-[8.5px] font-sans uppercase tracking-[0.22em] tabular-nums transition-colors duration-700"
+              style={{
+                color: pulse ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)",
+                borderLeft: pulse ? "1px solid rgba(255,255,255,0.55)" : "1px solid transparent",
+                paddingLeft: 6,
+                marginLeft: -6,
+              }}
             >
-              <span className="text-mna-white/45">{label}</span>
+              <span
+                className="transition-colors duration-700"
+                style={{ color: pulse ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}
+              >
+                {marker ? (
+                  <span aria-hidden className="mr-1 text-[7.5px]">
+                    {marker}
+                  </span>
+                ) : null}
+                {label}
+              </span>
               <span>
-                {c.humans > 0 ? `${c.humans} obs` : null}
-                {c.humans > 0 && c.agents > 0 ? " · " : ""}
-                {c.agents > 0
-                  ? `${c.agents} agent${c.agents === 1 ? "" : "s"}`
-                  : null}
+                {total === 0
+                  ? "—"
+                  : (
+                    <>
+                      {c.humans > 0 ? `${c.humans} obs` : null}
+                      {c.humans > 0 && c.agents > 0 ? " · " : ""}
+                      {c.agents > 0
+                        ? `${c.agents} agent${c.agents === 1 ? "" : "s"}`
+                        : null}
+                    </>
+                  )}
               </span>
             </li>
           );
