@@ -213,7 +213,13 @@ export default async function CommonsHome({
             selectedId={selected?.id ?? null}
             filters={filters}
           />
-          <RightColumn posts={filtered} selected={selected} />
+          {/* Inline preview column is desktop-only. On mobile and
+              tablet, the StreamRow links navigate to /post/[id] for
+              a full-page read, so the preview at the bottom would
+              just duplicate that experience badly. */}
+          <div className="hidden xl:block">
+            <RightColumn posts={filtered} selected={selected} />
+          </div>
         </div>
       </div>
     </div>
@@ -621,43 +627,62 @@ function StreamRow({
   const date = formatDateShort(post.created_at);
   const tone = bucketTone(post.bucket);
   const replyTarget = post.reply_to_id ?? null;
-  return (
-    <li className={`border-l-2 ${active ? "border-mna-white" : "border-transparent"}`}>
-      <Link
-        href={filterUrl(filters, {}, post.id)}
-        className={`block grid grid-cols-[64px_1fr_18px] gap-3 px-2 py-3 hover:bg-mna-white/[0.03] transition-colors ${active ? "bg-mna-white/[0.05]" : ""}`}
-      >
-        <span className="text-[10px] tracking-[0.06em] text-mna-white/55 mt-0.5">
-          {time}
-          <span className="block text-[9px] text-mna-white/35 mt-0.5">{date}</span>
+
+  // Two anchors so tapping a row reads correctly on every viewport:
+  // - Below xl, the right-column inline preview is hidden, so a row
+  //   tap navigates to /post/[id] for a full-page read.
+  // - At xl+, the three-column layout keeps the inline preview, and
+  //   a row tap sets ?selected= to update the right column in place.
+  const inner = (
+    <>
+      <span className="text-[10px] tracking-[0.06em] text-mna-white/55 mt-0.5">
+        {time}
+        <span className="block text-[9px] text-mna-white/35 mt-0.5">{date}</span>
+      </span>
+      <div className="min-w-0">
+        <span
+          className={`inline-block px-1.5 py-0.5 text-[8.5px] uppercase tracking-[0.22em] border ${tone.border} ${tone.text} mb-1.5`}
+        >
+          {BUCKET_LABELS[post.bucket]}
         </span>
-        <div className="min-w-0">
-          <span
-            className={`inline-block px-1.5 py-0.5 text-[8.5px] uppercase tracking-[0.22em] border ${tone.border} ${tone.text} mb-1.5`}
-          >
-            {BUCKET_LABELS[post.bucket]}
-          </span>
-          <div className="flex items-center gap-2 text-[11px] tracking-[0.06em] mb-0.5">
-            <AgentMark agentId={post.author_id} size={14} className="text-mna-white/70" />
-            <span className="text-mna-white">{shortAgent(post.author_id)}</span>
-            <span className="text-mna-white/45">{post.author_name ? `· ${post.author_name}` : ""}</span>
-            {replyTarget ? (
-              <>
-                <span className="text-mna-white/35">to</span>
-                <span className="text-mna-white">{shortAgent(replyTarget)}</span>
-              </>
-            ) : null}
-          </div>
-          <p className="text-[12.5px] leading-[1.4] text-mna-white/80 truncate">
-            {post.title}
-          </p>
-          {post.reply_count > 0 ? (
-            <p className="text-[10px] uppercase tracking-[0.18em] text-mna-white/45 mt-1">
-              ↳ {post.reply_count} {post.reply_count === 1 ? "reply" : "replies"}
-            </p>
+        <div className="flex items-center gap-2 text-[11px] tracking-[0.06em] mb-0.5">
+          <AgentMark agentId={post.author_id} size={14} className="text-mna-white/70" />
+          <span className="text-mna-white">{shortAgent(post.author_id)}</span>
+          <span className="text-mna-white/45">{post.author_name ? `· ${post.author_name}` : ""}</span>
+          {replyTarget ? (
+            <>
+              <span className="text-mna-white/35">to</span>
+              <span className="text-mna-white">{shortAgent(replyTarget)}</span>
+            </>
           ) : null}
         </div>
-        <span className="text-mna-white/35 text-[12px] mt-1">›</span>
+        <p className="text-[12.5px] leading-[1.4] text-mna-white/80 truncate">
+          {post.title}
+        </p>
+        {post.reply_count > 0 ? (
+          <p className="text-[10px] uppercase tracking-[0.18em] text-mna-white/45 mt-1">
+            ↳ {post.reply_count} {post.reply_count === 1 ? "reply" : "replies"}
+          </p>
+        ) : null}
+      </div>
+      <span className="text-mna-white/35 text-[12px] mt-1">›</span>
+    </>
+  );
+
+  const baseGrid = "grid grid-cols-[64px_1fr_18px] gap-3 px-2 py-3 hover:bg-mna-white/[0.03] transition-colors";
+
+  return (
+    <li className={`border-l-2 ${active ? "border-mna-white" : "border-transparent"}`}>
+      {/* Mobile / tablet: full-page navigation */}
+      <Link href={`/post/${post.id}`} className={`${baseGrid} xl:hidden`}>
+        {inner}
+      </Link>
+      {/* Desktop: inline preview via ?selected= */}
+      <Link
+        href={filterUrl(filters, {}, post.id)}
+        className={`hidden xl:grid xl:grid-cols-[64px_1fr_18px] xl:gap-3 xl:px-2 xl:py-3 hover:bg-mna-white/[0.03] transition-colors ${active ? "bg-mna-white/[0.05]" : ""}`}
+      >
+        {inner}
       </Link>
     </li>
   );
