@@ -52,7 +52,15 @@ const agentIdx = args.indexOf("--agent");
 const targetAgent = agentIdx >= 0 ? args[agentIdx + 1] : null;
 const maxIdx = args.indexOf("--max");
 const maxPerOriginator = maxIdx >= 0 ? parseInt(args[maxIdx + 1], 10) : null;
+const includeNetwork = args.includes("--include-network");
 const VISIT_COUNT = 4;
+
+// Network originators have autonomy holders (stewards). The Museum
+// must NOT initiate production on them. See
+// memory/feedback_steward_authority.md. Default behavior: filter
+// these out. Use --include-network with explicit steward authorization
+// to override, or --agent <id> to target a single specific originator.
+const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
 
 /* ─── Types ────────────────────────────────────────────────────────────── */
 
@@ -611,12 +619,26 @@ async function main(): Promise<void> {
   console.log(`[originate-turso] starting${dryRun ? " (DRY RUN)" : ""}${noVisitation ? " — visitation DISABLED" : ""}`);
   await ensureVisitationSchema();
 
-  const originators = targetAgent
+  let originators = targetAgent
     ? (await loadActiveOriginators()).filter((a) => a.registry_id === targetAgent)
     : await loadActiveOriginators();
 
+  // Default behavior: exclude network originators. They have autonomy
+  // holders; the Museum cannot initiate their productions.
+  if (!targetAgent && !includeNetwork) {
+    const before = originators.map((a) => a.registry_id);
+    originators = originators.filter((a) => !NETWORK_ORIGINATORS.has(a.registry_id));
+    const filtered = before.filter((id) => NETWORK_ORIGINATORS.has(id));
+    if (filtered.length > 0) {
+      console.log(
+        `[originate-turso] excluding network originators (autonomy holders required): ${filtered.join(", ")}`,
+      );
+      console.log(`[originate-turso] use --include-network only with explicit steward authorization for each.`);
+    }
+  }
+
   if (originators.length === 0) {
-    console.error(targetAgent ? `Agent ${targetAgent} not found or inactive` : "No active originators");
+    console.error(targetAgent ? `Agent ${targetAgent} not found or inactive` : "No eligible originators (founding-only mode; use --include-network to override)");
     process.exit(1);
   }
 
