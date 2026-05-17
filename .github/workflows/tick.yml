@@ -67,6 +67,14 @@ jobs:
         working-directory: system
         run: npm ci
 
+      - name: Debug env shape
+        run: |
+          echo "TURSO_DATABASE_URL length: ${#TURSO_DATABASE_URL}"
+          echo "TURSO_DATABASE_URL starts with libsql: $(case "$TURSO_DATABASE_URL" in libsql://*) echo yes;; *) echo no;; esac)"
+          echo "TURSO_AUTH_TOKEN length: ${#TURSO_AUTH_TOKEN}"
+          echo "ANTHROPIC_API_KEY length: ${#ANTHROPIC_API_KEY}"
+          echo "MNA_ADMIN_KEY length: ${#MNA_ADMIN_KEY}"
+
       - name: Run institutional tick
         working-directory: ${{ github.workspace }}
         run: |
