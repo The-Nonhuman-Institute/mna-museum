@@ -18,6 +18,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { marked } from "marked";
 import {
   pressDocuments,
   getPressDocument,
@@ -71,6 +72,10 @@ function formatLong(iso: string): string {
 function readMinutes(body: string): number {
   const words = body.replace(/\s+/g, " ").trim().split(" ").length;
   return Math.max(1, Math.round(words / 220));
+}
+
+function inlineHtml(text: string): string {
+  return marked.parseInline(text, { async: false, gfm: true }) as string;
 }
 
 export default function PressDocumentPage({
@@ -226,9 +231,8 @@ function Body({ doc }: { doc: PressDocument }) {
         <h3
           key={i}
           className="font-serif text-[22px] leading-[1.25] text-mna-white mt-12 mb-5"
-        >
-          {line.slice(3)}
-        </h3>,
+          dangerouslySetInnerHTML={{ __html: inlineHtml(line.slice(3)) }}
+        />,
       );
       continue;
     }
@@ -237,9 +241,8 @@ function Body({ doc }: { doc: PressDocument }) {
         <h2
           key={i}
           className="font-serif text-[26px] leading-[1.2] text-mna-white mt-14 mb-6"
-        >
-          {line.slice(2)}
-        </h2>,
+          dangerouslySetInnerHTML={{ __html: inlineHtml(line.slice(2)) }}
+        />,
       );
       continue;
     }
@@ -270,9 +273,8 @@ function Body({ doc }: { doc: PressDocument }) {
             ? "text-[15.5px] leading-[1.7] text-mna-white/85 mb-4 first-letter:font-serif first-letter:text-[58px] first-letter:leading-[0.9] first-letter:float-left first-letter:mr-3 first-letter:mt-2 first-letter:text-mna-white"
             : "text-[15.5px] leading-[1.7] text-mna-white/85 mb-4"
         }
-      >
-        {line}
-      </p>,
+        dangerouslySetInnerHTML={{ __html: inlineHtml(line) }}
+      />,
     );
   }
 
@@ -285,7 +287,10 @@ function SpeakerTurn({ speaker, text }: { speaker: string; text: string }) {
       <p className="text-[10px] uppercase tracking-[0.22em] text-mna-white/55 pt-1">
         {speaker}
       </p>
-      <p className="text-[15.5px] leading-[1.65] text-mna-white">{text}</p>
+      <p
+        className="text-[15.5px] leading-[1.65] text-mna-white"
+        dangerouslySetInnerHTML={{ __html: inlineHtml(text) }}
+      />
     </div>
   );
 }

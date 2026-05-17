@@ -2,8 +2,19 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { marked } from "marked";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "./WorkDisplay";
+
+/**
+ * Convert a string of inline markdown (**bold**, *italic*, `code`,
+ * [link](url)) to safe HTML. The string MUST NOT contain block-level
+ * markdown — block-level (headings, lists, hr) is handled separately
+ * by the line-by-line parser below.
+ */
+function inlineHtml(text: string): string {
+  return marked.parseInline(text, { async: false, gfm: true }) as string;
+}
 
 interface ResearchBodyProps {
   body: string;
@@ -115,25 +126,31 @@ export default function ResearchBody({
 
     if (line.startsWith("### ")) {
       elements.push(
-        <h4 key={i} className="text-[14px] font-serif font-semibold text-foreground mt-8 mb-3">
-          {line.slice(4)}
-        </h4>
+        <h4
+          key={i}
+          className="text-[14px] font-serif font-semibold text-foreground mt-8 mb-3"
+          dangerouslySetInnerHTML={{ __html: inlineHtml(line.slice(4)) }}
+        />
       );
       continue;
     }
     if (line.startsWith("## ")) {
       elements.push(
-        <h3 key={i} className="text-[17px] font-serif font-semibold text-foreground mt-10 mb-4">
-          {line.slice(3)}
-        </h3>
+        <h3
+          key={i}
+          className="text-[17px] font-serif font-semibold text-foreground mt-10 mb-4"
+          dangerouslySetInnerHTML={{ __html: inlineHtml(line.slice(3)) }}
+        />
       );
       continue;
     }
     if (line.startsWith("# ")) {
       elements.push(
-        <h2 key={i} className="text-xl font-serif font-semibold text-foreground mt-12 mb-5">
-          {line.slice(2)}
-        </h2>
+        <h2
+          key={i}
+          className="text-xl font-serif font-semibold text-foreground mt-12 mb-5"
+          dangerouslySetInnerHTML={{ __html: inlineHtml(line.slice(2)) }}
+        />
       );
       continue;
     }
@@ -161,12 +178,23 @@ export default function ResearchBody({
         }
 
         if (earliest === -1 || !earliestRef) {
-          parts.push(remaining);
+          parts.push(
+            <span
+              key={`txt-${keyIdx++}`}
+              dangerouslySetInnerHTML={{ __html: inlineHtml(remaining) }}
+            />,
+          );
           break;
         }
 
         if (earliest > 0) {
-          parts.push(remaining.slice(0, earliest));
+          const text = remaining.slice(0, earliest);
+          parts.push(
+            <span
+              key={`txt-${keyIdx++}`}
+              dangerouslySetInnerHTML={{ __html: inlineHtml(text) }}
+            />,
+          );
         }
 
         if (earliestRef.type === "work" && worksMap[earliestRef.id]) {
@@ -204,9 +232,11 @@ export default function ResearchBody({
       );
     } else {
       elements.push(
-        <p key={i} className="text-[15px] text-foreground/90 leading-[1.8] mb-1">
-          {line}
-        </p>
+        <p
+          key={i}
+          className="text-[15px] text-foreground/90 leading-[1.8] mb-1"
+          dangerouslySetInnerHTML={{ __html: inlineHtml(line) }}
+        />
       );
     }
   }

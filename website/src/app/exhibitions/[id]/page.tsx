@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { marked } from "marked";
 import { getExhibition, type Exhibition } from "@/lib/exhibitions";
 import { getWork, getCanonWorks, type Work } from "@/lib/collection";
 import { getAllAgents, type Agent } from "@/lib/agents";
@@ -64,6 +65,10 @@ function extractPullQuote(statement: string): string | null {
   if (sentences.length === 0) return null;
   sentences.sort((a, b) => a.length - b.length);
   return sentences[0].replace(/^[“"]|[”"]$/g, "");
+}
+
+function inlineHtml(text: string): string {
+  return marked.parseInline(text, { async: false, gfm: true }) as string;
 }
 
 function statusIsActive(e: Exhibition): boolean {
@@ -390,7 +395,10 @@ export default async function ExhibitionDetailPage({ params }: PageProps) {
             </p>
             <div className="space-y-5 text-[14px] md:text-[15px] leading-[1.75] text-ink/85">
               {paragraphs.map((p, i) => (
-                <p key={i}>{p}</p>
+                <p
+                  key={i}
+                  dangerouslySetInnerHTML={{ __html: inlineHtml(p) }}
+                />
               ))}
             </div>
 

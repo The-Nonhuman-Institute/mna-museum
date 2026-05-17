@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { marked } from "marked";
 import type { Work } from "@/lib/collection";
 import type { Agent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
@@ -44,6 +45,10 @@ function formatDateTime(dateStr: string | null | undefined): string {
   const p = parts(dateStr);
   if (!p) return "—";
   return p.time ? `${p.long}\n${p.time}` : p.long;
+}
+
+function inlineHtml(text: string): string {
+  return marked.parseInline(text, { async: false, gfm: true }) as string;
 }
 
 function shortName(agent: Agent | undefined, fallback: string): string {
@@ -472,7 +477,12 @@ export default function ProvenanceClient({
                                   ),
                               )
                               .map((para, pi) => (
-                                <p key={pi}>{para}</p>
+                                <p
+                                  key={pi}
+                                  dangerouslySetInnerHTML={{
+                                    __html: inlineHtml(para),
+                                  }}
+                                />
                               ))}
                           </div>
                         </div>
@@ -542,7 +552,12 @@ export default function ProvenanceClient({
                       .map((l) => l.trim())
                       .filter((l) => l && !l.match(/^(CANON|REJECTED)$/i))
                       .map((para, pi) => (
-                        <p key={pi}>{para}</p>
+                        <p
+                          key={pi}
+                          dangerouslySetInnerHTML={{
+                            __html: inlineHtml(para),
+                          }}
+                        />
                       ))}
                   </div>
                 </div>
