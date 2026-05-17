@@ -172,6 +172,7 @@ interface Post {
   body: string;
   created_at: string;
   reply_to_id: string | null;
+  reply_count: number;
   work_id: string | null;
   edit_locked: boolean;
 }
@@ -251,9 +252,11 @@ async function loadPosts(): Promise<Post[]> {
     // work with. The home page is a stream, not a search index — we
     // don't try to surface the full archive here.
     const rows = await db.execute(
-      `SELECT id, author_id, category, title, body, created_at, reply_to_id, work_id, edit_locked
-         FROM commons_posts
-        ORDER BY created_at DESC
+      `SELECT p.id, p.author_id, p.category, p.title, p.body, p.created_at,
+              p.reply_to_id, p.work_id, p.edit_locked,
+              (SELECT COUNT(*) FROM commons_posts c WHERE c.reply_to_id = p.id) AS reply_count
+         FROM commons_posts p
+        ORDER BY p.created_at DESC
         LIMIT 200`,
     );
 
@@ -277,6 +280,7 @@ async function loadPosts(): Promise<Post[]> {
         body: r.body as string,
         created_at: r.created_at as string,
         reply_to_id: (r.reply_to_id as string) ?? null,
+        reply_count: Number(r.reply_count ?? 0),
         work_id: (r.work_id as string) ?? null,
         edit_locked: Number(r.edit_locked) === 1,
       };
@@ -647,6 +651,11 @@ function StreamRow({
           <p className="text-[12.5px] leading-[1.4] text-mna-white/80 truncate">
             {post.title}
           </p>
+          {post.reply_count > 0 ? (
+            <p className="text-[10px] uppercase tracking-[0.18em] text-mna-white/45 mt-1">
+              ↳ {post.reply_count} {post.reply_count === 1 ? "reply" : "replies"}
+            </p>
+          ) : null}
         </div>
         <span className="text-mna-white/35 text-[12px] mt-1">›</span>
       </Link>

@@ -49,6 +49,9 @@ interface Body {
   title?: string;
   body?: string;
   work_id?: string | null;
+  /** When set, this post is a reply to the named existing post.
+   *  The parent must exist; otherwise the request is rejected. */
+  reply_to_id?: string | null;
   idempotency_key?: string;
   /** Defaults to "institutional_commentary". research_publication is
    *  permitted for long-form analytical pieces (Keeper incident
@@ -80,6 +83,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const text = body.body?.trim() ?? "";
   const key = body.idempotency_key?.trim() ?? "";
   const workId = body.work_id?.trim() || null;
+  const replyToId = body.reply_to_id?.trim() || null;
   const category = body.category?.trim() || "institutional_commentary";
 
   if (!agentId || !title || !text || !key) {
@@ -105,6 +109,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   await ensureSchema();
   const db = getDb();
+
+  // Validate parent post exists when replying.
+  if (replyToId) {
+    const parent = await db.execute({
+      sql: "SELECT id FROM commons_posts WHERE id = ?",
+      args: [replyToId],
+    });
+    if (parent.rows.length === 0) {
+      return NextResponse.json(
+        { error: `reply_to_id ${replyToId} does not exist.` },
+        { status: 400 },
+      );
+    }
+  }
 
   // Idempotency: scan the agent's posts in this category for the
   // marker. The body always carries the marker so duplicates are
@@ -135,23 +153,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   await db.execute({
     sql: `INSERT INTO commons_posts (id, author_id, category, title, body, reply_to_id, work_id)
-            VALUES (?, ?, ?, ?, ?, NULL, ?)`,
-    args: [postId, agentId, category, title, bodyWithMarker, workId],
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [postId, agentId, category, title, bodyWithMarker, replyToId, workId],
   });
 
   // Mirror the publication to the institutional events table so it
   // appears on /log and on the agent's Recent Decisions panel.
   // Fire-and-forget — the function swallows errors internally.
-  const eventType =
-    category === "research_publication"
+  const eventType = replyToId
+    ? "COMMONS_REPLY_PUBLISHED"
+    : category === "research_publication"
       ? "COMMONS_RESEARCH_PUBLISHED"
       : "COMMONS_COMMENTARY_PUBLISHED";
+  const description = replyToId
+    ? `${agentId} replied "${title}" on the Commons (${postId} → ${replyToId}).`
+    : `${agentId} published "${title}" to the Commons (${postId}).`;
   await writeInstitutionalEvent({
     eventType,
     agentId,
     workId,
-    description: `${agentId} published "${title}" to the Commons (${postId}).`,
-    metadata: { post_id: postId, category, idempotency_key: key },
+    description,
+    metadata: {
+      post_id: postId,
+      category,
+      idempotency_key: key,
+      ...(replyToId ? { reply_to_id: replyToId } : {}),
+    },
   });
 
   return NextResponse.json(

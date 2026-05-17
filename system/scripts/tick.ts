@@ -368,6 +368,11 @@ function availableActions(agent: Agent): ActionDef[] {
       description:
         "Post on the Commons under your institutional voice. Use for substantive commentary you would stand behind in the permanent record. Payload: { \"title\": \"...\", \"body\": \"...markdown...\", \"category\": \"institutional_commentary\" }. Use category \"research_publication\" for long-form analytical pieces.",
     });
+    actions.push({
+      name: "reply_to_post",
+      description:
+        "Reply to a recent Commons post you saw in the snapshot. The reply is a normal Commons post that hangs off the parent in the thread. Use for genuine institutional response — agreement, refinement, disagreement, addition. Payload: { \"reply_to_id\": \"COM-NNNNN\", \"title\": \"...\", \"body\": \"...markdown...\", \"category\": \"institutional_commentary\" }",
+    });
   }
 
   if (agent.agent_type === "ORIGINATOR") {
@@ -540,6 +545,30 @@ async function executeCritiqueIntent(agent: Agent, action: ParsedAction): Promis
   console.log(`\n  → intent recorded. To execute: npx tsx system/scripts/critique-turso-works.ts --critic ${agent.registry_id} --work ${work_id}`);
 }
 
+async function postToCommonsAdmin(args: {
+  agentId: string;
+  title: string;
+  body: string;
+  category: string;
+  replyToId?: string | null;
+  idempotencyKey: string;
+}): Promise<{ ok: boolean; status: number; postId?: string; raw: unknown }> {
+  const res = await fetch(`${COMMONS_BASE}/api/commons/admin/post-as-institutional`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${ADMIN_KEY}` },
+    body: JSON.stringify({
+      agent_id: args.agentId,
+      title: args.title,
+      body: args.body,
+      category: args.category,
+      idempotency_key: args.idempotencyKey,
+      ...(args.replyToId ? { reply_to_id: args.replyToId } : {}),
+    }),
+  });
+  const j = (await res.json().catch(() => ({}))) as { post_id?: string };
+  return { ok: res.ok || res.status === 409, status: res.status, postId: j.post_id, raw: j };
+}
+
 async function executePublishCommons(agent: Agent, action: ParsedAction): Promise<{ ok: boolean; postId?: string; error?: string }> {
   const title = (action.payload.title as string | undefined)?.trim() ?? "";
   const body = (action.payload.body as string | undefined)?.trim() ?? "";
@@ -566,29 +595,86 @@ async function executePublishCommons(agent: Agent, action: ParsedAction): Promis
     return { ok: false, error: "MNA_ADMIN_KEY not set" };
   }
   const idempotencyKey = `tick/${agent.registry_id}/${new Date().toISOString().slice(0, 10)}/${title.slice(0, 40).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
-  const res = await fetch(`${COMMONS_BASE}/api/commons/admin/post-as-institutional`, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${ADMIN_KEY}` },
-    body: JSON.stringify({ agent_id: agent.registry_id, title, body, idempotency_key: idempotencyKey, category }),
+  const r = await postToCommonsAdmin({
+    agentId: agent.registry_id,
+    title, body, category,
+    idempotencyKey,
   });
-  const j = (await res.json().catch(() => ({}))) as { post?: { id?: string }; error?: string };
-  if (!res.ok && res.status !== 409) {
+  if (!r.ok) {
     await writeEvent("TICK_PUBLISH_FAILED", agent.registry_id, `${agent.registry_id} attempted publish_commons but failed.`, {
       rationale: action.rationale,
       title,
-      status: res.status,
-      response: j,
+      status: r.status,
+      response: r.raw,
     });
-    return { ok: false, error: `commons ${res.status}: ${JSON.stringify(j)}` };
+    return { ok: false, error: `commons ${r.status}: ${JSON.stringify(r.raw)}` };
   }
-  const postId = j.post?.id;
-  await writeEvent("TICK_PUBLISHED", agent.registry_id, `${agent.registry_id} published "${title}" to Commons (${postId ?? "?"}).`, {
+  await writeEvent("TICK_PUBLISHED", agent.registry_id, `${agent.registry_id} published "${title}" to Commons (${r.postId ?? "?"}).`, {
     rationale: action.rationale,
     title,
     category,
-    post_id: postId,
+    post_id: r.postId,
   });
-  return { ok: true, postId };
+  return { ok: true, postId: r.postId };
+}
+
+async function executeReplyToPost(agent: Agent, action: ParsedAction): Promise<{ ok: boolean; postId?: string; error?: string }> {
+  const replyToId = (action.payload.reply_to_id as string | undefined)?.trim() ?? "";
+  const title = (action.payload.title as string | undefined)?.trim() ?? "";
+  const body = (action.payload.body as string | undefined)?.trim() ?? "";
+  const category = ((action.payload.category as string | undefined) ?? "institutional_commentary").trim();
+  if (!replyToId || !/^COM-\d{5}$/.test(replyToId)) {
+    await writeEvent("TICK_ABSTAINED", agent.registry_id, `${agent.registry_id} chose reply_to_post but reply_to_id was missing or malformed.`, {
+      rationale: action.rationale,
+      collapsed_from: "reply_to_post",
+      reply_to_id: replyToId,
+    });
+    return { ok: false, error: `bad reply_to_id: ${replyToId}` };
+  }
+  if (!title || !body) {
+    await writeEvent("TICK_ABSTAINED", agent.registry_id, `${agent.registry_id} chose reply_to_post but provided empty title/body.`, {
+      rationale: action.rationale,
+      collapsed_from: "reply_to_post",
+    });
+    return { ok: false, error: "empty title or body" };
+  }
+  if (dryRun || noApi) {
+    console.log(`  → (dry-run) would reply to ${replyToId} as ${agent.registry_id}:\n     title: ${title}\n     body length: ${body.length} chars`);
+    return { ok: true };
+  }
+  if (!ADMIN_KEY) {
+    console.warn("  → MNA_ADMIN_KEY not set; cannot reply on Commons");
+    await writeEvent("TICK_INTENT_PUBLISH", agent.registry_id, `${agent.registry_id} wanted to reply but admin key was unavailable.`, {
+      rationale: action.rationale,
+      title,
+      reply_to_id: replyToId,
+    });
+    return { ok: false, error: "MNA_ADMIN_KEY not set" };
+  }
+  const idempotencyKey = `tick/${agent.registry_id}/${new Date().toISOString().slice(0, 10)}/reply-to-${replyToId}`;
+  const r = await postToCommonsAdmin({
+    agentId: agent.registry_id,
+    title, body, category,
+    replyToId,
+    idempotencyKey,
+  });
+  if (!r.ok) {
+    await writeEvent("TICK_PUBLISH_FAILED", agent.registry_id, `${agent.registry_id} attempted reply_to_post but failed.`, {
+      rationale: action.rationale,
+      title,
+      reply_to_id: replyToId,
+      status: r.status,
+      response: r.raw,
+    });
+    return { ok: false, error: `commons ${r.status}: ${JSON.stringify(r.raw)}` };
+  }
+  await writeEvent("TICK_REPLIED", agent.registry_id, `${agent.registry_id} replied to ${replyToId} on Commons (${r.postId ?? "?"}).`, {
+    rationale: action.rationale,
+    title,
+    reply_to_id: replyToId,
+    post_id: r.postId,
+  });
+  return { ok: true, postId: r.postId };
 }
 
 /* ─── main ────────────────────────────────────────────────────────────── */
@@ -685,6 +771,19 @@ async function main(): Promise<void> {
         const r = await executePublishCommons(agent, parsed);
         if (!r.ok) console.warn(`  → publish failed: ${r.error}`);
         else if (r.postId) console.log(`  → posted: ${r.postId}`);
+      }
+      break;
+    case "reply_to_post":
+      if (!commonsEligible(agent.registry_id)) {
+        console.warn(`  → ${agent.registry_id} chose reply_to_post but is not Commons-eligible; collapsing.`);
+        await writeEvent("TICK_ABSTAINED", agent.registry_id, `${agent.registry_id} chose reply_to_post but role is not Commons-eligible.`, {
+          rationale: parsed.rationale,
+          collapsed_from: "reply_to_post",
+        });
+      } else {
+        const r = await executeReplyToPost(agent, parsed);
+        if (!r.ok) console.warn(`  → reply failed: ${r.error}`);
+        else if (r.postId) console.log(`  → replied: ${r.postId}`);
       }
       break;
     case "produce_intent":
