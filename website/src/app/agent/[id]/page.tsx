@@ -15,7 +15,9 @@ import {
 import { getAllExhibitions } from "@/lib/exhibitions";
 import { documents } from "@/lib/research";
 import { fetchEventsForAgent, type LogEvent } from "@/lib/log";
+import { loadAgentBoneState } from "@/lib/bones-detect";
 import AgentDecisions from "@/components/AgentDecisions";
+import AgentBonesPanel from "@/components/AgentBonesPanel";
 import OriginatorDetailClient from "./originator-client";
 import EvaluatorClient from "./EvaluatorClient";
 import CuratorClient from "./CuratorClient";
@@ -204,19 +206,24 @@ function DarkMetaRow({
 function WithDecisions({
   agentId,
   events,
+  boneState,
   children,
 }: {
   agentId: string;
   events: LogEvent[];
+  boneState: Awaited<ReturnType<typeof loadAgentBoneState>>;
   children: React.ReactNode;
 }) {
-  if (events.length === 0) return <>{children}</>;
+  if (events.length === 0 && !boneState) return <>{children}</>;
   return (
     <>
       {children}
       <section className="bg-warm-paper text-ink border-t border-ink/10">
-        <div className="max-w-[1240px] mx-auto px-5 md:px-10 lg:px-16 py-14">
-          <AgentDecisions agentId={agentId} events={events} />
+        <div className="max-w-[1240px] mx-auto px-5 md:px-10 lg:px-16 py-14 space-y-10">
+          {boneState ? <AgentBonesPanel state={boneState} /> : null}
+          {events.length > 0 ? (
+            <AgentDecisions agentId={agentId} events={events} />
+          ) : null}
         </div>
       </section>
     </>
@@ -235,6 +242,11 @@ export default async function AgentDetailPage({
   // observations, abstentions, publications, and constitution
   // amendments at the bottom of every agent profile.
   const recentDecisions = await fetchEventsForAgent(agent.registryId, 8);
+  // Bones — the agent's institutional obligations and current
+  // standing. Loaded once and threaded through every WithDecisions
+  // wrapper below so the warm-paper band shows obligations above
+  // recent decisions on every agent profile.
+  const boneState = await loadAgentBoneState(agent.registryId);
 
   const isOriginator = agent.agentType === "ORIGINATOR";
   const isEvaluator = agent.agentType === "EVALUATOR";
@@ -303,7 +315,7 @@ export default async function AgentDetailPage({
     });
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <EvaluatorClient
           agent={agent}
           constitution={constitution}
@@ -353,7 +365,7 @@ export default async function AgentDetailPage({
     }));
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <KeeperClient
           agent={agent}
           constitution={constitution}
@@ -394,7 +406,7 @@ export default async function AgentDetailPage({
       "The arrangement of works in an exhibition constitutes an argument about what those works mean in relation to each other and to the institution’s broader history.";
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <CuratorClient
           agent={agent}
           constitution={constitution}
@@ -422,7 +434,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <CriticClient
           agent={agent}
           constitution={constitution}
@@ -463,7 +475,7 @@ export default async function AgentDetailPage({
       count: Number(r.n ?? 0),
     }));
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <InstallerClient
           agent={agent}
           constitution={constitution}
@@ -490,7 +502,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <ConservatorClient
           agent={agent}
           constitution={constitution}
@@ -516,7 +528,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <AmbassadorClient
           agent={agent}
           constitution={constitution}
@@ -542,7 +554,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <RegistrarClient
           agent={agent}
           constitution={constitution}
@@ -569,7 +581,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <StewardAgentClient
           agent={agent}
           constitution={constitution}
@@ -631,7 +643,7 @@ export default async function AgentDetailPage({
       }));
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions}>
+      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
         <OriginatorDetailClient
           agent={agent}
           works={works}

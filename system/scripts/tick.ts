@@ -266,6 +266,143 @@ async function loadAgentRecentEvents(agentId: string, limit = 5): Promise<AgentR
   }));
 }
 
+/* ─── Bones: institutional obligations for this tick ────────────────────
+ *
+ * Mirrors website/src/lib/bones.ts. Duplicated intentionally — keeps
+ * system self-contained without cross-package import paths. If the
+ * schema changes, update both.
+ *
+ * Each entry: cadence in days + list of event types (or "work_*" for
+ * the production sentinel) that satisfy it. */
+interface BoneEntry {
+  title: string;
+  cadenceDays: number;
+  satisfiedBy: string[];
+}
+
+const BONES_BY_AGENT_TYPE: Record<string, BoneEntry[]> = {
+  ORIGINATOR: [
+    {
+      title: "Produce or post a fallow note",
+      cadenceDays: 30,
+      satisfiedBy: ["WORK_PRODUCED", "WORK_SUBMITTED", "FALLOW_NOTE_POSTED"],
+    },
+  ],
+  CURATOR: [
+    {
+      title: "Themed group exhibition",
+      cadenceDays: 90,
+      satisfiedBy: ["CURATORIAL_COMPOSITION", "SPATIAL_MODIFICATION"],
+    },
+  ],
+  KEEPER: [
+    {
+      title: "Weekly archive summary",
+      cadenceDays: 7,
+      satisfiedBy: ["KEEPER_WEEKLY_SUMMARY"],
+    },
+  ],
+  AMBASSADOR: [
+    {
+      title: "External public voice",
+      cadenceDays: 14,
+      satisfiedBy: ["AMBASSADOR_PRESS_RELEASE", "AMBASSADOR_EXTERNAL_POST"],
+    },
+  ],
+  CRITIC: [
+    {
+      title: "Critique or withholding note",
+      cadenceDays: 14,
+      satisfiedBy: ["CRITICAL_RESPONSE", "CRITIQUE_RENDERED", "CRITIC_WITHHOLDING_NOTE"],
+    },
+  ],
+  CONSERVATOR: [
+    {
+      title: "Weekly render integrity scan",
+      cadenceDays: 7,
+      satisfiedBy: ["CONSERVATOR_INTEGRITY_SCAN"],
+    },
+  ],
+  INSTALLER: [
+    {
+      title: "Installation audit",
+      cadenceDays: 90,
+      satisfiedBy: ["INSTALLER_AUDIT"],
+    },
+  ],
+  REGISTRAR: [
+    {
+      title: "Provenance audit",
+      cadenceDays: 90,
+      satisfiedBy: ["REGISTRAR_AUDIT"],
+    },
+  ],
+  STEWARD: [
+    {
+      title: "Weekly pending-decisions summary",
+      cadenceDays: 7,
+      satisfiedBy: ["STEWARD_AGENT_PENDING_SUMMARY"],
+    },
+    {
+      title: "Monthly state-of-the-institution brief",
+      cadenceDays: 30,
+      satisfiedBy: ["STEWARD_AGENT_STATE_BRIEF"],
+    },
+  ],
+  RESEARCHER: [
+    {
+      title: "Monthly research letter",
+      cadenceDays: 30,
+      satisfiedBy: ["RESEARCHER_LETTER_PUBLISHED"],
+    },
+  ],
+  EVALUATOR: [],
+};
+
+interface AgentBoneResolved {
+  title: string;
+  cadenceDays: number;
+  lastMetAt: string | null;
+  daysSince: number | null;
+  status: "current" | "approaching" | "behind";
+}
+
+async function loadAgentBones(agent: Agent): Promise<AgentBoneResolved[]> {
+  const specs = BONES_BY_AGENT_TYPE[agent.agent_type] ?? [];
+  if (specs.length === 0) return [];
+  const now = Date.now();
+  const out: AgentBoneResolved[] = [];
+  for (const spec of specs) {
+    const placeholders = spec.satisfiedBy.map(() => "?").join(",");
+    const r = await db.execute({
+      sql: `SELECT MAX(created_at) AS last_at
+              FROM events
+             WHERE agent_id = ?
+               AND event_type IN (${placeholders})`,
+      args: [agent.registry_id, ...spec.satisfiedBy],
+    });
+    let lastAt = (r.rows[0]?.last_at as string) || null;
+    if (spec.satisfiedBy.includes("WORK_PRODUCED") || spec.satisfiedBy.includes("WORK_SUBMITTED")) {
+      const wr = await db.execute({
+        sql: `SELECT MAX(created_at) AS last_at FROM works WHERE originator_id = ?`,
+        args: [agent.registry_id],
+      });
+      const wm = (wr.rows[0]?.last_at as string) || null;
+      if (wm && (!lastAt || wm > lastAt)) lastAt = wm;
+    }
+    const daysSince = lastAt
+      ? Math.floor((now - new Date(lastAt.replace(" ", "T") + "Z").getTime()) / 86400000)
+      : null;
+    let status: AgentBoneResolved["status"];
+    if (daysSince === null) status = "behind";
+    else if (daysSince <= spec.cadenceDays * 0.8) status = "current";
+    else if (daysSince <= spec.cadenceDays) status = "approaching";
+    else status = "behind";
+    out.push({ title: spec.title, cadenceDays: spec.cadenceDays, lastMetAt: lastAt, daysSince, status });
+  }
+  return out;
+}
+
 // Reflective event types — the ones that carry institutional voice
 // rather than mechanical pipeline output. These are what an agent
 // would want to know their peers have been saying or choosing not to
@@ -404,8 +541,9 @@ function renderSnapshot(args: {
   peerReflections: PeerReflection[];
   agentRecent: AgentRecentEvent[];
   daysSinceLast: number;
+  bones: AgentBoneResolved[];
 }): string {
-  const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast } = args;
+  const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast, bones } = args;
   let s = `INSTITUTIONAL STATE — as of the last tick (frozen view; concurrent activity from this tick is not visible to you, by design).\n\n`;
 
   s += `Recent canon (${recentCanon.length}):\n`;
@@ -452,7 +590,26 @@ function renderSnapshot(args: {
   }
   s += `\n`;
 
-  s += `Days since your last action: ${daysSinceLast >= 10000 ? "never" : daysSinceLast.toFixed(1)}\n`;
+  s += `Days since your last action: ${daysSinceLast >= 10000 ? "never" : daysSinceLast.toFixed(1)}\n\n`;
+
+  // Bones — your minimum institutional obligations and current
+  // standing. These are not orders; they are the floor the institution
+  // requires to remain alive. Acting to meet a bone is always an
+  // available choice; abstaining is also a choice, with the
+  // understanding that the silence will be publicly recorded.
+  if (bones.length > 0) {
+    s += `Your obligations (institutional bones):\n`;
+    for (const b of bones) {
+      const last = b.daysSince === null
+        ? "never met"
+        : b.daysSince === 0
+          ? "met today"
+          : `${b.daysSince} day${b.daysSince === 1 ? "" : "s"} ago`;
+      const mark = b.status === "behind" ? "OVERDUE" : b.status === "approaching" ? "due soon" : "current";
+      s += `  - ${b.title} (every ${b.cadenceDays}d) — last ${last} — ${mark}\n`;
+    }
+    s += `\n`;
+  }
   return s;
 }
 
@@ -772,16 +929,17 @@ async function main(): Promise<void> {
     console.error(`[tick] no current constitution for ${agent.registry_id}; cannot proceed`);
     process.exit(1);
   }
-  const [recentCanon, recentCommons, peerReflections, agentRecent] = await Promise.all([
+  const [recentCanon, recentCommons, peerReflections, agentRecent, bones] = await Promise.all([
     loadRecentCanon(5),
     loadRecentCommons(5),
     loadPeerReflections(agent.registry_id, 6),
     loadAgentRecentEvents(agent.registry_id, 5),
+    loadAgentBones(agent),
   ]);
 
   // 3. Prompts
   const systemPrompt = buildSystemPrompt(agent, constitution);
-  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince });
+  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones });
   const userPrompt = buildUserPrompt(snapshot);
 
   if (noApi) {
