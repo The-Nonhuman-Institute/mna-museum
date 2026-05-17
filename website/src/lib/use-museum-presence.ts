@@ -109,6 +109,33 @@ function normalizeVisitor(raw: Partial<PresenceVisitor>): PresenceVisitor | null
   };
 }
 
+/** Higher-level wrapper for gallery scenes (chamber / solo_exhibition /
+ *  exhibition). Connects to the room, announces the target
+ *  constellation as soon as the socket is open, and returns just the
+ *  presences in that constellation. Use this in scene files that only
+ *  ever care about their own gallery — saves the boilerplate of
+ *  filtering + transitioning on every consumer. */
+export function useGalleryPresence(
+  host: string | null,
+  constellation: Constellation,
+): {
+  others: PresenceVisitor[];
+  self: PresenceVisitor | null;
+  status: UseMuseumPresenceResult["status"];
+  publish: UseMuseumPresenceResult["publish"];
+} {
+  const { others, self, status, publish, enterConstellation } = useMuseumPresence(host);
+  // Announce the transition as soon as the socket is open. Re-run if
+  // we reconnect after a drop. The hook guards against sending before
+  // the socket is OPEN, so calling this on every status flip is safe.
+  useEffect(() => {
+    if (status !== "connected") return;
+    enterConstellation(constellation);
+  }, [status, constellation, enterConstellation]);
+  const sceneOthers = others.filter((v) => v.constellation === constellation);
+  return { others: sceneOthers, self, status, publish };
+}
+
 export function useMuseumPresence(host: string | null): UseMuseumPresenceResult {
   const [self, setSelf] = useState<PresenceVisitor | null>(null);
   const [others, setOthers] = useState<PresenceVisitor[]>([]);

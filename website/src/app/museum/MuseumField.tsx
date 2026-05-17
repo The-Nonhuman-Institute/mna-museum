@@ -778,7 +778,7 @@ export function DragLook({
  *  underlying hook throttles to ~10Hz internally so it's safe to call
  *  every frame. No-op when NEXT_PUBLIC_PARTY_HOST is unset because
  *  `publish` from the hook short-circuits without an open socket. */
-function PositionPublisher({
+export function PositionPublisher({
   publish,
 }: {
   publish: (x: number, z: number, yaw: number) => void;
@@ -795,7 +795,7 @@ function PositionPublisher({
 
 /** Renders every other connected visitor. Empty in solo mode (no
  *  party host) — the hook returns `[]`. */
-function OtherVisitors({ others }: { others: PresenceVisitor[] }) {
+export function OtherVisitors({ others }: { others: PresenceVisitor[] }) {
   return (
     <>
       {others.map((v) => (

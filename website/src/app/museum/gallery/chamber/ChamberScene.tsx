@@ -39,8 +39,11 @@ import {
   KeyCap,
   SceneObjectMesh,
   useDownsampledTexture,
+  OtherVisitors,
+  PositionPublisher,
   type SceneSpec,
 } from "../../MuseumField";
+import { useGalleryPresence } from "@/lib/use-museum-presence";
 import ConstellationNavPanel from "@/components/museum/ConstellationNavPanel";
 import {
   CONSTELLATION_CONFIGS,
@@ -117,6 +120,13 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
   }, [pointerLockFailed]);
 
   const joystickRef = useRef({ forward: 0, strafe: 0 });
+
+  // Realtime presence — same PartyKit room as the field, scoped to
+  // the chamber constellation. A visitor entering the chamber sees
+  // any agent or human currently in this gallery; visitors elsewhere
+  // in the institution are filtered out.
+  const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
+  const { others, publish } = useGalleryPresence(presenceHost, "chamber");
 
   function handleBegin() {
     setStarted(true);
@@ -202,6 +212,8 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             featuredWork={featuredWork}
             onAim={setAimedTarget}
           />
+          {started ? <OtherVisitors others={others} /> : null}
+          <PositionPublisher publish={publish} />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -250,6 +262,7 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             locked={locked}
             pointerLockFailed={pointerLockFailed}
             hideTraceOrigin={!!aimedTarget}
+            othersPresent={others.length}
           />
           {locked || pointerLockFailed ? <Reticle /> : null}
           {started && !locked && !pointerLockFailed ? <ResumeHint /> : null}
@@ -834,6 +847,7 @@ function ChamberHUD({
   locked,
   pointerLockFailed,
   hideTraceOrigin,
+  othersPresent,
 }: {
   work: ChamberWork | null;
   locked: boolean;
@@ -843,6 +857,11 @@ function ChamberHUD({
    *  Trace Origin, so we hide Trace Origin while a sky target is
    *  primed. */
   hideTraceOrigin: boolean;
+  /** Count of other visitors currently in the chamber (humans +
+   *  agents). Rendered as a small line in the gallery card; hidden
+   *  when zero so the panel doesn't make a claim about gathering
+   *  when the visitor is alone. */
+  othersPresent: number;
 }) {
   void locked;
   void pointerLockFailed;
@@ -874,6 +893,11 @@ function ChamberHUD({
                 </p>
               ) : null}
             </>
+          ) : null}
+          {othersPresent > 0 ? (
+            <p className="mt-2 pt-2 border-t border-mna-white/10 text-[9px] font-sans uppercase tracking-[0.26em] text-mna-white/55">
+              {othersPresent} other{othersPresent === 1 ? "" : "s"} in the chamber
+            </p>
           ) : null}
           <div className="pointer-events-auto mt-3 pt-3 border-t border-mna-white/10">
             <Link

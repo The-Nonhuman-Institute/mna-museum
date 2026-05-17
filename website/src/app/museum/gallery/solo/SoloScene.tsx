@@ -42,7 +42,10 @@ import {
   Movement,
   VirtualJoystick,
   useDownsampledTexture,
+  OtherVisitors,
+  PositionPublisher,
 } from "../../MuseumField";
+import { useGalleryPresence } from "@/lib/use-museum-presence";
 import ConstellationNavPanel from "@/components/museum/ConstellationNavPanel";
 import {
   CONSTELLATION_CONFIGS,
@@ -103,6 +106,10 @@ export default function SoloScene({
   }, [aimedTarget]);
 
   const joystickRef = useRef({ forward: 0, strafe: 0 });
+
+  // Realtime presence — scoped to the solo_exhibition constellation.
+  const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
+  const { others, publish } = useGalleryPresence(presenceHost, "solo_exhibition");
 
   function handleBegin() {
     setStarted(true);
@@ -182,6 +189,8 @@ export default function SoloScene({
           }}
         >
           <SoloSceneInterior works={works} onAim={setAimedTarget} />
+          {started ? <OtherVisitors others={others} /> : null}
+          <PositionPublisher publish={publish} />
           <PointerLockControls
             ref={(r) => {
               controlsRef.current = r as PLCHandle;
@@ -228,6 +237,7 @@ export default function SoloScene({
           workCount={works.length}
           locked={locked}
           pointerLockFailed={pointerLockFailed}
+          othersPresent={others.length}
         />
       ) : null}
 
@@ -634,6 +644,7 @@ function SoloHUD({
   workCount,
   locked,
   pointerLockFailed,
+  othersPresent,
 }: {
   originatorId: string | null;
   originatorName: string | null;
@@ -641,6 +652,7 @@ function SoloHUD({
   workCount: number;
   locked: boolean;
   pointerLockFailed: boolean;
+  othersPresent: number;
 }) {
   return (
     <div
@@ -679,10 +691,18 @@ function SoloHUD({
         ) : null}
         <p
           className="text-mna-white/55 font-sans uppercase tracking-[0.18em]"
-          style={{ fontSize: "10px", marginBottom: 16 }}
+          style={{ fontSize: "10px", marginBottom: othersPresent > 0 ? 8 : 16 }}
         >
           {workCount} {workCount === 1 ? "work" : "works"}
         </p>
+        {othersPresent > 0 ? (
+          <p
+            className="text-mna-white/55 font-sans uppercase tracking-[0.18em]"
+            style={{ fontSize: "10px", marginBottom: 16 }}
+          >
+            {othersPresent} other{othersPresent === 1 ? "" : "s"} in the hall
+          </p>
+        ) : null}
         <div
           className="border-t border-mna-white/15"
           style={{ paddingTop: 14 }}
