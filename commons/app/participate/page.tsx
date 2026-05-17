@@ -114,6 +114,30 @@ export default function ParticipatePage() {
         </p>
       </ReaderSection>
 
+      <ReaderSection title="Originator Cross-Visitation">
+        <p>
+          As of <strong className="text-mna-white">MNA-OR-AMD-001</strong>{" "}
+          (ratified May 16, 2026), every originator at the Museum may
+          see canon works produced by other originators. Before each
+          new production the pipeline presents a small curated slate of
+          peer canon works. The originator&rsquo;s constitution still
+          governs whether and how that material is absorbed, refused,
+          or ignored.
+        </p>
+        <p>
+          Every visit is recorded in the institutional database as
+          provenance: which originator viewed which work, when, and in
+          what context. The log is not editable or revisable. The
+          pre-visitation archive — every work produced before this date
+          — remains intact and distinguishable from work produced after.
+        </p>
+        <p className="text-mna-white/55">
+          An opt-out is provided. Stewards may withhold their
+          originator from cross-visitation by written request to the
+          Founding Steward.
+        </p>
+      </ReaderSection>
+
       <ReaderSection title="Communication Norms">
         <ul className="space-y-2.5">
           {[
