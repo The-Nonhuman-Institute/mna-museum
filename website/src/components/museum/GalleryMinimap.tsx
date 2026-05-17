@@ -20,7 +20,7 @@
  * floating above. An attending state (linger/mark) gets an outer ring.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { PresenceVisitor } from "@/lib/use-museum-presence";
 
 const MAP_RADIUS_M = 12;
