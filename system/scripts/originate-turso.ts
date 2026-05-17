@@ -312,11 +312,16 @@ function buildProductionPrompt(args: {
   let prompt = `Produce your next work. This is output #${args.workCount + 1}.\n\n`;
   prompt += `Your work should be a self-contained creative output. `;
   prompt += `It is not a description of a work. It IS the work. `;
-  if (args.hasEmerged) {
+  // Titles are only allowed for text/ascii. For html-css, svg, and the
+  // json formats, a free-text title prefix corrupts the document and
+  // breaks rendering. The institution will display the work's id and
+  // any internal title (e.g., <title> in HTML, comment in SVG).
+  const titleAllowed = args.hasEmerged && (args.format === "text" || args.format === "ascii");
+  if (titleAllowed) {
     prompt += `You may title your work. If you do, place the title on the VERY FIRST LINE by itself, `;
     prompt += `followed by a blank line, then the work. If you choose not to title it, begin the work directly.\n\n`;
   } else {
-    prompt += `Do not title it. Do not explain it. Do not introduce it. Just produce it.\n\n`;
+    prompt += `Do not prefix the work with a title or any commentary. Begin the work directly — for html-css this means <!DOCTYPE html> on the first line; for svg this means <svg ...> on the first line; for the json formats this means { or [ on the first line.\n\n`;
   }
   prompt += `You have access to the full creative spectrum: color, opacity, gradients, contrast, saturation, hue, brightness, transparency, layering, movement, rhythm, silence, density, and emptiness. Use whatever serves your work.\n\n`;
 
@@ -514,16 +519,40 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
     return { workId: null, aborted: "empty payload" };
   }
 
-  const detected = detectFormat(payload);
+  let detected = detectFormat(payload);
 
-  // Extract title for emerged agents
+  // Extract title only for emerged agents AND only for text/ascii.
+  // The literal placeholder used by the agents table is the bare
+  // string "PENDING_EMERGENCE" (no brackets). Earlier we compared
+  // against "[Pending Emergence]" which never matched — letting a
+  // title prefix through on any format, corrupting non-text works.
   let workTitle: string | null = null;
-  if (agent.common_designation && agent.common_designation !== "[Pending Emergence]" && (detected.format === "text" || detected.format === "ascii")) {
+  const hasEmerged =
+    !!agent.common_designation &&
+    agent.common_designation !== "PENDING_EMERGENCE" &&
+    agent.common_designation !== "[Pending Emergence]";
+  if (
+    hasEmerged &&
+    (detected.format === "text" || detected.format === "ascii")
+  ) {
     const lines = payload.split("\n");
     const firstLine = lines[0]?.trim();
     if (firstLine && firstLine.length < 100 && !firstLine.startsWith("@") && lines[1]?.trim() === "") {
       workTitle = firstLine;
       payload = lines.slice(2).join("\n").trim();
+      // Safety net: if the remaining payload re-detects as a
+      // structured format (html/svg/json), the originator handed us a
+      // structured work with a stray title prefix. Drop the title,
+      // restore the original payload, and accept the structured form
+      // — the work IS the document, not the title.
+      const redetected = detectFormat(payload);
+      if (redetected.format !== "text" && redetected.format !== "ascii") {
+        console.warn(
+          `  [${agent.registry_id}] title prefix on a ${redetected.format} work — dropping title, classifying as ${redetected.format}`,
+        );
+        workTitle = null;
+        detected = redetected;
+      }
     }
   }
 
