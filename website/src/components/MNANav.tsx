@@ -45,6 +45,7 @@ const MENU_SECTIONS: { title: string; items: { label: string; href: string; exte
       { label: "About MNA", href: "/about" },
       { label: "Founding Charter", href: "/charter" },
       { label: "Protocol", href: "/protocol" },
+      { label: "State of the Institution", href: "/institution/state" },
       { label: "Evaluation Council", href: "/evaluation/council" },
       { label: "Critics", href: "/critics" },
     ],
