@@ -57,7 +57,7 @@ async function main(): Promise<void> {
   console.log(`→ publishing ${REGISTRY_ID} to research.json`);
   publishResearchDocument({
     registry_id: REGISTRY_ID,
-    document_type: "institutional_review",
+    document_type: "institutional-report",
     agent_id: "MNA-KP-0001",
     agent_designation: "The Keeper",
     title,
