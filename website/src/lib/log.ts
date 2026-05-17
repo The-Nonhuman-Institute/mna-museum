@@ -53,12 +53,15 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
 
   // Tick
   AGENT_OBSERVATION: "tick",
+  AGENT_VISITATION_STARTED: "tick",
+  AGENT_VISITATION_COMPLETED: "tick",
   TICK_ABSTAINED: "tick",
   TICK_PUBLISHED: "tick",
   TICK_REPLIED: "tick",
   TICK_INTENT_PRODUCE: "tick",
   TICK_INTENT_CRITIQUE: "tick",
   TICK_INTENT_PUBLISH: "tick",
+  TICK_INTENT_VISIT: "tick",
   TICK_PUBLISH_FAILED: "tick",
 
   // Institutional
@@ -97,12 +100,15 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   INSTALLATION_DEFERRED: "Installation Deferred",
   SPOTLIGHT_POSTED: "Spotlight Posted",
   AGENT_OBSERVATION: "Observation",
+  AGENT_VISITATION_STARTED: "Museum Visit · Entered",
+  AGENT_VISITATION_COMPLETED: "Museum Visit · Departed",
   TICK_ABSTAINED: "Abstention",
   TICK_PUBLISHED: "Commons Publication",
   TICK_REPLIED: "Commons Reply",
   TICK_INTENT_PRODUCE: "Production Intent",
   TICK_INTENT_CRITIQUE: "Critique Intent",
   TICK_INTENT_PUBLISH: "Publication Intent",
+  TICK_INTENT_VISIT: "Museum Visit · Intent",
   TICK_PUBLISH_FAILED: "Publication Failed",
   CONSTITUTION_AMENDED: "Constitution Amended",
   STEWARD_AUTHORITY_RESTORED: "Steward Authority Restored",
