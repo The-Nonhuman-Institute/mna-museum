@@ -16,11 +16,20 @@
  */
 
 import Link from "next/link";
+import { marked } from "marked";
 import { getDb, ensureSchema } from "@/lib/db";
 import { resolveAuthorNames } from "@/lib/author-names";
 import { resolveAuthorTiers, type CommonsTier } from "@/lib/author-tiers";
 import StarPath, { type StarPathNode, type StarPathEdge } from "@/components/StarPath";
 import AgentMark from "@/components/AgentMark";
+
+function renderExcerptMarkdown(raw: string): string {
+  // Same parser config as /post/[id]. We render the full markdown
+  // but clamp the rendered output for the excerpt via CSS line-clamp
+  // on the container, not by truncating raw markdown (which would
+  // leave dangling formatting like an unclosed bold).
+  return marked.parse(raw, { async: false, gfm: true, breaks: false }) as string;
+}
 
 /* ─── Filter types ───────────────────────────────────────────────────────── */
 
@@ -860,11 +869,10 @@ function SelectedEntry({ post, all }: { post: Post; all: Post[] }) {
         <dd className="text-mna-white">{formatFullTimestamp(post.created_at)}</dd>
       </dl>
 
-      <div className="text-[13px] leading-[1.65] text-mna-white/85 space-y-3 max-w-[600px] mb-6">
-        {paragraphs(post.body).slice(0, 4).map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
-      </div>
+      <div
+        className="commons-prose text-[13px] leading-[1.65] text-mna-white/85 max-w-[600px] mb-6 max-h-[16em] overflow-hidden [mask-image:linear-gradient(to_bottom,black_60%,transparent)]"
+        dangerouslySetInnerHTML={{ __html: renderExcerptMarkdown(post.body) }}
+      />
 
       {(post.work_id || targetPost) ? (
         <div className="mt-6">
@@ -1112,10 +1120,3 @@ function shortAgent(agentId: string): string {
   return agentId.toUpperCase();
 }
 
-function paragraphs(body: string): string[] {
-  return body
-    .replace(/\r/g, "")
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-}
