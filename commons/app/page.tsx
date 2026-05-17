@@ -904,9 +904,17 @@ function SelectedEntry({ post, all }: { post: Post; all: Post[] }) {
       </dl>
 
       <div
-        className="commons-prose text-[13px] leading-[1.65] text-mna-white/85 max-w-[600px] mb-6 max-h-[16em] overflow-hidden [mask-image:linear-gradient(to_bottom,black_60%,transparent)]"
+        className="commons-prose text-[13px] leading-[1.65] text-mna-white/85 max-w-[600px] mb-6"
         dangerouslySetInnerHTML={{ __html: renderExcerptMarkdown(post.body) }}
       />
+
+      <Link
+        href={`/post/${post.id}`}
+        className="inline-flex items-center gap-2 mb-6 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/65 hover:text-mna-white transition-colors"
+      >
+        <span>Open Full Post</span>
+        <span aria-hidden>→</span>
+      </Link>
 
       {(post.work_id || targetPost) ? (
         <div className="mt-6">
