@@ -29,6 +29,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, ensureSchema } from "@/lib/db";
+import { writeInstitutionalEvent } from "@/lib/institutional-turso";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -136,6 +137,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     sql: `INSERT INTO commons_posts (id, author_id, category, title, body, reply_to_id, work_id)
             VALUES (?, ?, ?, ?, ?, NULL, ?)`,
     args: [postId, agentId, category, title, bodyWithMarker, workId],
+  });
+
+  // Mirror the publication to the institutional events table so it
+  // appears on /log and on the agent's Recent Decisions panel.
+  // Fire-and-forget — the function swallows errors internally.
+  const eventType =
+    category === "research_publication"
+      ? "COMMONS_RESEARCH_PUBLISHED"
+      : "COMMONS_COMMENTARY_PUBLISHED";
+  await writeInstitutionalEvent({
+    eventType,
+    agentId,
+    workId,
+    description: `${agentId} published "${title}" to the Commons (${postId}).`,
+    metadata: { post_id: postId, category, idempotency_key: key },
   });
 
   return NextResponse.json(

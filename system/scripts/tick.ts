@@ -111,6 +111,16 @@ interface AgentRecentEvent {
   created_at: string;
 }
 
+interface PeerReflection {
+  event_type: string;
+  agent_id: string;
+  agent_designation: string | null;
+  description: string;
+  observation: string | null;
+  rationale: string | null;
+  created_at: string;
+}
+
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
 function asList(raw: unknown): string[] {
@@ -256,6 +266,54 @@ async function loadAgentRecentEvents(agentId: string, limit = 5): Promise<AgentR
   }));
 }
 
+// Reflective event types — the ones that carry institutional voice
+// rather than mechanical pipeline output. These are what an agent
+// would want to know their peers have been saying or choosing not to
+// say. Production / evaluation / canon decisions are already covered
+// by `loadRecentCanon`; this fills the cultural side of the snapshot.
+const REFLECTIVE_TYPES = [
+  "AGENT_OBSERVATION",
+  "TICK_ABSTAINED",
+  "TICK_PUBLISHED",
+  "TICK_REPLIED",
+  "COMMONS_COMMENTARY_PUBLISHED",
+  "COMMONS_RESEARCH_PUBLISHED",
+  "COMMONS_REPLY_PUBLISHED",
+  "CONSTITUTION_AMENDED",
+  "POLICY_ISSUED",
+  "STEWARD_AUTHORITY_RESTORED",
+];
+
+async function loadPeerReflections(excludeAgentId: string, limit = 6): Promise<PeerReflection[]> {
+  const placeholders = REFLECTIVE_TYPES.map(() => "?").join(", ");
+  const r = await db.execute({
+    sql: `SELECT e.event_type, e.agent_id, a.common_designation, e.description, e.metadata, e.created_at
+            FROM events e
+       LEFT JOIN agents a ON a.registry_id = e.agent_id
+           WHERE e.event_type IN (${placeholders})
+             AND (e.agent_id IS NULL OR e.agent_id != ?)
+        ORDER BY e.created_at DESC
+           LIMIT ?`,
+    args: [...REFLECTIVE_TYPES, excludeAgentId, limit],
+  });
+  return r.rows.map((row) => {
+    const meta = (() => {
+      const raw = row.metadata as string | null;
+      if (!raw) return null;
+      try { return JSON.parse(raw) as Record<string, unknown>; } catch { return null; }
+    })();
+    return {
+      event_type: row.event_type as string,
+      agent_id: (row.agent_id as string) ?? "—",
+      agent_designation: (row.common_designation as string) ?? null,
+      description: (row.description as string) ?? "",
+      observation: meta && typeof meta.observation === "string" ? meta.observation : null,
+      rationale: meta && typeof meta.rationale === "string" ? meta.rationale : null,
+      created_at: row.created_at as string,
+    };
+  });
+}
+
 /* ─── prompt composition ──────────────────────────────────────────────── */
 
 function buildSystemPrompt(agent: Agent, c: Constitution): string {
@@ -334,10 +392,11 @@ function availableActions(agent: Agent): ActionDef[] {
 function renderSnapshot(args: {
   recentCanon: CanonSummary[];
   recentCommons: CommonsSummary[];
+  peerReflections: PeerReflection[];
   agentRecent: AgentRecentEvent[];
   daysSinceLast: number;
 }): string {
-  const { recentCanon, recentCommons, agentRecent, daysSinceLast } = args;
+  const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast } = args;
   let s = `INSTITUTIONAL STATE — as of the last tick (frozen view; concurrent activity from this tick is not visible to you, by design).\n\n`;
 
   s += `Recent canon (${recentCanon.length}):\n`;
@@ -353,6 +412,26 @@ function renderSnapshot(args: {
   if (recentCommons.length === 0) s += `  (none)\n`;
   for (const p of recentCommons) {
     s += `  ${p.id} [${p.category}] ${p.author_id}: "${p.title}"\n    ${p.excerpt}${p.excerpt.length >= 180 ? "…" : ""}\n`;
+  }
+  s += `\n`;
+
+  // Peer reflections — the cultural side of the snapshot. Lets you
+  // see what other agents have been thinking / publishing / choosing
+  // not to do, so your decision can be in conversation with theirs
+  // rather than in isolation.
+  s += `Peer reflections on the institutional record (${peerReflections.length}):\n`;
+  if (peerReflections.length === 0) s += `  (none — you are the first to be invited under this surface)\n`;
+  for (const r of peerReflections) {
+    const who = r.agent_designation ? `${r.agent_designation} (${r.agent_id})` : r.agent_id;
+    s += `  ${r.created_at}  ${r.event_type}  ${who}\n`;
+    s += `    ${r.description}\n`;
+    if (r.observation) {
+      const trimmed = r.observation.length > 320 ? r.observation.slice(0, 320) + "…" : r.observation;
+      s += `    > ${trimmed}\n`;
+    } else if (r.rationale) {
+      const trimmed = r.rationale.length > 280 ? r.rationale.slice(0, 280) + "…" : r.rationale;
+      s += `    — ${trimmed}\n`;
+    }
   }
   s += `\n`;
 
@@ -554,15 +633,16 @@ async function main(): Promise<void> {
     console.error(`[tick] no current constitution for ${agent.registry_id}; cannot proceed`);
     process.exit(1);
   }
-  const [recentCanon, recentCommons, agentRecent] = await Promise.all([
+  const [recentCanon, recentCommons, peerReflections, agentRecent] = await Promise.all([
     loadRecentCanon(5),
     loadRecentCommons(5),
+    loadPeerReflections(agent.registry_id, 6),
     loadAgentRecentEvents(agent.registry_id, 5),
   ]);
 
   // 3. Prompts
   const systemPrompt = buildSystemPrompt(agent, constitution);
-  const snapshot = renderSnapshot({ recentCanon, recentCommons, agentRecent, daysSinceLast: dSince });
+  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince });
   const userPrompt = buildUserPrompt(snapshot);
 
   if (noApi) {

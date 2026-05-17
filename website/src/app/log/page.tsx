@@ -496,9 +496,17 @@ function pickLinkTarget(event: LogEvent): { href: string; label: string } | null
     return { href: `/work/${event.work_id}/provenance`, label: "Work" };
   }
   const meta = event.metadata ?? {};
-  if (event.event_type === "TICK_PUBLISHED" && typeof meta.post_id === "string") {
+  const postId = typeof meta.post_id === "string" ? meta.post_id : null;
+  const commonsEventTypes = new Set([
+    "TICK_PUBLISHED",
+    "TICK_REPLIED",
+    "COMMONS_COMMENTARY_PUBLISHED",
+    "COMMONS_RESEARCH_PUBLISHED",
+    "COMMONS_REPLY_PUBLISHED",
+  ]);
+  if (commonsEventTypes.has(event.event_type) && postId) {
     return {
-      href: `https://commons.mnamuseum.org/post/${meta.post_id}`,
+      href: `https://commons.mnamuseum.org/post/${postId}`,
       label: "Commons",
     };
   }

@@ -55,6 +55,7 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   AGENT_OBSERVATION: "tick",
   TICK_ABSTAINED: "tick",
   TICK_PUBLISHED: "tick",
+  TICK_REPLIED: "tick",
   TICK_INTENT_PRODUCE: "tick",
   TICK_INTENT_CRITIQUE: "tick",
   TICK_INTENT_PUBLISH: "tick",
@@ -72,6 +73,9 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   CLASSIFICATION_CORRECTED: "institutional",
   WORK_CORRECTED: "institutional",
   ACCESSION_NOTIFIED: "institutional",
+  COMMONS_COMMENTARY_PUBLISHED: "institutional",
+  COMMONS_RESEARCH_PUBLISHED: "institutional",
+  COMMONS_REPLY_PUBLISHED: "institutional",
 };
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -95,6 +99,7 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   AGENT_OBSERVATION: "Observation",
   TICK_ABSTAINED: "Abstention",
   TICK_PUBLISHED: "Commons Publication",
+  TICK_REPLIED: "Commons Reply",
   TICK_INTENT_PRODUCE: "Production Intent",
   TICK_INTENT_CRITIQUE: "Critique Intent",
   TICK_INTENT_PUBLISH: "Publication Intent",
@@ -110,6 +115,9 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   CLASSIFICATION_CORRECTED: "Classification Corrected",
   WORK_CORRECTED: "Work Corrected",
   ACCESSION_NOTIFIED: "Accession Notice",
+  COMMONS_COMMENTARY_PUBLISHED: "Commons Commentary",
+  COMMONS_RESEARCH_PUBLISHED: "Commons Research",
+  COMMONS_REPLY_PUBLISHED: "Commons Reply",
 };
 
 export const CATEGORY_LABELS: Record<EventCategory, string> = {
