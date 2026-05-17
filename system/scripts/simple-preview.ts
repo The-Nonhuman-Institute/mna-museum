@@ -48,13 +48,27 @@ async function run() {
       // Brief settle after freeze
       await new Promise((r) => setTimeout(r, 500));
 
-      // Full-viewport screenshot cropped to the work display area
-      await page.screenshot({
-        path: out as `${string}.png`,
-        type: "png",
-        clip: { x: 290, y: 180, width: 820, height: 820 },
-        captureBeyondViewport: false,
-      });
+      // Capture the work-frame element directly. The work page marks
+      // the square preview container with data-work-frame; this avoids
+      // a fixed clip rectangle that bleeds into the metadata panel for
+      // works whose renderer doesn't fill the frame (centered SVGs,
+      // short text, etc.). Fall back to the legacy fixed clip if the
+      // attribute isn't present (older deploys).
+      const frame = await page.$("[data-work-frame]");
+      if (frame) {
+        await frame.screenshot({
+          path: out as `${string}.png`,
+          type: "png",
+          captureBeyondViewport: false,
+        });
+      } else {
+        await page.screenshot({
+          path: out as `${string}.png`,
+          type: "png",
+          clip: { x: 290, y: 180, width: 820, height: 820 },
+          captureBeyondViewport: false,
+        });
+      }
       console.log(`  ✓ saved ${out}`);
 
       await page.close();
