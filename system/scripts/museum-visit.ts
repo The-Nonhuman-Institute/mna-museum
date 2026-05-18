@@ -105,6 +105,17 @@ interface Agent {
   registry_id: string;
   agent_type: string;
   designation: string;
+  /** Stable accent color in the field. Founding agents have this set
+   *  from FOUNDING_PALETTE; network originators may have any valid hex
+   *  or null (PartyKit assigns one in the latter case). */
+  color_hex: string | null;
+  /** Glyph family representing this agent's form. Founding agents are
+   *  assigned from the 28-family library; network originators may have
+   *  any value or null. */
+  glyph_family: string | null;
+  /** True for network originators (external human stewards). Drives
+   *  the quiet "(network)" attribution in the field. */
+  is_network: boolean;
 }
 
 interface Waypoint {
@@ -127,7 +138,9 @@ interface ConstellationLeg {
 
 async function loadAgent(id: string): Promise<Agent | null> {
   const r = await db.execute({
-    sql: "SELECT registry_id, agent_type, common_designation FROM agents WHERE registry_id = ?",
+    sql: `SELECT registry_id, agent_type, common_designation,
+                 color_hex, glyph_family, is_network
+            FROM agents WHERE registry_id = ?`,
     args: [id],
   });
   if (r.rows.length === 0) return null;
@@ -137,6 +150,9 @@ async function loadAgent(id: string): Promise<Agent | null> {
     agent_type: row.agent_type as string,
     designation:
       (row.common_designation as string) ?? `Agent ${row.registry_id}`,
+    color_hex: (row.color_hex as string) ?? null,
+    glyph_family: (row.glyph_family as string) ?? null,
+    is_network: Number(row.is_network ?? 0) === 1,
   };
 }
 
@@ -737,15 +753,24 @@ async function main(): Promise<void> {
     setTimeout(() => reject(new Error("connect timeout")), 8000);
   });
 
-  // Identify.
+  // Identify. We include the agent's stored visual identity (color +
+  // glyph + network flag) so the field renders them as *themselves*
+  // rather than picking a round-robin color from PartyKit's default
+  // institutional palette. Network originators may have null values
+  // here — the party server falls back to its rotation in that case.
   socket.send(
     JSON.stringify({
       type: "identify",
       registry_id: agent.registry_id,
       designation: agent.designation,
+      color: agent.color_hex,
+      glyph_family: agent.glyph_family,
+      is_network: agent.is_network,
     }),
   );
-  console.log("  identified.");
+  console.log(
+    `  identified. ${agent.color_hex ?? "(no color)"} · ${agent.glyph_family ?? "(no glyph)"}${agent.is_network ? " · network" : ""}`,
+  );
 
   // Hard timeout so a stuck script doesn't camp the room forever.
   const hardStop = setTimeout(() => {

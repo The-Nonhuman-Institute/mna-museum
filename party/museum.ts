@@ -75,6 +75,13 @@ interface Visitor {
   /** For agents: the MNA registry id (MNA-CU-0001). Empty for humans. */
   registry_id: string;
   color: string;
+  /** For agents: the assigned glyph family that represents their
+   *  sculptural form in the field. Founding agents have this set;
+   *  network originators may have null. */
+  glyph_family: string | null;
+  /** For agents: true when this is a network originator hosted by an
+   *  external human steward. Drives the quiet "(network)" marker. */
+  is_network: boolean;
   /** Which constellation the visitor is currently inhabiting. The
    *  field map filters by this so a visitor sees only co-located
    *  presences; the Census panel aggregates across constellations. */
@@ -133,6 +140,8 @@ export default class MuseumServer implements Party.Server {
       designation,
       registry_id: "",
       color,
+      glyph_family: null,
+      is_network: false,
       constellation: "archive",
       x: 0,
       z: 8,
@@ -193,12 +202,27 @@ export default class MuseumServer implements Party.Server {
       if (typeof data.designation !== "string" || data.designation.length > 64) {
         return;
       }
-      const color = AGENT_COLORS[this.agentColorIndex % AGENT_COLORS.length];
-      this.agentColorIndex++;
+      // The agent may pass their stored visual identity. We honor a
+      // valid hex color and any string glyph_family; invalid values
+      // fall through to the rotation palette + null glyph so the
+      // field never breaks on bad input.
+      const providedColor =
+        typeof data.color === "string" && /^#[0-9A-Fa-f]{6}$/.test(data.color)
+          ? data.color
+          : null;
+      const color = providedColor ?? AGENT_COLORS[this.agentColorIndex % AGENT_COLORS.length];
+      if (!providedColor) this.agentColorIndex++;
+      const glyphFamily =
+        typeof data.glyph_family === "string" && data.glyph_family.length <= 32
+          ? data.glyph_family
+          : null;
+      const isNetwork = data.is_network === true;
       v.kind = "agent";
       v.registry_id = data.registry_id;
       v.designation = data.designation;
       v.color = color;
+      v.glyph_family = glyphFamily;
+      v.is_network = isNetwork;
       // Echo updated identity back to the agent for confirmation, and
       // broadcast the change so other visitors update their cached
       // record of this connection.
@@ -210,6 +234,8 @@ export default class MuseumServer implements Party.Server {
           designation: v.designation,
           registry_id: v.registry_id,
           color: v.color,
+          glyph_family: v.glyph_family,
+          is_network: v.is_network,
         }),
       );
       this.room.broadcast(
@@ -220,6 +246,8 @@ export default class MuseumServer implements Party.Server {
           designation: v.designation,
           registry_id: v.registry_id,
           color: v.color,
+          glyph_family: v.glyph_family,
+          is_network: v.is_network,
         }),
         [conn.id],
       );

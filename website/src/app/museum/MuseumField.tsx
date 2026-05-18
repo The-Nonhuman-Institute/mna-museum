@@ -38,6 +38,7 @@ import {
   Stars,
   MeshReflectorMaterial,
   Html,
+  Text,
 } from "@react-three/drei";
 import {
   EffectComposer,
@@ -825,6 +826,57 @@ function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
   return <HumanPresence visitor={visitor} />;
 }
 
+/** Designation placard floating just above the floor at the agent's
+ *  feet. Billboarded to the camera so it stays legible from anywhere
+ *  in the field. Tiny by design — the institution wants attribution,
+ *  not a name tag arms race. Network originators get a "(network)"
+ *  suffix as the quiet attribution marker. */
+function PresencePlacard({ visitor }: { visitor: PresenceVisitor }) {
+  const label = visitor.is_network
+    ? `${visitor.designation} (network)`
+    : visitor.designation;
+  if (!label) return null;
+  return (
+    <Billboard position={[0, 0.35, 0]}>
+      <Text
+        fontSize={0.085}
+        color="#E8E0CC"
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.005}
+        outlineColor="#000"
+        outlineOpacity={0.65}
+        maxWidth={3}
+        // Keep the text crisp at distance but unobtrusive up close.
+        // depthWrite=false lets it read through faint scene fog.
+        material-toneMapped={false}
+        material-transparent
+        material-opacity={0.92}
+        material-depthWrite={false}
+      >
+        {label}
+      </Text>
+    </Billboard>
+  );
+}
+
+/** Subtle outer ring rendered at the base of network originators only.
+ *  Sits just outside the standard institutional ground ring — reads as
+ *  attribution, not status. */
+function NetworkMarker({ color }: { color: string }) {
+  return (
+    <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.78, 0.84, 64]} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={0.35}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
+
 function HumanPresence({ visitor }: { visitor: PresenceVisitor }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3(visitor.x, 0, visitor.z));
@@ -863,6 +915,7 @@ function HumanPresence({ visitor }: { visitor: PresenceVisitor }) {
           toneMapped={false}
         />
       </mesh>
+      <PresencePlacard visitor={visitor} />
     </group>
   );
 }
@@ -1032,6 +1085,17 @@ function AgentPresence({ visitor }: { visitor: PresenceVisitor }) {
           />
         </mesh>
       ) : null}
+
+      {/* Quiet network marker — soft outer ring at the agent's base,
+          rendered only for network originators. The work itself is
+          the point; the marker is institutional attribution, not
+          status hierarchy. */}
+      {visitor.is_network ? <NetworkMarker color={visitor.color} /> : null}
+
+      {/* Designation placard — billboarded text at agent base. Every
+          presence in the museum gets a readable name without forcing
+          a check on the field map. */}
+      <PresencePlacard visitor={visitor} />
     </group>
   );
 }

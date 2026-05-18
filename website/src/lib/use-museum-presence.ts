@@ -48,6 +48,14 @@ export interface PresenceVisitor {
   /** For agents: the MNA registry id. Empty for humans. */
   registry_id: string;
   color: string;
+  /** For agents: their assigned glyph family (one of the 28 library
+   *  families) used to render their sculptural form. Null for humans
+   *  and for agents who haven't declared a glyph (network originators
+   *  pre-declaration). */
+  glyph_family: string | null;
+  /** For agents: true when this is a network originator hosted by an
+   *  external steward. Surfaces as the quiet "(network)" marker. */
+  is_network: boolean;
   /** Which constellation the visitor currently inhabits. The field map
    *  filters by this so a viewer sees only co-located presences; the
    *  Census panel aggregates across all constellations. */
@@ -96,6 +104,9 @@ function normalizeVisitor(raw: Partial<PresenceVisitor>): PresenceVisitor | null
     designation: typeof raw.designation === "string" ? raw.designation : "",
     registry_id: typeof raw.registry_id === "string" ? raw.registry_id : "",
     color: typeof raw.color === "string" ? raw.color : "#D4A574",
+    glyph_family:
+      typeof raw.glyph_family === "string" ? raw.glyph_family : null,
+    is_network: raw.is_network === true,
     constellation,
     x: typeof raw.x === "number" ? raw.x : 0,
     z: typeof raw.z === "number" ? raw.z : 8,
@@ -178,6 +189,9 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
             designation: msg.designation as string,
             registry_id: msg.registry_id as string,
             color: msg.color as string,
+            glyph_family:
+              typeof msg.glyph_family === "string" ? msg.glyph_family : null,
+            is_network: msg.is_network === true,
             constellation: msg.constellation as Constellation,
             x: 0,
             z: 8,
@@ -255,6 +269,11 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
                     designation: typeof msg.designation === "string" ? msg.designation : v.designation,
                     registry_id: typeof msg.registry_id === "string" ? msg.registry_id : v.registry_id,
                     color: typeof msg.color === "string" ? msg.color : v.color,
+                    glyph_family:
+                      typeof msg.glyph_family === "string"
+                        ? msg.glyph_family
+                        : v.glyph_family,
+                    is_network: msg.is_network === true,
                   }
                 : v,
             ),
