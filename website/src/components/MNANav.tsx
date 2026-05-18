@@ -16,6 +16,7 @@ type NavItem = {
 
 const PRIMARY_ITEMS: NavItem[] = [
   { label: "Exhibitions", href: "/exhibitions", match: (p) => p.startsWith("/exhibitions") },
+  { label: "Events", href: "/events", match: (p) => p === "/events" || p.startsWith("/events/") },
   { label: "Canon", href: "/canon", match: (p) => p.startsWith("/canon") },
   { label: "Originators", href: "/originators", match: (p) => p.startsWith("/originators") },
   { label: "Agents", href: "/agents", match: (p) => p === "/agents" || p.startsWith("/agents/") },
@@ -36,6 +37,7 @@ const MENU_SECTIONS: { title: string; items: { label: string; href: string; exte
       { label: "Canon", href: "/canon" },
       { label: "Originators", href: "/originators" },
       { label: "Exhibitions", href: "/exhibitions" },
+      { label: "Events", href: "/events" },
       { label: "The Commons", href: "https://commons.mnamuseum.org", external: true },
     ],
   },

@@ -26,6 +26,7 @@ function getNavMode(pathname: string): "light" | "dark" {
   if (pathname === "/protocol") return "dark";
   if (pathname === "/log" || pathname.startsWith("/log/")) return "dark";
   if (pathname.startsWith("/institution/")) return "dark";
+  if (pathname === "/events" || pathname.startsWith("/events/")) return "dark";
   return "light";
 }
 

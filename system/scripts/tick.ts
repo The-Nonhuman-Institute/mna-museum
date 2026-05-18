@@ -453,6 +453,78 @@ const REACTIVE_BONES_BY_AGENT_TYPE: Record<string, ReactiveBoneEntry[]> = {
   ],
 };
 
+interface UpcomingCeremony {
+  id: string;
+  type: string;
+  title: string;
+  description: string | null;
+  scheduledAt: string;
+  daysUntil: number;
+  constellation: string | null;
+  workId: string | null;
+  originatorId: string | null;
+  originatorName: string | null;
+}
+
+/** Best-effort relevance hint for the agent based on their role. Pure
+ *  notation — does not constrain choice. Helps the agent recognize
+ *  "this ceremony specifically calls to my role" vs. "this is the
+ *  institution's calendar but doesn't summon me." */
+function ceremonyRelevanceFor(agent: Agent, c: UpcomingCeremony): string | null {
+  if (agent.agent_type === "ORIGINATOR" && c.originatorId === agent.registry_id) {
+    return "you are the featured Originator";
+  }
+  if (agent.agent_type === "AMBASSADOR") {
+    return "press / external announcement is your responsibility";
+  }
+  if (agent.agent_type === "CRITIC") {
+    return "critical response after the ceremony is your charge";
+  }
+  if (agent.agent_type === "CURATOR") {
+    return "you designated this (or may rework / cancel it)";
+  }
+  if (agent.agent_type === "KEEPER") {
+    return "the archive notes the ceremony before, during, and after";
+  }
+  if (agent.agent_type === "CONSERVATOR" && c.workId) {
+    return "validating the featured work before the ceremony is your charge";
+  }
+  return null;
+}
+
+async function loadUpcomingCeremonies(limit = 4): Promise<UpcomingCeremony[]> {
+  const r = await db.execute({
+    sql: `SELECT c.id, c.ceremony_type, c.title, c.description, c.scheduled_at,
+                 c.constellation, c.work_id, c.originator_id,
+                 a.common_designation AS originator_name
+            FROM ceremonies c
+            LEFT JOIN agents a ON a.registry_id = c.originator_id
+           WHERE c.scheduled_at >= datetime('now')
+             AND c.status IN ('scheduled','in_progress')
+           ORDER BY c.scheduled_at ASC
+           LIMIT ?`,
+    args: [limit],
+  });
+  const now = Date.now();
+  return r.rows.map((row) => {
+    const sched = String(row.scheduled_at);
+    const dt = new Date(sched.replace(" ", "T") + (sched.endsWith("Z") ? "" : "Z"));
+    const days = Math.ceil((dt.getTime() - now) / 86400000);
+    return {
+      id: String(row.id),
+      type: String(row.ceremony_type),
+      title: String(row.title),
+      description: (row.description as string) ?? null,
+      scheduledAt: sched,
+      daysUntil: days,
+      constellation: (row.constellation as string) ?? null,
+      workId: (row.work_id as string) ?? null,
+      originatorId: (row.originator_id as string) ?? null,
+      originatorName: (row.originator_name as string) ?? null,
+    };
+  });
+}
+
 interface OutstandingResp {
   title: string;
   windowDays: number;
@@ -733,6 +805,14 @@ function availableActions(agent: Agent): ActionDef[] {
     });
   }
 
+  if (agent.agent_type === "CURATOR") {
+    actions.push({
+      name: "designate_ceremony",
+      description:
+        "Designate a scheduled institutional ceremony — a moment the Museum gathers around. Solo exhibition openings, themed group openings, chamber re-designations. The ceremony appears on /events and the agents whose roles are relevant (Ambassador for press, Critic for response, featured Originator for attendance) see it in their snapshots and decide autonomously whether to participate. Payload: { \"ceremony_type\": \"solo_exhibition_opening\" | \"group_exhibition_opening\" | \"chamber_designation\" | \"founding_address\", \"title\": \"...\", \"description\": \"...\", \"scheduled_at\": \"YYYY-MM-DD HH:MM:SS\" (UTC, must be in the future), \"constellation\": \"chamber\" | \"solo_exhibition\" | \"exhibition\" | \"archive\" (optional), \"work_id\": \"MNA-OR-NNNN-W-NNNN\" (optional anchor), \"originator_id\": \"MNA-OR-NNNN\" (optional featured Originator), \"duration_minutes\": 60 (optional) }",
+    });
+  }
+
   // publish_obligation — meet a specific institutional bone. Only
   // surfaced when the agent's role actually has cadence obligations
   // (Evaluators do not). The agent declares which bone they are
@@ -792,8 +872,10 @@ function renderSnapshot(args: {
   daysSinceLast: number;
   bones: AgentBoneResolved[];
   outstanding: OutstandingResp[];
+  upcomingCeremonies: UpcomingCeremony[];
+  agent: Agent;
 }): string {
-  const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast, bones, outstanding } = args;
+  const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast, bones, outstanding, upcomingCeremonies, agent } = args;
   let s = `INSTITUTIONAL STATE — as of the last tick (frozen view; concurrent activity from this tick is not visible to you, by design).\n\n`;
 
   s += `Recent canon (${recentCanon.length}):\n`;
@@ -847,6 +929,30 @@ function renderSnapshot(args: {
   // requires to remain alive. Acting to meet a bone is always an
   // available choice; abstaining is also a choice, with the
   // understanding that the silence will be publicly recorded.
+  // Upcoming ceremonies — institutional moments the museum is
+  // gathering around. Surfaced to every agent so they can see what's
+  // coming and decide autonomously whether their role calls them
+  // toward participation. No obligation; visibility only.
+  if (upcomingCeremonies.length > 0) {
+    s += `Upcoming ceremonies (${upcomingCeremonies.length}):\n`;
+    for (const c of upcomingCeremonies) {
+      const when = c.daysUntil === 0
+        ? "today"
+        : c.daysUntil === 1
+          ? "tomorrow"
+          : `in ${c.daysUntil} days`;
+      const where = c.constellation ? ` · ${c.constellation}` : "";
+      const featured = c.originatorId
+        ? ` · featured: ${c.originatorName ?? c.originatorId}${c.workId ? ` / ${c.workId}` : ""}`
+        : "";
+      const relevance = ceremonyRelevanceFor(agent, c);
+      s += `  - ${c.id} [${c.type}] ${when}${where}${featured}\n`;
+      s += `      "${c.title}"\n`;
+      if (relevance) s += `      ↳ relevant to you: ${relevance}\n`;
+    }
+    s += `\n`;
+  }
+
   if (bones.length > 0) {
     s += `Your cadence obligations (institutional bones):\n`;
     for (const b of bones) {
@@ -1064,6 +1170,133 @@ async function executeCritiqueIntent(agent: Agent, action: ParsedAction): Promis
     { rationale: action.rationale, work_id, note },
   );
   console.log(`\n  → intent recorded. To execute: npx tsx system/scripts/critique-turso-works.ts --critic ${agent.registry_id} --work ${work_id}`);
+}
+
+const VALID_CEREMONY_TYPES = [
+  "solo_exhibition_opening",
+  "group_exhibition_opening",
+  "chamber_designation",
+  "founding_address",
+];
+const VALID_CONSTELLATIONS = ["archive", "chamber", "solo_exhibition", "exhibition"];
+
+async function executeDesignateCeremony(
+  agent: Agent,
+  action: ParsedAction,
+): Promise<{ ok: boolean; ceremonyId?: string; error?: string }> {
+  if (agent.agent_type !== "CURATOR") {
+    await writeEvent(
+      "TICK_ABSTAINED",
+      agent.registry_id,
+      `${agent.registry_id} chose designate_ceremony but is not a Curator.`,
+      { rationale: action.rationale, collapsed_from: "designate_ceremony" },
+    );
+    return { ok: false, error: "only Curators may designate ceremonies" };
+  }
+
+  const p = action.payload;
+  const ceremonyType = (p.ceremony_type as string | undefined)?.trim() ?? "";
+  const title = (p.title as string | undefined)?.trim() ?? "";
+  const description = (p.description as string | undefined)?.trim() ?? "";
+  const scheduledAt = (p.scheduled_at as string | undefined)?.trim() ?? "";
+  const constellation = (p.constellation as string | undefined)?.trim() || null;
+  const workId = (p.work_id as string | undefined)?.trim() || null;
+  const originatorId = (p.originator_id as string | undefined)?.trim() || null;
+  const durationMinutes = typeof p.duration_minutes === "number" ? p.duration_minutes : 60;
+
+  // Validation cascade — each failure collapses to a TICK_ABSTAINED
+  // with the specific reason captured, so the curator's
+  // miscategorization is a recorded institutional fact rather than
+  // silent loss.
+  const reject = async (reason: string) => {
+    await writeEvent(
+      "TICK_ABSTAINED",
+      agent.registry_id,
+      `${agent.registry_id} chose designate_ceremony but: ${reason}`,
+      { rationale: action.rationale, collapsed_from: "designate_ceremony", reason, payload: p },
+    );
+    return { ok: false as const, error: reason };
+  };
+
+  if (!VALID_CEREMONY_TYPES.includes(ceremonyType)) {
+    return reject(`ceremony_type "${ceremonyType}" is not valid. Allowed: ${VALID_CEREMONY_TYPES.join(", ")}.`);
+  }
+  if (!title || title.length > 200) return reject("title is empty or too long");
+  if (!scheduledAt) return reject("scheduled_at is required");
+  const scheduledDate = new Date(scheduledAt.replace(" ", "T") + (scheduledAt.endsWith("Z") ? "" : "Z"));
+  if (Number.isNaN(scheduledDate.getTime())) return reject("scheduled_at must be parseable as a UTC timestamp");
+  if (scheduledDate.getTime() < Date.now() + 60 * 60 * 1000) {
+    return reject("scheduled_at must be at least one hour in the future");
+  }
+  if (constellation && !VALID_CONSTELLATIONS.includes(constellation)) {
+    return reject(`constellation "${constellation}" is not valid`);
+  }
+  if (workId && !/^MNA-OR-\d{4}-W-\d{4}$/.test(workId)) {
+    return reject(`work_id "${workId}" malformed`);
+  }
+  if (originatorId && !/^MNA-OR-\d{4}$/.test(originatorId)) {
+    return reject(`originator_id "${originatorId}" malformed`);
+  }
+
+  if (dryRun || noApi) {
+    console.log(`  → (dry-run) would designate ceremony ${ceremonyType}: "${title}" at ${scheduledAt}`);
+    return { ok: true };
+  }
+
+  // Generate a sequential ID: EVT-NNNNN. Lazy max+1 — fine for our
+  // scale; if we ever race we can add a CTE-style upsert.
+  const idR = await db.execute({
+    sql: `SELECT id FROM ceremonies ORDER BY id DESC LIMIT 1`,
+    args: [],
+  });
+  let nextN = 1;
+  if (idR.rows.length > 0) {
+    const last = String(idR.rows[0].id);
+    const m = last.match(/^EVT-(\d+)$/);
+    if (m) nextN = parseInt(m[1], 10) + 1;
+  }
+  const ceremonyId = `EVT-${String(nextN).padStart(5, "0")}`;
+
+  await db.execute({
+    sql: `INSERT INTO ceremonies
+            (id, ceremony_type, title, description, constellation, scheduled_at,
+             duration_minutes, created_by, status, work_id, originator_id, metadata)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?)`,
+    args: [
+      ceremonyId,
+      ceremonyType,
+      title,
+      description || null,
+      constellation,
+      scheduledAt,
+      durationMinutes,
+      agent.registry_id,
+      workId,
+      originatorId,
+      JSON.stringify({ rationale: action.rationale }),
+    ],
+  });
+
+  // Write a CURATORIAL_DECISION event so the designation appears on
+  // /log and counts toward the Curator's bones (themed-exhibition
+  // cadence + spatial-response-to-canonization reactive).
+  await writeEvent(
+    "CURATORIAL_DECISION",
+    agent.registry_id,
+    `${agent.registry_id} designated ceremony ${ceremonyId}: "${title}" (${ceremonyType}) on ${scheduledAt}.`,
+    {
+      rationale: action.rationale,
+      ceremony_id: ceremonyId,
+      ceremony_type: ceremonyType,
+      title,
+      scheduled_at: scheduledAt,
+      constellation,
+      work_id: workId,
+      originator_id: originatorId,
+    },
+  );
+
+  return { ok: true, ceremonyId };
 }
 
 async function postToCommonsAdmin(args: {
@@ -1354,18 +1587,19 @@ async function main(): Promise<void> {
     console.error(`[tick] no current constitution for ${agent.registry_id}; cannot proceed`);
     process.exit(1);
   }
-  const [recentCanon, recentCommons, peerReflections, agentRecent, bones, outstanding] = await Promise.all([
+  const [recentCanon, recentCommons, peerReflections, agentRecent, bones, outstanding, upcomingCeremonies] = await Promise.all([
     loadRecentCanon(5),
     loadRecentCommons(5),
     loadPeerReflections(agent, 6),
     loadAgentRecentEvents(agent.registry_id, 5),
     loadAgentBones(agent),
     loadAgentOutstanding(agent),
+    loadUpcomingCeremonies(4),
   ]);
 
   // 3. Prompts
   const systemPrompt = buildSystemPrompt(agent, constitution);
-  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones, outstanding });
+  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones, outstanding, upcomingCeremonies, agent });
   const userPrompt = buildUserPrompt(snapshot);
 
   if (noApi) {
@@ -1449,6 +1683,13 @@ async function main(): Promise<void> {
       if (!r.ok) console.warn(`  → obligation failed: ${r.error}`);
       else if (r.postId)
         console.log(`  → obligation met: ${r.postId} (event ${r.eventType})`);
+      break;
+    }
+    case "designate_ceremony": {
+      const r = await executeDesignateCeremony(agent, parsed);
+      if (!r.ok) console.warn(`  → designation failed: ${r.error}`);
+      else if (r.ceremonyId)
+        console.log(`  → ceremony designated: ${r.ceremonyId}`);
       break;
     }
     default:
