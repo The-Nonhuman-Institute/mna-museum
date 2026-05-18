@@ -138,9 +138,12 @@ function StripGlyph({ kind, active }: { kind: IconKind; active: boolean }) {
   }
 }
 
-/** The icon strip — 4 representative medium types, active one highlighted. */
+/** The icon strip — every medium type the institution supports, with
+ *  the current work's kind highlighted. Must include all IconKind
+ *  values or works of an unrepresented kind (canvas, text) would
+ *  render with no active glyph. */
 function IconStrip({ activeKind }: { activeKind: IconKind }) {
-  const strip: IconKind[] = ["vector", "audio", "markup", "scene"];
+  const strip: IconKind[] = ["vector", "markup", "audio", "canvas", "scene", "text"];
   return (
     <div className="flex items-center gap-1.5">
       {strip.map((k) => (
