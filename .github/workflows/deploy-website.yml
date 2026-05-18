@@ -56,16 +56,14 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
-      - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy prebuilt to production
+      # Deploy source-only. Vercel builds on their own infrastructure
+      # (Pro plan = 8 GB / 4 cores + persistent .next/cache), not on
+      # this GHA runner. ~60-90s typical, faster after cache warms.
+      # No `vercel pull` + `vercel build` needed when Vercel does both.
+      - name: Deploy to production (Vercel builds remotely)
         id: deploy
         run: |
-          url="$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)"
+          url="$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # Notify on completion so the user doesn't have to poll the
