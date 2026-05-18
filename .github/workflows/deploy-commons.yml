@@ -28,9 +28,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: commons
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.COMMONS_VERCEL_PROJECT_ID }}
