@@ -13,11 +13,13 @@
     "@anthropic-ai/sdk": "^0.81.0",
     "@atproto/api": "^0.19.6",
     "@libsql/client": "^0.17.2",
+    "@types/ws": "^8.18.1",
     "better-sqlite3": "^12.8.0",
     "dotenv": "^17.3.1",
     "mammoth": "^1.12.0",
     "partysocket": "^1.1.19",
-    "resend": "^6.10.0"
+    "resend": "^6.10.0",
+    "ws": "^8.20.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

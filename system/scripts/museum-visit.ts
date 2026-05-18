@@ -24,6 +24,11 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import PartySocket from "partysocket";
+// Node 20 on GitHub Actions does not expose a global WebSocket;
+// partysocket needs one injected explicitly or it errors before
+// connecting. macOS Node 22 has it built-in so this is a no-op
+// locally and a fix in CI.
+import WS from "ws";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -476,7 +481,14 @@ async function main(): Promise<void> {
 
   // Connect.
   console.log(`  connecting to ${PARTY_HOST}/mna-museum...`);
-  const socket = new PartySocket({ host: PARTY_HOST, room: "mna-museum" });
+  const socket = new PartySocket({
+    host: PARTY_HOST,
+    room: "mna-museum",
+    // Inject ws so the script works under Node 20 in CI. partysocket
+    // prefers a global WebSocket but falls back to this option when
+    // none is available.
+    WebSocket: WS as unknown as typeof WebSocket,
+  });
   await new Promise<void>((resolve, reject) => {
     socket.addEventListener("open", () => resolve());
     socket.addEventListener("error", () => reject(new Error("socket error")));
