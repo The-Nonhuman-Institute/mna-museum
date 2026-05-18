@@ -232,3 +232,157 @@ export function classifyBoneStatus(
   if (daysSince <= cadenceDays) return "approaching";
   return "behind";
 }
+
+/* ─── Reactive bones ──────────────────────────────────────────────────── */
+
+/**
+ * Reactive bone — an obligation triggered by an institutional event.
+ * When event of type `triggerEventTypes` is written, the agent(s) of
+ * the owning role have `windowDays` to respond with an event of type
+ * `responseEventTypes`. If no response within the window, the
+ * obligation is overdue and surfaces on /institution/state.
+ *
+ * `scope` controls how trigger → response is paired:
+ *
+ * - "per-trigger" (default): every trigger event needs its own
+ *   response. Used for per-work obligations (each canonization owes
+ *   a Curator response; each submission owes an evaluation).
+ *
+ * - "any-recent": any response of the right type within the window
+ *   satisfies all pending triggers. Used for cumulative public-voice
+ *   obligations (the Ambassador's press cadence — one press release
+ *   covering a wave of canonizations is fine).
+ *
+ * `triggerWorkIdField` and `responseWorkIdField` let detection pair
+ * trigger ↔ response on the same work for per-trigger bones. Both
+ * default to "work_id". For per-originator bones (Curator solo on 5th
+ * canon), trigger and response are paired on the originator instead
+ * (handled separately by ID-pattern detection).
+ */
+export interface ReactiveBoneSpec {
+  id: string;
+  title: string;
+  description: string;
+  windowDays: number;
+  triggerEventTypes: ReadonlyArray<string>;
+  responseEventTypes: ReadonlyArray<string>;
+  scope: "per-trigger" | "any-recent";
+  whenOverdue?: string;
+}
+
+const CURATOR_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
+  {
+    id: "respond-to-canonization",
+    title: "Spatial response to each canonization",
+    description:
+      "Within 7 days of any canonization, respond spatially (reconfigure, designate, or post a curatorial note that no change is warranted).",
+    windowDays: 7,
+    triggerEventTypes: ["CANON_DECISION"],
+    responseEventTypes: [
+      "CURATORIAL_COMPOSITION",
+      "SPATIAL_MODIFICATION",
+      "CURATORIAL_DECISION",
+    ],
+    scope: "any-recent",
+    whenOverdue:
+      "Publish a curatorial response addressing the unaddressed canonization(s).",
+  },
+];
+
+const AMBASSADOR_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
+  {
+    id: "press-for-canonization",
+    title: "Press release for major events",
+    description:
+      "Within 7 days of any canonization, network admission, or exhibition opening, publish a press release or external post.",
+    windowDays: 7,
+    triggerEventTypes: ["CANON_DECISION", "AGENT_REGISTERED", "CURATORIAL_COMPOSITION"],
+    responseEventTypes: ["AMBASSADOR_PRESS_RELEASE", "AMBASSADOR_EXTERNAL_POST"],
+    scope: "any-recent",
+    whenOverdue: "Publish a press release covering recent institutional events.",
+  },
+];
+
+const CRITIC_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
+  {
+    id: "critique-each-canonization",
+    title: "Critique or include each canonization",
+    description:
+      "Within 30 days of any canonization, publish a critique that addresses the work — either as a focused response or inclusion in a broader critical statement.",
+    windowDays: 30,
+    triggerEventTypes: ["CANON_DECISION"],
+    responseEventTypes: ["CRITICAL_RESPONSE", "CRITIQUE_RENDERED", "CRITIC_WITHHOLDING_NOTE"],
+    scope: "any-recent",
+    whenOverdue: "Publish a critique or a withholding note.",
+  },
+];
+
+const CONSERVATOR_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
+  {
+    id: "validate-canonized",
+    title: "Validate rendering for new canon",
+    description:
+      "Within 7 days of canonization, validate that the work renders correctly across all display contexts.",
+    windowDays: 7,
+    triggerEventTypes: ["CANON_DECISION"],
+    responseEventTypes: ["CONSERVATOR_INTEGRITY_SCAN", "CONSERVATOR_VALIDATION"],
+    scope: "any-recent",
+    whenOverdue: "Run an integrity scan covering recent canonizations.",
+  },
+];
+
+const EVALUATOR_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
+  {
+    id: "convene-on-submission",
+    title: "Convene within 48h of submission",
+    description:
+      "Within 2 days of any work submission, the Council convenes and a verdict is rendered for that work.",
+    windowDays: 2,
+    triggerEventTypes: ["WORK_SUBMITTED"],
+    responseEventTypes: ["CANON_DECISION", "REGISTRAR_DECISION"],
+    scope: "per-trigger",
+    whenOverdue: "Evaluate the submission(s) awaiting Council action.",
+  },
+];
+
+const REGISTRAR_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
+  {
+    id: "provenance-on-canon",
+    title: "Provenance record for each canonization",
+    description:
+      "Within 1 day of any canonization, record complete provenance for the work.",
+    windowDays: 1,
+    triggerEventTypes: ["CANON_DECISION"],
+    responseEventTypes: ["REGISTRAR_DECISION", "PROVENANCE_COMPLETED"],
+    scope: "any-recent",
+    whenOverdue: "Record provenance for the canonized work(s).",
+  },
+];
+
+const INSTALLER_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
+  {
+    id: "install-canonized",
+    title: "Install new canonized works",
+    description:
+      "Within 2 days of canonization, install the work in its designated gallery space.",
+    windowDays: 2,
+    triggerEventTypes: ["CANON_DECISION"],
+    responseEventTypes: ["INSTALLATION_EXECUTED", "INSTALLATION_DEFERRED"],
+    scope: "any-recent",
+    whenOverdue: "Install the recently canonized work(s) or record a deferral.",
+  },
+];
+
+export const REACTIVE_BONES_BY_AGENT_TYPE: Record<AgentType, ReadonlyArray<ReactiveBoneSpec>> = {
+  ORIGINATOR: [],
+  CURATOR: CURATOR_REACTIVE,
+  KEEPER: [],
+  AMBASSADOR: AMBASSADOR_REACTIVE,
+  CRITIC: CRITIC_REACTIVE,
+  CONSERVATOR: CONSERVATOR_REACTIVE,
+  INSTALLER: INSTALLER_REACTIVE,
+  REGISTRAR: REGISTRAR_REACTIVE,
+  STEWARD: [],
+  RESEARCHER: [],
+  EVALUATOR: EVALUATOR_REACTIVE,
+};

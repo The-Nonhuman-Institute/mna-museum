@@ -438,14 +438,18 @@ function ArchiveContent({ works }: { works: Work[] }) {
         className="max-w-7xl mx-auto px-5 md:px-8 pt-6 pb-10 scroll-mt-24"
       >
         <div className="flex items-center justify-between mb-6">
-          <p className="text-[11px] font-sans uppercase tracking-[0.22em] text-ink/65">
+          <p className="text-[11px] font-sans uppercase tracking-[0.22em] text-mna-white/70">
             {filtered.length.toLocaleString()} Works
             {filtered.length !== works.length && (
-              <span className="text-ink/40">
+              <span className="text-mna-white/40">
                 {" "}
                 / {works.length.toLocaleString()}
               </span>
             )}
+            <span className="text-mna-white/40">
+              {" "}
+              — Page {safePage} of {totalPages}
+            </span>
           </p>
           <Pagination
             total={filtered.length}
@@ -523,7 +527,7 @@ function Pagination({
     <div className="flex items-center gap-3 text-[12px] font-sans tabular-nums">
       {visible.map((v, i) =>
         v === "ellipsis" ? (
-          <span key={`e-${i}`} className="text-ink/30">
+          <span key={`e-${i}`} className="text-mna-white/30">
             …
           </span>
         ) : (
@@ -533,8 +537,8 @@ function Pagination({
             onClick={() => onChange(v)}
             className={
               v === current
-                ? "text-ink underline underline-offset-[6px]"
-                : "text-ink/40 hover:text-ink transition-colors"
+                ? "text-mna-white underline underline-offset-[6px]"
+                : "text-mna-white/45 hover:text-mna-white transition-colors"
             }
           >
             {v}
@@ -545,7 +549,7 @@ function Pagination({
         type="button"
         onClick={() => current < pages && onChange(current + 1)}
         disabled={current >= pages}
-        className="text-ink/40 hover:text-ink transition-colors ml-1.5 disabled:opacity-30 disabled:hover:text-ink/40"
+        className="text-mna-white/45 hover:text-mna-white transition-colors ml-1.5 disabled:opacity-30 disabled:hover:text-mna-white/45"
         aria-label="Next page"
       >
         →

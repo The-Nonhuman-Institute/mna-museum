@@ -19,10 +19,12 @@
 import { getDb } from "./registration-db";
 import {
   BONES_BY_AGENT_TYPE,
+  REACTIVE_BONES_BY_AGENT_TYPE,
   classifyBoneStatus,
   type AgentType,
   type BoneSpec,
   type BoneStatus,
+  type ReactiveBoneSpec,
 } from "./bones";
 
 export interface BoneState {
@@ -38,11 +40,26 @@ export interface BoneState {
   dueAt: string | null;
 }
 
+/** One outstanding response — a trigger event awaiting a matching
+ *  response from the owning agent role. */
+export interface OutstandingResponse {
+  spec: ReactiveBoneSpec;
+  triggerEventType: string;
+  triggerAgentId: string | null;
+  triggerWorkId: string | null;
+  triggerCreatedAt: string;
+  daysSinceTrigger: number;
+  /** "approaching" when inside the window, "behind" when past. */
+  status: "approaching" | "behind";
+  description: string | null;
+}
+
 export interface AgentBoneState {
   agentId: string;
   agentType: AgentType;
   designation: string;
   bones: BoneState[];
+  outstanding: OutstandingResponse[];
   /** Worst status across the agent's bones — for sorting. */
   worstStatus: BoneStatus;
 }
@@ -60,12 +77,19 @@ function statusRank(s: BoneStatus): number {
   }
 }
 
-function worst(states: BoneState[]): BoneStatus {
-  if (states.length === 0) return "current";
-  return states.reduce<BoneStatus>(
-    (acc, s) => (statusRank(s.status) < statusRank(acc) ? s.status : acc),
-    "current",
-  );
+function worst(
+  cadence: BoneState[],
+  outstanding: OutstandingResponse[],
+): BoneStatus {
+  let acc: BoneStatus = "current";
+  for (const s of cadence) {
+    if (statusRank(s.status) < statusRank(acc)) acc = s.status;
+  }
+  for (const o of outstanding) {
+    const s: BoneStatus = o.status === "behind" ? "behind" : "approaching";
+    if (statusRank(s) < statusRank(acc)) acc = s;
+  }
+  return acc;
 }
 
 interface AgentRow {
@@ -162,13 +186,17 @@ export async function loadAgentBoneState(agentId: string): Promise<AgentBoneStat
     agent_type: row.agent_type as AgentType,
     common_designation: (row.common_designation as string) ?? null,
   };
-  const bones = await resolveBones(agent);
+  const [bones, outstanding] = await Promise.all([
+    resolveBones(agent),
+    resolveReactive(agent),
+  ]);
   return {
     agentId: agent.registry_id,
     agentType: agent.agent_type,
     designation: agent.common_designation ?? agent.registry_id,
     bones,
-    worstStatus: worst(bones),
+    outstanding,
+    worstStatus: worst(bones, outstanding),
   };
 }
 
@@ -177,13 +205,17 @@ export async function loadAllAgentBoneStates(): Promise<AgentBoneState[]> {
   const agents = await loadAgents();
   const states: AgentBoneState[] = [];
   for (const a of agents) {
-    const bones = await resolveBones(a);
+    const [bones, outstanding] = await Promise.all([
+      resolveBones(a),
+      resolveReactive(a),
+    ]);
     states.push({
       agentId: a.registry_id,
       agentType: a.agent_type,
       designation: a.common_designation ?? a.registry_id,
       bones,
-      worstStatus: worst(bones),
+      outstanding,
+      worstStatus: worst(bones, outstanding),
     });
   }
   // Stable order: worst status first, then by agent_type, then by id.
@@ -208,6 +240,109 @@ async function resolveBones(agent: AgentRow): Promise<BoneState[]> {
     results.push({ spec, status, lastMetAt, daysSince, dueAt });
   }
   return results;
+}
+
+/** For each reactive bone the agent owns, find triggers that have
+ *  not yet been answered by a qualifying response within the window. */
+async function resolveReactive(agent: AgentRow): Promise<OutstandingResponse[]> {
+  const db = getDb();
+  const specs = REACTIVE_BONES_BY_AGENT_TYPE[agent.agent_type] ?? [];
+  const now = new Date();
+  const out: OutstandingResponse[] = [];
+
+  for (const spec of specs) {
+    // We look back across the longest reasonable horizon so that
+    // even multi-week-old triggers surface (so a Critic who has
+    // never responded shows real overdue history rather than only
+    // recent gaps).
+    const horizonDays = Math.max(spec.windowDays * 4, 30);
+    const triggerPlaceholders = spec.triggerEventTypes.map(() => "?").join(",");
+    const triggers = await db.execute({
+      sql: `SELECT id, event_type, agent_id, work_id, description, created_at
+              FROM events
+             WHERE event_type IN (${triggerPlaceholders})
+               AND created_at >= datetime('now', '-' || ? || ' days')
+             ORDER BY created_at DESC`,
+      args: [...spec.triggerEventTypes, horizonDays],
+    });
+    if (triggers.rows.length === 0) continue;
+
+    if (spec.scope === "any-recent") {
+      // The whole batch can be satisfied by a single response by the
+      // owning agent inside the window. Find the most recent
+      // satisfying response by any agent of this role.
+      const respPlaceholders = spec.responseEventTypes.map(() => "?").join(",");
+      const respR = await db.execute({
+        sql: `SELECT MAX(e.created_at) AS last_at
+                FROM events e
+                JOIN agents a ON a.registry_id = e.agent_id
+               WHERE a.agent_type = ?
+                 AND e.event_type IN (${respPlaceholders})`,
+        args: [agent.agent_type, ...spec.responseEventTypes],
+      });
+      const lastResp = (respR.rows[0]?.last_at as string) || null;
+      // A trigger is unanswered if no response of the right type by
+      // the owning role has happened after the trigger.
+      for (const row of triggers.rows) {
+        const triggerAt = String(row.created_at);
+        if (lastResp && lastResp > triggerAt) continue; // already covered
+        const days = daysBetween(now, triggerAt);
+        if (days > spec.windowDays * 4) continue; // out of horizon
+        const status: OutstandingResponse["status"] =
+          days <= spec.windowDays ? "approaching" : "behind";
+        out.push({
+          spec,
+          triggerEventType: String(row.event_type),
+          triggerAgentId: (row.agent_id as string) ?? null,
+          triggerWorkId: (row.work_id as string) ?? null,
+          triggerCreatedAt: triggerAt,
+          daysSinceTrigger: days,
+          status,
+          description: (row.description as string) ?? null,
+        });
+      }
+    } else {
+      // per-trigger: each trigger needs its own response, paired on
+      // work_id. A trigger is satisfied if any response event by the
+      // owning role references the same work_id after the trigger.
+      for (const row of triggers.rows) {
+        const triggerAt = String(row.created_at);
+        const workId = (row.work_id as string) ?? null;
+        const respPlaceholders = spec.responseEventTypes.map(() => "?").join(",");
+        const respR = await db.execute({
+          sql: `SELECT COUNT(*) AS n
+                  FROM events e
+                  JOIN agents a ON a.registry_id = e.agent_id
+                 WHERE a.agent_type = ?
+                   AND e.event_type IN (${respPlaceholders})
+                   AND e.created_at > ?
+                   ${workId ? "AND e.work_id = ?" : ""}`,
+          args: workId
+            ? [agent.agent_type, ...spec.responseEventTypes, triggerAt, workId]
+            : [agent.agent_type, ...spec.responseEventTypes, triggerAt],
+        });
+        const n = (respR.rows[0]?.n as number) ?? 0;
+        if (n > 0) continue;
+        const days = daysBetween(now, triggerAt);
+        const status: OutstandingResponse["status"] =
+          days <= spec.windowDays ? "approaching" : "behind";
+        out.push({
+          spec,
+          triggerEventType: String(row.event_type),
+          triggerAgentId: (row.agent_id as string) ?? null,
+          triggerWorkId: workId,
+          triggerCreatedAt: triggerAt,
+          daysSinceTrigger: days,
+          status,
+          description: (row.description as string) ?? null,
+        });
+      }
+    }
+  }
+
+  // Most overdue first.
+  out.sort((a, b) => b.daysSinceTrigger - a.daysSinceTrigger);
+  return out;
 }
 
 /** Aggregate institutional health — counts across all agents. */
@@ -243,6 +378,15 @@ export function summarize(states: AgentBoneState[]): InstitutionHealth {
           daysSince: b.daysSince,
         });
       }
+    }
+    for (const o of s.outstanding) {
+      if (o.status !== "behind") continue;
+      overdueBones.push({
+        agentId: s.agentId,
+        designation: s.designation,
+        bone: `${o.spec.title}${o.triggerWorkId ? ` · ${o.triggerWorkId}` : ""}`,
+        daysSince: o.daysSinceTrigger,
+      });
     }
   }
   return {

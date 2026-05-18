@@ -20,6 +20,7 @@ import {
   summarize,
   type AgentBoneState,
   type BoneState,
+  type OutstandingResponse,
 } from "@/lib/bones-detect";
 import type { BoneStatus } from "@/lib/bones";
 
@@ -215,17 +216,67 @@ function AgentRow({ state }: { state: AgentBoneState }) {
         </span>
       </div>
 
-      {state.bones.length === 0 ? (
+      {state.bones.length === 0 && state.outstanding.length === 0 ? (
         <p className="mt-3 text-[12px] text-mna-white/45 italic">
-          No cadence obligations defined for this role yet.
+          No obligations defined for this role yet.
         </p>
       ) : (
-        <ul className="mt-3 space-y-2">
-          {state.bones.map((b) => (
-            <BoneRow key={b.spec.id} bone={b} />
-          ))}
-        </ul>
+        <>
+          {state.bones.length > 0 ? (
+            <ul className="mt-3 space-y-2">
+              {state.bones.map((b) => (
+                <BoneRow key={b.spec.id} bone={b} />
+              ))}
+            </ul>
+          ) : null}
+          {state.outstanding.length > 0 ? (
+            <div className="mt-3 pt-3 border-t border-mna-white/10">
+              <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/40 mb-2">
+                Outstanding responses ({state.outstanding.length})
+              </p>
+              <ul className="space-y-1.5">
+                {state.outstanding.slice(0, 6).map((o, i) => (
+                  <OutstandingRow key={i} item={o} />
+                ))}
+                {state.outstanding.length > 6 ? (
+                  <li className="text-[11px] text-mna-white/40">
+                    …and {state.outstanding.length - 6} more
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+          ) : null}
+        </>
       )}
+    </li>
+  );
+}
+
+function OutstandingRow({ item }: { item: OutstandingResponse }) {
+  const dotClass = item.status === "behind" ? STATUS_DOT.behind : STATUS_DOT.approaching;
+  const textClass = item.status === "behind" ? STATUS_TEXT.behind : STATUS_TEXT.approaching;
+  return (
+    <li className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1 md:gap-4 text-[11.5px]">
+      <div className="flex items-baseline gap-2 min-w-0">
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${dotClass} shrink-0 translate-y-[-2px]`}
+          aria-hidden
+        />
+        <span className="text-mna-white/75 truncate">
+          {item.spec.title}
+          {item.triggerWorkId ? (
+            <span className="text-mna-white/50"> · {item.triggerWorkId}</span>
+          ) : null}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-3 shrink-0">
+        <span className="text-mna-white/55">
+          triggered {daysLabel(item.daysSinceTrigger)}
+        </span>
+        <span className={`text-[9.5px] uppercase tracking-[0.22em] ${textClass}`}>
+          {item.status === "behind" ? `${item.spec.windowDays}d overdue` : "due soon"}
+        </span>
+      </div>
     </li>
   );
 }

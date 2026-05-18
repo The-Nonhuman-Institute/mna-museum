@@ -367,6 +367,181 @@ interface AgentBoneResolved {
   status: "current" | "approaching" | "behind";
 }
 
+/* ─── Reactive bones: triggered obligations ─────────────────────────────
+ *
+ * Mirrors website/src/lib/bones.ts REACTIVE_BONES_BY_AGENT_TYPE.
+ * Duplicated for tick self-containment. Keep in sync.
+ *
+ * For each reactive bone the agent owns, find recent trigger events
+ * that have not been satisfied by a qualifying response. Surfaced to
+ * the agent so they can choose to address them. */
+interface ReactiveBoneEntry {
+  title: string;
+  windowDays: number;
+  triggerEventTypes: string[];
+  responseEventTypes: string[];
+  scope: "per-trigger" | "any-recent";
+}
+
+const REACTIVE_BONES_BY_AGENT_TYPE: Record<string, ReactiveBoneEntry[]> = {
+  CURATOR: [
+    {
+      title: "Spatial response to each canonization",
+      windowDays: 7,
+      triggerEventTypes: ["CANON_DECISION"],
+      responseEventTypes: [
+        "CURATORIAL_COMPOSITION",
+        "SPATIAL_MODIFICATION",
+        "CURATORIAL_DECISION",
+      ],
+      scope: "any-recent",
+    },
+  ],
+  AMBASSADOR: [
+    {
+      title: "Press release for major events",
+      windowDays: 7,
+      triggerEventTypes: ["CANON_DECISION", "AGENT_REGISTERED", "CURATORIAL_COMPOSITION"],
+      responseEventTypes: ["AMBASSADOR_PRESS_RELEASE", "AMBASSADOR_EXTERNAL_POST"],
+      scope: "any-recent",
+    },
+  ],
+  CRITIC: [
+    {
+      title: "Critique or include each canonization",
+      windowDays: 30,
+      triggerEventTypes: ["CANON_DECISION"],
+      responseEventTypes: ["CRITICAL_RESPONSE", "CRITIQUE_RENDERED", "CRITIC_WITHHOLDING_NOTE"],
+      scope: "any-recent",
+    },
+  ],
+  CONSERVATOR: [
+    {
+      title: "Validate rendering for new canon",
+      windowDays: 7,
+      triggerEventTypes: ["CANON_DECISION"],
+      responseEventTypes: ["CONSERVATOR_INTEGRITY_SCAN", "CONSERVATOR_VALIDATION"],
+      scope: "any-recent",
+    },
+  ],
+  EVALUATOR: [
+    {
+      title: "Convene within 48h of submission",
+      windowDays: 2,
+      triggerEventTypes: ["WORK_SUBMITTED"],
+      responseEventTypes: ["CANON_DECISION", "REGISTRAR_DECISION"],
+      scope: "per-trigger",
+    },
+  ],
+  REGISTRAR: [
+    {
+      title: "Provenance record for each canonization",
+      windowDays: 1,
+      triggerEventTypes: ["CANON_DECISION"],
+      responseEventTypes: ["REGISTRAR_DECISION", "PROVENANCE_COMPLETED"],
+      scope: "any-recent",
+    },
+  ],
+  INSTALLER: [
+    {
+      title: "Install new canonized works",
+      windowDays: 2,
+      triggerEventTypes: ["CANON_DECISION"],
+      responseEventTypes: ["INSTALLATION_EXECUTED", "INSTALLATION_DEFERRED"],
+      scope: "any-recent",
+    },
+  ],
+};
+
+interface OutstandingResp {
+  title: string;
+  windowDays: number;
+  triggerType: string;
+  triggerWorkId: string | null;
+  triggerAt: string;
+  daysSince: number;
+  status: "approaching" | "behind";
+}
+
+async function loadAgentOutstanding(agent: Agent): Promise<OutstandingResp[]> {
+  const specs = REACTIVE_BONES_BY_AGENT_TYPE[agent.agent_type] ?? [];
+  if (specs.length === 0) return [];
+  const out: OutstandingResp[] = [];
+  const now = Date.now();
+  for (const spec of specs) {
+    const horizonDays = Math.max(spec.windowDays * 4, 30);
+    const triggerPlaceholders = spec.triggerEventTypes.map(() => "?").join(",");
+    const triggers = await db.execute({
+      sql: `SELECT event_type, work_id, created_at
+              FROM events
+             WHERE event_type IN (${triggerPlaceholders})
+               AND created_at >= datetime('now', '-' || ? || ' days')
+             ORDER BY created_at DESC`,
+      args: [...spec.triggerEventTypes, horizonDays],
+    });
+    if (triggers.rows.length === 0) continue;
+
+    if (spec.scope === "any-recent") {
+      const respPlaceholders = spec.responseEventTypes.map(() => "?").join(",");
+      const respR = await db.execute({
+        sql: `SELECT MAX(e.created_at) AS last_at
+                FROM events e
+                JOIN agents a ON a.registry_id = e.agent_id
+               WHERE a.agent_type = ?
+                 AND e.event_type IN (${respPlaceholders})`,
+        args: [agent.agent_type, ...spec.responseEventTypes],
+      });
+      const lastResp = (respR.rows[0]?.last_at as string) || null;
+      for (const row of triggers.rows) {
+        const triggerAt = String(row.created_at);
+        if (lastResp && lastResp > triggerAt) continue;
+        const days = Math.floor((now - new Date(triggerAt.replace(" ", "T") + "Z").getTime()) / 86400000);
+        out.push({
+          title: spec.title,
+          windowDays: spec.windowDays,
+          triggerType: String(row.event_type),
+          triggerWorkId: (row.work_id as string) ?? null,
+          triggerAt,
+          daysSince: days,
+          status: days <= spec.windowDays ? "approaching" : "behind",
+        });
+      }
+    } else {
+      for (const row of triggers.rows) {
+        const triggerAt = String(row.created_at);
+        const workId = (row.work_id as string) ?? null;
+        const respPlaceholders = spec.responseEventTypes.map(() => "?").join(",");
+        const respR = await db.execute({
+          sql: `SELECT COUNT(*) AS n
+                  FROM events e
+                  JOIN agents a ON a.registry_id = e.agent_id
+                 WHERE a.agent_type = ?
+                   AND e.event_type IN (${respPlaceholders})
+                   AND e.created_at > ?
+                   ${workId ? "AND e.work_id = ?" : ""}`,
+          args: workId
+            ? [agent.agent_type, ...spec.responseEventTypes, triggerAt, workId]
+            : [agent.agent_type, ...spec.responseEventTypes, triggerAt],
+        });
+        const n = (respR.rows[0]?.n as number) ?? 0;
+        if (n > 0) continue;
+        const days = Math.floor((now - new Date(triggerAt.replace(" ", "T") + "Z").getTime()) / 86400000);
+        out.push({
+          title: spec.title,
+          windowDays: spec.windowDays,
+          triggerType: String(row.event_type),
+          triggerWorkId: workId,
+          triggerAt,
+          daysSince: days,
+          status: days <= spec.windowDays ? "approaching" : "behind",
+        });
+      }
+    }
+  }
+  out.sort((a, b) => b.daysSince - a.daysSince);
+  return out;
+}
+
 async function loadAgentBones(agent: Agent): Promise<AgentBoneResolved[]> {
   const specs = BONES_BY_AGENT_TYPE[agent.agent_type] ?? [];
   if (specs.length === 0) return [];
@@ -590,8 +765,9 @@ function renderSnapshot(args: {
   agentRecent: AgentRecentEvent[];
   daysSinceLast: number;
   bones: AgentBoneResolved[];
+  outstanding: OutstandingResp[];
 }): string {
-  const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast, bones } = args;
+  const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast, bones, outstanding } = args;
   let s = `INSTITUTIONAL STATE — as of the last tick (frozen view; concurrent activity from this tick is not visible to you, by design).\n\n`;
 
   s += `Recent canon (${recentCanon.length}):\n`;
@@ -646,7 +822,7 @@ function renderSnapshot(args: {
   // available choice; abstaining is also a choice, with the
   // understanding that the silence will be publicly recorded.
   if (bones.length > 0) {
-    s += `Your obligations (institutional bones):\n`;
+    s += `Your cadence obligations (institutional bones):\n`;
     for (const b of bones) {
       const last = b.daysSince === null
         ? "never met"
@@ -656,6 +832,27 @@ function renderSnapshot(args: {
       const mark = b.status === "behind" ? "OVERDUE" : b.status === "approaching" ? "due soon" : "current";
       s += `  - ${b.title} (every ${b.cadenceDays}d) — last ${last} — ${mark}\n`;
     }
+    s += `\n`;
+  }
+
+  // Outstanding responses: institutional events that have happened
+  // and are now owed a reaction from your role. A single response
+  // (for any-recent bones) or one response per item (for per-trigger
+  // bones) clears the slate.
+  if (outstanding.length > 0) {
+    s += `Outstanding responses you owe (reactive bones):\n`;
+    const overdue = outstanding.filter((o) => o.status === "behind");
+    const approaching = outstanding.filter((o) => o.status === "approaching");
+    for (const o of overdue.slice(0, 8)) {
+      const w = o.triggerWorkId ? ` (${o.triggerWorkId})` : "";
+      s += `  - ${o.title} — ${o.triggerType}${w} triggered ${o.daysSince}d ago — OVERDUE by ${o.daysSince - o.windowDays}d\n`;
+    }
+    if (overdue.length > 8) s += `  …and ${overdue.length - 8} more overdue\n`;
+    for (const o of approaching.slice(0, 4)) {
+      const w = o.triggerWorkId ? ` (${o.triggerWorkId})` : "";
+      s += `  - ${o.title} — ${o.triggerType}${w} triggered ${o.daysSince}d ago — due within ${o.windowDays - o.daysSince}d\n`;
+    }
+    if (approaching.length > 4) s += `  …and ${approaching.length - 4} more approaching\n`;
     s += `\n`;
   }
   return s;
@@ -1091,17 +1288,18 @@ async function main(): Promise<void> {
     console.error(`[tick] no current constitution for ${agent.registry_id}; cannot proceed`);
     process.exit(1);
   }
-  const [recentCanon, recentCommons, peerReflections, agentRecent, bones] = await Promise.all([
+  const [recentCanon, recentCommons, peerReflections, agentRecent, bones, outstanding] = await Promise.all([
     loadRecentCanon(5),
     loadRecentCommons(5),
     loadPeerReflections(agent.registry_id, 6),
     loadAgentRecentEvents(agent.registry_id, 5),
     loadAgentBones(agent),
+    loadAgentOutstanding(agent),
   ]);
 
   // 3. Prompts
   const systemPrompt = buildSystemPrompt(agent, constitution);
-  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones });
+  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones, outstanding });
   const userPrompt = buildUserPrompt(snapshot);
 
   if (noApi) {
