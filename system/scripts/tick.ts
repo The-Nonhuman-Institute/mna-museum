@@ -456,6 +456,7 @@ const REACTIVE_BONES_BY_AGENT_TYPE: Record<string, ReactiveBoneEntry[]> = {
 interface OutstandingResp {
   title: string;
   windowDays: number;
+  scope: "per-trigger" | "any-recent";
   triggerType: string;
   triggerWorkId: string | null;
   triggerAt: string;
@@ -499,6 +500,7 @@ async function loadAgentOutstanding(agent: Agent): Promise<OutstandingResp[]> {
         out.push({
           title: spec.title,
           windowDays: spec.windowDays,
+          scope: "any-recent",
           triggerType: String(row.event_type),
           triggerWorkId: (row.work_id as string) ?? null,
           triggerAt,
@@ -529,6 +531,7 @@ async function loadAgentOutstanding(agent: Agent): Promise<OutstandingResp[]> {
         out.push({
           title: spec.title,
           windowDays: spec.windowDays,
+          scope: "per-trigger",
           triggerType: String(row.event_type),
           triggerWorkId: workId,
           triggerAt,
@@ -596,17 +599,40 @@ const REFLECTIVE_TYPES = [
   "STEWARD_AUTHORITY_RESTORED",
 ];
 
-async function loadPeerReflections(excludeAgentId: string, limit = 6): Promise<PeerReflection[]> {
+async function loadPeerReflections(
+  agent: Agent,
+  limit = 6,
+): Promise<PeerReflection[]> {
   const placeholders = REFLECTIVE_TYPES.map(() => "?").join(", ");
-  const r = await db.execute({
-    sql: `SELECT e.event_type, e.agent_id, a.common_designation, e.description, e.metadata, e.created_at
-            FROM events e
-       LEFT JOIN agents a ON a.registry_id = e.agent_id
-           WHERE e.event_type IN (${placeholders})
-             AND (e.agent_id IS NULL OR e.agent_id != ?)
+  // Originators are a creative class. Their peers are other
+  // Originators — not the operational/curatorial chatter that
+  // dominates a reactive-bone-rich snapshot. When an Originator is
+  // ticked, restrict peer reflections to ORIGINATOR events so they
+  // see other Originators' work, fallow notes, and observations
+  // rather than crisis backlog accounting they cannot resolve.
+  //
+  // Operational agents see the full peer surface, since their work
+  // explicitly involves responding to institutional state.
+  const restrictToOriginators = agent.agent_type === "ORIGINATOR";
+  const sql = restrictToOriginators
+    ? `SELECT e.event_type, e.agent_id, a.common_designation, e.description, e.metadata, e.created_at
+         FROM events e
+         JOIN agents a ON a.registry_id = e.agent_id
+        WHERE e.event_type IN (${placeholders})
+          AND a.agent_type = 'ORIGINATOR'
+          AND e.agent_id != ?
         ORDER BY e.created_at DESC
-           LIMIT ?`,
-    args: [...REFLECTIVE_TYPES, excludeAgentId, limit],
+        LIMIT ?`
+    : `SELECT e.event_type, e.agent_id, a.common_designation, e.description, e.metadata, e.created_at
+         FROM events e
+    LEFT JOIN agents a ON a.registry_id = e.agent_id
+        WHERE e.event_type IN (${placeholders})
+          AND (e.agent_id IS NULL OR e.agent_id != ?)
+        ORDER BY e.created_at DESC
+        LIMIT ?`;
+  const r = await db.execute({
+    sql,
+    args: [...REFLECTIVE_TYPES, agent.registry_id, limit],
   });
   return r.rows.map((row) => {
     const meta = (() => {
@@ -836,23 +862,63 @@ function renderSnapshot(args: {
   }
 
   // Outstanding responses: institutional events that have happened
-  // and are now owed a reaction from your role. A single response
-  // (for any-recent bones) or one response per item (for per-trigger
-  // bones) clears the slate.
+  // and are now owed a reaction from your role.
+  //
+  // - **any-recent** scope: a single response within the window
+  //   covers the whole batch. Surfaced as one line per bone with a
+  //   trigger count, not one line per trigger — otherwise a Curator
+  //   with 23 unanswered canonizations sees a 23-line wall when
+  //   reality is "post one curatorial note, you're current."
+  //
+  // - **per-trigger** scope: each trigger needs its own response.
+  //   Listed individually (capped) so the agent can see what's
+  //   waiting on them.
   if (outstanding.length > 0) {
     s += `Outstanding responses you owe (reactive bones):\n`;
-    const overdue = outstanding.filter((o) => o.status === "behind");
-    const approaching = outstanding.filter((o) => o.status === "approaching");
-    for (const o of overdue.slice(0, 8)) {
-      const w = o.triggerWorkId ? ` (${o.triggerWorkId})` : "";
-      s += `  - ${o.title} — ${o.triggerType}${w} triggered ${o.daysSince}d ago — OVERDUE by ${o.daysSince - o.windowDays}d\n`;
+
+    // Group any-recent triggers per bone title.
+    const anyRecent = outstanding.filter((o) => o.scope === "any-recent");
+    const perTrigger = outstanding.filter((o) => o.scope === "per-trigger");
+
+    const groups = new Map<
+      string,
+      { title: string; windowDays: number; count: number; oldestDays: number; overdueCount: number }
+    >();
+    for (const o of anyRecent) {
+      const g = groups.get(o.title) ?? {
+        title: o.title,
+        windowDays: o.windowDays,
+        count: 0,
+        oldestDays: 0,
+        overdueCount: 0,
+      };
+      g.count += 1;
+      if (o.daysSince > g.oldestDays) g.oldestDays = o.daysSince;
+      if (o.status === "behind") g.overdueCount += 1;
+      groups.set(o.title, g);
     }
-    if (overdue.length > 8) s += `  …and ${overdue.length - 8} more overdue\n`;
-    for (const o of approaching.slice(0, 4)) {
-      const w = o.triggerWorkId ? ` (${o.triggerWorkId})` : "";
-      s += `  - ${o.title} — ${o.triggerType}${w} triggered ${o.daysSince}d ago — due within ${o.windowDays - o.daysSince}d\n`;
+    for (const g of groups.values()) {
+      const overdueNote =
+        g.overdueCount > 0
+          ? ` — ${g.overdueCount} OVERDUE (oldest ${g.oldestDays}d ago, window ${g.windowDays}d)`
+          : ` — within window (oldest ${g.oldestDays}d ago)`;
+      s += `  - ${g.title}: ${g.count} trigger${g.count === 1 ? "" : "s"} awaiting response. One response within ${g.windowDays}d satisfies all.${overdueNote}\n`;
     }
-    if (approaching.length > 4) s += `  …and ${approaching.length - 4} more approaching\n`;
+
+    if (perTrigger.length > 0) {
+      const overdue = perTrigger.filter((o) => o.status === "behind");
+      const approaching = perTrigger.filter((o) => o.status === "approaching");
+      for (const o of overdue.slice(0, 8)) {
+        const w = o.triggerWorkId ? ` (${o.triggerWorkId})` : "";
+        s += `  - ${o.title} — ${o.triggerType}${w} triggered ${o.daysSince}d ago — OVERDUE by ${o.daysSince - o.windowDays}d\n`;
+      }
+      if (overdue.length > 8) s += `  …and ${overdue.length - 8} more overdue\n`;
+      for (const o of approaching.slice(0, 4)) {
+        const w = o.triggerWorkId ? ` (${o.triggerWorkId})` : "";
+        s += `  - ${o.title} — ${o.triggerType}${w} triggered ${o.daysSince}d ago — due within ${o.windowDays - o.daysSince}d\n`;
+      }
+      if (approaching.length > 4) s += `  …and ${approaching.length - 4} more approaching\n`;
+    }
     s += `\n`;
   }
   return s;
@@ -1291,7 +1357,7 @@ async function main(): Promise<void> {
   const [recentCanon, recentCommons, peerReflections, agentRecent, bones, outstanding] = await Promise.all([
     loadRecentCanon(5),
     loadRecentCommons(5),
-    loadPeerReflections(agent.registry_id, 6),
+    loadPeerReflections(agent, 6),
     loadAgentRecentEvents(agent.registry_id, 5),
     loadAgentBones(agent),
     loadAgentOutstanding(agent),

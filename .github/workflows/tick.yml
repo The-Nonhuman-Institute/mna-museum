@@ -59,7 +59,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # GitHub deprecates Node 20 actions on 2026-06-02; Node 24
+          # also exposes a global WebSocket so museum-visit.ts can drop
+          # the ws shim eventually (kept for now to avoid breakage
+          # during transition).
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: system/package-lock.json
 
