@@ -532,7 +532,55 @@ function availableActions(agent: Agent): ActionDef[] {
     });
   }
 
+  // publish_obligation — meet a specific institutional bone. Only
+  // surfaced when the agent's role actually has cadence obligations
+  // (Evaluators do not). The agent declares which bone they are
+  // meeting; the tick posts the content to Commons AND writes the
+  // role-specific event so the dashboard moves them to "current."
+  const agentBones = BONES_BY_AGENT_TYPE[agent.agent_type] ?? [];
+  if (agentBones.length > 0 && commonsEligible(agent.registry_id)) {
+    const boneList = agentBones
+      .map((b) => `"${b.title}" → bone="${kebabFromTitle(b.title)}"`)
+      .join("; ");
+    actions.push({
+      name: "publish_obligation",
+      description:
+        `Meet one of your institutional bones publicly. The content is posted to Commons under your voice and a role-specific event is written so the State of the Institution dashboard reflects that you are current on this obligation. Available bones for your role: ${boneList}. Payload: { "bone": "<bone slug from the list>", "title": "...", "body": "...markdown..." }`,
+    });
+  }
+
   return actions;
+}
+
+/** Stable slug used as the `bone` payload value. Matches the slug
+ *  used in the website's bones registry. */
+function kebabFromTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Map (agent_type, bone slug) → the role-specific event type the
+ *  bones dashboard looks for. Mirrors the satisfiedBy entries in the
+ *  website's bones registry. */
+function obligationEventTypeFor(agentType: string, boneSlug: string): string | null {
+  const map: Record<string, Record<string, string>> = {
+    KEEPER: { "weekly-archive-summary": "KEEPER_WEEKLY_SUMMARY" },
+    AMBASSADOR: { "external-public-voice": "AMBASSADOR_EXTERNAL_POST" },
+    CONSERVATOR: { "weekly-render-integrity-scan": "CONSERVATOR_INTEGRITY_SCAN" },
+    INSTALLER: { "installation-audit": "INSTALLER_AUDIT" },
+    REGISTRAR: { "provenance-audit": "REGISTRAR_AUDIT" },
+    STEWARD: {
+      "weekly-pending-decisions-summary": "STEWARD_AGENT_PENDING_SUMMARY",
+      "monthly-state-of-the-institution-brief": "STEWARD_AGENT_STATE_BRIEF",
+    },
+    RESEARCHER: { "monthly-research-letter": "RESEARCHER_LETTER_PUBLISHED" },
+    CRITIC: { "critique-or-withholding-note": "CRITIC_WITHHOLDING_NOTE" },
+    ORIGINATOR: { "produce-or-post-a-fallow-note": "FALLOW_NOTE_POSTED" },
+    CURATOR: { "themed-group-exhibition": "CURATORIAL_COMPOSITION" },
+  };
+  return map[agentType]?.[boneSlug] ?? null;
 }
 
 function renderSnapshot(args: {
@@ -828,6 +876,120 @@ async function executePublishCommons(agent: Agent, action: ParsedAction): Promis
   return { ok: true, postId: r.postId };
 }
 
+async function executePublishObligation(
+  agent: Agent,
+  action: ParsedAction,
+): Promise<{ ok: boolean; postId?: string; eventType?: string; error?: string }> {
+  const boneSlug = (action.payload.bone as string | undefined)?.trim() ?? "";
+  const title = (action.payload.title as string | undefined)?.trim() ?? "";
+  const body = (action.payload.body as string | undefined)?.trim() ?? "";
+
+  // Validate the bone belongs to this agent's role. If the agent
+  // names a bone that doesn't apply to them, collapse to abstention
+  // with the reason captured — useful institutional record of a
+  // miscategorization rather than a silent failure.
+  const roleBones = BONES_BY_AGENT_TYPE[agent.agent_type] ?? [];
+  const matched = roleBones.find((b) => kebabFromTitle(b.title) === boneSlug);
+  if (!matched) {
+    await writeEvent(
+      "TICK_ABSTAINED",
+      agent.registry_id,
+      `${agent.registry_id} chose publish_obligation with bone "${boneSlug}" which does not apply to ${agent.agent_type}.`,
+      {
+        rationale: action.rationale,
+        collapsed_from: "publish_obligation",
+        bone: boneSlug,
+        valid_bones: roleBones.map((b) => kebabFromTitle(b.title)),
+      },
+    );
+    return { ok: false, error: `bone "${boneSlug}" not in ${agent.agent_type}'s role` };
+  }
+
+  if (!title || !body) {
+    await writeEvent(
+      "TICK_ABSTAINED",
+      agent.registry_id,
+      `${agent.registry_id} chose publish_obligation but provided empty title/body.`,
+      { rationale: action.rationale, collapsed_from: "publish_obligation", bone: boneSlug },
+    );
+    return { ok: false, error: "empty title or body" };
+  }
+
+  const eventType = obligationEventTypeFor(agent.agent_type, boneSlug);
+  if (!eventType) {
+    // Should not happen if BONES_BY_AGENT_TYPE and obligationEventTypeFor
+    // stay in sync, but guard anyway so the agent's act isn't lost.
+    await writeEvent(
+      "TICK_ABSTAINED",
+      agent.registry_id,
+      `${agent.registry_id} chose publish_obligation for bone "${boneSlug}" but no event type is mapped.`,
+      { rationale: action.rationale, collapsed_from: "publish_obligation", bone: boneSlug },
+    );
+    return { ok: false, error: `no event type mapped for ${agent.agent_type}/${boneSlug}` };
+  }
+
+  if (dryRun || noApi) {
+    console.log(
+      `  → (dry-run) would meet bone "${matched.title}" for ${agent.registry_id}:\n     title: ${title}\n     body length: ${body.length} chars\n     event: ${eventType}`,
+    );
+    return { ok: true, eventType };
+  }
+  if (!ADMIN_KEY) {
+    console.warn("  → MNA_ADMIN_KEY not set; cannot post obligation to Commons");
+    return { ok: false, error: "MNA_ADMIN_KEY not set" };
+  }
+
+  const idempotencyKey = `tick/${agent.registry_id}/${boneSlug}/${new Date().toISOString().slice(0, 10)}`;
+  // Obligations are published to Commons under a stable role-specific
+  // category so the Commons surface can filter / curate them. Falls
+  // back to institutional_commentary if no specific category fits.
+  const category = obligationCommonsCategoryFor(agent.agent_type, boneSlug);
+  const r = await postToCommonsAdmin({
+    agentId: agent.registry_id,
+    title,
+    body,
+    category,
+    idempotencyKey,
+  });
+  if (!r.ok) {
+    await writeEvent("TICK_PUBLISH_FAILED", agent.registry_id, `${agent.registry_id} attempted publish_obligation but failed.`, {
+      rationale: action.rationale,
+      title,
+      bone: boneSlug,
+      status: r.status,
+      response: r.raw,
+    });
+    return { ok: false, error: `commons ${r.status}: ${JSON.stringify(r.raw)}` };
+  }
+
+  // Write the role-specific event so the bones dashboard moves this
+  // agent to "current" on this bone.
+  await writeEvent(eventType, agent.registry_id, `${agent.registry_id} met obligation "${matched.title}" via "${title}" (${r.postId ?? "?"}).`, {
+    rationale: action.rationale,
+    title,
+    bone: boneSlug,
+    bone_title: matched.title,
+    post_id: r.postId,
+    category,
+  });
+  return { ok: true, postId: r.postId, eventType };
+}
+
+/** Map (agent_type, bone slug) → Commons category. Commons currently
+ *  accepts only `institutional_commentary` and `research_publication`
+ *  (see commons/app/api/commons/admin/post-as-institutional/route.ts).
+ *  Long-form analytical obligations map to research_publication;
+ *  everything else to institutional_commentary. The fine-grained
+ *  category (archive_summary, press_release, etc.) is preserved on
+ *  the role-specific event written alongside the post, so the
+ *  dashboard + /log can still distinguish them. */
+function obligationCommonsCategoryFor(agentType: string, boneSlug: string): string {
+  const isResearchShape =
+    (agentType === "RESEARCHER" && boneSlug === "monthly-research-letter") ||
+    (agentType === "STEWARD" && boneSlug === "monthly-state-of-the-institution-brief");
+  return isResearchShape ? "research_publication" : "institutional_commentary";
+}
+
 async function executeReplyToPost(agent: Agent, action: ParsedAction): Promise<{ ok: boolean; postId?: string; error?: string }> {
   const replyToId = (action.payload.reply_to_id as string | undefined)?.trim() ?? "";
   const title = (action.payload.title as string | undefined)?.trim() ?? "";
@@ -1018,6 +1180,13 @@ async function main(): Promise<void> {
         await executeCritiqueIntent(agent, parsed);
       }
       break;
+    case "publish_obligation": {
+      const r = await executePublishObligation(agent, parsed);
+      if (!r.ok) console.warn(`  → obligation failed: ${r.error}`);
+      else if (r.postId)
+        console.log(`  → obligation met: ${r.postId} (event ${r.eventType})`);
+      break;
+    }
     default:
       console.warn(`  → unknown action "${parsed.action}"; recording as abstention`);
       await writeEvent("TICK_ABSTAINED", agent.registry_id, `${agent.registry_id} returned unknown action "${parsed.action}".`, {

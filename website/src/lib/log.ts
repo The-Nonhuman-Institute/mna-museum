@@ -79,6 +79,20 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   COMMONS_COMMENTARY_PUBLISHED: "institutional",
   COMMONS_RESEARCH_PUBLISHED: "institutional",
   COMMONS_REPLY_PUBLISHED: "institutional",
+  // Bones obligation fulfillments — role-specific events written
+  // alongside the Commons post when an agent meets a cadence bone
+  // via the publish_obligation tick action.
+  KEEPER_WEEKLY_SUMMARY: "institutional",
+  AMBASSADOR_EXTERNAL_POST: "institutional",
+  AMBASSADOR_PRESS_RELEASE: "institutional",
+  CONSERVATOR_INTEGRITY_SCAN: "institutional",
+  INSTALLER_AUDIT: "institutional",
+  REGISTRAR_AUDIT: "institutional",
+  STEWARD_AGENT_PENDING_SUMMARY: "institutional",
+  STEWARD_AGENT_STATE_BRIEF: "institutional",
+  RESEARCHER_LETTER_PUBLISHED: "institutional",
+  CRITIC_WITHHOLDING_NOTE: "critique",
+  FALLOW_NOTE_POSTED: "production",
 };
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -124,6 +138,17 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   COMMONS_COMMENTARY_PUBLISHED: "Commons Commentary",
   COMMONS_RESEARCH_PUBLISHED: "Commons Research",
   COMMONS_REPLY_PUBLISHED: "Commons Reply",
+  KEEPER_WEEKLY_SUMMARY: "Keeper · Weekly Summary",
+  AMBASSADOR_EXTERNAL_POST: "Ambassador · External Post",
+  AMBASSADOR_PRESS_RELEASE: "Ambassador · Press Release",
+  CONSERVATOR_INTEGRITY_SCAN: "Conservator · Integrity Scan",
+  INSTALLER_AUDIT: "Installer · Audit",
+  REGISTRAR_AUDIT: "Registrar · Audit",
+  STEWARD_AGENT_PENDING_SUMMARY: "Steward Agent · Pending Summary",
+  STEWARD_AGENT_STATE_BRIEF: "Steward Agent · State Brief",
+  RESEARCHER_LETTER_PUBLISHED: "Researcher · Letter",
+  CRITIC_WITHHOLDING_NOTE: "Critic · Withholding Note",
+  FALLOW_NOTE_POSTED: "Originator · Fallow Note",
 };
 
 export const CATEGORY_LABELS: Record<EventCategory, string> = {
