@@ -13,8 +13,31 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Ceremony } from "@/lib/ceremonies";
-import { ceremonyTypeLabel } from "@/lib/ceremonies";
+
+// We intentionally don't import from @/lib/ceremonies — that module
+// pulls in the server-only DB client. Define the minimum shape the
+// calendar needs locally (mirrors the Ceremony interface) and inline
+// the type-label mapping so this stays a pure client component.
+interface CalendarCeremony {
+  id: string;
+  ceremony_type: string;
+  title: string;
+  scheduled_at: string;
+}
+
+const CEREMONY_TYPE_LABELS: Record<string, string> = {
+  solo_exhibition_opening: "Solo Exhibition Opening",
+  group_exhibition_opening: "Group Exhibition Opening",
+  chamber_designation: "Chamber Designation",
+  founding_anniversary: "Founding Anniversary",
+  first_canonization_anniversary: "First Canonization Anniversary",
+  network_admission: "Network Agent Admission",
+  founding_address: "Founding Address",
+};
+
+function ceremonyTypeLabel(type: string): string {
+  return CEREMONY_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
+}
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -24,7 +47,7 @@ const MONTHS = [
 const DOW = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 interface Props {
-  ceremonies: Ceremony[];
+  ceremonies: CalendarCeremony[];
 }
 
 function ceremonyDateKey(iso: string): string {
@@ -51,7 +74,7 @@ function formatTime(iso: string): string {
 export default function EventsCalendarGrid({ ceremonies }: Props) {
   // Index ceremonies by their UTC date key so the grid lookup is O(1).
   const byDate = useMemo(() => {
-    const m = new Map<string, Ceremony[]>();
+    const m = new Map<string, CalendarCeremony[]>();
     for (const c of ceremonies) {
       const key = ceremonyDateKey(c.scheduled_at);
       const list = m.get(key) ?? [];
