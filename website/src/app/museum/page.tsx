@@ -21,6 +21,8 @@ import {
   getActiveThemedExhibition,
 } from "@/lib/museum-installations";
 import { starsForScope } from "@/lib/gallery-constellations";
+import { getLiveCeremony } from "@/lib/ceremonies";
+import LiveCeremonyBanner from "@/components/LiveCeremonyBanner";
 
 export const metadata: Metadata = {
   title: "Museum — Museum of Nonhuman Art",
@@ -28,9 +30,11 @@ export const metadata: Metadata = {
     "An observation field. Walk through the canon. The observer is human; we observe, we do not interfere.",
 };
 
-// Revalidate hourly so newly canonized works appear in the field
-// without a deploy.
-export const revalidate = 3600;
+// Revalidate every 2 minutes. The canon set rarely changes that fast,
+// but the live-ceremony banner needs to reflect the ceremony state
+// produced by the 15-min ceremonies-tick cron — anything longer
+// would mean visitors miss live moments.
+export const revalidate = 120;
 
 // The whole scene depends on WebGL + DOM listeners → client-only.
 const MuseumField = dynamic(() => import("./MuseumField"), { ssr: false });
@@ -98,9 +102,10 @@ export interface ActiveGallery {
 }
 
 export default async function Page() {
-  const [works, galleries] = await Promise.all([
+  const [works, galleries, liveCeremony] = await Promise.all([
     getCanonWorks(),
     getActiveGalleries(),
+    getLiveCeremony(),
   ]);
 
   // Project to the minimum shape MuseumField needs. Keeps the wire
@@ -124,5 +129,10 @@ export default async function Page() {
       w.output_type === "scene-json" ? w.output_payload : null,
   }));
 
-  return <MuseumField works={projected} galleries={galleries} />;
+  return (
+    <>
+      {liveCeremony ? <LiveCeremonyBanner ceremony={liveCeremony} /> : null}
+      <MuseumField works={projected} galleries={galleries} />
+    </>
+  );
 }

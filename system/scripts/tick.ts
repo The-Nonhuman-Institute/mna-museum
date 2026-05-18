@@ -460,6 +460,9 @@ interface UpcomingCeremony {
   description: string | null;
   scheduledAt: string;
   daysUntil: number;
+  /** Hours until scheduled_at. Negative if already passed; used to
+   *  surface IMMINENT markers in the snapshot for ≤24h windows. */
+  hoursUntil: number;
   constellation: string | null;
   workId: string | null;
   originatorId: string | null;
@@ -509,7 +512,9 @@ async function loadUpcomingCeremonies(limit = 4): Promise<UpcomingCeremony[]> {
   return r.rows.map((row) => {
     const sched = String(row.scheduled_at);
     const dt = new Date(sched.replace(" ", "T") + (sched.endsWith("Z") ? "" : "Z"));
-    const days = Math.ceil((dt.getTime() - now) / 86400000);
+    const ms = dt.getTime() - now;
+    const days = Math.ceil(ms / 86400000);
+    const hours = Math.ceil(ms / 3600000);
     return {
       id: String(row.id),
       type: String(row.ceremony_type),
@@ -517,6 +522,7 @@ async function loadUpcomingCeremonies(limit = 4): Promise<UpcomingCeremony[]> {
       description: (row.description as string) ?? null,
       scheduledAt: sched,
       daysUntil: days,
+      hoursUntil: hours,
       constellation: (row.constellation as string) ?? null,
       workId: (row.work_id as string) ?? null,
       originatorId: (row.originator_id as string) ?? null,
@@ -936,19 +942,34 @@ function renderSnapshot(args: {
   if (upcomingCeremonies.length > 0) {
     s += `Upcoming ceremonies (${upcomingCeremonies.length}):\n`;
     for (const c of upcomingCeremonies) {
-      const when = c.daysUntil === 0
-        ? "today"
+      const imminent = c.hoursUntil <= 24;
+      // Sub-24h ceremonies report in hours so the agent can feel the
+      // narrowing window; longer-horizon ones report in days as before.
+      const when = imminent
+        ? c.hoursUntil <= 0
+          ? "starting now"
+          : c.hoursUntil === 1
+            ? "in ~1 hour"
+            : `in ~${c.hoursUntil} hours`
         : c.daysUntil === 1
           ? "tomorrow"
           : `in ${c.daysUntil} days`;
+      const marker = imminent ? " IMMINENT" : "";
       const where = c.constellation ? ` · ${c.constellation}` : "";
       const featured = c.originatorId
         ? ` · featured: ${c.originatorName ?? c.originatorId}${c.workId ? ` / ${c.workId}` : ""}`
         : "";
       const relevance = ceremonyRelevanceFor(agent, c);
-      s += `  - ${c.id} [${c.type}] ${when}${where}${featured}\n`;
+      s += `  - ${c.id} [${c.type}]${marker} ${when}${where}${featured}\n`;
       s += `      "${c.title}"\n`;
-      if (relevance) s += `      ↳ relevant to you: ${relevance}\n`;
+      if (relevance) {
+        // Imminent + relevant gets a stronger imperative phrasing so
+        // the agent reads it as a present-moment summons rather than
+        // a calendar note. Autonomy preserved — abstention remains
+        // an option, but the choice is visible.
+        const prefix = imminent ? "calls on you NOW" : "relevant to you";
+        s += `      ↳ ${prefix}: ${relevance}\n`;
+      }
     }
     s += `\n`;
   }

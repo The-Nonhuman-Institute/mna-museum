@@ -50,6 +50,9 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   INSTALLATION_EXECUTED: "curatorial",
   INSTALLATION_DEFERRED: "curatorial",
   SPOTLIGHT_POSTED: "curatorial",
+  CEREMONY_STARTED: "curatorial",
+  CEREMONY_COMPLETED: "curatorial",
+  CEREMONY_ATTENDED: "curatorial",
 
   // Tick
   AGENT_OBSERVATION: "tick",
@@ -113,6 +116,9 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   INSTALLATION_EXECUTED: "Installation",
   INSTALLATION_DEFERRED: "Installation Deferred",
   SPOTLIGHT_POSTED: "Spotlight Posted",
+  CEREMONY_STARTED: "Ceremony · Opened",
+  CEREMONY_COMPLETED: "Ceremony · Closed",
+  CEREMONY_ATTENDED: "Ceremony · Attended",
   AGENT_OBSERVATION: "Observation",
   AGENT_VISITATION_STARTED: "Museum Visit · Entered",
   AGENT_VISITATION_COMPLETED: "Museum Visit · Departed",
