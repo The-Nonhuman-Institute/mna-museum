@@ -1,12 +1,16 @@
 /**
  * EventThumbnail — visual stand-in for a ceremony.
  *
- * Two rendering paths:
- *   - work-anchored ceremonies (chamber designations, solo openings,
- *     exhibition entries with a work_id) render the work's preview PNG
- *   - all others (anniversaries, network admissions, founding
- *     addresses) render a procedural glyph chosen for the ceremony
- *     type, tinted into a dark institutional gradient panel
+ * Resolution order:
+ *   1. workId       — solo openings, chamber designations: the anchor
+ *                     work's preview PNG.
+ *   2. coverWorkId  — group exhibitions: the Curator chose a cover
+ *                     work for the exhibition; we use it for the
+ *                     ceremony's visual identity too.
+ *   3. glyph fallback — anniversaries, founding addresses, network
+ *                     admissions: a procedural MNAGlyph chosen for
+ *                     the ceremony type, tinted from the founding
+ *                     palette over a dark gradient panel.
  *
  * Used by the events page (featured card, upcoming list, past grid)
  * and the detail page hero. Always a square (aspect-ratio 1:1) so
@@ -38,6 +42,10 @@ const CEREMONY_TYPE_TINT: Record<string, string> = {
 
 interface Props {
   workId?: string | null;
+  /** For group exhibitions: the cover work chosen by the Curator at
+   *  designation time. Stored on the exhibition row and on the
+   *  ceremony's metadata.cover_work_id. Used when workId is null. */
+  coverWorkId?: string | null;
   ceremonyType?: string;
   seed?: string;
   size?: "sm" | "md" | "lg";
@@ -46,6 +54,7 @@ interface Props {
 
 export default function EventThumbnail({
   workId,
+  coverWorkId,
   ceremonyType,
   seed,
   size = "md",
@@ -54,16 +63,18 @@ export default function EventThumbnail({
   const sizeClass =
     size === "sm" ? "w-14 h-14" : size === "lg" ? "w-full aspect-square" : "w-full aspect-square";
 
-  // Work-anchored: use the canon preview. Sits on the same warm bone
-  // tone as work cards elsewhere so the museum's visual continuity
-  // carries through into the calendar.
-  if (workId) {
+  // Prefer the ceremony's own anchored work; fall back to the
+  // exhibition's curator-chosen cover. Either resolves to a preview
+  // PNG.
+  const resolved = workId || coverWorkId || null;
+
+  if (resolved) {
     return (
       <div
         className={`relative overflow-hidden bg-mna-white/[0.04] ${sizeClass} ${className ?? ""}`}
       >
         <Image
-          src={`/previews/${workId}.png`}
+          src={`/previews/${resolved}.png`}
           alt=""
           fill
           className="object-cover"

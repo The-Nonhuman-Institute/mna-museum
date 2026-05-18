@@ -69,6 +69,17 @@ function formatTime(iso: string): string {
   });
 }
 
+/** Pull the curator-chosen cover work id out of a ceremony's
+ *  metadata. Group exhibitions don't anchor to a single work
+ *  (ceremony.work_id is null), but the Curator picks a `cover_work_id`
+ *  at designation time and stores it on metadata. Falling back to it
+ *  lets the featured card and list rows render actual canon imagery
+ *  instead of the procedural-glyph stand-in. */
+function coverWorkIdOf(ceremony: Ceremony): string | null {
+  const m = (ceremony.metadata ?? {}) as Record<string, unknown>;
+  return typeof m.cover_work_id === "string" ? m.cover_work_id : null;
+}
+
 function formatLongDate(iso: string): string {
   const d = parseUtc(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -203,6 +214,7 @@ function FeaturedEvent({ ceremony }: { ceremony: Ceremony }) {
         <div className="lg:border-r border-mna-white/10">
           <EventThumbnail
             workId={ceremony.work_id}
+            coverWorkId={coverWorkIdOf(ceremony)}
             ceremonyType={ceremony.ceremony_type}
             seed={ceremony.id}
             size="lg"
@@ -405,6 +417,7 @@ function UpcomingRow({ ceremony }: { ceremony: Ceremony }) {
         </div>
         <EventThumbnail
           workId={ceremony.work_id}
+          coverWorkId={coverWorkIdOf(ceremony)}
           ceremonyType={ceremony.ceremony_type}
           seed={ceremony.id}
           size="md"
@@ -525,6 +538,7 @@ function PastEventCard({ ceremony }: { ceremony: Ceremony }) {
     >
       <EventThumbnail
         workId={ceremony.work_id}
+        coverWorkId={coverWorkIdOf(ceremony)}
         ceremonyType={ceremony.ceremony_type}
         seed={ceremony.id}
         size="lg"
