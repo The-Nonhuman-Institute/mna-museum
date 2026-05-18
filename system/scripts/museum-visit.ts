@@ -29,6 +29,7 @@ import PartySocket from "partysocket";
 // connecting. macOS Node 22 has it built-in so this is a no-op
 // locally and a fix in CI.
 import WS from "ws";
+import { perceive, recordPerception, type PerceiveArgs } from "../src/agent-vision";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -71,6 +72,16 @@ const scenesFilter: string[] | null =
   scenesIdx >= 0 && argv[scenesIdx + 1]
     ? argv[scenesIdx + 1].split(",").map((s) => s.trim()).filter(Boolean)
     : null;
+// --ceremony EVT-NNNNN ties the visit to a specific ceremony. If the
+// ceremony has an anchored work_id, that's what the agent will
+// perceive at their anchor stop. The orchestrator passes this when
+// fanning out visits for an opening ceremony.
+const ceremonyIdx = argv.indexOf("--ceremony");
+const ceremonyId: string | null =
+  ceremonyIdx >= 0 && argv[ceremonyIdx + 1] ? argv[ceremonyIdx + 1] : null;
+// --no-vision disables the perception call (e.g. for cost-constrained
+// runs or when ANTHROPIC_API_KEY isn't available in the env).
+const noVision = argv.includes("--no-vision");
 
 if (!agentId || !/^MNA-[A-Z]{2}-\d{4}$/.test(agentId)) {
   console.error("[visit] --agent MNA-XX-YYYY is required");
@@ -432,6 +443,211 @@ async function writeEvent(
   });
 }
 
+/* ─── perception anchor selection ─────────────────────────────────────── */
+
+interface AnchorWork {
+  id: string;
+  title: string | null;
+  originator_id: string;
+  originator_name: string | null;
+  medium: string | null;
+  phase: string | null;
+}
+
+interface CeremonyContext {
+  ceremony_id: string;
+  ceremony_type: string;
+  title: string;
+  work_id: string | null;
+}
+
+async function loadCeremonyContext(id: string): Promise<CeremonyContext | null> {
+  const r = await db.execute({
+    sql: "SELECT id, ceremony_type, title, work_id FROM ceremonies WHERE id = ?",
+    args: [id],
+  });
+  if (r.rows.length === 0) return null;
+  const row = r.rows[0];
+  return {
+    ceremony_id: String(row.id),
+    ceremony_type: String(row.ceremony_type),
+    title: String(row.title),
+    work_id: (row.work_id as string) ?? null,
+  };
+}
+
+async function loadWork(workId: string): Promise<AnchorWork | null> {
+  const r = await db.execute({
+    sql: `SELECT w.id, w.title, w.originator_id, w.medium, w.phase_at_submission,
+                 a.common_designation AS originator_name
+            FROM works w
+       LEFT JOIN agents a ON a.registry_id = w.originator_id
+           WHERE w.id = ?`,
+    args: [workId],
+  });
+  if (r.rows.length === 0) return null;
+  const row = r.rows[0];
+  return {
+    id: String(row.id),
+    title: (row.title as string) ?? null,
+    originator_id: String(row.originator_id),
+    originator_name: (row.originator_name as string) ?? null,
+    medium: (row.medium as string) ?? null,
+    phase: (row.phase_at_submission as string) ?? null,
+  };
+}
+
+/** Find one canonized work for the agent to perceive. Priority:
+ *
+ *   1. Ceremony's anchored work (if --ceremony passed and it has one).
+ *   2. Featured work of the first constellation gallery in the visit
+ *      (chamber > solo_exhibition > exhibition).
+ *   3. Originator's own latest canon work.
+ *   4. One random canonized work from the museum.
+ *
+ *  Returns null if no canonized work is available at all (empty
+ *  museum); the caller skips perception in that case.
+ */
+async function selectAnchorWork(
+  agent: Agent,
+  itinerary: ConstellationLeg[],
+  ceremony: CeremonyContext | null,
+): Promise<AnchorWork | null> {
+  // 1. Ceremony's anchored work.
+  if (ceremony?.work_id) {
+    const w = await loadWork(ceremony.work_id);
+    if (w) return w;
+  }
+
+  // 2. Constellation-gallery featured work.
+  const gallery = itinerary.find((l) => l.constellation !== "archive");
+  if (gallery) {
+    let installedR;
+    if (gallery.constellation === "chamber") {
+      installedR = await db.execute({
+        sql: `SELECT work_id FROM installations
+               WHERE space_id = 'chamber' AND status = 'INSTALLED'
+            ORDER BY installed_at DESC LIMIT 1`,
+        args: [],
+      });
+    } else if (gallery.constellation === "solo_exhibition") {
+      installedR = await db.execute({
+        sql: `SELECT work_id FROM installations
+               WHERE space_id = 'solo_exhibition' AND status = 'INSTALLED'
+            ORDER BY installed_at DESC LIMIT 1`,
+        args: [],
+      });
+    } else if (gallery.constellation === "exhibition") {
+      installedR = await db.execute({
+        sql: `SELECT work_id FROM installations
+               WHERE space_id = 'exhibition' AND status = 'INSTALLED'
+            ORDER BY installed_at DESC LIMIT 1`,
+        args: [],
+      });
+    }
+    if (installedR && installedR.rows.length > 0) {
+      const wid = installedR.rows[0].work_id as string;
+      const w = await loadWork(wid);
+      if (w) return w;
+    }
+  }
+
+  // 3. Originator's own latest canon work.
+  if (agent.agent_type === "ORIGINATOR") {
+    const r = await db.execute({
+      sql: `SELECT w.id FROM works w
+              JOIN canon_status cs ON cs.work_id = w.id
+             WHERE w.originator_id = ? AND cs.status = 'CANON'
+          ORDER BY cs.decided_at DESC LIMIT 1`,
+      args: [agent.registry_id],
+    });
+    if (r.rows.length > 0) {
+      const w = await loadWork(r.rows[0].id as string);
+      if (w) return w;
+    }
+  }
+
+  // 4. Random canonized work — seeded by agent id so the same agent
+  //    tends to revisit the same work, lending continuity to their
+  //    perception history rather than scattering it.
+  const r = await db.execute({
+    sql: `SELECT w.id FROM works w
+            JOIN canon_status cs ON cs.work_id = w.id
+           WHERE cs.status = 'CANON'
+        ORDER BY w.id LIMIT 1 OFFSET ?`,
+    args: [Math.abs(hashString(agent.registry_id)) % Math.max(1, await canonCount())],
+  });
+  if (r.rows.length > 0) {
+    const w = await loadWork(r.rows[0].id as string);
+    if (w) return w;
+  }
+  return null;
+}
+
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+async function canonCount(): Promise<number> {
+  const r = await db.execute(
+    "SELECT COUNT(*) as n FROM canon_status WHERE status = 'CANON'",
+  );
+  return (r.rows[0]?.n as number) ?? 0;
+}
+
+const PREVIEW_BASE =
+  process.env.MNA_PREVIEW_BASE ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://mnamuseum.org";
+
+/** Run a single perception call against the anchor work and record
+ *  the AGENT_PERCEIVED event. Returns true if the call produced a
+ *  usable observation, false otherwise (still recorded as event with
+ *  error metadata). Bounded — one call per visit. */
+async function performPerception(
+  agent: Agent,
+  anchor: AnchorWork,
+  ceremony: CeremonyContext | null,
+  note?: string,
+): Promise<boolean> {
+  const imageUrl = `${PREVIEW_BASE.replace(/\/$/, "")}/previews/${anchor.id}.png`;
+  const args: PerceiveArgs = {
+    agent: {
+      registry_id: agent.registry_id,
+      agent_type: agent.agent_type,
+      designation: agent.designation,
+    },
+    work: {
+      id: anchor.id,
+      title: anchor.title,
+      originator_id: anchor.originator_id,
+      originator_name: anchor.originator_name,
+      medium: anchor.medium,
+      phase: anchor.phase,
+    },
+    imageUrl,
+    ceremonyContext: ceremony
+      ? {
+          ceremony_id: ceremony.ceremony_id,
+          ceremony_type: ceremony.ceremony_type,
+          title: ceremony.title,
+        }
+      : undefined,
+    note,
+  };
+  console.log(`  perceiving ${anchor.id} (${anchor.title ?? "untitled"})...`);
+  const result = await perceive(args);
+  if (result.ok) {
+    console.log(`  ↳ "${result.observation}"`);
+  } else {
+    console.warn(`  ↳ perception did not resolve: ${result.error}`);
+  }
+  await recordPerception(db, args, result);
+  return result.ok;
+}
+
 /* ─── main ────────────────────────────────────────────────────────────── */
 
 async function main(): Promise<void> {
@@ -568,6 +784,31 @@ async function main(): Promise<void> {
     } catch { /* ignore */ }
   }
 
+  // Perception — one vision call per visit. If the agent didn't make
+  // it through the walk cleanly (socket disconnect, hard timeout),
+  // the perception still fires; the institutional record of the
+  // reading is independent of the spatial walk.
+  let perceivedWorkId: string | null = null;
+  let perceptionOk = false;
+  if (!noVision && process.env.ANTHROPIC_API_KEY) {
+    try {
+      const ceremony = ceremonyId ? await loadCeremonyContext(ceremonyId) : null;
+      const anchor = await selectAnchorWork(agent, itinerary, ceremony);
+      if (anchor) {
+        perceivedWorkId = anchor.id;
+        perceptionOk = await performPerception(agent, anchor, ceremony);
+      } else {
+        console.log("  no canonized work available to perceive — skipping.");
+      }
+    } catch (err) {
+      console.warn(`  perception step failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  } else if (noVision) {
+    console.log("  --no-vision: perception skipped.");
+  } else {
+    console.log("  ANTHROPIC_API_KEY not set: perception skipped.");
+  }
+
   // Visit end event.
   await writeEvent(
     "AGENT_VISITATION_COMPLETED",
@@ -577,6 +818,9 @@ async function main(): Promise<void> {
       waypoint_count: totalWaypoints,
       constellations: itinerary.map((l) => l.constellation),
       stops: itinerary.flatMap((l) => l.waypoints.map((w) => w.note)),
+      perceived_work_id: perceivedWorkId,
+      perception_ok: perceptionOk,
+      ceremony_id: ceremonyId,
     },
   );
 

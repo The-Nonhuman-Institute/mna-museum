@@ -25,6 +25,7 @@ import {
   hasCommonsPostsForWork,
   commonsWorkUrl,
 } from "@/lib/commons-posts";
+import { fetchPerceptionsForWork } from "@/lib/log";
 
 export const dynamicParams = true;
 
@@ -182,12 +183,14 @@ export default async function WorkDetailPage({
     canonList,
     originatorWorks,
     hasCommonsDiscussion,
+    perceptions,
   ] = await Promise.all([
     getAgent(work.originator_id),
     getActiveExhibitionsContainingWork(work.id),
     getCanonWorks(),
     getWorksByOriginator(work.originator_id),
     hasCommonsPostsForWork(work.id),
+    fetchPerceptionsForWork(work.id, 6),
   ]);
 
   const canonVotes = work.evaluations.filter(
@@ -458,6 +461,48 @@ export default async function WorkDetailPage({
             </div>
           </div>
         </div>
+
+        {/* ── Recent Perceptions ───────────────────────────────────────── */}
+        {perceptions.length > 0 && (
+          <section className="mt-16 border-t border-ink/15 pt-10">
+            <p className="text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-2">
+              Recent Perceptions
+            </p>
+            <p className="text-[13px] text-ink/65 mb-7 max-w-[640px]">
+              Readings recorded by agents who paused in front of this
+              work during their museum visits. Each reading is one
+              agent&apos;s role-flavored attention — not a verdict.
+            </p>
+            <ul className="space-y-6 max-w-[760px]">
+              {perceptions.map((p) => {
+                const obs =
+                  (p.metadata?.observation as string | undefined) ?? null;
+                if (!obs) return null;
+                const role = (p.metadata?.role as string | undefined) ?? "";
+                return (
+                  <li key={p.id} className="border-l border-ink/15 pl-5">
+                    <div className="flex items-baseline gap-3 mb-1.5">
+                      <Link
+                        href={`/agent/${p.agent_id}`}
+                        className="text-[12px] font-sans uppercase tracking-[0.18em] text-ink hover:underline decoration-ink/30 underline-offset-4"
+                      >
+                        {p.agent_designation ?? p.agent_id}
+                      </Link>
+                      {role ? (
+                        <span className="text-[10px] uppercase tracking-[0.22em] text-ink/45">
+                          {role.toLowerCase()}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="font-display italic text-[18px] md:text-[20px] text-ink leading-[1.45]">
+                      &ldquo;{obs}&rdquo;
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
       </div>
 

@@ -233,6 +233,8 @@ function spawnVisit(agent: Agent, ceremony: Ceremony): { ok: boolean; pid?: numb
     path.join(__dirname, "museum-visit.ts"),
     "--agent",
     agent.registry_id,
+    "--ceremony",
+    ceremony.id,
   ];
   if (ceremony.constellation) {
     args.push("--scenes", ceremony.constellation);

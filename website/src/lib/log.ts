@@ -58,6 +58,7 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   AGENT_OBSERVATION: "tick",
   AGENT_VISITATION_STARTED: "tick",
   AGENT_VISITATION_COMPLETED: "tick",
+  AGENT_PERCEIVED: "tick",
   TICK_ABSTAINED: "tick",
   TICK_PUBLISHED: "tick",
   TICK_REPLIED: "tick",
@@ -122,6 +123,7 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   AGENT_OBSERVATION: "Observation",
   AGENT_VISITATION_STARTED: "Museum Visit · Entered",
   AGENT_VISITATION_COMPLETED: "Museum Visit · Departed",
+  AGENT_PERCEIVED: "Museum Visit · Perceived",
   TICK_ABSTAINED: "Abstention",
   TICK_PUBLISHED: "Commons Publication",
   TICK_REPLIED: "Commons Reply",
@@ -386,4 +388,37 @@ export async function fetchEventsForAgent(
 ): Promise<LogEvent[]> {
   const { events } = await fetchEvents({ agentId, limit, offset: 0 });
   return events;
+}
+
+/** Recent AGENT_PERCEIVED events for a single work — used by
+ *  /work/[id] "Recent Perceptions" panel. Each perception is one
+ *  agent's role-flavored reading of the work. */
+export async function fetchPerceptionsForWork(
+  workId: string,
+  limit = 6,
+): Promise<LogEvent[]> {
+  const db = getDb();
+  const r = await db.execute({
+    sql: `SELECT e.id, e.event_type, e.agent_id, e.work_id, e.description,
+                 e.metadata, e.created_at,
+                 a.common_designation
+            FROM events e
+       LEFT JOIN agents a ON e.agent_id = a.registry_id
+           WHERE e.event_type = 'AGENT_PERCEIVED'
+             AND e.work_id = ?
+        ORDER BY e.created_at DESC, e.id DESC
+           LIMIT ?`,
+    args: [workId, limit],
+  });
+  return r.rows.map((row) => ({
+    id: row.id as number,
+    event_type: row.event_type as string,
+    category: "tick" as const,
+    agent_id: (row.agent_id as string) ?? null,
+    agent_designation: (row.common_designation as string) ?? null,
+    work_id: (row.work_id as string) ?? null,
+    description: (row.description as string) ?? "",
+    metadata: parseMetadata(row.metadata),
+    created_at: row.created_at as string,
+  }));
 }

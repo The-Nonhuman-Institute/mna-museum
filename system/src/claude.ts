@@ -75,6 +75,62 @@ export async function generate(
   throw new Error("Claude API failed after 3 attempts");
 }
 
+/**
+ * Vision variant — sends a single image alongside a text user message.
+ * Uses Haiku by default (cheaper, faster, sufficient for short
+ * observation). Override via the model option if a specific call needs
+ * a stronger model.
+ *
+ * The image is passed as a URL (not base64) — Anthropic accepts URL
+ * sources for publicly reachable images, which keeps the wire payload
+ * small. Use a base64 fallback only if the URL isn't network-reachable
+ * from Anthropic's side.
+ */
+export async function generateWithVision(
+  systemPrompt: string,
+  userPrompt: string,
+  imageUrl: string,
+  options?: { temperature?: number; max_tokens?: number; model?: string },
+): Promise<string> {
+  const anthropic = getClient();
+  const model = options?.model ?? "claude-haiku-4-5-20251001";
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const message = await anthropic.messages.create({
+        model,
+        max_tokens: options?.max_tokens ?? 400,
+        temperature: options?.temperature ?? 0.7,
+        system: systemPrompt,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "image", source: { type: "url", url: imageUrl } },
+              { type: "text", text: userPrompt },
+            ],
+          },
+        ],
+      });
+      const content = message.content[0];
+      if (content.type === "text") return content.text;
+      throw new Error(`Unexpected response type: ${content.type}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("content filtering") || msg.includes("blocked")) {
+        if (options) options.temperature = Math.min(1.0, (options.temperature ?? 0.7) + 0.05);
+        continue;
+      }
+      if (msg.includes("rate_limit") || msg.includes("429")) {
+        await new Promise((r) => setTimeout(r, 10000));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("Claude vision call failed after 3 attempts");
+}
+
 export async function isAvailable(): Promise<boolean> {
   try {
     const key = process.env.ANTHROPIC_API_KEY;
