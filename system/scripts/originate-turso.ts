@@ -465,6 +465,17 @@ async function insertWork(args: {
             VALUES ('WORK_PRODUCED', ?, ?, ?)`,
     args: [args.originatorId, args.workId, `${args.originatorId} produced ${args.workId}${visitNote}`],
   });
+  // Production and submission are simultaneous in the Originator
+  // pipeline — the work is offered to the Evaluation Council the
+  // moment it is finished. Emitting WORK_SUBMITTED as its own event
+  // gives the Evaluators a clean trigger for their reactive bone
+  // ("convene within 48h of submission") and makes the institutional
+  // flow legible on /log: production → submission → evaluation.
+  await db.execute({
+    sql: `INSERT INTO events (event_type, agent_id, work_id, description)
+            VALUES ('WORK_SUBMITTED', ?, ?, ?)`,
+    args: [args.originatorId, args.workId, `${args.workId} submitted to the Evaluation Council.`],
+  });
 }
 
 /* ─── Per-originator flow ──────────────────────────────────────────────── */
