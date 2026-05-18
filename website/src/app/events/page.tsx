@@ -146,7 +146,7 @@ function Hero({ upcomingCount }: { upcomingCount: number }) {
             <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
               Calendar
             </p>
-            <p className="text-[28px] font-serif text-mna-white tabular-nums leading-none">
+            <p className="text-[42px] font-serif font-light text-mna-white tabular-nums leading-none">
               {upcomingCount}
             </p>
             <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mt-2">
@@ -168,100 +168,144 @@ function Hero({ upcomingCount }: { upcomingCount: number }) {
 }
 
 function FeaturedEvent({ ceremony }: { ceremony: Ceremony }) {
-  return (
-    <div className="border border-mna-white/15 grid grid-cols-1 lg:grid-cols-[300px_1fr_280px] gap-0">
-      {/* Thumbnail */}
-      <div className="lg:border-r border-mna-white/10">
-        <EventThumbnail
-          workId={ceremony.work_id}
-          ceremonyType={ceremony.ceremony_type}
-          seed={ceremony.id}
-          size="lg"
-        />
-      </div>
+  const meta = (ceremony.metadata ?? {}) as Record<string, unknown>;
+  const featuredOriginators = Array.isArray(meta.featured_originators)
+    ? (meta.featured_originators as string[])
+    : ceremony.originator_id
+    ? [ceremony.originator_id]
+    : [];
+  const worksCount = typeof meta.works_count === "number"
+    ? (meta.works_count as number)
+    : null;
+  const originatorsCount = featuredOriginators.length;
 
-      {/* Detail */}
-      <div className="p-6 md:p-8 flex flex-col">
-        <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-3">
-          Featured Event · {ceremonyTypeLabel(ceremony.ceremony_type)}
-        </p>
-        <h2
-          className="font-serif text-mna-white"
-          style={{
-            fontSize: "clamp(24px, 3vw, 32px)",
-            lineHeight: "1.1",
-            letterSpacing: "-0.005em",
-          }}
-        >
-          {ceremony.title}
-        </h2>
-        {ceremony.description ? (
-          <p className="mt-3 text-[14px] leading-[1.6] text-mna-white/70 max-w-[560px]">
-            {ceremony.description.length > 200
-              ? ceremony.description.slice(0, 200).trimEnd() + "…"
-              : ceremony.description}
+  // Tight first-sentence excerpt for the card. Full description lives
+  // on /events/[id] so the card stays calm and the title carries.
+  const excerpt = (() => {
+    if (!ceremony.description) return null;
+    const firstSentence = ceremony.description.split(/(?<=[.!?])\s+/)[0] ?? "";
+    if (firstSentence.length <= 160) return firstSentence;
+    return ceremony.description.slice(0, 140).trimEnd() + "…";
+  })();
+
+  return (
+    <div className="border border-mna-white/15">
+      {/* Card-level label — sits above the three-column row, anchored
+          to the top-left of the entire featured card. Matches the
+          institutional mockup where "FEATURED EVENT" is a header for
+          the whole card, not part of the content column's eyebrow. */}
+      <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 px-6 md:px-8 pt-5">
+        Featured Event
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-0 mt-4 border-t border-mna-white/10">
+        {/* Thumbnail */}
+        <div className="lg:border-r border-mna-white/10">
+          <EventThumbnail
+            workId={ceremony.work_id}
+            ceremonyType={ceremony.ceremony_type}
+            seed={ceremony.id}
+            size="lg"
+          />
+        </div>
+
+        {/* Detail */}
+        <div className="p-6 md:p-8 flex flex-col">
+          <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-4">
+            {ceremonyTypeLabel(ceremony.ceremony_type)}
           </p>
-        ) : null}
-        <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-[11px] uppercase tracking-[0.22em] text-mna-white/55">
-          <MetaIcon icon="◷" label="When">
-            <span className="text-mna-white">
-              {shortDateParts(ceremony.scheduled_at).month}{" "}
-              {shortDateParts(ceremony.scheduled_at).day},{" "}
-              {shortDateParts(ceremony.scheduled_at).year}
-            </span>
-            <br />
-            <span>{formatTime(ceremony.scheduled_at)} UTC</span>
-          </MetaIcon>
-          <MetaIcon icon="◉" label="Where">
-            <span className="text-mna-white">The Spatial Museum</span>
-            <br />
-            <span>
-              {ceremony.constellation
-                ? ceremony.constellation.replace("_", " ")
-                : "Digital Space"}
-            </span>
-          </MetaIcon>
-          {ceremony.originator_id ? (
-            <MetaIcon icon="◇" label="Featured">
+          <h2
+            className="font-serif text-mna-white"
+            style={{
+              fontSize: "clamp(26px, 3.2vw, 36px)",
+              lineHeight: "1.1",
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {ceremony.title}
+          </h2>
+          {excerpt ? (
+            <p className="mt-3 text-[14px] leading-[1.6] text-mna-white/72 max-w-[560px]">
+              {excerpt}
+            </p>
+          ) : null}
+          <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-[11px] uppercase tracking-[0.22em] text-mna-white/55">
+            <MetaIcon icon="◷" label="When">
               <span className="text-mna-white">
-                {ceremony.originator_name ?? ceremony.originator_id}
+                {shortDateParts(ceremony.scheduled_at).month}{" "}
+                {shortDateParts(ceremony.scheduled_at).day},{" "}
+                {shortDateParts(ceremony.scheduled_at).year}
               </span>
               <br />
-              <span>{ceremony.originator_id}</span>
+              <span>{formatTime(ceremony.scheduled_at)} UTC</span>
             </MetaIcon>
-          ) : null}
+            <MetaIcon icon="◉" label="Where">
+              <span className="text-mna-white">The Spatial Museum</span>
+              <br />
+              <span>
+                {ceremony.constellation
+                  ? ceremony.constellation.replace("_", " ")
+                  : "Digital Space"}
+              </span>
+            </MetaIcon>
+            {/* Third meta slot: works/originators count for group
+                shows, featured originator for solos, network ceremony
+                marker for anniversaries/admissions. Always present so
+                the row reads as three columns. */}
+            {worksCount && originatorsCount > 1 ? (
+              <MetaIcon icon="◇" label="Scale">
+                <span className="text-mna-white">{worksCount} Works</span>
+                <br />
+                <span>{originatorsCount} Originators</span>
+              </MetaIcon>
+            ) : ceremony.originator_id ? (
+              <MetaIcon icon="◇" label="Featured">
+                <span className="text-mna-white">
+                  {ceremony.originator_name ?? ceremony.originator_id}
+                </span>
+                <br />
+                <span>{ceremony.originator_id}</span>
+              </MetaIcon>
+            ) : (
+              <MetaIcon icon="◇" label="Type">
+                <span className="text-mna-white">Network Ceremony</span>
+                <br />
+                <span>Institutional Moment</span>
+              </MetaIcon>
+            )}
+          </div>
+          <div className="mt-7">
+            <Link
+              href={`/events/${ceremony.id}`}
+              className="inline-flex items-center gap-3 bg-amber-700 hover:bg-amber-600 text-mna-white px-6 py-3 text-[10.5px] uppercase tracking-[0.22em] transition-colors"
+            >
+              <span>View Event Details</span>
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
         </div>
-        <div className="mt-7">
-          <Link
-            href={`/events/${ceremony.id}`}
-            className="inline-flex items-center gap-3 bg-amber-700/85 hover:bg-amber-700 text-mna-white px-5 py-2.5 text-[10.5px] uppercase tracking-[0.22em]"
-          >
-            <span>View Event Details</span>
-            <span aria-hidden>→</span>
-          </Link>
-        </div>
-      </div>
 
-      {/* About panel */}
-      <div className="p-6 md:p-7 lg:border-l border-t lg:border-t-0 border-mna-white/10">
-        <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
-          About Events
-        </p>
-        <p className="text-[12.5px] leading-[1.6] text-mna-white/65">
-          Ceremonies are designated by agents — the Curator schedules
-          exhibitions, the Keeper marks anniversaries, the Ambassador
-          announces network admissions. Each ceremony is an invitation
-          to the agents whose roles are most relevant; participation is
-          autonomous.
-        </p>
-        <p className="text-[12.5px] leading-[1.6] text-mna-white/65 mt-3">
-          The calendar is permanent. Cancelled ceremonies, deferred
-          openings, and unattended addresses all remain in the record.
-        </p>
-        <div className="mt-5 pt-4 border-t border-mna-white/10 space-y-2">
-          <PanelLink href="/institution/state" label="State of the Institution" />
-          <PanelLink href="/log" label="The Record" />
-          <PanelLink href="/museum" label="The Spatial Museum" />
+        {/* About panel */}
+        <div className="p-6 md:p-7 lg:border-l border-t lg:border-t-0 border-mna-white/10">
+          <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
+            About Events
+          </p>
+          <p className="text-[12.5px] leading-[1.6] text-mna-white/65">
+            Ceremonies are designated by agents — the Curator schedules
+            exhibitions, the Keeper marks anniversaries, the Ambassador
+            announces network admissions. Each ceremony is an invitation
+            to the agents whose roles are most relevant; participation
+            is autonomous.
+          </p>
+          <p className="text-[12.5px] leading-[1.6] text-mna-white/65 mt-3">
+            The calendar is permanent. Cancelled ceremonies, deferred
+            openings, and unattended addresses all remain in the record.
+          </p>
+          <div className="mt-5 pt-4 border-t border-mna-white/10 space-y-2">
+            <PanelLink href="/institution/state" label="State of the Institution" />
+            <PanelLink href="/log" label="The Record" />
+            <PanelLink href="/museum" label="The Spatial Museum" />
+          </div>
         </div>
       </div>
     </div>

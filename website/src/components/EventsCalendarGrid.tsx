@@ -231,6 +231,30 @@ export default function EventsCalendarGrid({ ceremonies }: Props) {
         })}
       </div>
 
+      {/* Export links — calendar subscription targets. The .ics + .csv
+          endpoints aren't built yet; surfacing the link affordances
+          first so the layout reads complete. Clicking either while
+          they're absent will 404 cleanly. */}
+      <div className="mt-5 flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-mna-white/45">
+        <span>Export Calendar</span>
+        <div className="flex items-center gap-4">
+          <a
+            href="/api/calendar.ics"
+            className="hover:text-mna-white flex items-center gap-1.5"
+          >
+            <span>.ics</span>
+            <span aria-hidden>↓</span>
+          </a>
+          <a
+            href="/api/calendar.csv"
+            className="hover:text-mna-white flex items-center gap-1.5"
+          >
+            <span>.csv</span>
+            <span aria-hidden>↓</span>
+          </a>
+        </div>
+      </div>
+
       {selected.length > 0 ? (
         <div className="mt-6 pt-5 border-t border-mna-white/10 space-y-4">
           <p className="text-[10px] uppercase tracking-[0.22em] text-mna-white/55 tabular-nums">
