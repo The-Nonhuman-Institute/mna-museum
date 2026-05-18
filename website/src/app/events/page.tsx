@@ -420,7 +420,7 @@ function ParticipationCards() {
       {cards.map((c) => (
         <div
           key={c.title}
-          className="border border-mna-white/15 p-5 md:p-6"
+          className="border border-mna-white/15 p-5 md:p-6 flex flex-col"
         >
           <div className="flex items-baseline gap-3 mb-3">
             <span className="text-mna-white/55 text-[13px]" aria-hidden>
@@ -433,11 +433,15 @@ function ParticipationCards() {
           <p className="text-[12.5px] leading-[1.6] text-mna-white/65">
             {c.body}
           </p>
+          {/* mt-auto pushes the CTA to the bottom regardless of body
+              length — keeps the three CTAs aligned across the row. */}
           <Link
             href={c.href}
-            className="inline-block mt-4 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/85 hover:text-mna-white border-b border-mna-white/35 hover:border-mna-white pb-0.5"
+            className="inline-block self-start mt-auto pt-5 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/85 hover:text-mna-white"
           >
-            {c.cta} →
+            <span className="border-b border-mna-white/35 hover:border-mna-white pb-0.5">
+              {c.cta} →
+            </span>
           </Link>
         </div>
       ))}
