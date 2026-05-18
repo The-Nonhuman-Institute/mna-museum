@@ -63,4 +63,38 @@ jobs:
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy prebuilt to production
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        id: deploy
+        run: |
+          url="$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # Notify on completion so the user doesn't have to poll the
+      # Vercel dashboard. Fires on both success and failure (the `if`
+      # uses always() so failures still send). Resend sends from
+      # registry@mnamuseum.org to mnamuseum@gmail.com.
+      - name: Notify mnamuseum@gmail.com
+        if: always()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          STATUS: ${{ job.status }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_SUBJECT: ${{ github.event.head_commit.message }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          subject_line="$(echo "$COMMIT_SUBJECT" | head -n1)"
+          if [ "$STATUS" = "success" ]; then
+            emoji="✅"; tag="Deployed"
+          else
+            emoji="❌"; tag="Deploy failed"
+          fi
+          json=$(jq -n \
+            --arg from "MNA Build <registry@mnamuseum.org>" \
+            --arg to "mnamuseum@gmail.com" \
+            --arg subject "$emoji $tag · website · $subject_line" \
+            --arg html "<p><strong>$tag</strong> — website</p><p><em>${subject_line}</em></p><p>Commit: <code>${COMMIT_SHA:0:7}</code><br/>Deploy: <a href='${DEPLOY_URL}'>${DEPLOY_URL}</a><br/>Run: <a href='${RUN_URL}'>workflow log</a></p>" \
+            '{from:$from,to:[$to],subject:$subject,html:$html}')
+          curl -sS -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$json" > /dev/null
