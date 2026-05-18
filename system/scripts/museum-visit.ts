@@ -87,6 +87,12 @@ const ceremonyId: string | null =
 // --no-vision disables the perception call (e.g. for cost-constrained
 // runs or when ANTHROPIC_API_KEY isn't available in the env).
 const noVision = argv.includes("--no-vision");
+// --work MNA-OR-NNNN-W-NNNN forces the perception anchor to a
+// specific canonized work, bypassing the normal selection priority.
+// Useful for testing reply behavior on a work with known priors.
+const workIdx = argv.indexOf("--work");
+const forcedWorkId: string | null =
+  workIdx >= 0 && argv[workIdx + 1] ? argv[workIdx + 1] : null;
 
 if (!agentId || !/^MNA-[A-Z]{2}-\d{4}$/.test(agentId)) {
   console.error("[visit] --agent MNA-XX-YYYY is required");
@@ -518,6 +524,13 @@ async function selectAnchorWork(
   itinerary: ConstellationLeg[],
   ceremony: CeremonyContext | null,
 ): Promise<AnchorWork | null> {
+  // 0. Caller-forced work via --work flag — overrides everything.
+  if (forcedWorkId) {
+    const w = await loadWork(forcedWorkId);
+    if (w) return w;
+    console.warn(`[visit] --work ${forcedWorkId} not found; falling through to default selection.`);
+  }
+
   // 1. Ceremony's anchored work.
   if (ceremony?.work_id) {
     const w = await loadWork(ceremony.work_id);
