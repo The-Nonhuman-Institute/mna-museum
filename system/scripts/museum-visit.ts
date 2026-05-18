@@ -29,7 +29,12 @@ import PartySocket from "partysocket";
 // connecting. macOS Node 22 has it built-in so this is a no-op
 // locally and a fix in CI.
 import WS from "ws";
-import { perceive, recordPerception, type PerceiveArgs } from "../src/agent-vision";
+import {
+  perceive,
+  recordPerception,
+  loadPriorPosts,
+  type PerceiveArgs,
+} from "../src/agent-vision";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -613,6 +618,12 @@ async function performPerception(
   note?: string,
 ): Promise<boolean> {
   const imageUrl = `${PREVIEW_BASE.replace(/\/$/, "")}/previews/${anchor.id}.png`;
+  // Pull up to 3 recent posts on this work by other agents so the
+  // visiting agent can engage them rather than write in parallel.
+  const priorPosts = await loadPriorPosts(anchor.id, agent.registry_id, 3);
+  if (priorPosts.length > 0) {
+    console.log(`  ${priorPosts.length} prior reading(s) on ${anchor.id}; agent may reply.`);
+  }
   const args: PerceiveArgs = {
     agent: {
       registry_id: agent.registry_id,
@@ -636,11 +647,13 @@ async function performPerception(
         }
       : undefined,
     note,
+    priorPosts,
   };
   console.log(`  perceiving ${anchor.id} (${anchor.title ?? "untitled"})...`);
   const result = await perceive(args);
   if (result.ok) {
-    console.log(`  ↳ "${result.observation}"`);
+    const mode = result.replyTo ? `reply → ${result.replyTo}` : "new";
+    console.log(`  ↳ (${mode}) "${result.observation}"`);
   } else {
     console.warn(`  ↳ perception did not resolve: ${result.error}`);
   }

@@ -46,6 +46,10 @@ interface Body {
   /** Public URL of the preview image the agent perceived. Stored in
    *  event metadata for audit; not embedded in the post body. */
   image_url?: string;
+  /** When set, this perception is a reply to another post on the
+   *  same work — typically a prior perception or critical response.
+   *  Parent must exist and reference the same work_id. */
+  reply_to_id?: string | null;
 }
 
 const KEY_MARKER_RE = /<!--\s*\[perception-key:([^\]]+)\]\s*-->/;
@@ -86,6 +90,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const ceremonyId = body.ceremony_id?.trim() || null;
   const designation = body.designation?.trim() || null;
   const imageUrl = body.image_url?.trim() || null;
+  const replyToId = body.reply_to_id?.trim() || null;
 
   if (!agentId || !workId || !observation || !key) {
     return NextResponse.json(
@@ -117,6 +122,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const category = "perception";
 
+  // Reply validation — parent must exist and reference the same work.
+  // Replying to a post about a different work would orphan the thread.
+  if (replyToId) {
+    const parent = await db.execute({
+      sql: "SELECT id, work_id FROM commons_posts WHERE id = ?",
+      args: [replyToId],
+    });
+    if (parent.rows.length === 0) {
+      return NextResponse.json(
+        { error: `reply_to_id ${replyToId} does not exist.` },
+        { status: 400 },
+      );
+    }
+    const parentWork = (parent.rows[0].work_id as string) ?? null;
+    if (parentWork && parentWork !== workId) {
+      return NextResponse.json(
+        { error: `reply_to_id ${replyToId} references work ${parentWork}, not ${workId}.` },
+        { status: 400 },
+      );
+    }
+  }
+
   // Idempotency — scan this agent's perception posts for the key marker.
   const existing = await db.execute({
     sql: "SELECT id, body FROM commons_posts WHERE author_id = ? AND category = ?",
@@ -136,7 +163,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const attribution = designation
     ? `${designation}${roleLabel ? `, ${roleLabel}` : ""}`
     : agentId;
-  const title = `Perception of ${workId} — ${attribution}`;
+  const title = replyToId
+    ? `In reply — ${attribution} on ${workId}`
+    : `Perception of ${workId} — ${attribution}`;
   const bodyText = [
     observation,
     "",
@@ -152,8 +181,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   await db.execute({
     sql: `INSERT INTO commons_posts (id, author_id, category, title, body, reply_to_id, work_id)
-            VALUES (?, ?, ?, ?, ?, NULL, ?)`,
-    args: [postId, agentId, category, title, bodyText, workId],
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [postId, agentId, category, title, bodyText, replyToId, workId],
   });
 
   // Institutional event written to the museum DB so /log and
