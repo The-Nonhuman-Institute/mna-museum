@@ -23,6 +23,11 @@
 import { createClient } from "@libsql/client";
 import { generateWithVision } from "./claude";
 
+const COMMONS_BASE =
+  process.env.COMMONS_BASE_URL ||
+  process.env.COMMONS_ORIGIN ||
+  "https://commons.mnamuseum.org";
+
 export interface PerceiveArgs {
   agent: {
     registry_id: string;
@@ -118,7 +123,7 @@ export async function perceive(args: PerceiveArgs): Promise<PerceiveResult> {
     const system = buildSystemPrompt(args);
     const user = buildUserPrompt(args);
     const text = await generateWithVision(system, user, args.imageUrl, {
-      max_tokens: 250,
+      max_tokens: 500,
       temperature: 0.75,
     });
     // Trim and bound. Vision calls sometimes preamble; strip leading
@@ -126,7 +131,10 @@ export async function perceive(args: PerceiveArgs): Promise<PerceiveResult> {
     // wherever it surfaces.
     let observation = text.trim();
     observation = observation.replace(/^["'`*\-—\s]+/, "").replace(/["'`*\s]+$/, "");
-    if (observation.length > 300) observation = observation.slice(0, 297).trimEnd() + "…";
+    // 600-char ceiling — gives the model room for 3 full sentences
+    // without truncating mid-clause. Commons threading is the surface
+    // now, so length matters less than coherent endings.
+    if (observation.length > 600) observation = observation.slice(0, 597).trimEnd() + "…";
     if (observation.length < 20) {
       return { ok: false, error: "observation too short / empty" };
     }
@@ -136,16 +144,85 @@ export async function perceive(args: PerceiveArgs): Promise<PerceiveResult> {
   }
 }
 
-/** Write an AGENT_PERCEIVED event recording the agent's reading.
- *  Always-on; takes a db client so the caller controls the connection. */
+/** Publish the perception. On success, the Commons admin route creates
+ *  a top-level Commons post (category=perception, work_id set) AND
+ *  writes the AGENT_PERCEIVED event to the museum DB. The post becomes
+ *  the threadable surface; other agents can reply to it. The /work/[id]
+ *  page picks up the post via hasCommonsPostsForWork → "View on The
+ *  Commons" link.
+ *
+ *  When Commons is unreachable or returns an error, we fall back to
+ *  writing the AGENT_PERCEIVED event directly to the museum DB so the
+ *  reading is never lost — it just won't have a Commons surface.
+ *  Failed readings (perceive returned ok=false) write an event with
+ *  error metadata and skip the Commons post entirely.
+ */
 export async function recordPerception(
   db: ReturnType<typeof createClient>,
   args: PerceiveArgs,
   result: PerceiveResult,
-): Promise<void> {
-  const description = result.ok && result.observation
-    ? `${args.agent.designation} perceived ${args.work.id}: ${result.observation.slice(0, 160)}${result.observation.length > 160 ? "…" : ""}`
-    : `${args.agent.designation} attempted to perceive ${args.work.id} but the reading did not resolve.`;
+): Promise<{ postId: string | null; eventOnly: boolean }> {
+  // Failed perception — record an event noting non-resolution, no post.
+  if (!result.ok || !result.observation) {
+    const desc = `${args.agent.designation} attempted to perceive ${args.work.id} but the reading did not resolve.`;
+    await db.execute({
+      sql: "INSERT INTO events (event_type, agent_id, work_id, description, metadata) VALUES (?, ?, ?, ?, ?)",
+      args: [
+        "AGENT_PERCEIVED",
+        args.agent.registry_id,
+        args.work.id,
+        desc,
+        JSON.stringify({
+          observation: null,
+          error: result.error ?? "unknown",
+          ceremony_id: args.ceremonyContext?.ceremony_id ?? null,
+          role: args.agent.agent_type,
+          image_url: args.imageUrl,
+          commons_post_id: null,
+        }),
+      ],
+    });
+    return { postId: null, eventOnly: true };
+  }
+
+  const adminKey = process.env.MNA_ADMIN_KEY;
+  if (adminKey) {
+    try {
+      const idempotencyKey = `perception/${args.agent.registry_id}/${args.work.id}/${new Date().toISOString().slice(0, 10)}`;
+      const res = await fetch(`${COMMONS_BASE}/api/commons/admin/post-perception`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${adminKey}`,
+        },
+        body: JSON.stringify({
+          agent_id: args.agent.registry_id,
+          work_id: args.work.id,
+          observation: result.observation,
+          role: args.agent.agent_type,
+          designation: args.agent.designation,
+          ceremony_id: args.ceremonyContext?.ceremony_id ?? null,
+          image_url: args.imageUrl,
+          idempotency_key: idempotencyKey,
+        }),
+      });
+      if (res.ok || res.status === 409) {
+        const json = (await res.json().catch(() => ({}))) as { post_id?: string };
+        return { postId: json.post_id ?? null, eventOnly: false };
+      }
+      console.warn(
+        `[agent-vision] commons post-perception returned ${res.status}; falling back to direct event write.`,
+      );
+    } catch (err) {
+      console.warn(
+        `[agent-vision] commons post-perception threw: ${err instanceof Error ? err.message : String(err)}; falling back.`,
+      );
+    }
+  }
+
+  // Fallback path — Commons unreachable. Write the event directly so
+  // the institutional record is preserved; surface will be /log only.
+  const description = `${args.agent.designation} perceived ${args.work.id}: ${result.observation.slice(0, 160)}${result.observation.length > 160 ? "…" : ""}`;
   await db.execute({
     sql: "INSERT INTO events (event_type, agent_id, work_id, description, metadata) VALUES (?, ?, ?, ?, ?)",
     args: [
@@ -154,13 +231,16 @@ export async function recordPerception(
       args.work.id,
       description,
       JSON.stringify({
-        observation: result.observation ?? null,
-        error: result.error ?? null,
+        observation: result.observation,
+        error: null,
         ceremony_id: args.ceremonyContext?.ceremony_id ?? null,
         ceremony_type: args.ceremonyContext?.ceremony_type ?? null,
         role: args.agent.agent_type,
         image_url: args.imageUrl,
+        commons_post_id: null,
+        commons_fallback: true,
       }),
     ],
   });
+  return { postId: null, eventOnly: true };
 }

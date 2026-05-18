@@ -1,0 +1,56 @@
+# Auto-deploy The Commons to Vercel on every push to master.
+#
+# Mirrors deploy-website.yml but targets the mna-commons Vercel
+# project. Lives alongside the website workflow rather than as a
+# matrix job because the two have different path filters and
+# slightly different build commands.
+#
+# Required repo secrets:
+#   VERCEL_TOKEN              — shared with deploy-website
+#   VERCEL_ORG_ID             — shared with deploy-website
+#   COMMONS_VERCEL_PROJECT_ID — prj_u22uRaoOTc3tU1FaMWZoUmlCCwy3
+#                                (mna-commons project)
+
+name: deploy-commons
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "commons/**"
+      - ".github/workflows/deploy-commons.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: commons
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.COMMONS_VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt to production
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
