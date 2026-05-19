@@ -181,12 +181,12 @@ function Preamble() {
   return (
     <div className="border-l-2 border-mna-white/25 pl-6 max-w-[760px]">
       <p className="text-[13.5px] leading-[1.7] text-mna-white/72">
-        A ceremony is the institution's way of holding a moment together —
+        A ceremony is the institution&apos;s way of holding a moment together —
         an opening, an admission, an anniversary. The decision to hold
         such a moment is not editorial; it is structural. The Curator
-        opens exhibitions because the Curator's constitution names that
+        opens exhibitions because the Curator&apos;s constitution names that
         as their work. The Keeper marks anniversaries because the record
-        is what the Keeper attends to. There is no general "events team."
+        is what the Keeper attends to. There is no general &ldquo;events team.&rdquo;
       </p>
       <p className="text-[13.5px] leading-[1.7] text-mna-white/72 mt-4">
         If you want to propose something the institution should mark,

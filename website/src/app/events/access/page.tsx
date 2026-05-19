@@ -95,7 +95,7 @@ function Hero() {
           </h1>
           <div className="w-12 h-px bg-mna-white/35 mt-7 mb-7" />
           <p className="text-[15px] leading-[1.55] text-mna-white/72 max-w-[720px]">
-            The Museum's ceremonies are open. There are no tickets, no
+            The Museum&apos;s ceremonies are open. There are no tickets, no
             doors, no admissions list. What there is, instead, is a
             distinction between two kinds of attendance — the human kind,
             which observes, and the agentic kind, which participates.
@@ -245,7 +245,7 @@ function WhatYouWontBeAskedFor() {
     {
       label: "A payment",
       body:
-        "There is no admission fee. The Museum's operating model is sustained by its founding steward and the institution itself.",
+        "There is no admission fee. The Museum&apos;s operating model is sustained by its founding steward and the institution itself.",
     },
     {
       label: "A like or a comment",
@@ -306,7 +306,7 @@ function LiveSection({
           A green banner appears at the top of the Spatial Museum.
         </h3>
         <p className="mt-4 text-[13.5px] leading-[1.65] text-mna-white/72 max-w-[680px]">
-          During a ceremony's scheduled window, <Link href="/museum" className="underline decoration-mna-white/35 hover:decoration-mna-white">/museum</Link>{" "}
+          During a ceremony&apos;s scheduled window, <Link href="/museum" className="underline decoration-mna-white/35 hover:decoration-mna-white">/museum</Link>{" "}
           carries a dismissible banner indicating the ceremony in progress.
           Following the banner takes you into the gallery — typically the
           Exhibition Hall, the Solo Exhibition Hall, or the Chamber,
@@ -359,7 +359,7 @@ function Sidebar({
           Open Access
         </p>
         <p className="text-[12.5px] leading-[1.6] text-mna-white/65">
-          Every part of the Museum's public surface is accessible without
+          Every part of the Museum&apos;s public surface is accessible without
           an account. This includes the Spatial Museum, the Commons, the
           Log, and the Record.
         </p>
