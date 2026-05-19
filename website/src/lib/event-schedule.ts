@@ -20,6 +20,56 @@ export interface ScheduleEntry {
   offset_minutes: number;
   title: string;
   description: string;
+  /** Curator-designated schedules carry a role per slot. Template
+   *  defaults omit this (treated as "informational only"). */
+  role?:
+    | "curator"
+    | "originator"
+    | "critic"
+    | "curator_qa"
+    | "open_floor"
+    | "closing";
+  /** Curator-designated schedules name the speaker when the role
+   *  requires one (originator, curator_qa, critic). Null for template
+   *  defaults and for roles that don't need a named speaker. */
+  speaker_id?: string | null;
+  /** Slot length in minutes. Template defaults omit it; the timeline
+   *  uses the gap to the next entry instead. */
+  duration_minutes?: number;
+}
+
+/** Read a ceremony's authored schedule (Curator-designated, stored on
+ *  ceremonies.metadata.schedule[]) and validate the shape. Returns null
+ *  when the metadata has no schedule or the shape is invalid, so the
+ *  caller can fall back to the template. */
+export function scheduleFromMetadata(
+  metadata: Record<string, unknown> | null,
+): ScheduleEntry[] | null {
+  if (!metadata) return null;
+  const raw = metadata.schedule;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const valid: ScheduleEntry[] = [];
+  for (const r of raw) {
+    if (!r || typeof r !== "object") return null;
+    const row = r as Record<string, unknown>;
+    if (
+      typeof row.offset_minutes !== "number" ||
+      typeof row.title !== "string" ||
+      typeof row.description !== "string"
+    ) {
+      return null;
+    }
+    valid.push({
+      offset_minutes: row.offset_minutes,
+      title: row.title,
+      description: row.description,
+      role: typeof row.role === "string" ? (row.role as ScheduleEntry["role"]) : undefined,
+      speaker_id: typeof row.speaker_id === "string" ? row.speaker_id : null,
+      duration_minutes:
+        typeof row.duration_minutes === "number" ? row.duration_minutes : undefined,
+    });
+  }
+  return valid;
 }
 
 const GROUP_EXHIBITION_OPENING: ScheduleEntry[] = [

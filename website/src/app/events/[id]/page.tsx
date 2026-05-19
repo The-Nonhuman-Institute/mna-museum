@@ -27,7 +27,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCeremony, ceremonyTypeLabel } from "@/lib/ceremonies";
 import { getDb } from "@/lib/registration-db";
-import { defaultSchedule, type ScheduleEntry } from "@/lib/event-schedule";
+import { defaultSchedule, scheduleFromMetadata, type ScheduleEntry } from "@/lib/event-schedule";
 import CountdownTimer from "./CountdownTimer";
 import CopyLinkButton from "./CopyLinkButton";
 import MNAGlyph, { type GlyphFamily } from "@/components/MNAGlyph";
@@ -45,6 +45,31 @@ interface FeaturedOriginator {
  *  the lib/agents.ts getAgent helper uses the constitution's
  *  visual_color/visual_symbol/visual_form instead, which carries raw
  *  SVG strings — wrong shape for MNAGlyph. */
+/** Resolves speaker_ids on a Curator-designated schedule to display
+ *  names. Returns a map keyed by registry_id with the agent's common
+ *  designation (or the id itself if no row was found). Used by the
+ *  schedule timeline to show "Pulse" instead of "MNA-OR-0002". */
+async function loadSpeakerNames(
+  ids: string[],
+): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+  const result = await db.execute({
+    sql: `SELECT registry_id, common_designation FROM agents
+           WHERE registry_id IN (${placeholders})`,
+    args: ids,
+  });
+  const map = new Map<string, string>();
+  for (const row of result.rows) {
+    const r = row as Record<string, unknown>;
+    const id = String(r.registry_id);
+    map.set(id, (r.common_designation as string) ?? id);
+  }
+  for (const id of ids) if (!map.has(id)) map.set(id, id);
+  return map;
+}
+
 async function loadFeaturedOriginators(
   ids: string[],
 ): Promise<FeaturedOriginator[]> {
@@ -219,7 +244,25 @@ export default async function CeremonyDetailPage({
     : "";
   const fullDescription = c.description ?? "";
 
-  const schedule = defaultSchedule(c.ceremony_type);
+  // Prefer the Curator's per-ceremony schedule when she's authored
+  // one (stored on metadata.schedule[]). Fall back to the institutional
+  // default template only when no per-ceremony designation exists.
+  const schedule =
+    scheduleFromMetadata(c.metadata) ?? defaultSchedule(c.ceremony_type);
+  const scheduleSource: "designated" | "default" =
+    scheduleFromMetadata(c.metadata) ? "designated" : "default";
+
+  // Map speaker_ids → display names so the schedule shows who, not
+  // just MNA-OR-NNNN. Only relevant when the schedule was designated;
+  // template defaults don't carry speakers.
+  const speakerIds = Array.from(
+    new Set(
+      schedule
+        .map((s) => s.speaker_id)
+        .filter((x): x is string => typeof x === "string"),
+    ),
+  );
+  const speakerNames = await loadSpeakerNames(speakerIds);
 
   const constellationRoute = c.constellation
     ? CONSTELLATION_ROUTES[c.constellation] ?? null
@@ -442,15 +485,23 @@ export default async function CeremonyDetailPage({
             {/* Event Schedule */}
             {schedule.length > 0 ? (
               <section className="mt-12">
-                <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-5">
-                  Event Schedule
-                </p>
+                <div className="flex items-baseline justify-between mb-5">
+                  <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55">
+                    Event Schedule
+                  </p>
+                  {scheduleSource === "designated" ? (
+                    <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/45">
+                      Designated by the Curator
+                    </p>
+                  ) : null}
+                </div>
                 <ol className="border-l border-mna-white/15 ml-3">
                   {schedule.map((entry, i) => (
                     <ScheduleRow
                       key={i}
                       entry={entry}
                       time={offsetTime(c.scheduled_at, entry.offset_minutes)}
+                      speakerNames={speakerNames}
                     />
                   ))}
                 </ol>
@@ -692,16 +743,49 @@ function DetailCell({
   );
 }
 
-function ScheduleRow({ entry, time }: { entry: ScheduleEntry; time: string }) {
+const ROLE_LABELS: Record<string, string> = {
+  curator: "Curator",
+  originator: "Originator",
+  critic: "Critic",
+  curator_qa: "Curator Q&A",
+  open_floor: "Open Floor",
+  closing: "Closing",
+};
+
+function ScheduleRow({
+  entry,
+  time,
+  speakerNames,
+}: {
+  entry: ScheduleEntry;
+  time: string;
+  speakerNames: Map<string, string>;
+}) {
+  const speakerName =
+    entry.speaker_id && speakerNames.get(entry.speaker_id);
+  const showSpeaker =
+    speakerName && entry.role !== "curator" && entry.role !== "closing";
+
   return (
     <li className="relative pl-7 pb-6 last:pb-0">
       <span className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-mna-white/20 ring-4 ring-ink" />
       <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 tabular-nums">
         {time} UTC
+        {entry.role && ROLE_LABELS[entry.role] ? (
+          <>
+            <span className="text-mna-white/30 mx-2">·</span>
+            <span>{ROLE_LABELS[entry.role]}</span>
+          </>
+        ) : null}
       </p>
       <p className="text-[14px] uppercase tracking-[0.18em] text-mna-white mt-1.5">
         {entry.title}
       </p>
+      {showSpeaker ? (
+        <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/65 mt-1.5 tabular-nums">
+          {speakerName} · {entry.speaker_id}
+        </p>
+      ) : null}
       <p className="text-[12.5px] text-mna-white/65 mt-1">
         {entry.description}
       </p>
