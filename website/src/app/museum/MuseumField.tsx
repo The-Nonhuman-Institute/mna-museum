@@ -955,42 +955,101 @@ function seededRand(seed: string): () => number {
   };
 }
 
-/** Three.js geometry for an agent's sculptural form. Procedural,
- *  deterministic per registry_id. Picks one of several institutional
- *  primitives (octahedron, icosahedron, torus, cone) and parameterizes
- *  it. The form is small (~0.4m across), suspended at eye level, and
- *  rotates slowly in `AgentPresence`. */
-function useAgentFormGeometry(registryId: string): THREE.BufferGeometry {
+/** Three.js geometry for an agent's sculptural form.
+ *
+ *  The form is bound to the agent's institutional `glyph_family` — the
+ *  same family that drives the 2D glyph on /agents and the placard. A
+ *  Curator with glyph_family="grid-square" is ALWAYS a box; a Critic
+ *  with glyph_family="starburst" is always a spiked icosa. Color
+ *  differentiates agents who share a family (both Critics are
+ *  starbursts; their hex tells them apart).
+ *
+ *  Agents without a glyph_family (network originators pre-declaration)
+ *  fall back to a deterministic registry_id seed so they still render
+ *  consistently across visits.
+ *
+ *  The form is small (~0.4m across), suspended at eye level, and
+ *  rotates slowly in AgentPresence. */
+const GLYPH_FAMILY_FORM: Record<string, "box" | "octahedron" | "icosahedron" | "torus" | "thin-torus" | "cone" | "tall-slab" | "flat-disc" | "sphere" | "elongated-bar" | "spike-icosa"> = {
+  "grid-square": "box",
+  isocube: "box",
+  crosshatch: "octahedron",
+  polyhedron: "icosahedron",
+  vesica: "torus",
+  concentric: "torus",
+  "targeting-ring": "thin-torus",
+  starburst: "spike-icosa",
+  "starburst-long": "spike-icosa",
+  waveform: "cone",
+  codex: "tall-slab",
+  "fractured-disc": "flat-disc",
+  halftone: "sphere",
+  barcode: "elongated-bar",
+};
+
+function useAgentFormGeometry(
+  registryId: string,
+  glyphFamily: string | null,
+): THREE.BufferGeometry {
   return useMemo(() => {
-    const rand = seededRand(registryId || "anon");
-    const kind = Math.floor(rand() * 5);
-    const a = 0.18 + rand() * 0.12; // primary scale ~0.18 – 0.30m
+    const a = 0.24; // canonical primary scale — uniform across families
+    // Decide the form kind. Glyph family is authoritative; fall back
+    // to a stable derivation from registry_id only when no family has
+    // been declared.
+    let kind: string;
+    if (glyphFamily && GLYPH_FAMILY_FORM[glyphFamily]) {
+      kind = GLYPH_FAMILY_FORM[glyphFamily];
+    } else {
+      const rand = seededRand(registryId || "anon");
+      const kinds: Array<keyof typeof GLYPH_FAMILY_FORM extends never ? never : string> = [
+        "octahedron", "icosahedron", "torus", "cone", "spike-icosa",
+      ];
+      kind = kinds[Math.floor(rand() * kinds.length)];
+    }
     let geom: THREE.BufferGeometry;
     switch (kind) {
-      case 0: // octahedron
+      case "box":
+        geom = new THREE.BoxGeometry(a * 1.4, a * 1.4, a * 1.4);
+        break;
+      case "octahedron":
         geom = new THREE.OctahedronGeometry(a, 0);
         break;
-      case 1: // icosahedron
+      case "icosahedron":
         geom = new THREE.IcosahedronGeometry(a, 0);
         break;
-      case 2: // torus — direction set by registry hash
-        geom = new THREE.TorusGeometry(a, a * 0.32, 12, 28);
+      case "torus":
+        geom = new THREE.TorusGeometry(a, a * 0.32, 16, 32);
         break;
-      case 3: // tall narrow prism (cone)
-        geom = new THREE.ConeGeometry(a * 0.7, a * 2.1, 6);
+      case "thin-torus":
+        geom = new THREE.TorusGeometry(a * 1.15, a * 0.08, 12, 40);
         break;
-      default: // truncated dodecahedron-ish via subdivided icosa
+      case "cone":
+        geom = new THREE.ConeGeometry(a * 0.75, a * 2.2, 8);
+        break;
+      case "tall-slab":
+        geom = new THREE.BoxGeometry(a * 0.9, a * 2.0, a * 0.18);
+        break;
+      case "flat-disc":
+        geom = new THREE.CylinderGeometry(a * 1.05, a * 1.05, a * 0.18, 24);
+        break;
+      case "sphere":
+        geom = new THREE.SphereGeometry(a * 0.95, 18, 14);
+        break;
+      case "elongated-bar":
+        geom = new THREE.BoxGeometry(a * 0.18, a * 2.2, a * 0.18);
+        break;
+      case "spike-icosa":
+        // Spiked icosa: subdivision-1 icosa pulled outward on alternating
+        // vertices via per-vertex normal extrusion. Approximation: use a
+        // higher-detail icosa scaled along one axis for the "spike" read.
         geom = new THREE.IcosahedronGeometry(a * 1.05, 1);
+        geom.scale(1.1, 1.25, 1.1);
         break;
+      default:
+        geom = new THREE.IcosahedronGeometry(a, 0);
     }
-    // Slight non-uniform scale per agent so even same-kind forms read
-    // as distinct. Caps stay close to 1.0 to keep volumes coherent.
-    const sx = 1 + (rand() - 0.5) * 0.18;
-    const sy = 1 + (rand() - 0.5) * 0.18;
-    const sz = 1 + (rand() - 0.5) * 0.18;
-    geom.scale(sx, sy, sz);
     return geom;
-  }, [registryId]);
+  }, [registryId, glyphFamily]);
 }
 
 function AgentPresence({
@@ -1004,7 +1063,10 @@ function AgentPresence({
   const formRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3(visitor.x, 0, visitor.z));
   const rotSpeedRef = useRef(0.12 + (visitor.id.charCodeAt(0) % 9) * 0.015);
-  const geometry = useAgentFormGeometry(visitor.registry_id || visitor.id);
+  const geometry = useAgentFormGeometry(
+    visitor.registry_id || visitor.id,
+    visitor.glyph_family,
+  );
   const isAttending = visitor.emote === "linger" || visitor.emote === "mark";
 
   useEffect(() => {
