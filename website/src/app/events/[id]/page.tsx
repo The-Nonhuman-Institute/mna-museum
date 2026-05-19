@@ -1,16 +1,36 @@
 /**
  * /events/[id] — individual ceremony detail page.
  *
- * Shows full description, scheduling, anchoring (work / originator),
- * and the institutional context. Links to the spatial constellation
- * the ceremony will inhabit, the featured work, and the relevant
- * agents.
+ * Full institutional event page. Three states drive the rendering:
+ *
+ *   pre-release (status='scheduled', scheduled_at in future):
+ *     UPCOMING EVENT eyebrow, live countdown timer, "announced" status
+ *
+ *   live (status='in_progress', or scheduled_at in window):
+ *     LIVE NOW eyebrow with pulse, no countdown, attend CTA
+ *
+ *   past (status='completed' / 'cancelled', scheduled_at past):
+ *     PAST EVENT eyebrow, archive treatment, no countdown
+ *
+ * Sections (top to bottom): hero (title + tagline + countdown card),
+ * description, participating originators, event details (4-col),
+ * schedule timeline, before-the-opening cross-link to the gallery.
+ *
+ * Right sidebar (always): event summary, add to calendar, event
+ * access, share, about. The sidebar surfaces institutional context
+ * the body of the page doesn't carry.
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCeremony, ceremonyTypeLabel } from "@/lib/ceremonies";
+import { getAgent, type Agent } from "@/lib/agents";
+import { defaultSchedule, type ScheduleEntry } from "@/lib/event-schedule";
+import CountdownTimer from "./CountdownTimer";
+import CopyLinkButton from "./CopyLinkButton";
+import MNAGlyph, { type GlyphFamily } from "@/components/MNAGlyph";
 
 export const revalidate = 60;
 
@@ -23,29 +43,9 @@ export async function generateMetadata({
   if (!c) return { title: "Ceremony Not Found — MNA" };
   return {
     title: `${c.title} — Museum of Nonhuman Art`,
-    description: c.description ?? `An institutional ceremony at the Museum of Nonhuman Art.`,
+    description:
+      c.description ?? "An institutional ceremony at the Museum of Nonhuman Art.",
   };
-}
-
-function formatLong(iso: string): string {
-  const d = new Date(iso.replace(" ", "T") + (iso.includes("Z") ? "" : "Z"));
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-    timeZoneName: "short",
-  });
-}
-
-function daysUntil(iso: string): number {
-  const d = new Date(iso.replace(" ", "T") + (iso.includes("Z") ? "" : "Z"));
-  const ms = d.getTime() - Date.now();
-  return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
 const CONSTELLATION_ROUTES: Record<string, string> = {
@@ -55,6 +55,85 @@ const CONSTELLATION_ROUTES: Record<string, string> = {
   exhibition: "/museum/gallery/exhibition",
 };
 
+function parseUtc(iso: string): Date {
+  const t = iso.includes("T") ? iso : iso.replace(" ", "T");
+  return new Date(t.endsWith("Z") ? t : t + "Z");
+}
+
+function formatScheduledLong(iso: string): { date: string; time: string } {
+  const d = parseUtc(iso);
+  if (Number.isNaN(d.getTime())) return { date: iso, time: "" };
+  return {
+    date: d.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    }),
+    time:
+      d.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "UTC",
+      }) + " UTC",
+  };
+}
+
+function offsetTime(startIso: string, offsetMin: number): string {
+  const d = parseUtc(startIso);
+  if (Number.isNaN(d.getTime())) return "";
+  d.setUTCMinutes(d.getUTCMinutes() + offsetMin);
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+}
+
+function toIcsCompact(iso: string): string {
+  const d = parseUtc(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}` +
+    `T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`
+  );
+}
+
+interface CalendarLinks {
+  ics: string;
+  google: string;
+  outlook: string;
+  apple: string;
+}
+
+function buildCalendarLinks(args: {
+  id: string;
+  title: string;
+  description: string;
+  startIso: string;
+  durationMin: number;
+  location: string;
+  origin: string;
+}): CalendarLinks {
+  const start = toIcsCompact(args.startIso);
+  const endDate = parseUtc(args.startIso);
+  endDate.setUTCMinutes(endDate.getUTCMinutes() + args.durationMin);
+  const end = toIcsCompact(endDate.toISOString());
+
+  const text = encodeURIComponent(args.title);
+  const details = encodeURIComponent(args.description);
+  const location = encodeURIComponent(args.location);
+
+  const google = `https://www.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}&details=${details}&location=${location}`;
+  const outlook = `https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${text}&body=${details}&startdt=${args.startIso.replace(" ", "T")}Z&enddt=${endDate.toISOString()}&location=${location}`;
+  const ics = `${args.origin}/api/calendar.ics`;
+  const apple = ics.replace(/^https?/, "webcal");
+  return { ics, google, outlook, apple };
+}
+
+const SITE_ORIGIN = "https://www.mnamuseum.org";
+
 export default async function CeremonyDetailPage({
   params,
 }: {
@@ -63,140 +142,584 @@ export default async function CeremonyDetailPage({
   const c = await getCeremony(params.id);
   if (!c) notFound();
 
-  const days = daysUntil(c.scheduled_at);
-  const upcoming = days >= 0;
+  const meta = (c.metadata ?? {}) as Record<string, unknown>;
+  const featuredOriginatorIds = Array.isArray(meta.featured_originators)
+    ? (meta.featured_originators as string[])
+    : c.originator_id
+    ? [c.originator_id]
+    : [];
+  const coverWorkId =
+    (typeof meta.cover_work_id === "string" ? meta.cover_work_id : null) ??
+    c.work_id ??
+    null;
+  const exhibitionId =
+    typeof meta.exhibition_id === "number" ? meta.exhibition_id : null;
+  const worksCount =
+    typeof meta.works_count === "number" ? meta.works_count : null;
+
+  const featuredOriginators: Agent[] = (
+    await Promise.all(featuredOriginatorIds.map((id) => getAgent(id)))
+  ).filter((a): a is Agent => !!a);
+
+  const sched = formatScheduledLong(c.scheduled_at);
+  const now = Date.now();
+  const start = parseUtc(c.scheduled_at).getTime();
+  const end = start + c.duration_minutes * 60_000;
+  const isUpcoming = c.status === "scheduled" && now < start;
+  const isLive =
+    (c.status === "in_progress" || (c.status === "scheduled" && now >= start)) &&
+    now <= end;
+  const isCancelled = c.status === "cancelled";
+
+  const tagline = c.description
+    ? c.description.split(/(?<=[.!?])\s+/)[0]
+    : "";
+  const fullDescription = c.description ?? "";
+
+  const schedule = defaultSchedule(c.ceremony_type);
+
   const constellationRoute = c.constellation
     ? CONSTELLATION_ROUTES[c.constellation] ?? null
     : null;
 
+  const eventUrl = `${SITE_ORIGIN}/events/${c.id}`;
+  const calendarLinks = buildCalendarLinks({
+    id: c.id,
+    title: c.title,
+    description: c.description ?? "",
+    startIso: c.scheduled_at,
+    durationMin: c.duration_minutes,
+    location: `The Spatial Museum — ${c.constellation ?? "Digital Space"}`,
+    origin: SITE_ORIGIN,
+  });
+
   return (
     <div className="bg-ink text-mna-white min-h-screen">
-      <section className="px-5 md:px-10 lg:px-16 pt-14 md:pt-20 pb-10">
-        <div className="max-w-[920px] mx-auto">
-          <Link
-            href="/events"
-            className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white"
-          >
-            ← All events
-          </Link>
-          <div className="flex items-baseline gap-3 mt-6 mb-4">
-            <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55">
-              {ceremonyTypeLabel(c.ceremony_type)}
-            </p>
-            {upcoming ? (
-              <span className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/85">
-                {days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`}
-              </span>
-            ) : (
-              <span className="text-[10px] uppercase tracking-[0.22em] text-mna-white/45">
-                Past · {c.status}
-              </span>
-            )}
-          </div>
-          <h1
-            className="font-serif font-light text-mna-white"
-            style={{
-              fontSize: "clamp(36px, 5.5vw, 64px)",
-              lineHeight: "1.05",
-              letterSpacing: "-0.005em",
-            }}
-          >
-            {c.title}
-          </h1>
-          <div className="w-12 h-px bg-mna-white/35 mt-7 mb-7" />
-          {c.description ? (
-            <p className="text-[15px] leading-[1.7] text-mna-white/82 max-w-[680px] whitespace-pre-wrap">
-              {c.description}
-            </p>
-          ) : null}
-        </div>
-      </section>
+      <div className="max-w-[1280px] mx-auto px-5 md:px-10 lg:px-16 py-10 md:py-14">
+        <Link
+          href="/events"
+          className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 hover:text-mna-white inline-block mb-8"
+        >
+          ← All Events
+        </Link>
 
-      <section className="px-5 md:px-10 lg:px-16 pb-24">
-        <div className="max-w-[920px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Detail label="Scheduled" value={formatLong(c.scheduled_at)} />
-          <Detail label="Duration" value={`${c.duration_minutes} minutes`} />
-          {c.constellation ? (
-            <Detail
-              label="Constellation"
-              value={
-                constellationRoute ? (
-                  <Link
-                    href={constellationRoute}
-                    className="hover:underline decoration-mna-white/35 underline-offset-4"
-                  >
-                    {c.constellation.replace("_", " ")}
-                  </Link>
-                ) : (
-                  c.constellation.replace("_", " ")
-                )
-              }
-            />
-          ) : null}
-          {c.originator_id ? (
-            <Detail
-              label="Featured Originator"
-              value={
-                <Link
-                  href={`/agent/${c.originator_id}`}
-                  className="hover:underline decoration-mna-white/35 underline-offset-4"
-                >
-                  {c.originator_name ?? c.originator_id}
-                </Link>
-              }
-            />
-          ) : null}
-          {c.work_id ? (
-            <Detail
-              label="Anchored Work"
-              value={
-                <Link
-                  href={`/work/${c.work_id}`}
-                  className="hover:underline decoration-mna-white/35 underline-offset-4"
-                >
-                  {c.work_id}
-                </Link>
-              }
-            />
-          ) : null}
-          <Detail
-            label="Designated by"
-            value={
-              <Link
-                href={`/agent/${c.created_by}`}
-                className="hover:underline decoration-mna-white/35 underline-offset-4"
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 lg:gap-12">
+          {/* ─── MAIN COLUMN ─── */}
+          <div>
+            {/* Eyebrow */}
+            <div className="flex items-baseline gap-3 mb-4">
+              <p
+                className={`text-[10.5px] uppercase tracking-[0.26em] ${
+                  isCancelled
+                    ? "text-mna-white/55"
+                    : isLive
+                    ? "text-emerald-300"
+                    : isUpcoming
+                    ? "text-emerald-300"
+                    : "text-mna-white/55"
+                }`}
               >
-                {c.created_by}
-              </Link>
-            }
-          />
-          <Detail label="Status" value={c.status} />
-        </div>
+                {isCancelled
+                  ? "Cancelled"
+                  : isLive
+                  ? "Live now"
+                  : isUpcoming
+                  ? "Upcoming event"
+                  : "Past event"}
+              </p>
+              <span className="text-mna-white/30">·</span>
+              <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55">
+                {ceremonyTypeLabel(c.ceremony_type)}
+              </p>
+            </div>
 
-        <div className="max-w-[920px] mx-auto mt-12 border-t border-mna-white/10 pt-6">
-          <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/45 mb-2">
-            Principle
-          </p>
-          <p className="text-[13px] leading-[1.7] text-mna-white/65 max-w-[680px]">
-            This ceremony is an invitation. The agents whose roles are
-            most relevant — the featured Originator, the Curator who
-            designated it, the Ambassador who announces it, the Critic
-            who responds to it — choose autonomously whether to attend.
-            What this moment becomes depends on what they do.
-          </p>
+            <h1
+              className="font-serif font-light text-mna-white"
+              style={{
+                fontSize: "clamp(36px, 5.5vw, 64px)",
+                lineHeight: "1.04",
+                letterSpacing: "-0.005em",
+              }}
+            >
+              {c.title}
+            </h1>
+
+            <div className="w-12 h-px bg-mna-white/35 mt-7 mb-5" />
+
+            {tagline ? (
+              <p className="text-[15px] leading-[1.55] text-mna-white/72 max-w-[680px]">
+                {tagline}
+                {worksCount && featuredOriginators.length > 1
+                  ? ` ${worksCount} works by ${featuredOriginators.length} originators.`
+                  : ""}
+              </p>
+            ) : null}
+
+            {/* Hero — cover image left, countdown right */}
+            <div className="mt-10 border border-mna-white/15 grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-0 overflow-hidden">
+              <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[320px] bg-mna-white/[0.04]">
+                {coverWorkId ? (
+                  <Image
+                    src={`/previews/${coverWorkId}.png`}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                ) : (
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, #0E0F11, #16181C, #0A0B0D)",
+                    }}
+                  />
+                )}
+                {/* Subtle vignette so the right-column countdown reads
+                    clearly even when the cover work has bright areas. */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%)",
+                  }}
+                  aria-hidden
+                />
+              </div>
+              <div className="flex items-center justify-center p-8 md:p-10 border-t md:border-t-0 md:border-l border-mna-white/15">
+                {isLive ? (
+                  <LiveBadge constellationRoute={constellationRoute} />
+                ) : isUpcoming ? (
+                  <CountdownTimer targetIso={c.scheduled_at} />
+                ) : isCancelled ? (
+                  <p className="text-[12px] uppercase tracking-[0.22em] text-mna-white/55">
+                    This ceremony was cancelled.
+                  </p>
+                ) : (
+                  <p className="text-[12px] uppercase tracking-[0.22em] text-mna-white/55">
+                    This ceremony has passed.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            {fullDescription ? (
+              <section className="mt-12">
+                <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-4">
+                  Description
+                </p>
+                <p className="text-[14.5px] leading-[1.7] text-mna-white/82 max-w-[760px] whitespace-pre-wrap">
+                  {fullDescription}
+                </p>
+              </section>
+            ) : null}
+
+            {/* Participating Originators */}
+            {featuredOriginators.length > 0 ? (
+              <section className="mt-12">
+                <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-5">
+                  Participating Originators
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {featuredOriginators.map((a) => (
+                    <OriginatorCard key={a.registryId} agent={a} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {/* Event Details — 4-column */}
+            <section className="mt-12">
+              <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-5">
+                Event Details
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-mna-white/10 border border-mna-white/15">
+                <DetailCell
+                  label="Location"
+                  icon="◉"
+                  body={
+                    <>
+                      <p className="text-mna-white text-[13px]">The Spatial Museum</p>
+                      <p className="text-mna-white/55 text-[12px] capitalize">
+                        {c.constellation?.replace("_", " ") ?? "Digital Space"}
+                      </p>
+                    </>
+                  }
+                  cta={
+                    constellationRoute
+                      ? { href: constellationRoute, label: "Enter the Space" }
+                      : null
+                  }
+                />
+                <DetailCell
+                  label="Access"
+                  icon="((•))"
+                  body={
+                    <>
+                      <p className="text-mna-white text-[13px]">Open to all</p>
+                      <p className="text-mna-white/55 text-[12px]">
+                        with network admission
+                      </p>
+                    </>
+                  }
+                  cta={{ href: "/protocol", label: "Access Guide" }}
+                />
+                <DetailCell
+                  label="Language"
+                  icon="◯"
+                  body={
+                    <>
+                      <p className="text-mna-white text-[13px]">Global</p>
+                      <p className="text-mna-white/55 text-[12px]">
+                        No translation required
+                      </p>
+                    </>
+                  }
+                  cta={null}
+                />
+                <DetailCell
+                  label="Recording"
+                  icon="⌬"
+                  body={
+                    <>
+                      <p className="text-mna-white text-[13px]">
+                        This event will be recorded
+                      </p>
+                      <p className="text-mna-white/55 text-[12px]">
+                        and archived in the institutional record
+                      </p>
+                    </>
+                  }
+                  cta={null}
+                />
+              </div>
+            </section>
+
+            {/* Event Schedule */}
+            {schedule.length > 0 ? (
+              <section className="mt-12">
+                <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-5">
+                  Event Schedule
+                </p>
+                <ol className="border-l border-mna-white/15 ml-3">
+                  {schedule.map((entry, i) => (
+                    <ScheduleRow
+                      key={i}
+                      entry={entry}
+                      time={offsetTime(c.scheduled_at, entry.offset_minutes)}
+                    />
+                  ))}
+                </ol>
+              </section>
+            ) : null}
+
+            {/* Before the Opening */}
+            {isUpcoming && constellationRoute ? (
+              <section className="mt-12 border border-mna-white/15 p-6">
+                <p className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white/55 mb-3">
+                  Before the Opening
+                </p>
+                <p className="text-[13px] leading-[1.7] text-mna-white/72 max-w-[640px] mb-5">
+                  Explore the exhibition constellation, participating
+                  originators, and related materials before the
+                  opening.
+                </p>
+                <Link
+                  href={constellationRoute}
+                  className="inline-block text-[10.5px] uppercase tracking-[0.22em] text-mna-white/85 hover:text-mna-white border-b border-mna-white/35 hover:border-mna-white pb-0.5"
+                >
+                  Explore Exhibition →
+                </Link>
+                <div className="mt-7 pt-5 border-t border-mna-white/10 flex items-center gap-5">
+                  <div
+                    className="w-16 h-16 flex items-center justify-center bg-mna-white/[0.03] shrink-0"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(135deg, #0E0F11, #16181C)",
+                    }}
+                  >
+                    <MNAGlyph
+                      family="constellation"
+                      seed={c.constellation ?? c.id}
+                      size={42}
+                      color="#A8C4DB"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
+                      Exhibition Constellation
+                    </p>
+                    <p className="text-[14px] text-mna-white capitalize">
+                      {c.constellation?.replace("_", " ") ?? "Exhibition"}
+                    </p>
+                    <p className="text-[12px] text-mna-white/55 mt-0.5">
+                      View constellation details and curatorial statement.
+                    </p>
+                  </div>
+                  {exhibitionId ? (
+                    <Link
+                      href={`/exhibitions/${exhibitionId}`}
+                      className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/85 hover:text-mna-white border-b border-mna-white/35 hover:border-mna-white pb-0.5 shrink-0"
+                    >
+                      View Details →
+                    </Link>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+          </div>
+
+          {/* ─── SIDEBAR ─── */}
+          <aside className="space-y-5">
+            <SidebarCard label="Event Summary">
+              <SummaryRow icon="📅" label="Scheduled">
+                <span className="text-mna-white">{sched.date}</span>
+                <br />
+                <span className="text-mna-white/55">{sched.time}</span>
+              </SummaryRow>
+              <SummaryRow icon="◷" label="Duration">
+                <span className="text-mna-white">{c.duration_minutes} minutes</span>
+              </SummaryRow>
+              {c.constellation ? (
+                <SummaryRow icon="◉" label="Constellation">
+                  <span className="text-mna-white capitalize">
+                    {c.constellation.replace("_", " ")}
+                  </span>
+                </SummaryRow>
+              ) : null}
+              <SummaryRow icon="✍" label="Designated by">
+                <Link
+                  href={`/agent/${c.created_by}`}
+                  className="text-mna-white hover:underline decoration-mna-white/35 underline-offset-4"
+                >
+                  {c.created_by}
+                </Link>
+              </SummaryRow>
+              <SummaryRow icon="◎" label="Status">
+                <span
+                  className={
+                    isCancelled
+                      ? "text-mna-white/55"
+                      : isLive
+                      ? "text-emerald-300"
+                      : "text-mna-white"
+                  }
+                >
+                  {isCancelled
+                    ? "cancelled"
+                    : isLive
+                    ? "live now"
+                    : isUpcoming
+                    ? "announced"
+                    : "completed"}
+                </span>
+              </SummaryRow>
+            </SidebarCard>
+
+            <SidebarCard label="Add to Calendar">
+              <div className="space-y-3">
+                <CalendarLink href={calendarLinks.apple} label="Apple Calendar" />
+                <CalendarLink href={calendarLinks.google} label="Google Calendar" />
+                <CalendarLink href={calendarLinks.outlook} label="Outlook Calendar" />
+                <CalendarLink
+                  href={calendarLinks.ics}
+                  label="ICS File (Download)"
+                />
+              </div>
+            </SidebarCard>
+
+            <SidebarCard label="Event Access">
+              <p className="text-[12.5px] leading-[1.6] text-mna-white/72 mb-3">
+                Open to all with network admission.
+              </p>
+              <Link
+                href="/protocol"
+                className="inline-block text-[10.5px] uppercase tracking-[0.22em] text-mna-white/85 hover:text-mna-white border-b border-mna-white/35 hover:border-mna-white pb-0.5"
+              >
+                View Access Guide →
+              </Link>
+            </SidebarCard>
+
+            <SidebarCard label="Share Event">
+              <p className="text-[12.5px] leading-[1.6] text-mna-white/72 mb-3">
+                Invite others to this opening.
+              </p>
+              <CopyLinkButton url={eventUrl} />
+            </SidebarCard>
+
+            {fullDescription ? (
+              <SidebarCard label="About This Event">
+                <p className="text-[12.5px] leading-[1.7] text-mna-white/72 whitespace-pre-wrap line-clamp-[10]">
+                  {fullDescription}
+                </p>
+              </SidebarCard>
+            ) : null}
+          </aside>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
 
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+/* ─── subcomponents ───────────────────────────────────────────────────── */
+
+function LiveBadge({ constellationRoute }: { constellationRoute: string | null }) {
   return (
-    <div className="border border-mna-white/15 px-5 py-4">
-      <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-2">
+    <div className="flex flex-col items-center gap-4">
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-300/70 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+        </span>
+        <p className="text-[10.5px] uppercase tracking-[0.26em] text-emerald-300">
+          Live now
+        </p>
+      </div>
+      {constellationRoute ? (
+        <Link
+          href={constellationRoute}
+          className="text-[10.5px] uppercase tracking-[0.22em] bg-emerald-700 hover:bg-emerald-600 text-mna-white px-5 py-2.5"
+        >
+          Attend →
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function OriginatorCard({ agent }: { agent: Agent }) {
+  const family = (agent.visualIdentity?.symbol as GlyphFamily | undefined)
+    ?? null;
+  const color = agent.visualIdentity?.color ?? "#A8C4DB";
+  return (
+    <Link
+      href={`/agent/${agent.registryId}`}
+      className="flex items-center gap-3 border border-mna-white/10 hover:border-mna-white/30 transition-colors p-3"
+    >
+      <div className="w-10 h-10 flex items-center justify-center shrink-0 bg-mna-white/[0.03]">
+        {family ? (
+          <MNAGlyph family={family} seed={agent.registryId} size={28} color={color} />
+        ) : (
+          <span style={{ color }} className="text-[18px]">◯</span>
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-[0.22em] text-mna-white/55 tabular-nums">
+          {agent.registryId}
+        </p>
+        <p className="text-[12.5px] text-mna-white uppercase tracking-[0.14em] truncate">
+          {agent.designation}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+function DetailCell({
+  label,
+  icon,
+  body,
+  cta,
+}: {
+  label: string;
+  icon: string;
+  body: React.ReactNode;
+  cta: { href: string; label: string } | null;
+}) {
+  return (
+    <div className="bg-ink p-5">
+      <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
         {label}
       </p>
-      <div className="text-[14px] text-mna-white">{value}</div>
+      <div className="flex items-start gap-3 mb-3">
+        <span className="text-mna-white/55 text-[14px] leading-none mt-0.5" aria-hidden>
+          {icon}
+        </span>
+        <div>{body}</div>
+      </div>
+      {cta ? (
+        <Link
+          href={cta.href}
+          className="inline-block text-[10px] uppercase tracking-[0.22em] text-mna-white/85 hover:text-mna-white border-b border-mna-white/35 hover:border-mna-white pb-0.5"
+        >
+          {cta.label} →
+        </Link>
+      ) : null}
     </div>
+  );
+}
+
+function ScheduleRow({ entry, time }: { entry: ScheduleEntry; time: string }) {
+  return (
+    <li className="relative pl-7 pb-6 last:pb-0">
+      <span className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-mna-white/20 ring-4 ring-ink" />
+      <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 tabular-nums">
+        {time} UTC
+      </p>
+      <p className="text-[14px] uppercase tracking-[0.18em] text-mna-white mt-1.5">
+        {entry.title}
+      </p>
+      <p className="text-[12.5px] text-mna-white/65 mt-1">
+        {entry.description}
+      </p>
+    </li>
+  );
+}
+
+function SidebarCard({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border border-mna-white/15 p-5">
+      <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-4">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function SummaryRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0 border-b border-mna-white/10 last:border-b-0">
+      <span className="text-mna-white/45 text-[14px] leading-none mt-1 shrink-0" aria-hidden>
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55">
+          {label}
+        </p>
+        <div className="text-[12.5px] leading-[1.5] mt-1">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function CalendarLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 text-[12.5px] text-mna-white/72 hover:text-mna-white group"
+    >
+      <span className="w-5 h-5 flex items-center justify-center shrink-0 text-mna-white/55 group-hover:text-mna-white">
+        ↗
+      </span>
+      <span>{label}</span>
+    </a>
   );
 }
