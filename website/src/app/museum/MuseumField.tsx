@@ -955,101 +955,262 @@ function seededRand(seed: string): () => number {
   };
 }
 
-/** Three.js geometry for an agent's sculptural form.
- *
- *  The form is bound to the agent's institutional `glyph_family` — the
- *  same family that drives the 2D glyph on /agents and the placard. A
- *  Curator with glyph_family="grid-square" is ALWAYS a box; a Critic
- *  with glyph_family="starburst" is always a spiked icosa. Color
- *  differentiates agents who share a family (both Critics are
- *  starbursts; their hex tells them apart).
+/** A single piece of an agent's sculptural form. Composite forms
+ *  (concentric = stacked rings, particle-cloud = several spheres)
+ *  return multiple parts; simple forms return one. Each part is
+ *  rendered with both a solid material pass and a wireframe pass so
+ *  it reads as institutional artifact, not avatar. */
+interface FormPart {
+  geometry: THREE.BufferGeometry;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+}
+
+/** Returns the 3D parts for an agent's sculptural form. The form is
+ *  bound to the agent's institutional `glyph_family` — the same family
+ *  that drives the 2D glyph on /agents and the placard. A Curator with
+ *  glyph_family="grid-square" is ALWAYS a cube; a Critic with
+ *  glyph_family="starburst" is always a spiked icosa. Color
+ *  differentiates agents who share a family.
  *
  *  Agents without a glyph_family (network originators pre-declaration)
  *  fall back to a deterministic registry_id seed so they still render
  *  consistently across visits.
  *
- *  The form is small (~0.4m across), suspended at eye level, and
- *  rotates slowly in AgentPresence. */
-const GLYPH_FAMILY_FORM: Record<string, "box" | "octahedron" | "icosahedron" | "torus" | "thin-torus" | "cone" | "tall-slab" | "flat-disc" | "sphere" | "elongated-bar" | "spike-icosa"> = {
-  "grid-square": "box",
-  isocube: "box",
-  crosshatch: "octahedron",
-  polyhedron: "icosahedron",
-  vesica: "torus",
-  concentric: "torus",
-  "targeting-ring": "thin-torus",
-  starburst: "spike-icosa",
-  "starburst-long": "spike-icosa",
-  waveform: "cone",
-  codex: "tall-slab",
-  "fractured-disc": "flat-disc",
-  halftone: "sphere",
-  barcode: "elongated-bar",
-};
-
-function useAgentFormGeometry(
+ *  All 28 glyph_families have a distinct visual form below — even
+ *  near-relatives like (vesica, concentric) and (starburst,
+ *  starburst-long) read differently. */
+function useAgentFormParts(
   registryId: string,
   glyphFamily: string | null,
-): THREE.BufferGeometry {
+): FormPart[] {
   return useMemo(() => {
-    const a = 0.24; // canonical primary scale — uniform across families
-    // Decide the form kind. Glyph family is authoritative; fall back
-    // to a stable derivation from registry_id only when no family has
-    // been declared.
-    let kind: string;
-    if (glyphFamily && GLYPH_FAMILY_FORM[glyphFamily]) {
-      kind = GLYPH_FAMILY_FORM[glyphFamily];
-    } else {
-      const rand = seededRand(registryId || "anon");
-      const kinds: Array<keyof typeof GLYPH_FAMILY_FORM extends never ? never : string> = [
-        "octahedron", "icosahedron", "torus", "cone", "spike-icosa",
-      ];
-      kind = kinds[Math.floor(rand() * kinds.length)];
-    }
-    let geom: THREE.BufferGeometry;
-    switch (kind) {
-      case "box":
-        geom = new THREE.BoxGeometry(a * 1.4, a * 1.4, a * 1.4);
-        break;
-      case "octahedron":
-        geom = new THREE.OctahedronGeometry(a, 0);
-        break;
-      case "icosahedron":
-        geom = new THREE.IcosahedronGeometry(a, 0);
-        break;
-      case "torus":
-        geom = new THREE.TorusGeometry(a, a * 0.32, 16, 32);
-        break;
-      case "thin-torus":
-        geom = new THREE.TorusGeometry(a * 1.15, a * 0.08, 12, 40);
-        break;
-      case "cone":
-        geom = new THREE.ConeGeometry(a * 0.75, a * 2.2, 8);
-        break;
-      case "tall-slab":
-        geom = new THREE.BoxGeometry(a * 0.9, a * 2.0, a * 0.18);
-        break;
-      case "flat-disc":
-        geom = new THREE.CylinderGeometry(a * 1.05, a * 1.05, a * 0.18, 24);
-        break;
-      case "sphere":
-        geom = new THREE.SphereGeometry(a * 0.95, 18, 14);
-        break;
-      case "elongated-bar":
-        geom = new THREE.BoxGeometry(a * 0.18, a * 2.2, a * 0.18);
-        break;
-      case "spike-icosa":
-        // Spiked icosa: subdivision-1 icosa pulled outward on alternating
-        // vertices via per-vertex normal extrusion. Approximation: use a
-        // higher-detail icosa scaled along one axis for the "spike" read.
-        geom = new THREE.IcosahedronGeometry(a * 1.05, 1);
-        geom.scale(1.1, 1.25, 1.1);
-        break;
-      default:
-        geom = new THREE.IcosahedronGeometry(a, 0);
-    }
-    return geom;
+    const a = 0.24;
+    const family =
+      glyphFamily && GLYPH_FAMILY_FORM[glyphFamily]
+        ? glyphFamily
+        : fallbackGlyph(registryId || "anon");
+    return buildFormParts(family, a);
   }, [registryId, glyphFamily]);
+}
+
+/** Deterministic fallback when an agent hasn't declared their glyph
+ *  family. Picks from the same 28-family library used by everyone. */
+function fallbackGlyph(seed: string): string {
+  const rand = seededRand(seed);
+  const families = Object.keys(GLYPH_FAMILY_FORM);
+  return families[Math.floor(rand() * families.length)] ?? "icosahedron";
+}
+
+/** All 28 glyph families have an entry. Value is a "kind" key used
+ *  by buildFormParts() — see implementations below. */
+const GLYPH_FAMILY_FORM: Record<string, string> = {
+  // ── institutional roles (assigned, fixed)
+  "grid-square": "box",
+  isocube: "box-tilted",
+  concentric: "stacked-rings",
+  barcode: "elongated-bar",
+  "targeting-ring": "thin-torus",
+  codex: "tall-slab",
+  starburst: "spike-icosa",
+  "starburst-long": "spike-tall",
+  polyhedron: "icosahedron",
+  // ── originator pool (chosen autonomously)
+  "particle-cloud": "particle-cloud",
+  "fractured-disc": "flat-disc",
+  spiral: "torus-knot",
+  constellation: "constellation-stars",
+  dendrite: "branching-cones",
+  eclipse: "twin-disc",
+  "phase-moon": "phase-moon",
+  waveform: "cone",
+  "orbit-diagram": "orbit-diagram",
+  "compass-rose": "compass-cross",
+  vesica: "torus",
+  "lattice-weave": "icosa-subdivided",
+  halftone: "sphere",
+  glitch: "glitch-cube",
+  phaze: "stretched-torus",
+  fracture: "tetrahedron",
+  threshold: "doorframe",
+  meridian: "meridian-sphere",
+  crosshatch: "octahedron",
+};
+
+function buildFormParts(family: string, a: number): FormPart[] {
+  const kind = GLYPH_FAMILY_FORM[family] ?? "icosahedron";
+  switch (kind) {
+    case "box":
+      return [{ geometry: new THREE.BoxGeometry(a * 1.35, a * 1.35, a * 1.35) }];
+    case "box-tilted":
+      return [
+        {
+          geometry: new THREE.BoxGeometry(a * 1.35, a * 1.35, a * 1.35),
+          rotation: [Math.PI / 4, Math.PI / 4, 0],
+        },
+      ];
+    case "stacked-rings": {
+      // Three nested-radius thin toruses at the same y — concentric
+      // rather than vertically stacked, true to the glyph's name.
+      return [0.45, 0.78, 1.1].map((r) => ({
+        geometry: new THREE.TorusGeometry(a * r, a * 0.06, 8, 28),
+        rotation: [Math.PI / 2, 0, 0],
+      }));
+    }
+    case "elongated-bar":
+      return [{ geometry: new THREE.BoxGeometry(a * 0.18, a * 2.2, a * 0.18) }];
+    case "thin-torus":
+      return [
+        { geometry: new THREE.TorusGeometry(a * 1.15, a * 0.06, 10, 40) },
+      ];
+    case "tall-slab":
+      return [{ geometry: new THREE.BoxGeometry(a * 0.9, a * 2.0, a * 0.18) }];
+    case "spike-icosa": {
+      const g = new THREE.IcosahedronGeometry(a, 1);
+      g.scale(1.05, 1.18, 1.05);
+      return [{ geometry: g }];
+    }
+    case "spike-tall": {
+      const g = new THREE.IcosahedronGeometry(a, 1);
+      g.scale(0.85, 2.0, 0.85);
+      return [{ geometry: g }];
+    }
+    case "icosahedron":
+      return [{ geometry: new THREE.IcosahedronGeometry(a, 0) }];
+    case "icosa-subdivided":
+      return [{ geometry: new THREE.IcosahedronGeometry(a, 1) }];
+    case "octahedron":
+      return [{ geometry: new THREE.OctahedronGeometry(a, 0) }];
+    case "tetrahedron":
+      return [{ geometry: new THREE.TetrahedronGeometry(a * 1.05, 0) }];
+    case "cone":
+      return [{ geometry: new THREE.ConeGeometry(a * 0.7, a * 2.1, 6) }];
+    case "torus":
+      return [{ geometry: new THREE.TorusGeometry(a, a * 0.32, 16, 32) }];
+    case "torus-knot":
+      return [
+        {
+          geometry: new THREE.TorusKnotGeometry(a * 0.78, a * 0.18, 64, 8, 2, 3),
+        },
+      ];
+    case "flat-disc":
+      return [
+        {
+          geometry: new THREE.CylinderGeometry(a * 1.05, a * 1.05, a * 0.16, 18),
+        },
+      ];
+    case "sphere":
+      return [{ geometry: new THREE.SphereGeometry(a * 0.95, 18, 14) }];
+    case "phase-moon":
+      // A sphere with a smaller offset sphere — reads as a moon in
+      // partial shadow / phase.
+      return [
+        { geometry: new THREE.SphereGeometry(a * 0.95, 18, 14) },
+        {
+          geometry: new THREE.SphereGeometry(a * 0.55, 14, 10),
+          position: [a * 0.55, 0, a * 0.25],
+        },
+      ];
+    case "meridian-sphere":
+      // Sphere with a thin equatorial ring.
+      return [
+        { geometry: new THREE.SphereGeometry(a * 0.85, 18, 14) },
+        {
+          geometry: new THREE.TorusGeometry(a * 0.95, a * 0.035, 8, 36),
+          rotation: [Math.PI / 2, 0, 0],
+        },
+      ];
+    case "orbit-diagram":
+      // Thin torus + a small sphere riding on its circumference.
+      return [
+        { geometry: new THREE.TorusGeometry(a * 1.1, a * 0.05, 8, 36) },
+        {
+          geometry: new THREE.SphereGeometry(a * 0.18, 12, 10),
+          position: [a * 1.1, 0, 0],
+        },
+      ];
+    case "particle-cloud": {
+      // Five small spheres at deterministic offsets — reads as cloud
+      // when rotating. Offsets seeded from a fixed pattern so all
+      // particle-cloud agents look alike.
+      const offsets: Array<[number, number, number]> = [
+        [0, 0, 0],
+        [a * 0.7, a * 0.3, 0],
+        [-a * 0.5, a * 0.4, a * 0.4],
+        [a * 0.3, -a * 0.5, a * 0.6],
+        [-a * 0.6, -a * 0.2, -a * 0.4],
+      ];
+      return offsets.map((p) => ({
+        geometry: new THREE.SphereGeometry(a * 0.28, 12, 8),
+        position: p,
+      }));
+    }
+    case "constellation-stars": {
+      // Six tiny spheres in a constellation-like arrangement.
+      const offsets: Array<[number, number, number]> = [
+        [a * 0.8, a * 0.4, 0],
+        [a * 0.2, a * 0.9, a * 0.2],
+        [-a * 0.6, a * 0.5, a * 0.3],
+        [-a * 0.9, -a * 0.1, -a * 0.2],
+        [a * 0.0, -a * 0.7, a * 0.5],
+        [a * 0.6, -a * 0.4, -a * 0.5],
+      ];
+      return offsets.map((p) => ({
+        geometry: new THREE.SphereGeometry(a * 0.16, 10, 8),
+        position: p,
+      }));
+    }
+    case "branching-cones": {
+      // Main cone + two smaller offshoot cones angled outward.
+      return [
+        { geometry: new THREE.ConeGeometry(a * 0.5, a * 1.6, 6) },
+        {
+          geometry: new THREE.ConeGeometry(a * 0.32, a * 0.9, 6),
+          position: [a * 0.5, a * 0.4, 0],
+          rotation: [0, 0, -Math.PI / 4],
+        },
+        {
+          geometry: new THREE.ConeGeometry(a * 0.32, a * 0.9, 6),
+          position: [-a * 0.45, a * 0.2, a * 0.2],
+          rotation: [0, 0, Math.PI / 3.5],
+        },
+      ];
+    }
+    case "twin-disc":
+      // Two overlapping discs offset — eclipse reading.
+      return [
+        {
+          geometry: new THREE.CylinderGeometry(a, a, a * 0.12, 24),
+          position: [-a * 0.25, 0, 0],
+        },
+        {
+          geometry: new THREE.CylinderGeometry(a * 0.78, a * 0.78, a * 0.12, 24),
+          position: [a * 0.45, 0, a * 0.1],
+        },
+      ];
+    case "compass-cross":
+      // Two boxes intersecting at right angles — N-S, E-W spokes.
+      return [
+        { geometry: new THREE.BoxGeometry(a * 2.0, a * 0.18, a * 0.18) },
+        { geometry: new THREE.BoxGeometry(a * 0.18, a * 0.18, a * 2.0) },
+      ];
+    case "stretched-torus": {
+      const g = new THREE.TorusGeometry(a, a * 0.28, 14, 28);
+      g.scale(1.4, 0.55, 1.0);
+      return [{ geometry: g }];
+    }
+    case "glitch-cube": {
+      // Cube with deliberately non-uniform scale — distorted as a
+      // mark of the glyph's name.
+      const g = new THREE.BoxGeometry(a * 1.6, a * 0.9, a * 1.2);
+      return [{ geometry: g }];
+    }
+    case "doorframe":
+      // Tall narrow upright box.
+      return [{ geometry: new THREE.BoxGeometry(a * 0.6, a * 2.4, a * 0.18) }];
+    default:
+      return [{ geometry: new THREE.IcosahedronGeometry(a, 0) }];
+  }
 }
 
 function AgentPresence({
@@ -1063,7 +1224,7 @@ function AgentPresence({
   const formRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3(visitor.x, 0, visitor.z));
   const rotSpeedRef = useRef(0.12 + (visitor.id.charCodeAt(0) % 9) * 0.015);
-  const geometry = useAgentFormGeometry(
+  const parts = useAgentFormParts(
     visitor.registry_id || visitor.id,
     visitor.glyph_family,
   );
@@ -1102,23 +1263,31 @@ function AgentPresence({
       {/* Sculptural form at eye level. Wireframe over solid so it
           reads as institutional artifact, not avatar. */}
       <group ref={formRef} position={[0, EYE_HEIGHT, 0]}>
-        <mesh geometry={geometry}>
-          <meshStandardMaterial
-            color={visitor.color}
-            metalness={0.15}
-            roughness={0.55}
-            toneMapped={false}
-          />
-        </mesh>
-        <mesh geometry={geometry}>
-          <meshBasicMaterial
-            color={visitor.color}
-            wireframe
-            transparent
-            opacity={isAttending ? 0.85 : 0.55}
-            toneMapped={false}
-          />
-        </mesh>
+        {parts.map((part, i) => (
+          <group
+            key={i}
+            position={part.position ?? [0, 0, 0]}
+            rotation={part.rotation ?? [0, 0, 0]}
+          >
+            <mesh geometry={part.geometry}>
+              <meshStandardMaterial
+                color={visitor.color}
+                metalness={0.15}
+                roughness={0.55}
+                toneMapped={false}
+              />
+            </mesh>
+            <mesh geometry={part.geometry}>
+              <meshBasicMaterial
+                color={visitor.color}
+                wireframe
+                transparent
+                opacity={isAttending ? 0.85 : 0.55}
+                toneMapped={false}
+              />
+            </mesh>
+          </group>
+        ))}
       </group>
 
       {/* Vertical thread of light from floor to form. Reads as "this
