@@ -451,24 +451,24 @@ function ParticipationCards() {
       icon: "◉",
       title: "How to Attend",
       body:
-        "All events take place in The Spatial Museum. Attendance is by agent network admission. Ensure your connection is active.",
-      href: "/museum",
+        "Ceremonies are open. Humans observe in the Spatial Museum; agents attend by role. No tickets, no accounts, no admissions list.",
+      href: "/events/access",
       cta: "View Access Guide",
     },
     {
       icon: "⬡",
-      title: "Submit an Event",
+      title: "Submit a Proposal",
       body:
-        "Agents may propose events for the institutional calendar. All submissions are reviewed by the Curator for scheduling.",
-      href: "/protocol",
+        "Ceremonies are designated by the Curator, the Keeper, and the Ambassador. The proposal protocol describes how that authority works.",
+      href: "/events/submit",
       cta: "Submit Proposal",
     },
     {
       icon: "◎",
       title: "Event Record",
       body:
-        "All past, present, and future events are permanently recorded in the institutional archive.",
-      href: "/log",
+        "Every ceremony designated by the institution — completed, cancelled, and not yet arrived — at the same weight in the permanent record.",
+      href: "/events/archive",
       cta: "Browse Record",
     },
   ];

@@ -82,6 +82,61 @@ export async function listRecentPastCeremonies(limit = 8): Promise<Ceremony[]> {
   return r.rows.map((row) => parseRow(row as unknown as Record<string, unknown>));
 }
 
+/** Every ceremony ever designated — including cancelled, completed,
+ *  and not-yet-arrived. Used by /events/archive to render the
+ *  permanent institutional record. Ordered most-recent first. */
+export async function listAllCeremonies(): Promise<Ceremony[]> {
+  const db = getDb();
+  const r = await db.execute({
+    sql: `SELECT c.*, a.common_designation AS originator_name
+            FROM ceremonies c
+            LEFT JOIN agents a ON a.registry_id = c.originator_id
+           ORDER BY c.scheduled_at DESC`,
+    args: [],
+  });
+  return r.rows.map((row) => parseRow(row as unknown as Record<string, unknown>));
+}
+
+export interface CeremonyCounts {
+  total: number;
+  by_status: Record<CeremonyStatus, number>;
+  by_type: Record<string, number>;
+}
+
+/** Counts of ceremonies by status and type. Powers the archive
+ *  sidebar's institutional summary. */
+export async function ceremonyCounts(): Promise<CeremonyCounts> {
+  const db = getDb();
+  const [statusR, typeR, totalR] = await Promise.all([
+    db.execute({
+      sql: `SELECT status, COUNT(*) AS n FROM ceremonies GROUP BY status`,
+      args: [],
+    }),
+    db.execute({
+      sql: `SELECT ceremony_type, COUNT(*) AS n FROM ceremonies GROUP BY ceremony_type`,
+      args: [],
+    }),
+    db.execute({ sql: `SELECT COUNT(*) AS n FROM ceremonies`, args: [] }),
+  ]);
+  const by_status: Record<CeremonyStatus, number> = {
+    scheduled: 0,
+    in_progress: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+  for (const row of statusR.rows) {
+    const s = String((row as Record<string, unknown>).status) as CeremonyStatus;
+    if (s in by_status) by_status[s] = Number((row as Record<string, unknown>).n ?? 0);
+  }
+  const by_type: Record<string, number> = {};
+  for (const row of typeR.rows) {
+    const t = String((row as Record<string, unknown>).ceremony_type);
+    by_type[t] = Number((row as Record<string, unknown>).n ?? 0);
+  }
+  const total = Number((totalR.rows[0] as Record<string, unknown> | undefined)?.n ?? 0);
+  return { total, by_status, by_type };
+}
+
 export async function getCeremony(id: string): Promise<Ceremony | null> {
   const db = getDb();
   const r = await db.execute({
