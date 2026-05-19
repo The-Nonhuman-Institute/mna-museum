@@ -80,6 +80,19 @@ function coverWorkIdOf(ceremony: Ceremony): string | null {
   return typeof m.cover_work_id === "string" ? m.cover_work_id : null;
 }
 
+/** Pull the full work_ids array from a group exhibition's metadata.
+ *  Backfilled onto each ceremony at designation time; enables the
+ *  2×2 mosaic treatment in EventThumbnail. */
+function workIdsOf(ceremony: Ceremony): string[] | null {
+  const m = (ceremony.metadata ?? {}) as Record<string, unknown>;
+  if (Array.isArray(m.work_ids)) {
+    return (m.work_ids as unknown[]).filter(
+      (w): w is string => typeof w === "string",
+    );
+  }
+  return null;
+}
+
 function formatLongDate(iso: string): string {
   const d = parseUtc(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -215,6 +228,7 @@ function FeaturedEvent({ ceremony }: { ceremony: Ceremony }) {
           <EventThumbnail
             workId={ceremony.work_id}
             coverWorkId={coverWorkIdOf(ceremony)}
+            workIds={workIdsOf(ceremony)}
             ceremonyType={ceremony.ceremony_type}
             seed={ceremony.id}
             size="lg"
@@ -539,6 +553,7 @@ function PastEventCard({ ceremony }: { ceremony: Ceremony }) {
       <EventThumbnail
         workId={ceremony.work_id}
         coverWorkId={coverWorkIdOf(ceremony)}
+        workIds={workIdsOf(ceremony)}
         ceremonyType={ceremony.ceremony_type}
         seed={ceremony.id}
         size="lg"

@@ -46,15 +46,41 @@ interface Props {
    *  designation time. Stored on the exhibition row and on the
    *  ceremony's metadata.cover_work_id. Used when workId is null. */
   coverWorkId?: string | null;
+  /** For group exhibitions: the full set of works in the show. When
+   *  4+ ids are passed AND the layout is large enough to read,
+   *  EventThumbnail renders a 2×2 mosaic instead of a single preview
+   *  — distinctly "group show" visual language, and dense enough that
+   *  even sparse individual previews fill the frame. */
+  workIds?: string[] | null;
   ceremonyType?: string;
   seed?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
 }
 
+/** Cheap deterministic shuffle by seed — gives every ceremony a
+ *  stable but non-trivial work selection for its mosaic so the same
+ *  show doesn't show the same four tiles every time you load. */
+function pickMosaic(workIds: string[], cover: string | null, seed: string): string[] {
+  const others = workIds.filter((w) => w !== cover);
+  // FNV-1a-ish hash for stable ordering
+  const h = (s: string): number => {
+    let v = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      v ^= s.charCodeAt(i);
+      v = Math.imul(v, 16777619);
+    }
+    return v >>> 0;
+  };
+  const sorted = [...others].sort((a, b) => h(seed + a) - h(seed + b));
+  const out = cover ? [cover, ...sorted] : sorted;
+  return out.slice(0, 4);
+}
+
 export default function EventThumbnail({
   workId,
   coverWorkId,
+  workIds,
   ceremonyType,
   seed,
   size = "md",
@@ -63,18 +89,44 @@ export default function EventThumbnail({
   const sizeClass =
     size === "sm" ? "w-14 h-14" : size === "lg" ? "w-full aspect-square" : "w-full aspect-square";
 
-  // Prefer the ceremony's own anchored work; fall back to the
-  // exhibition's curator-chosen cover. Either resolves to a preview
-  // PNG.
-  const resolved = workId || coverWorkId || null;
+  const resolvedCover = workId || coverWorkId || null;
+  const isLarge = size === "lg";
+  const mosaicIds = isLarge && workIds && workIds.length >= 4
+    ? pickMosaic(workIds, resolvedCover, seed ?? "")
+    : null;
 
-  if (resolved) {
+  // Group-exhibition mosaic: a 2×2 tile of canon previews. Reads as
+  // distinct from single-work shows + visually fills the column even
+  // when individual previews are sparse.
+  if (mosaicIds && mosaicIds.length === 4) {
+    return (
+      <div
+        className={`relative overflow-hidden bg-mna-white/[0.04] ${sizeClass} ${className ?? ""}`}
+      >
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-black/40">
+          {mosaicIds.map((id) => (
+            <div key={id} className="relative bg-mna-white/[0.04]">
+              <Image
+                src={`/previews/${id}.png`}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 16vw"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (resolvedCover) {
     return (
       <div
         className={`relative overflow-hidden bg-mna-white/[0.04] ${sizeClass} ${className ?? ""}`}
       >
         <Image
-          src={`/previews/${resolved}.png`}
+          src={`/previews/${resolvedCover}.png`}
           alt=""
           fill
           className="object-cover"

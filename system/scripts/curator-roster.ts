@@ -334,6 +334,10 @@ const SCHEDULE_UTC = [
           works_count: p.work_ids.length,
           originators_count: originators.length,
           cover_work_id: p.cover_work_id,
+          // Full work_ids on the ceremony lets the events page render
+          // a 2×2 mosaic cover without joining exhibitions at request
+          // time.
+          work_ids: p.work_ids,
           steward_authorized: true,
           first_institutional_slate: true,
         }),
