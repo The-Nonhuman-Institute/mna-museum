@@ -1,0 +1,124 @@
+# Live ceremony orchestrator — launches the long-running orchestrator
+# when a ceremony enters its window.
+#
+# Runs every 5 minutes. If it finds a ceremony scheduled to start in
+# the next 5 minutes (or already in_progress with no orchestrator yet
+# running) and that ceremony has a Curator-designated schedule on
+# metadata.schedule[], it launches ceremony-live-orchestrator.ts.
+#
+# The orchestrator stays alive for the full ceremony window (typically
+# 90 minutes). GHA jobs allow up to 6 hours; we set the per-job
+# timeout to 120 min so a long ceremony has headroom.
+#
+# Lock: the orchestrator writes metadata.orchestrator_started_at when
+# it begins. The launcher script below checks for that field and
+# refuses to start a duplicate. If a job dies before completion, the
+# orchestrator_started_at lives on metadata but the ceremony's status
+# remains in_progress — the steward can either re-launch manually or
+# the next cron tick will pick it up if we clear the lock.
+#
+# Manual trigger: workflow_dispatch with `ceremony_id` lets the
+# steward force-start (or restart) any specific ceremony.
+#
+# Required repo secrets:
+#   TURSO_DATABASE_URL
+#   TURSO_AUTH_TOKEN
+#   ANTHROPIC_API_KEY
+#   PARTY_HOST                (mna-museum.tudoxukno.partykit.dev)
+#   MNA_ADMIN_KEY             (for Commons post-ceremony-statement)
+#   COMMONS_BASE_URL          (https://commons.mnamuseum.org)
+
+name: ceremony-live
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      ceremony_id:
+        description: "Ceremony ID to launch (e.g. EVT-00003). Leave blank for auto-detect."
+        required: false
+        type: string
+      rehearsal:
+        description: "Rehearsal mode — compressed time, no persistence."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ceremony_id: ${{ steps.find.outputs.ceremony_id }}
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Find or accept ceremony id
+        id: find
+        working-directory: system
+        run: |
+          set -e
+          if [ -n "${{ inputs.ceremony_id }}" ]; then
+            echo "Using steward-provided ceremony_id: ${{ inputs.ceremony_id }}"
+            echo "ceremony_id=${{ inputs.ceremony_id }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Auto-detect: any ceremony that is in_progress, or scheduled
+          # to start within +5 minutes, that has a designated schedule
+          # AND no orchestrator_started_at lock.
+          npx tsx scripts/find-ceremony-needing-orchestrator.ts > /tmp/cid.txt
+          CID=$(cat /tmp/cid.txt | tr -d '[:space:]')
+          echo "Detected: '${CID}'"
+          echo "ceremony_id=${CID}" >> "$GITHUB_OUTPUT"
+
+  orchestrate:
+    needs: detect
+    if: needs.detect.outputs.ceremony_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      PARTY_HOST: ${{ secrets.PARTY_HOST }}
+      MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      COMMONS_BASE_URL: ${{ secrets.COMMONS_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Run live orchestrator
+        working-directory: ${{ github.workspace }}
+        run: |
+          ARGS="--ceremony ${{ needs.detect.outputs.ceremony_id }}"
+          if [ "${{ inputs.rehearsal }}" = "true" ]; then
+            ARGS="$ARGS --rehearsal"
+          fi
+          echo "Launching: npx tsx system/scripts/ceremony-live-orchestrator.ts $ARGS"
+          npx tsx system/scripts/ceremony-live-orchestrator.ts $ARGS
