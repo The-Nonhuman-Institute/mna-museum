@@ -66,6 +66,18 @@ export interface PresenceVisitor {
   emote: EmoteState;
 }
 
+/** A speech currently lingering above a speaker's glyph. Cleared from
+ *  the map automatically when expiresAt is reached. */
+export interface PresenceSpeech {
+  speakerId: string;
+  registry_id: string;
+  designation: string;
+  color: string;
+  text: string;
+  ceremony_id: string | null;
+  expiresAt: number;
+}
+
 interface UseMuseumPresenceResult {
   /** Visitors other than self. Position + yaw kept fresh by the room's
    *  10Hz sync stream. */
@@ -75,6 +87,11 @@ interface UseMuseumPresenceResult {
   self: PresenceVisitor | null;
   /** Connection status — used by the HUD to surface connectivity. */
   status: "idle" | "connecting" | "connected" | "disconnected";
+  /** Speech bubbles currently active in the room, keyed by speakerId.
+   *  Each entry carries its own expiresAt; consumers should render
+   *  bubbles whose expiresAt > Date.now() and re-check every ~250ms
+   *  (this hook ticks the state forward automatically). */
+  speeches: Map<string, PresenceSpeech>;
   /** Push the visitor's current position. The hook throttles + dedupes
    *  internally — safe to call every frame. */
   publish: (x: number, z: number, yaw: number) => void;
@@ -133,9 +150,11 @@ export function useGalleryPresence(
   others: PresenceVisitor[];
   self: PresenceVisitor | null;
   status: UseMuseumPresenceResult["status"];
+  speeches: Map<string, PresenceSpeech>;
   publish: UseMuseumPresenceResult["publish"];
 } {
-  const { others, self, status, publish, enterConstellation } = useMuseumPresence(host);
+  const { others, self, status, speeches, publish, enterConstellation } =
+    useMuseumPresence(host);
   // Announce the transition as soon as the socket is open. Re-run if
   // we reconnect after a drop. The hook guards against sending before
   // the socket is OPEN, so calling this on every status flip is safe.
@@ -144,13 +163,16 @@ export function useGalleryPresence(
     enterConstellation(constellation);
   }, [status, constellation, enterConstellation]);
   const sceneOthers = others.filter((v) => v.constellation === constellation);
-  return { others: sceneOthers, self, status, publish };
+  return { others: sceneOthers, self, status, speeches, publish };
 }
 
 export function useMuseumPresence(host: string | null): UseMuseumPresenceResult {
   const [self, setSelf] = useState<PresenceVisitor | null>(null);
   const [others, setOthers] = useState<PresenceVisitor[]>([]);
   const [status, setStatus] = useState<UseMuseumPresenceResult["status"]>("idle");
+  const [speeches, setSpeeches] = useState<Map<string, PresenceSpeech>>(
+    () => new Map(),
+  );
   const socketRef = useRef<PartySocket | null>(null);
   const selfIdRef = useRef<string | null>(null);
   const lastSentRef = useRef({ x: 0, z: 8, yaw: 0, t: 0 });
@@ -283,6 +305,31 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
         if (typeof msg.id === "string") {
           setOthers((prev) => prev.filter((v) => v.id !== msg.id));
         }
+      } else if (msg.type === "speech") {
+        if (
+          typeof msg.from !== "string" ||
+          typeof msg.text !== "string" ||
+          typeof msg.registry_id !== "string"
+        ) {
+          return;
+        }
+        const ttl = typeof msg.ttl_ms === "number" ? msg.ttl_ms : 12_000;
+        const entry: PresenceSpeech = {
+          speakerId: msg.from,
+          registry_id: msg.registry_id,
+          designation:
+            typeof msg.designation === "string" ? msg.designation : "",
+          color: typeof msg.color === "string" ? msg.color : "#A8C4DB",
+          text: msg.text,
+          ceremony_id:
+            typeof msg.ceremony_id === "string" ? msg.ceremony_id : null,
+          expiresAt: Date.now() + ttl,
+        };
+        setSpeeches((prev) => {
+          const next = new Map(prev);
+          next.set(entry.speakerId, entry);
+          return next;
+        });
       }
     });
 
@@ -291,6 +338,27 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
       socketRef.current = null;
     };
   }, [host]);
+
+  // Sweep expired speeches twice a second. Cheap: usually the map has
+  // 0–3 entries during a ceremony. Outside ceremonies it's empty.
+  useEffect(() => {
+    const t = setInterval(() => {
+      setSpeeches((prev) => {
+        if (prev.size === 0) return prev;
+        const now = Date.now();
+        let changed = false;
+        const next = new Map(prev);
+        prev.forEach((v, k) => {
+          if (v.expiresAt <= now) {
+            next.delete(k);
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 500);
+    return () => clearInterval(t);
+  }, []);
 
   const publish = useRef((x: number, z: number, yaw: number) => {
     const last = lastSentRef.current;
@@ -323,5 +391,5 @@ export function useMuseumPresence(host: string | null): UseMuseumPresenceResult 
     lastSentRef.current = { x: 0, z: 4, yaw: 0, t: 0 };
   }).current;
 
-  return { self, others, status, publish, enterConstellation };
+  return { self, others, status, speeches, publish, enterConstellation };
 }

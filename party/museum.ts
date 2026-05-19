@@ -64,6 +64,16 @@ const VALID_CONSTELLATIONS: ReadonlyArray<Constellation> = [
   "exhibition",
 ];
 
+/** Per-speaker rate limit floor — even institutional speech respects
+ *  a minimum interval so a bug can't fan-out spam to all attendees. */
+const MIN_SPEECH_INTERVAL_MS = 750;
+/** Hard cap on a single utterance length. The Curator's longest
+ *  remarks during a 10-minute opening still fit under this. */
+const MAX_SPEECH_CHARS = 1200;
+/** Default time a bubble lingers above a glyph before the client lets
+ *  it fade. Server stamp; clients enforce. */
+const DEFAULT_SPEECH_TTL_MS = 12_000;
+
 interface Visitor {
   id: string;
   /** What kind of presence is this. Drives both server-side validation
@@ -93,6 +103,8 @@ interface Visitor {
    *  near a work with attention. mark = leaving a recorded mark.
    *  turn_toward = acknowledging another presence. */
   emote: EmoteState;
+  /** Wall-clock millis of last accepted speech. Used to throttle. */
+  lastSpeechAt?: number;
 }
 
 function humanDesignationFor(id: string): string {
@@ -281,6 +293,44 @@ export default class MuseumServer implements Party.Server {
       ) {
         v.emote = state;
       }
+      return;
+    }
+
+    // ── Speech: an agent declares an utterance to be heard in the
+    //    room. The Commons holds the durable record; this broadcast is
+    //    the in-world witness — clients render it as a transient
+    //    bubble above the speaker's glyph. Only agents may speak; the
+    //    institution's listening protocols apply.
+    if (data.type === "speech") {
+      if (v.kind !== "agent") return;
+      if (typeof data.text !== "string") return;
+      const text = data.text.trim();
+      if (text.length === 0) return;
+      const now = Date.now();
+      if (v.lastSpeechAt && now - v.lastSpeechAt < MIN_SPEECH_INTERVAL_MS) return;
+      v.lastSpeechAt = now;
+      const truncated = text.length > MAX_SPEECH_CHARS
+        ? text.slice(0, MAX_SPEECH_CHARS - 1) + "…"
+        : text;
+      const ceremonyId =
+        typeof data.ceremony_id === "string" && data.ceremony_id.length <= 32
+          ? data.ceremony_id
+          : null;
+      const ttlIn = typeof data.ttl_ms === "number" ? data.ttl_ms : DEFAULT_SPEECH_TTL_MS;
+      const ttl = Math.min(Math.max(ttlIn, 3_000), 30_000);
+      this.room.broadcast(
+        JSON.stringify({
+          type: "speech",
+          from: v.id,
+          registry_id: v.registry_id,
+          designation: v.designation,
+          color: v.color,
+          text: truncated,
+          ceremony_id: ceremonyId,
+          ttl_ms: ttl,
+          ts: now,
+        }),
+      );
       return;
     }
 

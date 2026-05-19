@@ -112,7 +112,7 @@ export default function SoloScene({
 
   // Realtime presence — scoped to the solo_exhibition constellation.
   const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
-  const { others, publish } = useGalleryPresence(presenceHost, "solo_exhibition");
+  const { others, speeches, publish } = useGalleryPresence(presenceHost, "solo_exhibition");
 
   function handleBegin() {
     setStarted(true);
@@ -192,7 +192,7 @@ export default function SoloScene({
           }}
         >
           <SoloSceneInterior works={works} onAim={setAimedTarget} />
-          {started ? <OtherVisitors others={others} /> : null}
+          {started ? <OtherVisitors others={others} speeches={speeches} /> : null}
           <PositionPublisher publish={publish} />
           <Telemetry telemetryRef={telemetryRef} />
           <PointerLockControls

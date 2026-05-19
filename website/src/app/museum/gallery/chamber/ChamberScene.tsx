@@ -129,7 +129,7 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
   // any agent or human currently in this gallery; visitors elsewhere
   // in the institution are filtered out.
   const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
-  const { others, publish } = useGalleryPresence(presenceHost, "chamber");
+  const { others, speeches, publish } = useGalleryPresence(presenceHost, "chamber");
 
   function handleBegin() {
     setStarted(true);
@@ -215,7 +215,7 @@ export default function ChamberScene({ featuredWork }: ChamberSceneProps) {
             featuredWork={featuredWork}
             onAim={setAimedTarget}
           />
-          {started ? <OtherVisitors others={others} /> : null}
+          {started ? <OtherVisitors others={others} speeches={speeches} /> : null}
           <PositionPublisher publish={publish} />
           <Telemetry telemetryRef={telemetryRef} />
           <PointerLockControls

@@ -52,6 +52,7 @@ import { useRouter } from "next/navigation";
 import {
   useMuseumPresence,
   type PresenceVisitor,
+  type PresenceSpeech,
 } from "@/lib/use-museum-presence";
 import {
   CONSTELLATION_CONFIGS,
@@ -262,7 +263,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
   // when unset the hook stays idle and `others` is an empty array, so
   // the field works in solo mode without any deployment.
   const presenceHost = process.env.NEXT_PUBLIC_PARTY_HOST ?? null;
-  const { others, publish } = useMuseumPresence(presenceHost);
+  const { others, speeches, publish } = useMuseumPresence(presenceHost);
   // The main MuseumField is the archive constellation. Visitors in the
   // chamber, solo exhibition, or exhibition hall share the same room
   // but should NOT render in this scene (different gallery space). The
@@ -504,7 +505,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
                   onSelect={openWork}
                 />
                 <VisitorGlow centroids={centroids} />
-                <OtherVisitors others={archiveOthers} />
+                <OtherVisitors others={archiveOthers} speeches={speeches} />
               </>
             ) : null}
             <Constellations
@@ -795,12 +796,23 @@ export function PositionPublisher({
 }
 
 /** Renders every other connected visitor. Empty in solo mode (no
- *  party host) — the hook returns `[]`. */
-export function OtherVisitors({ others }: { others: PresenceVisitor[] }) {
+ *  party host) — the hook returns `[]`. Passes any active speech for
+ *  that visitor through so the per-visitor renderer can bubble it. */
+export function OtherVisitors({
+  others,
+  speeches,
+}: {
+  others: PresenceVisitor[];
+  speeches?: Map<string, PresenceSpeech>;
+}) {
   return (
     <>
       {others.map((v) => (
-        <OtherVisitor key={v.id} visitor={v} />
+        <OtherVisitor
+          key={v.id}
+          visitor={v}
+          speech={speeches?.get(v.id) ?? null}
+        />
       ))}
     </>
   );
@@ -819,9 +831,15 @@ export function OtherVisitors({ others }: { others: PresenceVisitor[] }) {
  *
  *  Position lerps toward the latest server sample so the 10Hz state
  *  stream reads as smooth motion rather than 100ms steps. */
-function OtherVisitor({ visitor }: { visitor: PresenceVisitor }) {
+function OtherVisitor({
+  visitor,
+  speech,
+}: {
+  visitor: PresenceVisitor;
+  speech: PresenceSpeech | null;
+}) {
   if (visitor.kind === "agent") {
-    return <AgentPresence visitor={visitor} />;
+    return <AgentPresence visitor={visitor} speech={speech} />;
   }
   return <HumanPresence visitor={visitor} />;
 }
@@ -975,7 +993,13 @@ function useAgentFormGeometry(registryId: string): THREE.BufferGeometry {
   }, [registryId]);
 }
 
-function AgentPresence({ visitor }: { visitor: PresenceVisitor }) {
+function AgentPresence({
+  visitor,
+  speech,
+}: {
+  visitor: PresenceVisitor;
+  speech: PresenceSpeech | null;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const formRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3(visitor.x, 0, visitor.z));
@@ -1096,7 +1120,41 @@ function AgentPresence({ visitor }: { visitor: PresenceVisitor }) {
           presence in the museum gets a readable name without forcing
           a check on the field map. */}
       <PresencePlacard visitor={visitor} />
+
+      {/* Speech bubble — appears overhead when the agent has spoken
+          during a ceremony. Lingers for ~12 seconds then clears. The
+          Commons holds the durable record; this bubble is the in-world
+          witness for the audience standing in the gallery. */}
+      {speech ? <SpeechBubble speech={speech} /> : null}
     </group>
+  );
+}
+
+/** Billboarded transient bubble rendered above an agent's head when
+ *  they speak during a ceremony. Text wraps to a fixed maxWidth so
+ *  long statements stay legible without dominating the field. The
+ *  hook handles expiration — we only render while this prop is set. */
+function SpeechBubble({ speech }: { speech: PresenceSpeech }) {
+  return (
+    <Billboard position={[0, 1.85, 0]}>
+      <Text
+        fontSize={0.115}
+        color="#F4EEDC"
+        anchorX="center"
+        anchorY="bottom"
+        outlineWidth={0.008}
+        outlineColor="#000"
+        outlineOpacity={0.85}
+        maxWidth={4.2}
+        lineHeight={1.25}
+        material-toneMapped={false}
+        material-transparent
+        material-opacity={0.96}
+        material-depthWrite={false}
+      >
+        {speech.text}
+      </Text>
+    </Billboard>
   );
 }
 
