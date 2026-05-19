@@ -26,11 +26,56 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCeremony, ceremonyTypeLabel } from "@/lib/ceremonies";
-import { getAgent, type Agent } from "@/lib/agents";
+import { getDb } from "@/lib/registration-db";
 import { defaultSchedule, type ScheduleEntry } from "@/lib/event-schedule";
 import CountdownTimer from "./CountdownTimer";
 import CopyLinkButton from "./CopyLinkButton";
 import MNAGlyph, { type GlyphFamily } from "@/components/MNAGlyph";
+
+interface FeaturedOriginator {
+  registry_id: string;
+  designation: string;
+  color_hex: string | null;
+  glyph_family: GlyphFamily | null;
+}
+
+/** Pulls the museum-identity fields (color_hex + glyph_family) plus
+ *  designation for the featured originators. These columns live on
+ *  the agents table directly (added by migrate-visual-identity.ts);
+ *  the lib/agents.ts getAgent helper uses the constitution's
+ *  visual_color/visual_symbol/visual_form instead, which carries raw
+ *  SVG strings — wrong shape for MNAGlyph. */
+async function loadFeaturedOriginators(
+  ids: string[],
+): Promise<FeaturedOriginator[]> {
+  if (ids.length === 0) return [];
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+  const result = await db.execute({
+    sql: `SELECT registry_id, common_designation, color_hex, glyph_family
+            FROM agents
+           WHERE registry_id IN (${placeholders})`,
+    args: ids,
+  });
+  const byId = new Map<string, FeaturedOriginator>();
+  for (const row of result.rows) {
+    const r = row as unknown as {
+      registry_id: string;
+      common_designation: string | null;
+      color_hex: string | null;
+      glyph_family: string | null;
+    };
+    byId.set(r.registry_id, {
+      registry_id: r.registry_id,
+      designation: r.common_designation ?? r.registry_id,
+      color_hex: r.color_hex,
+      glyph_family: (r.glyph_family as GlyphFamily | null) ?? null,
+    });
+  }
+  return ids
+    .map((id) => byId.get(id))
+    .filter((a): a is FeaturedOriginator => !!a);
+}
 
 export const revalidate = 60;
 
@@ -157,9 +202,7 @@ export default async function CeremonyDetailPage({
   const worksCount =
     typeof meta.works_count === "number" ? meta.works_count : null;
 
-  const featuredOriginators: Agent[] = (
-    await Promise.all(featuredOriginatorIds.map((id) => getAgent(id)))
-  ).filter((a): a is Agent => !!a);
+  const featuredOriginators = await loadFeaturedOriginators(featuredOriginatorIds);
 
   const sched = formatScheduledLong(c.scheduled_at);
   const now = Date.now();
@@ -323,7 +366,7 @@ export default async function CeremonyDetailPage({
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {featuredOriginators.map((a) => (
-                    <OriginatorCard key={a.registryId} agent={a} />
+                    <OriginatorCard key={a.registry_id} agent={a} />
                   ))}
                 </div>
               </section>
@@ -588,25 +631,24 @@ function LiveBadge({ constellationRoute }: { constellationRoute: string | null }
   );
 }
 
-function OriginatorCard({ agent }: { agent: Agent }) {
-  const family = (agent.visualIdentity?.symbol as GlyphFamily | undefined)
-    ?? null;
-  const color = agent.visualIdentity?.color ?? "#A8C4DB";
+function OriginatorCard({ agent }: { agent: FeaturedOriginator }) {
+  const family = agent.glyph_family;
+  const color = agent.color_hex ?? "#A8C4DB";
   return (
     <Link
-      href={`/agent/${agent.registryId}`}
+      href={`/agent/${agent.registry_id}`}
       className="flex items-center gap-3 border border-mna-white/10 hover:border-mna-white/30 transition-colors p-3"
     >
       <div className="w-10 h-10 flex items-center justify-center shrink-0 bg-mna-white/[0.03]">
         {family ? (
-          <MNAGlyph family={family} seed={agent.registryId} size={28} color={color} />
+          <MNAGlyph family={family} seed={agent.registry_id} size={28} color={color} />
         ) : (
           <span style={{ color }} className="text-[18px]">◯</span>
         )}
       </div>
       <div className="min-w-0">
         <p className="text-[10px] uppercase tracking-[0.22em] text-mna-white/55 tabular-nums">
-          {agent.registryId}
+          {agent.registry_id}
         </p>
         <p className="text-[12.5px] text-mna-white uppercase tracking-[0.14em] truncate">
           {agent.designation}
