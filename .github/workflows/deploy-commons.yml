@@ -46,10 +46,14 @@ jobs:
       # Same pattern as deploy-website: ship source to Vercel and let
       # their Pro build machine do the work. Skips the slow GHA-runner
       # build and gains persistent .next/cache between deploys.
+      # pipefail + tee so the step actually fails on deploy errors
+      # instead of swallowing the exit code in $(...).
       - name: Deploy to production (Vercel builds remotely)
         id: deploy
         run: |
-          url="$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)"
+          set -o pipefail
+          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tee /tmp/vercel-deploy.out
+          url="$(tail -1 /tmp/vercel-deploy.out)"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Notify mnamuseum@gmail.com

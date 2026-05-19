@@ -60,10 +60,17 @@ jobs:
       # (Pro plan = 8 GB / 4 cores + persistent .next/cache), not on
       # this GHA runner. ~60-90s typical, faster after cache warms.
       # No `vercel pull` + `vercel build` needed when Vercel does both.
+      #
+      # Important: capture vercel's exit code so the step actually
+      # fails when the deploy fails. The previous form ran vercel
+      # inside $(...) which swallowed the exit code and made the
+      # notify step send "✅ Deployed" on bad-token / quota errors.
       - name: Deploy to production (Vercel builds remotely)
         id: deploy
         run: |
-          url="$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)"
+          set -o pipefail
+          vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tee /tmp/vercel-deploy.out
+          url="$(tail -1 /tmp/vercel-deploy.out)"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # Notify on completion so the user doesn't have to poll the
