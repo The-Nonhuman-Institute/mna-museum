@@ -11,6 +11,12 @@ interface HtmlRendererProps {
    *  surface, the iframe doesn't mount until the visitor clicks Play —
    *  protects detail pages from heavy-payload page-unresponsive hangs. */
   previewUrl?: string;
+  /** Bypass the click-to-play gate. Only used by the headless capture
+   *  route (`/capture/work/[id]`) so the preview generator can mount
+   *  the iframe directly and synthesize a click inside it to advance
+   *  past the work's own click-to-begin states. Public callers never
+   *  set this. */
+  forceMount?: boolean;
 }
 
 /**
@@ -121,11 +127,11 @@ function injectShim(html: string): string {
   return CONTROL_SHIM + html;
 }
 
-export default function HtmlRenderer({ html, interactive = false, previewUrl }: HtmlRendererProps) {
+export default function HtmlRenderer({ html, interactive = false, previewUrl, forceMount = false }: HtmlRendererProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const useClickGate = interactive && Boolean(previewUrl);
-  const [activated, setActivated] = useState(!useClickGate);
+  const useClickGate = !forceMount && interactive && Boolean(previewUrl);
+  const [activated, setActivated] = useState(forceMount || !useClickGate);
   const [iframeReady, setIframeReady] = useState(false);
   // Frozen canvas snapshot the iframe sends back on pause; rendered
   // as an overlay on top of the iframe so the visitor sees the last

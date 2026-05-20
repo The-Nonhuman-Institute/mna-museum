@@ -34,8 +34,18 @@ export default async function CaptureWorkPage({
       `}</style>
       <div id="capture-target">
         {/* size="detail" keeps live rendering — gallery is now preview-PNG.
-            CSS in #capture-target overrides any intrinsic size to 1000×1000. */}
-        <WorkDisplay work={work} size="detail" framed={false} showPlacard={false} />
+            CSS in #capture-target overrides any intrinsic size to 1000×1000.
+            forceMount bypasses the HtmlRenderer click-to-play gate so the
+            iframe mounts immediately. The preview script still has to
+            synthesize a user-gesture click inside the iframe for works
+            with their own click-to-begin (web audio + click-gated visuals). */}
+        <WorkDisplay
+          work={work}
+          size="detail"
+          framed={false}
+          showPlacard={false}
+          forceMount
+        />
       </div>
     </>
   );

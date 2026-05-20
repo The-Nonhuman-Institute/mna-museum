@@ -67,6 +67,12 @@ interface WorkDisplayProps {
    * is responsible for sizing. Default true (legacy behavior).
    */
   framed?: boolean;
+  /**
+   * Bypass the HtmlRenderer click-to-play gate. Only used by the
+   * headless capture route — let the preview generator mount the
+   * iframe directly. Default false.
+   */
+  forceMount?: boolean;
 }
 
 const targetAreas: Record<string, number> = {
@@ -91,9 +97,11 @@ function calculateWidth(frameType: FrameType, size: string): number {
 function WorkContent({
   work,
   size,
+  forceMount = false,
 }: {
   work: Work;
   size: "gallery" | "detail" | "lightbox";
+  forceMount?: boolean;
 }) {
   switch (work.output_type) {
     case "svg":
@@ -105,6 +113,7 @@ function WorkContent({
           html={work.output_payload}
           interactive={size === "detail" || size === "lightbox"}
           previewUrl={`/previews/${work.id}.png`}
+          forceMount={forceMount}
         />
       );
 
@@ -225,6 +234,7 @@ export default function WorkDisplay({
   size = "gallery",
   showPlacard = true,
   framed = true,
+  forceMount = false,
 }: WorkDisplayProps) {
   // Gallery thumbnails always use the curated preview image. We bypass
   // renderable-validation, 3D-plinth selection, and composition fallback
@@ -302,7 +312,7 @@ export default function WorkDisplay({
   if (!framed) {
     return (
       <div className="w-full h-full">
-        <WorkContent work={work} size={size} />
+        <WorkContent work={work} size={size} forceMount={forceMount} />
       </div>
     );
   }
@@ -319,7 +329,7 @@ export default function WorkDisplay({
       phase={work.phase_at_submission || "I"}
       showPlacard={showPlacard}
     >
-      <WorkContent work={work} size={size} />
+      <WorkContent work={work} size={size} forceMount={forceMount} />
     </MuseumFrame>
   );
 }
