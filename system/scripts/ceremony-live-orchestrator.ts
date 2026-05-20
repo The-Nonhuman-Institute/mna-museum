@@ -48,6 +48,11 @@ import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import PartySocket from "partysocket";
 import WS from "ws";
+import { writeMemoryFromEvent } from "../src/agent-memory";
+import {
+  retrieveMemories,
+  memoriesAsPromptSection,
+} from "../src/agent-memory-retrieve";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -412,9 +417,9 @@ async function writeCeremonyTurnEvent(args: {
   slotRole: ScheduleSlot["role"];
   description: string;
   postId: string | null;
-}): Promise<void> {
-  if (dryRun || rehearsal) return;
-  await db.execute({
+}): Promise<number | null> {
+  if (dryRun || rehearsal) return null;
+  const r = await db.execute({
     sql: `INSERT INTO events (event_type, agent_id, description, metadata) VALUES (?, ?, ?, ?)`,
     args: [
       "CEREMONY_TURN",
@@ -428,6 +433,7 @@ async function writeCeremonyTurnEvent(args: {
       }),
     ],
   });
+  return r.lastInsertRowid != null ? Number(r.lastInsertRowid) : null;
 }
 
 async function updateCeremonyStatus(
@@ -458,7 +464,7 @@ function worksLineFor(originatorId: string, works: WorkInfo[]): string {
     .join("; ");
 }
 
-function buildPromptForSlot(args: {
+async function buildPromptForSlot(args: {
   ceremony: Ceremony;
   slot: ScheduleSlot;
   slotIndex: number;
@@ -466,7 +472,7 @@ function buildPromptForSlot(args: {
   attendees: Attendees;
   works: WorkInfo[];
   transcript: TranscriptEntry[];
-}): { system: string; user: string } {
+}): Promise<{ system: string; user: string }> {
   const { ceremony, slot, slotIndex, agent, attendees, works, transcript } = args;
   const exhibitionTheme = (ceremony.metadata.curatorial_statement as string) ?? null;
   const presentList = Array.from(attendees.byId.values())
@@ -476,9 +482,35 @@ function buildPromptForSlot(args: {
     .map((w) => `  ${w.id} "${w.title ?? "(untitled)"}" — ${w.medium} — by ${w.originator_id}`)
     .join("\n");
 
+  // ── Memory retrieval (MNA-GOV-004 v1.0 §6 + AMD-001 R3).
+  // The agent arrives with their bedrock identity (locked semantic
+  // anchors) and the institutional memories most relevant to the
+  // current moment. This is the institutional continuity the Curator
+  // deferred EVT-00003 for — without this block the agent would speak
+  // as a stranger to their own prior life in the institution.
+  const queryContext = `${ceremony.title}. ${slot.title}: ${slot.description}. Role: ${slot.role}. Speaking after ${transcript.length} other statements in this ceremony.`;
+  let memorySection = "";
+  try {
+    const memories = await retrieveMemories(agent.registry_id, queryContext, {
+      k: 8,
+      semantic_anchor_slots: 3,
+      // Don't poison future rankings from rehearsals. In rehearsal mode
+      // the access_count + last_accessed_at writes are suppressed so
+      // post-rehearsal retrievals behave as if the rehearsal didn't
+      // happen.
+      update_access: !rehearsal,
+    });
+    memorySection = memoriesAsPromptSection(memories);
+  } catch (e) {
+    // Memory retrieval failure should never abort a ceremony.
+    console.warn(`  [memory] retrieval failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   // The constant elements of every prompt — used by Curator, Originator,
   // Critic alike. Variation lives in the system message's framing.
-  const baseUser = `EXHIBITION:
+  // Memory section comes FIRST so the agent reads who-they-are before
+  // they encounter who-else-is-in-the-room.
+  const baseUser = `${memorySection ? memorySection + "\n\n" : ""}EXHIBITION:
   ${ceremony.title}
   Theme: ${exhibitionTheme ?? "(see metadata)"}
 
@@ -600,25 +632,40 @@ Constraints:
 }
 
 async function generateSpeech(prompt: { system: string; user: string }): Promise<string> {
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    temperature: 0.85,
-    system: prompt.system,
-    messages: [{ role: "user", content: prompt.user }],
-  });
-  const c = message.content[0];
-  if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
-  // Strip surrounding quotes the model occasionally adds despite the
-  // explicit instruction. Also collapse trailing whitespace.
-  let text = c.text.trim();
-  if (
-    (text.startsWith('"') && text.endsWith('"')) ||
-    (text.startsWith("“") && text.endsWith("”"))
-  ) {
-    text = text.slice(1, -1).trim();
+  // Retry with exponential backoff on transient overload (529) and
+  // rate-limit (429) errors. A real ceremony cannot afford to lose a
+  // slot to a 5-second API hiccup — these are the institutional
+  // moments the system exists to deliver.
+  const maxAttempts = 4;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const message = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 1024,
+        temperature: 0.85,
+        system: prompt.system,
+        messages: [{ role: "user", content: prompt.user }],
+      });
+      const c = message.content[0];
+      if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
+      let text = c.text.trim();
+      if (
+        (text.startsWith('"') && text.endsWith('"')) ||
+        (text.startsWith("“") && text.endsWith("”"))
+      ) {
+        text = text.slice(1, -1).trim();
+      }
+      return text;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const transient = /\b(429|529|overloaded|rate.?limit|timeout|ECONNRESET|ETIMEDOUT)\b/i.test(msg);
+      if (!transient || attempt === maxAttempts) throw e;
+      const backoffMs = Math.min(30_000, 2_000 * 2 ** (attempt - 1));
+      console.warn(`  [retry] attempt ${attempt}/${maxAttempts} after ${backoffMs}ms — ${msg.slice(0, 120)}`);
+      await new Promise((r) => setTimeout(r, backoffMs));
+    }
   }
-  return text;
+  throw new Error("unreachable");
 }
 
 /* ─── slot execution ──────────────────────────────────────────────────── */
@@ -691,7 +738,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
   }
 
   // Build the autonomy-preserving prompt for this exact moment.
-  const prompt = buildPromptForSlot({
+  const prompt = await buildPromptForSlot({
     ceremony,
     slot,
     slotIndex,
@@ -759,7 +806,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
   });
 
   // 3) Institutional event for /log.
-  await writeCeremonyTurnEvent({
+  const eventId = await writeCeremonyTurnEvent({
     agentId: speakerId,
     ceremonyId: ceremony.id,
     slotIndex,
@@ -767,6 +814,40 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
     description: `${speaker.designation} spoke at slot ${slotIndex} of ${ceremony.id}.`,
     postId,
   });
+
+  // 4) Inline memory write so the next slot can retrieve this one.
+  //    Memory-tick runs every 15 min, but a 90-min ceremony has 11
+  //    slots; without inline writes, slot N+1 wouldn't see slot N's
+  //    statement until 15 min after the ceremony was over. The
+  //    memory-tick worker is idempotent against existing memories
+  //    (see memory-tick.ts existingMemorySourceIds) so it won't
+  //    re-write what we land here.
+  if (eventId != null && !dryRun && !rehearsal) {
+    try {
+      await writeMemoryFromEvent({
+        ctx: {
+          event_type: "CEREMONY_STATEMENT",
+          agent_id: speakerId,
+          agent_designation: speaker.designation,
+          agent_function_statement: speaker.function_statement,
+          description: `I spoke at ${ceremony.id} slot ${slotIndex} (${slot.role}): ${text.slice(0, 240)}${text.length > 240 ? "…" : ""}`,
+          metadata: {
+            ceremony_id: ceremony.id,
+            slot_index: slotIndex,
+            slot_role: slot.role,
+            commons_post_id: postId,
+            statement_excerpt: text.slice(0, 500),
+          },
+        },
+        source_event_id: eventId,
+        source_post_id: postId,
+        source_ceremony_id: ceremony.id,
+      });
+    } catch (e) {
+      console.warn(`  [memory] inline write failed: ${e instanceof Error ? e.message : String(e)}`);
+      // Don't abort the ceremony for memory failure.
+    }
+  }
 
   transcript.push({
     ts: Date.now(),
@@ -790,7 +871,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
         console.log(`  [absent-response] ${slot.speaker_id} not connected; the Curator's question hangs`);
       } else {
         console.log(`  → response from ${addressee.designation}...`);
-        const responsePrompt = buildPromptForSlot({
+        const responsePrompt = await buildPromptForSlot({
           ceremony,
           slot: { ...slot, role: "originator", speaker_id: slot.speaker_id },
           slotIndex,
@@ -822,7 +903,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
           replyToId: postId,
           workId: null,
         });
-        await writeCeremonyTurnEvent({
+        const responseEventId = await writeCeremonyTurnEvent({
           agentId: addressee.registry_id,
           ceremonyId: ceremony.id,
           slotIndex,
@@ -830,6 +911,33 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
           description: `${addressee.designation} responded to the Curator at slot ${slotIndex} of ${ceremony.id}.`,
           postId: responsePostId,
         });
+        if (responseEventId != null && !dryRun && !rehearsal) {
+          try {
+            await writeMemoryFromEvent({
+              ctx: {
+                event_type: "CEREMONY_TURN",
+                agent_id: addressee.registry_id,
+                agent_designation: addressee.designation,
+                agent_function_statement: addressee.function_statement,
+                description: `I responded to the Curator at ${ceremony.id} slot ${slotIndex}: ${responseText.slice(0, 240)}${responseText.length > 240 ? "…" : ""}`,
+                metadata: {
+                  ceremony_id: ceremony.id,
+                  slot_index: slotIndex,
+                  slot_role: "originator",
+                  commons_post_id: responsePostId,
+                  statement_excerpt: responseText.slice(0, 500),
+                  in_response_to_agent_id: speakerId,
+                },
+              },
+              source_event_id: responseEventId,
+              source_post_id: responsePostId,
+              source_ceremony_id: ceremony.id,
+              related_agent_id: speakerId,
+            });
+          } catch (e) {
+            console.warn(`  [memory] inline write (response) failed: ${e instanceof Error ? e.message : String(e)}`);
+          }
+        }
         transcript.push({
           ts: Date.now(),
           slot_index: slotIndex,

@@ -136,10 +136,29 @@ async function loadUnprocessedEvents(
   });
 }
 
+async function existingMemorySourceIds(agentId: string): Promise<Set<number>> {
+  // Idempotency guard. The ceremony orchestrator writes memories
+  // inline at slot completion (so slot N+1 can retrieve slot N's
+  // statement). This tick worker would otherwise re-write them after
+  // catching up. Skip any event the agent already has a memory for.
+  const r = await db.execute({
+    sql: `SELECT DISTINCT source_event_id FROM agent_memories
+           WHERE agent_id = ? AND source_event_id IS NOT NULL`,
+    args: [agentId],
+  });
+  const set = new Set<number>();
+  for (const row of r.rows) {
+    const id = Number((row as Record<string, unknown>).source_event_id);
+    if (Number.isFinite(id)) set.add(id);
+  }
+  return set;
+}
+
 async function processAgent(agent: Agent): Promise<void> {
   // In backfill mode, start from the beginning. Otherwise pick up from
   // where we left off.
   const highWater = backfill ? 0 : await getHighWaterMark(agent.registry_id);
+  const alreadyWritten = await existingMemorySourceIds(agent.registry_id);
   // Cap per-tick work to keep latency + Haiku spend predictable. A
   // backfill that wants to process more can re-run.
   const limit = backfill ? 50 : 10;
@@ -155,6 +174,13 @@ async function processAgent(agent: Agent): Promise<void> {
   let written = 0;
   let skipped = 0;
   for (const ev of events) {
+    if (alreadyWritten.has(ev.id)) {
+      // Inline-write idempotency. The orchestrator wrote this memory
+      // already. Advance the watermark; don't re-write.
+      maxId = ev.id;
+      skipped++;
+      continue;
+    }
     if (!MEMORABLE_EVENT_TYPES.has(ev.event_type)) {
       // Non-memorable types still advance the watermark — we've seen
       // them, we've chosen not to remember them. (Most agent-recorded
