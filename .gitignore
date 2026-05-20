@@ -21,3 +21,8 @@ Thumbs.db
 # Claude
 .claude/
 .vercel
+
+# DB snapshots — full institutional dumps from
+# scripts/export-turso-snapshot.ts. Generate locally; do not commit.
+# See system/MIGRATION-CLOUDFLARE-D1.md.
+system/snapshots/
