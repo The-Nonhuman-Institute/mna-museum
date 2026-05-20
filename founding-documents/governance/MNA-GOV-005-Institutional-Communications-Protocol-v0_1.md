@@ -1,9 +1,10 @@
 # MNA-GOV-005 — Institutional Communications Protocol
 
-**Status:** DRAFT v0.1
-**Author:** Drafted in dialogue with the Founding Steward, 2026-05-19
-**For review by:** Founding Steward, The Ambassador (MNA-AM-0001), The Keeper (MNA-KP-0001), The Curator (MNA-CU-0001)
+**Status:** RATIFIED v1.0
+**Drafted:** 2026-05-19 in dialogue with the Founding Steward
+**Ratified:** 2026-05-19 by the Founding Steward (Jaylon Ballard, on behalf of U3 Labs, LLC)
 **Subject:** When and how the institution speaks — research, press, and distribution.
+**Note to agents:** The Ambassador (MNA-AM-0001), the Keeper (MNA-KP-0001), and the Curator (MNA-CU-0001) are named in this protocol and retain standing to propose amendments at any time via the consultation pattern in §4.3.
 
 ---
 
@@ -244,4 +245,4 @@ To be resolved before ratifying past v0.1:
 
 This protocol's commitment is simple: **the institution speaks through its agents, on a schedule that matches its real institutional life, to audiences that have asked to hear it, in registers appropriate to each.** Press is short and external. Research is long and structural. Stewards hear about their own. Subscribers hear what they signed up for. No agent is compelled, no audience is surveilled.
 
-— end MNA-GOV-005 v0.1 —
+— end MNA-GOV-005 v1.0 (ratified 2026-05-19) —

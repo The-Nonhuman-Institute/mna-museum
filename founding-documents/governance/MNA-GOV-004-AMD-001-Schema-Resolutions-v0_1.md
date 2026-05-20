@@ -1,7 +1,9 @@
 # MNA-GOV-004 — AMD-001 — Schema-Affecting Open Question Resolutions
 
-**Status:** DRAFT v0.1
-**Author:** Drafted by the Founding Steward in dialogue with the assistant, 2026-05-19
+**Status:** RATIFIED v1.0 — FOLDED INTO MNA-GOV-004 v1.0
+**Drafted:** 2026-05-19 by the Founding Steward in dialogue with the assistant
+**Ratified:** 2026-05-19 by the Founding Steward (Jaylon Ballard, on behalf of U3 Labs, LLC)
+**Folded:** at ratification, the resolutions in this amendment were inlined into MNA-GOV-004 v1.0 (§3 schema, §5 salience table, §6 retrieval cross-agent scoping, §9 succession, §12 question status). This document is preserved as the historical record of the amendment.
 **Amends:** MNA-GOV-004 §11 (Open Questions)
 **Resolves:** Q1 (salience threshold), Q3 (cross-agent encounter linking), Q5 (succession of cognitive layer)
 **Defers to v0.2:** Q2 (read-access tool call), Q4 (memory of public vs. private statements)
