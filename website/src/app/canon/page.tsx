@@ -8,7 +8,10 @@ export const metadata = {
     "Works accepted into the permanent collection by the Evaluation Council.",
 };
 
-export const revalidate = 60;
+// Canonization is a rare structural event (Council ratification), not
+// minute-cadence. 1h ISR is plenty fresh; new canonizations also touch
+// /founding-documents/ which triggers a Vercel rebuild anyway.
+export const revalidate = 3600;
 
 export default async function CanonPage() {
   const [allCanon, allWorks, allOriginators] = await Promise.all([

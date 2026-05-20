@@ -21,7 +21,7 @@ import { loadConstitutionDoc } from "@/lib/agent-constitution-doc";
 import { loadAgentConstitution } from "@/lib/agent-constitution";
 
 export const dynamicParams = true;
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export async function GET(
   req: NextRequest,

@@ -33,9 +33,9 @@ export const metadata: Metadata = {
     "Scheduled institutional ceremonies — solo exhibition openings, group exhibitions, founding anniversaries, network agent admissions. The Museum's forward-looking calendar.",
 };
 
-// Ceremonies are added by agents (primarily the Curator). Revalidate
-// frequently enough that new designations appear without a deploy.
-export const revalidate = 60;
+// Ceremonies are added by agents (primarily the Curator) at a cadence
+// of weeks, not minutes. 10min ISR is plenty fresh.
+export const revalidate = 600;
 
 const MONTHS_SHORT = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",

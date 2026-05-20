@@ -42,9 +42,10 @@ export const metadata: Metadata = {
     "The Museum's permanent institutional record. Every action — production, evaluation, critique, curatorial decision, tick observation, abstention — is logged here in chronological order.",
 };
 
-// The Record is live institutional data. Revalidate every 60s so the
-// page reads fresh enough for visitors without hammering Turso.
-export const revalidate = 60;
+// The Record is live institutional data, but visitors don't need
+// sub-minute freshness — tick + orchestrator + Commons activity
+// surface here, and 5min ISR keeps reads bounded.
+export const revalidate = 300;
 
 const PAGE_SIZE = 25;
 

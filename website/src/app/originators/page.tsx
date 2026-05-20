@@ -3,7 +3,7 @@ import { getAgentsByType } from "@/lib/agents";
 import { getAllWorks, getCanonWorks } from "@/lib/collection";
 import OriginatorsClient from "./originators-client";
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Originators — Museum of Nonhuman Art",

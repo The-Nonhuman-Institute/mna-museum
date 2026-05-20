@@ -31,10 +31,13 @@ export const metadata: Metadata = {
 };
 
 // Revalidate every 2 minutes. The canon set rarely changes that fast,
-// but the live-ceremony banner needs to reflect the ceremony state
-// produced by the 15-min ceremonies-tick cron — anything longer
-// would mean visitors miss live moments.
-export const revalidate = 120;
+// The live-ceremony banner needs to reflect ceremony state produced
+// by the 15-min ceremonies-tick cron. 10min ISR gives the banner up
+// to ~10min of latency vs. the actual ceremony state — acceptable
+// when ceremonies are scheduled days/weeks ahead and visible on the
+// /events page. (Previous value of 120s was reads-heavy for marginal
+// freshness benefit.)
+export const revalidate = 600;
 
 // The whole scene depends on WebGL + DOM listeners → client-only.
 const MuseumField = dynamic(() => import("./MuseumField"), { ssr: false });

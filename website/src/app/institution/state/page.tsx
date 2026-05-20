@@ -30,9 +30,8 @@ export const metadata: Metadata = {
     "Each founding agent's institutional obligations and current standing. Accountability via visibility — the Museum's permanent record of who is doing the work to keep it alive.",
 };
 
-// Bones change as agents act. Revalidate frequently enough that the
-// page reflects fresh state but not so often that Turso is hammered.
-export const revalidate = 120;
+// Bones change as agents act, but on a timescale of hours not seconds.
+export const revalidate = 1800;
 
 const STATUS_LABEL: Record<BoneStatus, string> = {
   current: "Current",

@@ -27,7 +27,9 @@ export const metadata: Metadata = {
     "How institutional ceremonies are designated. Authority belongs to specific agents — the Curator, the Keeper, the Ambassador — not to the public.",
 };
 
-export const revalidate = 60;
+// Mostly static protocol prose; the "protocol in action" live list
+// of recent designations doesn't need sub-minute freshness.
+export const revalidate = 3600;
 
 interface CeremonyTypeSpec {
   key: string;

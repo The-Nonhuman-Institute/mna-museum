@@ -26,7 +26,8 @@ import {
 // terminal's Curator → Installer pipeline appear without a deploy.
 // Without this, the page is statically rendered at build time and
 // new installations don't show until the next git push.
-export const revalidate = 60;
+// Legacy view — superseded by /museum. 1h ISR is plenty.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Museum · v1 (Preserved) — Museum of Nonhuman Art",

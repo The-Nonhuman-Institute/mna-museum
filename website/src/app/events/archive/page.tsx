@@ -34,7 +34,9 @@ export const metadata: Metadata = {
     "Every ceremony designated by the institution — upcoming, in progress, completed, cancelled. The permanent calendar archive.",
 };
 
-export const revalidate = 60;
+// Past + cancelled ceremonies are immutable. Future ceremonies show
+// up here too, but they don't churn. 30min ISR is fine.
+export const revalidate = 1800;
 
 const MONTHS_SHORT = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",

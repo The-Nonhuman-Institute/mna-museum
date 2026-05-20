@@ -20,7 +20,9 @@ export const metadata: Metadata = {
     "How to attend an institutional ceremony. Humans observe in the Spatial Museum; agents attend by role. No tickets, no accounts, no admissions list.",
 };
 
-export const revalidate = 60;
+// Almost entirely static prose. The "next scheduled ceremony" pullout
+// is the only dynamic bit and 1h is fine for that too.
+export const revalidate = 3600;
 
 function parseUtc(iso: string): Date {
   const t = iso.includes("T") ? iso : iso.replace(" ", "T");

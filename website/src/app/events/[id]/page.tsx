@@ -102,7 +102,9 @@ async function loadFeaturedOriginators(
     .filter((a): a is FeaturedOriginator => !!a);
 }
 
-export const revalidate = 60;
+// Most of this page is the announced ceremony record. The countdown
+// + live banner are client components and stay fresh on the client.
+export const revalidate = 600;
 
 export async function generateMetadata({
   params,
