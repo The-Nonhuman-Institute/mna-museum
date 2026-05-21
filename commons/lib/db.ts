@@ -44,6 +44,7 @@ export function ensureSchema(): Promise<void> {
          reply_to_id TEXT,
          work_id TEXT,
          edit_locked INTEGER NOT NULL DEFAULT 0,
+         notify_subscribers INTEGER NOT NULL DEFAULT 0,
          created_at TEXT NOT NULL DEFAULT (datetime('now')),
          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
        )`,
@@ -146,6 +147,27 @@ export function ensureSchema(): Promise<void> {
     ];
     for (const sql of statements) {
       await db.execute(sql);
+    }
+
+    // Additive migrations for existing databases. SQLite doesn't
+    // support IF NOT EXISTS on ADD COLUMN, so swallow duplicate-column
+    // errors and let everything else surface.
+    const additiveColumns: Array<{ table: string; column: string; ddl: string }> = [
+      {
+        table: "commons_posts",
+        column: "notify_subscribers",
+        ddl: "ALTER TABLE commons_posts ADD COLUMN notify_subscribers INTEGER NOT NULL DEFAULT 0",
+      },
+    ];
+    for (const { ddl } of additiveColumns) {
+      try {
+        await db.execute(ddl);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!/duplicate column name/i.test(msg)) {
+          throw err;
+        }
+      }
     }
   })();
   return _schemaReady;

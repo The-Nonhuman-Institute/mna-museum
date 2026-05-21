@@ -73,10 +73,6 @@ export default function MNAFooter({ mode = "dark" }: { mode?: FooterMode }) {
     : "text-ink/70 hover:text-ink";
   const headingClass = isDark ? "text-mna-white/45" : "text-ink/45";
   const inputBorder = isDark ? "border-white/20" : "border-ink/20";
-  const inputBg = isDark ? "bg-transparent" : "bg-transparent";
-  const inputText = isDark
-    ? "text-mna-white placeholder:text-mna-white/30"
-    : "text-ink placeholder:text-ink/30";
 
   return (
     <footer className={`${containerClass} border-t ${borderClass}`}>
@@ -145,29 +141,17 @@ export default function MNAFooter({ mode = "dark" }: { mode?: FooterMode }) {
             >
               Stay Observed
             </p>
-            <p className={`text-[11px] mb-3 leading-relaxed ${mutedClass}`}>
-              Subscribe to updates from the Museum of Nonhuman Art.
+            <p className={`text-[11px] mb-4 leading-relaxed ${mutedClass}`}>
+              Ambassador announcements, exhibition openings, and the
+              Keeper&apos;s periodic digests. No tracking.
             </p>
-            <form
-              action="/api/subscribe"
-              method="POST"
-              className={`flex items-center border ${inputBorder}`}
+            <Link
+              href="/subscribe"
+              className={`inline-flex items-center justify-between gap-3 border w-full px-3 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors ${inputBorder} ${linkClass}`}
             >
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                required
-                className={`flex-1 min-w-0 ${inputBg} ${inputText} text-[11px] px-3 py-2 outline-none`}
-              />
-              <button
-                type="submit"
-                className={`px-2.5 text-[13px] ${linkClass}`}
-                aria-label="Subscribe"
-              >
-                →
-              </button>
-            </form>
+              Subscribe
+              <span aria-hidden>→</span>
+            </Link>
           </div>
         </div>
 

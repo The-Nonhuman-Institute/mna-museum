@@ -62,6 +62,7 @@ function anthropic(): Anthropic {
 
 const MODEL = "claude-sonnet-4-5";
 const COMMONS_BASE = process.env.COMMONS_BASE_URL ?? "https://commons.mnamuseum.org";
+const WEBSITE_BASE = process.env.WEBSITE_BASE_URL ?? "https://www.mnamuseum.org";
 const ADMIN_KEY = process.env.MNA_ADMIN_KEY ?? "";
 
 /* ─── types ───────────────────────────────────────────────────────────── */
@@ -102,6 +103,11 @@ export interface AgentDecision {
   /** Required when position=ACT. */
   title?: string;
   body?: string;
+  /** Ambassador only. When true, the published piece is also
+   *  distributed to confirmed public subscribers per MNA-GOV-005 §5.3.
+   *  Ignored for Keeper consultations (Keeper goes through digest
+   *  cadence). */
+  notify_subscribers?: boolean;
 }
 
 export interface ConsultResult {
@@ -178,16 +184,19 @@ Three things to remember:
 
 3. Your standing to amend MNA-GOV-005 is preserved (per the protocol §6). If something about this auto-consultation feels wrong (the event isn't actually press-worthy, the framing is off), you may decline and propose an amendment via a future steward-initiated consultation.
 
+4. Per MNA-GOV-005 §5.3, you also decide whether to distribute this piece by email to confirmed public subscribers. Set notify_subscribers=true when the announcement is genuinely outward-facing (a public reader who confirmed a subscription would want this in their inbox). Set it false when the piece is institutionally important but specialist or internal in tone — those readers can still find it on the Commons. Most external announcements should be true; a thoughtful minority should be false. Ignored if you DECLINE.
+
 Voice: institutional, projective, claim-bearing.
 
 If you ACT: title ≤ 80 chars, body 400–900 chars markdown. May reference the event metadata, prior institutional moments you remember.
 
 Return STRICT JSON only:
 {
-  "position":   "ACT" | "DECLINE",
-  "rationale":  "3–5 sentences in your own voice, why you chose this position",
-  "title":      "..."   (required when position=ACT),
-  "body":       "..."   (required when position=ACT)
+  "position":            "ACT" | "DECLINE",
+  "rationale":           "3–5 sentences in your own voice, why you chose this position",
+  "title":               "..."   (required when position=ACT),
+  "body":                "..."   (required when position=ACT),
+  "notify_subscribers":  true | false   (required when position=ACT)
 }`;
     const user = `${memorySection ? memorySection + "\n\n" : ""}${eventBlock(event)}\n\nMake your decision. Return JSON only.`;
     return { system, user };
@@ -275,6 +284,16 @@ export async function consultAgent(args: ConsultArgs): Promise<AgentDecision> {
       if (obj.position === "ACT" && (!obj.title || !obj.body)) {
         throw new Error("position=ACT requires title and body");
       }
+      if (args.role === "ambassador" && obj.position === "ACT") {
+        if (typeof obj.notify_subscribers !== "boolean") {
+          throw new Error(
+            "Ambassador position=ACT requires notify_subscribers boolean"
+          );
+        }
+      } else {
+        // Keeper consultations don't carry a subscriber decision.
+        obj.notify_subscribers = undefined;
+      }
       return obj;
     } catch (e) {
       lastErr = e;
@@ -305,6 +324,8 @@ export async function publishConsultation(args: {
   const isAmbassador = args.role === "ambassador";
 
   let postId: string | null = null;
+  const notifySubscribers =
+    isAmbassador && args.decision.notify_subscribers === true;
   if (args.decision.position === "ACT" && !args.dryRun) {
     const category = isAmbassador ? "institutional_commentary" : "research_publication";
     const key = `auto-consult/${args.role}/${args.idempotency_anchor}`;
@@ -323,6 +344,7 @@ export async function publishConsultation(args: {
             body: args.decision.body,
             category,
             idempotency_key: key,
+            notify_subscribers: notifySubscribers,
           }),
         },
       );
@@ -335,6 +357,48 @@ export async function publishConsultation(args: {
       }
     } catch (err) {
       console.warn(`[publish] Commons threw: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // Subscriber fan-out (Ambassador only, ACT only, notify_subscribers
+  // chosen by the Ambassador in the consultation). Per MNA-GOV-005
+  // §5.3. Fire-and-forget by design — Commons publication already
+  // happened; failing to mail subscribers shouldn't reverse the post.
+  // The endpoint writes its own SUBSCRIBER_NOTIFICATION_SENT event
+  // with counts.
+  if (
+    notifySubscribers &&
+    postId &&
+    args.decision.position === "ACT" &&
+    !args.dryRun
+  ) {
+    try {
+      const res = await fetch(
+        `${WEBSITE_BASE}/api/ambassador/announce-to-subscribers`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${ADMIN_KEY}`,
+          },
+          body: JSON.stringify({
+            post_id: postId,
+            title: args.decision.title,
+            body: args.decision.body,
+            source_event_id: args.event.source_event_id,
+          }),
+        },
+      );
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        console.warn(
+          `[publish] announce returned ${res.status}: ${errText.slice(0, 200)}`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[publish] announce threw: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -366,6 +430,9 @@ export async function publishConsultation(args: {
           rationale: args.decision.rationale,
           commons_post_id: postId,
           idempotency_anchor: args.idempotency_anchor,
+          ...(isAmbassador && args.decision.position === "ACT"
+            ? { notify_subscribers: notifySubscribers }
+            : {}),
           steward_authorized: true,
         }),
       ],

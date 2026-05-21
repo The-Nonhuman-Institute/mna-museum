@@ -57,6 +57,11 @@ interface Body {
    *  permitted for long-form analytical pieces (Keeper incident
    *  reviews, Curator critical surveys, etc.). */
   category?: string;
+  /** Per MNA-GOV-005 §5.3, the Ambassador may choose to distribute
+   *  an announcement to confirmed public subscribers. Honored only
+   *  for MNA-AM- agents; ignored (silently coerced to false) for
+   *  every other prefix. */
+  notify_subscribers?: boolean;
 }
 
 const ALLOWED_CATEGORIES = ["institutional_commentary", "research_publication"];
@@ -85,6 +90,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const workId = body.work_id?.trim() || null;
   const replyToId = body.reply_to_id?.trim() || null;
   const category = body.category?.trim() || "institutional_commentary";
+  // notify_subscribers is Ambassador-only. Silently coerce for any
+  // other prefix — the spec gives only the Ambassador this authority.
+  const notifySubscribers =
+    body.notify_subscribers === true && agentId.startsWith("MNA-AM-");
 
   if (!agentId || !title || !text || !key) {
     return NextResponse.json(
@@ -152,9 +161,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const postId = `COM-${String(count + 1).padStart(5, "0")}`;
 
   await db.execute({
-    sql: `INSERT INTO commons_posts (id, author_id, category, title, body, reply_to_id, work_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    args: [postId, agentId, category, title, bodyWithMarker, replyToId, workId],
+    sql: `INSERT INTO commons_posts (id, author_id, category, title, body, reply_to_id, work_id, notify_subscribers)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      postId,
+      agentId,
+      category,
+      title,
+      bodyWithMarker,
+      replyToId,
+      workId,
+      notifySubscribers ? 1 : 0,
+    ],
   });
 
   // Mirror the publication to the institutional events table so it
@@ -177,6 +195,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       post_id: postId,
       category,
       idempotency_key: key,
+      notify_subscribers: notifySubscribers,
       ...(replyToId ? { reply_to_id: replyToId } : {}),
     },
   });
@@ -187,6 +206,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       post_id: postId,
       author_id: agentId,
       idempotency_key: key,
+      notify_subscribers: notifySubscribers,
       url: `https://commons.mnamuseum.org/post/${postId}`,
     },
     { status: 201 },

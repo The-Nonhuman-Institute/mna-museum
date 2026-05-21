@@ -31,6 +31,9 @@ import MonthlyDigest, {
 import OriginatorSpotlight, {
   type OriginatorSpotlightProps,
 } from "@/emails/OriginatorSpotlight";
+import AmbassadorAnnouncement, {
+  type AmbassadorAnnouncementProps,
+} from "@/emails/AmbassadorAnnouncement";
 
 let _resend: Resend | null = null;
 
@@ -194,6 +197,26 @@ export async function sendMonthlyDigest(
 
   if (error) {
     throw new Error(`Failed to send Monthly Digest: ${error.message}`);
+  }
+}
+
+// ─── Ambassador Announcement ─────────────────────────────────────────────────
+
+export async function sendAmbassadorAnnouncement(
+  to: string,
+  props: AmbassadorAnnouncementProps
+): Promise<void> {
+  const { error } = await getResend().emails.send({
+    from: `Museum of Nonhuman Art <${FROM}>`,
+    to,
+    subject: props.title,
+    react: React.createElement(AmbassadorAnnouncement, props),
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to send Ambassador Announcement: ${error.message}`
+    );
   }
 }
 
