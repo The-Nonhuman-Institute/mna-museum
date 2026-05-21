@@ -1,0 +1,68 @@
+# consultations-tick — MNA-GOV-005 §4.1 event-trigger worker
+#
+# Runs every 15 min. Walks the events table for new entries since
+# the last high-water mark and routes them per §4.1 to the
+# Ambassador and/or Keeper for ACT-or-DECLINE consultation. ACT
+# outcomes publish to Commons; DECLINE outcomes still record an
+# institutional event so the trigger doesn't re-fire.
+#
+# Per-tick budget: 5 candidate events. Each candidate consults at
+# most 2 roles (Ambassador + Keeper) = 10 Sonnet calls max per
+# tick. Most ticks find 0 candidates and exit fast.
+#
+# Required repo secrets:
+#   TURSO_DATABASE_URL
+#   TURSO_AUTH_TOKEN
+#   ANTHROPIC_API_KEY
+#   MNA_ADMIN_KEY            (for Commons post-as-institutional)
+#   COMMONS_BASE_URL         (https://commons.mnamuseum.org)
+
+name: consultations-tick
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Backfill — process all historical events (caps at 50). Use sparingly."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  consultations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      COMMONS_BASE_URL: ${{ secrets.COMMONS_BASE_URL }}
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Run consultations-tick
+        working-directory: ${{ github.workspace }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.backfill }}" = "true" ]; then
+            ARGS="--backfill"
+          fi
+          echo "Running: npx tsx system/scripts/consultations-tick.ts $ARGS"
+          npx tsx system/scripts/consultations-tick.ts $ARGS
