@@ -47,7 +47,7 @@ export default function EmailHeader({
                   <tr>
                     <td valign="middle" style={{ paddingRight: "18px" }}>
                       <Img
-                        src="https://www.mnamuseum.org/mna-icon-email-white.png"
+                        src="https://www.mnamuseum.org/mna-icon-email-black.png"
                         alt="Museum of Nonhuman Art"
                         width="64"
                         height="64"
