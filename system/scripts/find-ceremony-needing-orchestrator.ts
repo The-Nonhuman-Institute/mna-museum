@@ -22,8 +22,14 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
-dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
+// quiet: true — dotenv 17.x writes "[dotenv@17.3.1] injecting env..."
+// to stdout by default, which would corrupt the ceremony id that the
+// workflow's `detect` job captures from this script's stdout.
+dotenv.config({ path: path.join(__dirname, "..", ".env"), quiet: true });
+dotenv.config({
+  path: path.join(__dirname, "..", "..", "website", ".env"),
+  quiet: true,
+});
 
 function sanitize(s: string | undefined): string {
   return (s ?? "").replace(/\s+/g, "");
