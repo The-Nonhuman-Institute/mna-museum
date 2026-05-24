@@ -39,6 +39,10 @@ import {
   isValidHex,
   isValidGlyph,
 } from "../src/visual-identity";
+import {
+  retrieveMemories,
+  memoriesAsPromptSection,
+} from "../src/agent-memory-retrieve";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -182,7 +186,25 @@ Schema:
   "rationale":     "..."
 }`;
 
-  const user = `Your designation: ${originator.designation ?? "(unnamed)"}
+  // Memory retrieval (MNA-GOV-004 §6). Non-fatal if it fails.
+  let memorySection = "";
+  try {
+    const queryContext = `Election of visual identity — color and glyph family — by ${originator.designation ?? originator.registry_id}. Function: ${originator.function_statement ?? "(none)"}. Choosing from the founding palette and the originator glyph pool.`;
+    const memories = await retrieveMemories(originator.registry_id, queryContext, {
+      k: 6,
+      semantic_anchor_slots: 3,
+    });
+    memorySection = memoriesAsPromptSection(memories);
+  } catch (err) {
+    console.warn(
+      `[${originator.registry_id}] memory retrieval failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
+
+  const memPrefix = memorySection ? `${memorySection}\n\n` : "";
+  const user = `${memPrefix}Your designation: ${originator.designation ?? "(unnamed)"}
 Your function statement: ${originator.function_statement ?? "(none)"}${currentColor}${currentGlyph}
 
 Your works in the canon (${works.length}):

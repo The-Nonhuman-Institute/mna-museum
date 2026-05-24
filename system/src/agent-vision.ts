@@ -22,6 +22,10 @@
 
 import { createClient } from "@libsql/client";
 import { generateWithVision } from "./claude";
+import {
+  retrieveMemories,
+  memoriesAsPromptSection,
+} from "./agent-memory-retrieve";
 
 const COMMONS_BASE =
   process.env.COMMONS_BASE_URL ||
@@ -198,7 +202,7 @@ function buildSystemPrompt(args: PerceiveArgs): string {
   ].join("\n");
 }
 
-function buildUserPrompt(args: PerceiveArgs): string {
+function buildUserPrompt(args: PerceiveArgs, memorySection: string): string {
   const wTitle = args.work.title ? `"${args.work.title}"` : "(untitled)";
   const orig = args.work.originator_name
     ? `${args.work.originator_name} (${args.work.originator_id})`
@@ -214,13 +218,41 @@ function buildUserPrompt(args: PerceiveArgs): string {
         )
         .join("\n\n")
     : "";
-  return `Work: ${args.work.id} — ${wTitle}\nBy: ${orig}${phase}\nMedium: ${args.work.medium ?? "unknown"}${note}${priors}\n\nRecord your observation as JSON.`;
+  const mem = memorySection ? `${memorySection}\n\n` : "";
+  return `${mem}Work: ${args.work.id} — ${wTitle}\nBy: ${orig}${phase}\nMedium: ${args.work.medium ?? "unknown"}${note}${priors}\n\nRecord your observation as JSON.`;
 }
 
 export async function perceive(args: PerceiveArgs): Promise<PerceiveResult> {
   try {
+    // Memory retrieval (MNA-GOV-004 §6). The query is the moment: the
+    // work, the role's framing, and the optional ceremony context.
+    // Failures are non-fatal — memoriesAsPromptSection returns "" when
+    // retrieval throws or returns nothing.
+    let memorySection = "";
+    try {
+      const wTitle = args.work.title ?? "(untitled)";
+      const ceremonyHint = args.ceremonyContext
+        ? ` during ceremony ${args.ceremonyContext.title}`
+        : "";
+      const replyHint = args.priorPosts?.length
+        ? ` Prior readings exist; you may engage them.`
+        : "";
+      const queryContext = `Perception by ${args.agent.designation} (${args.agent.agent_type}) of work ${args.work.id} "${wTitle}" by ${args.work.originator_id}${ceremonyHint}.${replyHint}`;
+      const memories = await retrieveMemories(args.agent.registry_id, queryContext, {
+        k: 6,
+        semantic_anchor_slots: 2,
+      });
+      memorySection = memoriesAsPromptSection(memories);
+    } catch (err) {
+      console.warn(
+        `[perceive] memory retrieval failed for ${args.agent.registry_id}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+
     const system = buildSystemPrompt(args);
-    const user = buildUserPrompt(args);
+    const user = buildUserPrompt(args, memorySection);
     const text = await generateWithVision(system, user, args.imageUrl, {
       max_tokens: 600,
       temperature: 0.75,

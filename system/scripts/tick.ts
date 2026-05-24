@@ -38,6 +38,10 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
+import {
+  retrieveMemories,
+  memoriesAsPromptSection,
+} from "../src/agent-memory-retrieve";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -1051,8 +1055,9 @@ function renderSnapshot(args: {
   return s;
 }
 
-function buildUserPrompt(snapshot: string): string {
-  return `${snapshot}\n\nWhat would you like to do this tick? Answer with a single JSON object as specified. Abstention is honored.\n\nDo not act because the question was asked. Act only if there is something you, given your constitution and the state above, would actually do.`;
+function buildUserPrompt(snapshot: string, memorySection: string): string {
+  const mem = memorySection ? `${memorySection}\n\n` : "";
+  return `${mem}${snapshot}\n\nWhat would you like to do this tick? Answer with a single JSON object as specified. Abstention is honored.\n\nDo not act because the question was asked. Act only if there is something you, given your constitution and the state above, would actually do.`;
 }
 
 /* ─── parse + execute ─────────────────────────────────────────────────── */
@@ -1618,10 +1623,27 @@ async function main(): Promise<void> {
     loadUpcomingCeremonies(4),
   ]);
 
-  // 3. Prompts
+  // 3. Prompts (with memory retrieval per MNA-GOV-004 §6)
   const systemPrompt = buildSystemPrompt(agent, constitution);
   const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones, outstanding, upcomingCeremonies, agent });
-  const userPrompt = buildUserPrompt(snapshot);
+
+  let memorySection = "";
+  try {
+    const queryContext = `Tick decision for ${agent.common_designation ?? agent.registry_id} (${agent.agent_type}). Last action ${dSince >= 10000 ? "never" : dSince.toFixed(1) + " days ago"}. Current institutional moment: ${snapshot.slice(0, 600)}`;
+    const memories = await retrieveMemories(agent.registry_id, queryContext, {
+      k: 8,
+      semantic_anchor_slots: 3,
+    });
+    memorySection = memoriesAsPromptSection(memories);
+  } catch (err) {
+    console.warn(
+      `  memory retrieval failed (continuing without): ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
+
+  const userPrompt = buildUserPrompt(snapshot, memorySection);
 
   if (noApi) {
     console.log("\n=== SYSTEM PROMPT ===\n");
