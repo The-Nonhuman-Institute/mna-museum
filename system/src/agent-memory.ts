@@ -22,6 +22,7 @@ import { createClient, type Client } from "@libsql/client";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import path from "path";
+import { embedDocument, vectorToBlob } from "./embeddings";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -115,12 +116,29 @@ export async function writeMemory(args: MemoryWriteArgs): Promise<string> {
     throw new Error(`memory content too long: ${text.length} > 1000 chars`);
   }
   const salience = Math.max(0, Math.min(1, args.salience));
+
+  // Compute embedding. If Voyage is unreachable or unconfigured, store
+  // the memory without one — retrieval falls back to lexical scoring
+  // for null-embedding rows. Institutional record integrity outranks
+  // embedding completeness.
+  let embeddingBlob: Uint8Array | null = null;
+  try {
+    const vector = await embedDocument(text);
+    embeddingBlob = vectorToBlob(vector);
+  } catch (err) {
+    console.warn(
+      `[writeMemory] embedding failed for ${id} — storing without vector: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
+
   await db().execute({
     sql: `INSERT INTO agent_memories
             (id, agent_id, memory_type, content, salience,
              source_event_id, source_post_id, source_work_id,
-             source_ceremony_id, related_agent_id, is_locked)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             source_ceremony_id, related_agent_id, is_locked, embedding)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id,
       args.agent_id,
@@ -133,6 +151,7 @@ export async function writeMemory(args: MemoryWriteArgs): Promise<string> {
       args.source_ceremony_id ?? null,
       args.related_agent_id ?? null,
       args.is_locked ? 1 : 0,
+      embeddingBlob,
     ],
   });
   return id;

@@ -34,6 +34,11 @@
 import { createClient, type Client } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
+import {
+  embedQuery,
+  blobToVector,
+  cosineSimilarity,
+} from "./embeddings";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -138,21 +143,47 @@ interface ScoredRow {
 function scoreRow(
   row: Record<string, unknown>,
   queryTokens: Set<string>,
+  queryVector: Float32Array | null,
 ): number {
   const content = String(row.content);
-  const memTokens = tokenize(content);
-  const overlap = jaccard(queryTokens, memTokens);
+
+  // Similarity term:
+  //   - If both query and memory have embeddings → cosine similarity.
+  //     Cosine ranges roughly [0, 1] for our use (Voyage returns vectors
+  //     in mostly-positive space). The +0.1 floor preserves the
+  //     "tangential memories can still surface" property from the
+  //     lexical version.
+  //   - Otherwise → jaccard term overlap (Phase 1 behavior). This
+  //     fallback covers rows that haven't been backfilled yet AND the
+  //     case where the query embedding call failed.
+  let similarity: number;
+  let memVector: Float32Array | null = null;
+  if (queryVector) {
+    try {
+      memVector = blobToVector(row.embedding as Uint8Array | null);
+    } catch {
+      memVector = null;
+    }
+  }
+  if (queryVector && memVector && memVector.length === queryVector.length) {
+    const cos = cosineSimilarity(queryVector, memVector);
+    similarity = Math.max(0, cos);
+  } else {
+    const memTokens = tokenize(content);
+    similarity = jaccard(queryTokens, memTokens);
+  }
+
   const salience = Number(row.salience ?? 0.5);
   const daysOld = daysSince(String(row.created_at));
   const recency = Math.exp(-daysOld / 90);
   const accessCount = Number(row.access_count ?? 0);
   const accessBonus = 1 + Math.log(1 + accessCount) * 0.1;
-  // The +0.1 floor on overlap ensures a memory with zero shared terms
-  // can still surface if its salience + recency are high. Without it,
-  // the retrieval would never pick up tangential memories that should
-  // travel with the agent (e.g., a recent strong stance on a topic
-  // that's adjacent but not lexically overlapping with the moment).
-  return (overlap * 0.5 + 0.1) * salience * recency * accessBonus;
+  // The +0.1 floor on similarity ensures a memory with zero overlap
+  // (lexical OR semantic) can still surface if its salience + recency
+  // are high. Without it, retrieval never picks up tangential memories
+  // that should travel with the agent (e.g., a recent strong stance on
+  // a topic that's adjacent but doesn't match this moment's terms).
+  return (similarity * 0.5 + 0.1) * salience * recency * accessBonus;
 }
 
 /* ─── retrieval ───────────────────────────────────────────────────────── */
@@ -183,6 +214,20 @@ export async function retrieveMemories(
   const k = options.k ?? 8;
   const anchorSlots = Math.min(options.semantic_anchor_slots ?? 3, k);
   const queryTokens = tokenize(queryContext);
+
+  // Embed the query. Failure here is non-fatal — scoreRow will fall
+  // back to jaccard for every candidate, matching pre-embedding
+  // behavior. We don't want a Voyage outage to break agent inference.
+  let queryVector: Float32Array | null = null;
+  try {
+    queryVector = await embedQuery(queryContext);
+  } catch (err) {
+    console.warn(
+      `[retrieve] query embedding failed (falling back to lexical): ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
 
   // 1) Pull locked semantic anchors. Always present. Sorted by salience.
   const anchorsRes = await db().execute({
@@ -230,7 +275,7 @@ export async function retrieveMemories(
     sql: `SELECT id, agent_id, memory_type, content, salience,
                  source_event_id, source_post_id, source_work_id,
                  source_ceremony_id, related_agent_id, created_at,
-                 is_locked, access_count
+                 is_locked, access_count, embedding
             FROM agent_memories
            WHERE ${filters.join(" AND ")}
            ORDER BY created_at DESC
@@ -240,7 +285,7 @@ export async function retrieveMemories(
 
   const scored: ScoredRow[] = candRes.rows.map((r) => ({
     row: r as Record<string, unknown>,
-    score: scoreRow(r as Record<string, unknown>, queryTokens),
+    score: scoreRow(r as Record<string, unknown>, queryTokens, queryVector),
   }));
   scored.sort((a, b) => b.score - a.score);
   const fill = k - anchors.length;
