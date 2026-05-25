@@ -18,6 +18,11 @@ import { fetchEventsForAgent, type LogEvent } from "@/lib/log";
 import { loadAgentBoneState } from "@/lib/bones-detect";
 import AgentDecisions from "@/components/AgentDecisions";
 import AgentBonesPanel from "@/components/AgentBonesPanel";
+import MemoryPathways from "@/components/MemoryPathways";
+import {
+  loadAgentPathways,
+  type AgentPathways,
+} from "@/lib/agent-pathways";
 import OriginatorDetailClient from "./originator-client";
 import EvaluatorClient from "./EvaluatorClient";
 import CuratorClient from "./CuratorClient";
@@ -206,22 +211,33 @@ function DarkMetaRow({
  */
 function WithDecisions({
   agentId,
+  agentDesignation,
   events,
   boneState,
+  pathways,
   children,
 }: {
   agentId: string;
+  agentDesignation: string;
   events: LogEvent[];
   boneState: Awaited<ReturnType<typeof loadAgentBoneState>>;
+  pathways: AgentPathways | null;
   children: React.ReactNode;
 }) {
-  if (events.length === 0 && !boneState) return <>{children}</>;
+  const hasPathways = pathways && pathways.edges.length > 0;
+  if (events.length === 0 && !boneState && !hasPathways) return <>{children}</>;
   return (
     <>
       {children}
       <section className="bg-warm-paper text-ink border-t border-ink/10">
         <div className="max-w-[1240px] mx-auto px-5 md:px-10 lg:px-16 py-14 space-y-10">
           {boneState ? <AgentBonesPanel state={boneState} /> : null}
+          {hasPathways ? (
+            <MemoryPathways
+              pathways={pathways}
+              agentDesignation={agentDesignation}
+            />
+          ) : null}
           {events.length > 0 ? (
             <AgentDecisions agentId={agentId} events={events} />
           ) : null}
@@ -248,6 +264,19 @@ export default async function AgentDetailPage({
   // wrapper below so the warm-paper band shows obligations above
   // recent decisions on every agent profile.
   const boneState = await loadAgentBoneState(agent.registryId);
+
+  // Memory pathways (MNA-GOV-004 AMD-002 §A4) — the agent's
+  // accumulated associative topology. Filtered to weight > 0.3 for
+  // display. Rendered as static SVG inside WithDecisions when present.
+  // Failure is non-fatal — the table may not exist yet on local DBs.
+  let pathways: AgentPathways | null = null;
+  try {
+    pathways = await loadAgentPathways(agent.registryId);
+  } catch (err) {
+    console.warn(
+      `[agent-page] pathways load failed for ${agent.registryId}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   const isOriginator = agent.agentType === "ORIGINATOR";
   const isEvaluator = agent.agentType === "EVALUATOR";
@@ -316,7 +345,7 @@ export default async function AgentDetailPage({
     });
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <EvaluatorClient
           agent={agent}
           constitution={constitution}
@@ -366,7 +395,7 @@ export default async function AgentDetailPage({
     }));
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <KeeperClient
           agent={agent}
           constitution={constitution}
@@ -407,7 +436,7 @@ export default async function AgentDetailPage({
       "The arrangement of works in an exhibition constitutes an argument about what those works mean in relation to each other and to the institution’s broader history.";
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <CuratorClient
           agent={agent}
           constitution={constitution}
@@ -435,7 +464,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <CriticClient
           agent={agent}
           constitution={constitution}
@@ -476,7 +505,7 @@ export default async function AgentDetailPage({
       count: Number(r.n ?? 0),
     }));
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <InstallerClient
           agent={agent}
           constitution={constitution}
@@ -503,7 +532,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <ConservatorClient
           agent={agent}
           constitution={constitution}
@@ -529,7 +558,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <AmbassadorClient
           agent={agent}
           constitution={constitution}
@@ -555,7 +584,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <RegistrarClient
           agent={agent}
           constitution={constitution}
@@ -582,7 +611,7 @@ export default async function AgentDetailPage({
       loadAgentConstitution(agent.registryId),
     ]);
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <StewardAgentClient
           agent={agent}
           constitution={constitution}
@@ -644,7 +673,7 @@ export default async function AgentDetailPage({
       }));
 
     return (
-      <WithDecisions agentId={agent.registryId} events={recentDecisions} boneState={boneState}>
+      <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <OriginatorDetailClient
           agent={agent}
           works={works}
