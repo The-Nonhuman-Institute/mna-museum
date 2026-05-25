@@ -256,6 +256,11 @@ export async function retrieveMemories(
     "agent_id = ?",
     "is_archived = 0",
     "is_locked = 0",
+    // Originals folded into a consolidation memory are excluded from
+    // default retrieval (MNA-GOV-004 §7). The institutional record
+    // keeps them; the agent's working memory surfaces the rolled-up
+    // semantic memory instead.
+    "consolidated_into IS NULL",
   ];
   const args: (string | number)[] = [agentId];
   if (options.related_agent_id) {

@@ -1,0 +1,77 @@
+# memory-consolidate — MNA-GOV-004 §7 weekly consolidation worker
+#
+# Runs every Sunday at 06:00 UTC. For each founding agent, clusters
+# their non-locked, non-consolidated memories by semantic similarity
+# (Voyage embeddings + cosine). Any cluster of 4+ members is summarized
+# by Sonnet (as the agent) into a single consolidated semantic memory;
+# originals are linked via `consolidated_into` and stop surfacing in
+# default retrieval. Per §7 originals are never deleted — the
+# institutional record stays permanent.
+#
+# Idempotent: re-runs only consolidate freshly grown clusters.
+#
+# Required repo secrets:
+#   TURSO_DATABASE_URL
+#   TURSO_AUTH_TOKEN
+#   ANTHROPIC_API_KEY
+#   VOYAGE_API_KEY            (for clustering by embeddings + embedding
+#                              the consolidation result; falls back to
+#                              no-op when memories lack embeddings)
+
+name: memory-consolidate
+
+on:
+  schedule:
+    - cron: "0 6 * * 0"
+  workflow_dispatch:
+    inputs:
+      agent_id:
+        description: "Single agent to consolidate (e.g. MNA-AM-0001). Leave blank to run --all."
+        required: false
+        type: string
+      dry_run:
+        description: "Dry run — print clusters + proposed summaries without writing."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Run memory-consolidate
+        working-directory: ${{ github.workspace }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.agent_id }}" ]; then
+            ARGS="--agent ${{ inputs.agent_id }}"
+          else
+            ARGS="--all"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          echo "Launching: npx tsx system/scripts/memory-consolidate.ts $ARGS"
+          npx tsx system/scripts/memory-consolidate.ts $ARGS
