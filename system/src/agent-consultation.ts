@@ -245,6 +245,11 @@ export async function consultAgent(args: ConsultArgs): Promise<AgentDecision> {
     const memories = await retrieveMemories(agent.registry_id, queryContext, {
       k: 8,
       semantic_anchor_slots: 3,
+      // Auto-consultations are structural moments — Ambassador or
+      // Keeper reflecting on institutional events. Per AMD-002 §A3,
+      // walk_depth=1 brings forward associatively-linked memories
+      // beyond direct match.
+      walk_depth: args.dryRun ? 0 : 1,
       update_access: !args.dryRun,
     });
     memorySection = memoriesAsPromptSection(memories);

@@ -494,6 +494,11 @@ async function buildPromptForSlot(args: {
     const memories = await retrieveMemories(agent.registry_id, queryContext, {
       k: 8,
       semantic_anchor_slots: 3,
+      // Pathway walking is on for ceremonies (MNA-GOV-004 AMD-002 §A3).
+      // Institutional moments deserve associative recall — let the
+      // agent's neuropathways bring forward memories that don't
+      // directly match this slot but are strongly linked to ones that do.
+      walk_depth: rehearsal ? 0 : 1,
       // Don't poison future rankings from rehearsals. In rehearsal mode
       // the access_count + last_accessed_at writes are suppressed so
       // post-rehearsal retrievals behave as if the rehearsal didn't

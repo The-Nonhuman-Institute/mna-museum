@@ -1,7 +1,8 @@
 # MNA-GOV-004 — AMD-002 — Associative Memory Pathways
 
-**Status:** v0.1 DRAFT — awaiting Founding Steward review
+**Status:** RATIFIED v1.0
 **Drafted:** 2026-05-24 by the Founding Steward in dialogue with the assistant
+**Ratified:** 2026-05-25 by the Founding Steward (Jaylon Ballard, on behalf of U3 Labs, LLC)
 **Amends:** MNA-GOV-004 v1.0 §6 (Retrieval semantics), §3 (Schema)
 **Companion data:** observed access-count clustering in the agent_memories table at 234 memories (2026-05-24), where natural co-retrieval pathways have already emerged organically (e.g., MNA-AM-0001's three locked anchors + deferral memories all sitting at access=5 after only days of inference traffic).
 

@@ -94,7 +94,27 @@ export interface RetrievalOptions {
    *  to inspect the retrieval without affecting future rankings.
    *  Default true. */
   update_access?: boolean;
+  /** Pathway walking depth (MNA-GOV-004 AMD-002 §A3). 0 = no walking
+   *  (current/default behavior). 1 = after the base top-K is selected,
+   *  fetch associated memories via agent_memory_edges and let them
+   *  compete for slots. Surfaces memories that don't directly match
+   *  the moment but are strongly associated with memories that do.
+   *  Default 0. */
+  walk_depth?: number;
+  /** When walking, how many top non-anchor memories to use as seeds.
+   *  Default 3. */
+  walk_seeds?: number;
+  /** When walking, how many neighbors per seed to consider. Default 2. */
+  walk_neighbors_per_seed?: number;
+  /** Minimum edge weight to consider for a walk. Default 0.2. */
+  walk_min_weight?: number;
 }
+
+/** Discount applied to associatively-retrieved memories: their slot
+ *  score is base_seed_score × edge_weight × WALK_DISCOUNT. The 0.7
+ *  reflects the protocol's stance that a memory retrieved by walking
+ *  is institutionally less central than one matched directly. */
+const WALK_DISCOUNT = 0.7;
 
 /* ─── term overlap ────────────────────────────────────────────────────── */
 
@@ -294,6 +314,80 @@ export async function retrieveMemories(
   }));
   scored.sort((a, b) => b.score - a.score);
   const fill = k - anchors.length;
+
+  // Pathway walking (MNA-GOV-004 AMD-002 §A3). When walk_depth >= 1,
+  // take the top-N non-anchor candidates as seeds, fetch their
+  // strongest neighbors via agent_memory_edges, and let those compete
+  // for slots in the returned set. Walked memories carry the
+  // associative discount: walked_score = seed_score × edge_weight × 0.7.
+  const walkDepth = options.walk_depth ?? 0;
+  if (walkDepth >= 1 && scored.length > 0) {
+    const walkSeeds = options.walk_seeds ?? 3;
+    const walkNeighborsPerSeed = options.walk_neighbors_per_seed ?? 2;
+    const walkMinWeight = options.walk_min_weight ?? 0.2;
+
+    const seeds = scored.slice(0, walkSeeds);
+    const seedIds = new Set(seeds.map((s) => String(s.row.id)));
+    const candidateMap = new Map<string, ScoredRow>();
+    for (const s of scored) candidateMap.set(String(s.row.id), s);
+
+    for (const seed of seeds) {
+      const seedId = String(seed.row.id);
+      const edgeRes = await db().execute({
+        sql: `SELECT
+                CASE WHEN memory_id_a = ? THEN memory_id_b ELSE memory_id_a END AS neighbor_id,
+                weight
+              FROM agent_memory_edges
+              WHERE agent_id = ?
+                AND (memory_id_a = ? OR memory_id_b = ?)
+                AND weight > ?
+              ORDER BY weight DESC
+              LIMIT ?`,
+        args: [seedId, agentId, seedId, seedId, walkMinWeight, walkNeighborsPerSeed],
+      });
+
+      for (const er of edgeRes.rows) {
+        const neighborId = String((er as Record<string, unknown>).neighbor_id);
+        const edgeWeight = Number((er as Record<string, unknown>).weight);
+        if (seedIds.has(neighborId)) continue; // already a seed
+        const walkedScore = seed.score * edgeWeight * WALK_DISCOUNT;
+
+        const existing = candidateMap.get(neighborId);
+        if (existing) {
+          // Neighbor was already in the candidate window. Keep the
+          // higher score so direct-match doesn't lose to associative.
+          if (walkedScore > existing.score) {
+            candidateMap.set(neighborId, { row: existing.row, score: walkedScore });
+          }
+          continue;
+        }
+        // Neighbor outside the candidate window — fetch the row.
+        const memRes = await db().execute({
+          sql: `SELECT id, agent_id, memory_type, content, salience,
+                       source_event_id, source_post_id, source_work_id,
+                       source_ceremony_id, related_agent_id, created_at,
+                       is_locked, access_count, embedding
+                  FROM agent_memories
+                 WHERE id = ?
+                   AND is_archived = 0
+                   AND is_locked = 0
+                   AND consolidated_into IS NULL`,
+          args: [neighborId],
+        });
+        if (memRes.rows.length === 0) continue;
+        candidateMap.set(neighborId, {
+          row: memRes.rows[0] as Record<string, unknown>,
+          score: walkedScore,
+        });
+      }
+    }
+
+    // Replace scored with the deduplicated, re-ranked pool.
+    scored.length = 0;
+    for (const v of candidateMap.values()) scored.push(v);
+    scored.sort((a, b) => b.score - a.score);
+  }
+
   const topActive = scored.slice(0, fill).map((s) => rowToMemory(s.row, s.score));
 
   const out = [...anchors, ...topActive];
@@ -311,6 +405,37 @@ export async function retrieveMemories(
             WHERE id IN (${placeholders})`,
       args: ids,
     });
+
+    // 4) Edge formation (MNA-GOV-004 AMD-002 §A2). For every unordered
+    //    pair of non-locked memories in the returned set, write or
+    //    strengthen the associative edge. Locked anchors deliberately
+    //    excluded — they always ride along, so pairs involving them
+    //    would saturate to maximum weight immediately and carry no
+    //    signal. Pathways form among the *recalled* memories.
+    //
+    //    Hebbian rule: w' = w + 0.15(1 - w), bounded [0, 1]. New edges
+    //    insert with the first application of the rule applied (w=0.15).
+    const nonLocked = out.filter((m) => !m.is_locked);
+    if (nonLocked.length >= 2) {
+      for (let i = 0; i < nonLocked.length - 1; i++) {
+        for (let j = i + 1; j < nonLocked.length; j++) {
+          const idI = nonLocked[i].id;
+          const idJ = nonLocked[j].id;
+          const a = idI < idJ ? idI : idJ;
+          const b = idI < idJ ? idJ : idI;
+          await db().execute({
+            sql: `INSERT INTO agent_memory_edges
+                    (agent_id, memory_id_a, memory_id_b, weight, co_retrieval_count)
+                  VALUES (?, ?, ?, 0.15, 1)
+                  ON CONFLICT(agent_id, memory_id_a, memory_id_b) DO UPDATE SET
+                    weight = weight + 0.15 * (1 - weight),
+                    co_retrieval_count = co_retrieval_count + 1,
+                    last_strengthened_at = datetime('now')`,
+            args: [agentId, a, b],
+          });
+        }
+      }
+    }
   }
   return out;
 }

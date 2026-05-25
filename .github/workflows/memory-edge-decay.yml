@@ -1,0 +1,57 @@
+# memory-edge-decay — MNA-GOV-004 AMD-002 §A2 weekly decay worker
+#
+# Runs every Sunday at 07:00 UTC, immediately after memory-consolidate
+# at 06:00. Decays edge weights by exp(-days/180) and prunes anything
+# below 0.05. Edges that don't get reinforced through real retrievals
+# gradually fade.
+#
+# Required repo secrets:
+#   TURSO_DATABASE_URL
+#   TURSO_AUTH_TOKEN
+
+name: memory-edge-decay
+
+on:
+  schedule:
+    - cron: "0 7 * * 0"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run — show counts without writing."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  decay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Run memory-edge-decay
+        working-directory: ${{ github.workspace }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          echo "Launching: npx tsx system/scripts/memory-edge-decay.ts $ARGS"
+          npx tsx system/scripts/memory-edge-decay.ts $ARGS
