@@ -221,9 +221,6 @@ export default function MemoryPathways({
   );
   const posById = new Map(laidOut.map((n) => [n.id, n]));
 
-  const anchors = laidOut.filter((n) => n.is_locked).length;
-  const recalled = laidOut.length - anchors;
-
   return (
     <div>
       <div className="flex items-baseline justify-between gap-4 mb-3 border-b border-ink/10 pb-3">
