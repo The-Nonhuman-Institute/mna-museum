@@ -5,7 +5,16 @@ import SvgRenderer from "./renderers/SvgRenderer";
 import TextRenderer from "./renderers/TextRenderer";
 import MNAComposition, { type CompositionTheme } from "./MNAComposition";
 import type { Work } from "@/lib/collection";
-import { renderPayload } from "@/lib/collection";
+
+/** Renderers display the Conservator-restored safe version when present,
+ *  else the original. Inlined here (not imported from collection.ts) to
+ *  keep WorkDisplay client-bundleable — collection.ts pulls in
+ *  @libsql/client which can't ship to the browser. */
+function renderPayload(work: Work): string {
+  return work.safe_render_payload && work.safe_render_payload.length > 0
+    ? work.safe_render_payload
+    : work.output_payload;
+}
 import type { FrameType } from "./MuseumFrame";
 import { isWorkRenderable } from "@/lib/validate-work";
 import dynamic from "next/dynamic";
