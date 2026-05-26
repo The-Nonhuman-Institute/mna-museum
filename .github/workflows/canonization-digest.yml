@@ -1,0 +1,80 @@
+# canonization-digest — MNA-GOV-005 Phase 3 weekly worker
+#
+# Runs every Sunday at 08:00 UTC, after memory-consolidate (06:00) and
+# memory-edge-decay (07:00). Walks the events table for CANON_DECISION
+# events since the last digest's high-water mark, filters to outcome=CANON,
+# and if any landed, asks the Ambassador whether the week warrants an
+# outward digest piece. The Ambassador is free to decline.
+#
+# Idempotent. Cancels itself out cleanly when no canonizations have
+# happened since the last run.
+#
+# Required repo secrets:
+#   TURSO_DATABASE_URL
+#   TURSO_AUTH_TOKEN
+#   ANTHROPIC_API_KEY
+#   VOYAGE_API_KEY            (for memory retrieval at the Ambassador's
+#                              consultation; falls back to lexical without it)
+#   MNA_ADMIN_KEY             (publishConsultation → Commons admin route)
+#   COMMONS_BASE_URL          (https://commons.mnamuseum.org)
+#   WEBSITE_BASE_URL          (https://www.mnamuseum.org — for subscriber
+#                              fan-out endpoint when notify_subscribers=true)
+
+name: canonization-digest
+
+on:
+  schedule:
+    - cron: "0 8 * * 0"
+  workflow_dispatch:
+    inputs:
+      since_id:
+        description: "Override high-water mark with an event id (digest events past this id)."
+        required: false
+        type: string
+      dry_run:
+        description: "Dry run — consult without publishing."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+      MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      COMMONS_BASE_URL: ${{ secrets.COMMONS_BASE_URL }}
+      WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Run canonization-digest
+        working-directory: ${{ github.workspace }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.since_id }}" ]; then
+            ARGS="--since-id ${{ inputs.since_id }}"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          echo "Launching: npx tsx system/scripts/canonization-digest.ts $ARGS"
+          npx tsx system/scripts/canonization-digest.ts $ARGS
