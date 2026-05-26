@@ -265,10 +265,21 @@ export async function exportAll(): Promise<void> {
   const db = getDb();
 
   // --- Works with full provenance ---
+  // safe_render_payload (MNA-CV-0001 Conservator) is nullable and may
+  // not exist on every SQLite snapshot — guard the column reference
+  // so older DB files don't blow up the export.
+  const hasSafeRender = (db
+    .prepare(
+      "SELECT COUNT(*) AS n FROM pragma_table_info('works') WHERE name = 'safe_render_payload'"
+    )
+    .get() as { n: number }).n > 0;
+  const safeRenderCol = hasSafeRender ? "w.safe_render_payload" : "NULL AS safe_render_payload";
+
   const works = db
     .prepare(
       `SELECT
         w.id, w.originator_id, w.medium, w.output_payload, w.output_type,
+        ${safeRenderCol},
         w.display_aspect, w.phase_at_submission, w.created_at, w.title,
         cs.status as canon_status, cs.canon_date, cs.founding_collection,
         s.submission_date, s.autonomy_tier, s.constitution_version

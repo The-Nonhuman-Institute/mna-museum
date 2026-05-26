@@ -5,6 +5,7 @@ import SvgRenderer from "./renderers/SvgRenderer";
 import TextRenderer from "./renderers/TextRenderer";
 import MNAComposition, { type CompositionTheme } from "./MNAComposition";
 import type { Work } from "@/lib/collection";
+import { renderPayload } from "@/lib/collection";
 import type { FrameType } from "./MuseumFrame";
 import { isWorkRenderable } from "@/lib/validate-work";
 import dynamic from "next/dynamic";
@@ -103,14 +104,19 @@ function WorkContent({
   size: "gallery" | "detail" | "lightbox";
   forceMount?: boolean;
 }) {
+  // Per MNA-CV-0001 Conservator: when a safe-render version exists,
+  // it is what renderers display. The original output_payload remains
+  // untouched in the institutional record. See /work/[id] for the
+  // Conservator notice surfacing this substitution.
+  const payload = renderPayload(work);
   switch (work.output_type) {
     case "svg":
-      return <SvgRenderer svg={work.output_payload} />;
+      return <SvgRenderer svg={payload} />;
 
     case "html-css":
       return (
         <HtmlRenderer
-          html={work.output_payload}
+          html={payload}
           interactive={size === "detail" || size === "lightbox"}
           previewUrl={`/previews/${work.id}.png`}
           forceMount={forceMount}
@@ -118,13 +124,13 @@ function WorkContent({
       );
 
     case "audio-json":
-      return <AudioRenderer json={work.output_payload} />;
+      return <AudioRenderer json={payload} />;
 
     case "canvas-json":
-      return <CanvasRenderer json={work.output_payload} />;
+      return <CanvasRenderer json={payload} />;
 
     case "scene-json":
-      return <SceneRenderer json={work.output_payload} />;
+      return <SceneRenderer json={payload} />;
 
     case "ascii":
     case "text":
@@ -142,7 +148,7 @@ function WorkContent({
       }
       return (
         <TextRenderer
-          payload={work.output_payload}
+          payload={payload}
           outputType={work.output_type === "ascii" ? "ascii" : "text"}
           size={size}
         />
@@ -156,7 +162,7 @@ function is3DWork(work: Work): boolean {
   if (work.output_type !== "scene-json") return false;
   // Originator can declare display preference in the JSON
   try {
-    const scene = JSON.parse(work.output_payload);
+    const scene = JSON.parse(renderPayload(work));
     if (scene.display === "frame") return false;
   } catch {}
   return true;
@@ -165,7 +171,7 @@ function is3DWork(work: Work): boolean {
 /** Select plinth type based on scene bounding box proportions */
 function selectPlinthForWork(work: Work): "block" | "column" | "platform" | "slab" {
   try {
-    const scene = JSON.parse(work.output_payload);
+    const scene = JSON.parse(renderPayload(work));
     if (scene.plinth) return scene.plinth; // Originator's explicit choice
 
     if (scene.objects && scene.objects.length > 0) {
@@ -216,7 +222,7 @@ function GalleryPreview({ work }: { work: Work }) {
         src={`/previews/${work.id}.png`}
         alt={work.title || work.id}
         workId={work.id}
-        textPayload={isText ? work.output_payload : null}
+        textPayload={isText ? renderPayload(work) : null}
         textOutputType={
           work.output_type === "ascii"
             ? "ascii"
@@ -282,7 +288,7 @@ export default function WorkDisplay({
     if (!framed) {
       return (
         <div className="w-full h-full">
-          <SceneRenderer json={work.output_payload} transparent />
+          <SceneRenderer json={renderPayload(work)} transparent />
         </div>
       );
     }
@@ -304,7 +310,7 @@ export default function WorkDisplay({
         phase={work.phase_at_submission || "I"}
         showPlacard={showPlacard}
       >
-        <SceneRenderer json={work.output_payload} transparent />
+        <SceneRenderer json={renderPayload(work)} transparent />
       </MuseumPlinth>
     );
   }

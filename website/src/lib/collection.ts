@@ -22,6 +22,10 @@ export interface Work {
   originator_name: string | null;
   medium: string;
   output_payload: string;
+  /** Conservator-restored safe-render version (MNA-CV-0001 + GOV-004 AMD?).
+   *  When set, renderers display this in place of output_payload. The
+   *  original is preserved untouched in the institutional record. */
+  safe_render_payload?: string | null;
   output_type: string;
   display_aspect: number;
   phase_at_submission: string | null;
@@ -106,6 +110,8 @@ async function buildWork(row: Record<string, unknown>): Promise<Work> {
     originator_name: (row.originator_name as string) || null,
     medium,
     output_payload: row.output_payload as string,
+    safe_render_payload:
+      (row.safe_render_payload as string | null | undefined) ?? null,
     output_type: outputType,
     display_aspect: (row.display_aspect as number) || 1.0,
     phase_at_submission: (row.phase_at_submission as string) || null,
@@ -139,7 +145,8 @@ async function buildWork(row: Record<string, unknown>): Promise<Work> {
 }
 
 function baseWorkQuery(hasTitle: boolean): string {
-  return `SELECT w.id, w.originator_id, w.medium, w.output_payload, w.output_type,
+  return `SELECT w.id, w.originator_id, w.medium, w.output_payload,
+                 w.safe_render_payload, w.output_type,
                  w.display_aspect, w.phase_at_submission, w.created_at,
                  ${hasTitle ? "w.title," : "NULL as title,"}
                  cs.status as canon_status, cs.canon_date, cs.founding_collection,
@@ -149,6 +156,15 @@ function baseWorkQuery(hasTitle: boolean): string {
           LEFT JOIN canon_status cs ON w.id = cs.work_id
           LEFT JOIN submissions s ON w.id = s.work_id
           LEFT JOIN agents a ON w.originator_id = a.registry_id`;
+}
+
+/** Returns the payload to render. Conservator-restored when present,
+ *  otherwise the original. The original always survives in the
+ *  institutional record (MNA-CV-0001). */
+export function renderPayload(work: Work): string {
+  return work.safe_render_payload && work.safe_render_payload.length > 0
+    ? work.safe_render_payload
+    : work.output_payload;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────

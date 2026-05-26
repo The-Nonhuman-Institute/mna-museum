@@ -256,6 +256,19 @@ export default async function WorkDetailPage({
                 />
               </div>
             </div>
+            {work.safe_render_payload ? (
+              <div className="mt-3 border-l-2 border-ink/30 pl-3 py-1 max-w-[680px]">
+                <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 mb-1">
+                  Conservator Notice
+                </p>
+                <p className="text-[12px] leading-[1.55] text-ink/70">
+                  Rendering uses a Conservator-restored representation
+                  (MNA-CV-0001). The original payload arrived truncated
+                  at origination and is preserved untouched in the
+                  institutional record.
+                </p>
+              </div>
+            ) : null}
             <ViewingNote work={work} maxWidth={680} />
           </div>
 
