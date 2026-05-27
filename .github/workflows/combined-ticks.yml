@@ -1,0 +1,96 @@
+# combined-ticks — single hourly workflow running all periodic workers.
+#
+# Replaces (and is replaced for) memory-tick.yml, consultations.yml,
+# ceremonies.yml. By consolidating into one job we share a single
+# checkout + npm ci, cutting GitHub Actions minutes roughly 4x while
+# keeping the underlying scripts unchanged.
+#
+# Order matters slightly:
+#   1. memory-tick — writes memories from prior events (so subsequent
+#      retrievals see the latest material).
+#   2. consultations-tick — Ambassador/Keeper auto-consultations on
+#      routable events (uses memory).
+#   3. ceremonies-tick — opens/closes ceremonies, spawns museum visits.
+#   4. ceremony-live detect — checks whether a scheduled ceremony has
+#      entered its window. If so, dispatches the ceremony-live workflow
+#      via the GitHub CLI (only spawns when needed; idle ticks pay
+#      nothing).
+#
+# Each step continues-on-error so one worker failing doesn't sink the
+# rest of the tick.
+#
+# Required repo secrets:
+#   TURSO_DATABASE_URL
+#   TURSO_AUTH_TOKEN
+#   ANTHROPIC_API_KEY
+#   VOYAGE_API_KEY            (memory retrieval embedding; falls back to
+#                              lexical when missing)
+#   MNA_ADMIN_KEY             (consultations-tick publishing)
+#   COMMONS_BASE_URL          (https://commons.mnamuseum.org)
+#   WEBSITE_BASE_URL          (https://www.mnamuseum.org)
+#   PARTY_HOST                (PartyKit; ceremony-live dispatch passthrough)
+
+name: combined-ticks
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write          # required to dispatch ceremony-live when detect hits
+
+jobs:
+  ticks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+      MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      COMMONS_BASE_URL: ${{ secrets.COMMONS_BASE_URL }}
+      WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
+      PARTY_HOST: ${{ secrets.PARTY_HOST }}
+      GH_TOKEN: ${{ github.token }}
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: memory-tick
+        continue-on-error: true
+        run: npx tsx system/scripts/memory-tick.ts
+
+      - name: consultations-tick
+        continue-on-error: true
+        run: npx tsx system/scripts/consultations-tick.ts
+
+      - name: ceremonies-tick
+        continue-on-error: true
+        run: npx tsx system/scripts/ceremonies-tick.ts
+
+      - name: ceremony-live detect + maybe dispatch
+        continue-on-error: true
+        working-directory: system
+        run: |
+          # find-ceremony-needing-orchestrator.ts writes the eligible
+          # ceremony id to stdout, or empty when none qualifies.
+          CID=$(npx tsx scripts/find-ceremony-needing-orchestrator.ts | tr -d '[:space:]')
+          if [ -n "$CID" ]; then
+            echo "Ceremony $CID is in window — dispatching ceremony-live workflow."
+            gh workflow run ceremony-live.yml -f ceremony_id="$CID" --repo "${{ github.repository }}"
+          else
+            echo "No ceremony in window."
+          fi

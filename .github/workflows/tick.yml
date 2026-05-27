@@ -28,8 +28,11 @@ name: tick
 
 on:
   schedule:
-    # Every 60 minutes. Use `*/30 * * * *` to double the rate, etc.
-    - cron: "0 * * * *"
+    # Every 2 hours (was hourly). Tick is the most expensive periodic
+    # job per invocation — one Sonnet call + a museum visit child
+    # process. Halving the cadence keeps us inside the GHA free-tier
+    # 2,000 min/month budget on the private repo.
+    - cron: "0 */2 * * *"
   workflow_dispatch:
     # Manual trigger from the Actions tab — useful for first-run
     # verification and ad-hoc institutional ticks.

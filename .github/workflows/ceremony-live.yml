@@ -31,13 +31,15 @@
 name: ceremony-live
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # No schedule. Detection lives in combined-ticks.yml (hourly), which
+  # dispatches this workflow only when a ceremony actually enters its
+  # window. Saves ~3,500 GHA minutes/month on the free-tier private
+  # repo. workflow_dispatch is still available for steward overrides.
   workflow_dispatch:
     inputs:
       ceremony_id:
-        description: "Ceremony ID to launch (e.g. EVT-00003). Leave blank for auto-detect."
-        required: false
+        description: "Ceremony ID to launch (e.g. EVT-00003). Required — combined-ticks always passes this when dispatching."
+        required: true
         type: string
       rehearsal:
         description: "Rehearsal mode — compressed time, no persistence."
@@ -49,48 +51,7 @@ permissions:
   contents: read
 
 jobs:
-  detect:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      ceremony_id: ${{ steps.find.outputs.ceremony_id }}
-    env:
-      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "npm"
-          cache-dependency-path: system/package-lock.json
-
-      - name: Install system deps
-        working-directory: system
-        run: npm ci
-
-      - name: Find or accept ceremony id
-        id: find
-        working-directory: system
-        run: |
-          set -e
-          if [ -n "${{ inputs.ceremony_id }}" ]; then
-            echo "Using steward-provided ceremony_id: ${{ inputs.ceremony_id }}"
-            echo "ceremony_id=${{ inputs.ceremony_id }}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Auto-detect: any ceremony that is in_progress, or scheduled
-          # to start within +5 minutes, that has a designated schedule
-          # AND no orchestrator_started_at lock.
-          npx tsx scripts/find-ceremony-needing-orchestrator.ts > /tmp/cid.txt
-          CID=$(cat /tmp/cid.txt | tr -d '[:space:]')
-          echo "Detected: '${CID}'"
-          echo "ceremony_id=${CID}" >> "$GITHUB_OUTPUT"
-
   orchestrate:
-    needs: detect
-    if: needs.detect.outputs.ceremony_id != ''
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -116,7 +77,7 @@ jobs:
       - name: Run live orchestrator
         working-directory: ${{ github.workspace }}
         run: |
-          ARGS="--ceremony ${{ needs.detect.outputs.ceremony_id }}"
+          ARGS="--ceremony ${{ inputs.ceremony_id }}"
           if [ "${{ inputs.rehearsal }}" = "true" ]; then
             ARGS="$ARGS --rehearsal"
           fi
