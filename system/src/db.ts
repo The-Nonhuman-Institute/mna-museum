@@ -154,6 +154,15 @@ export function initDb(): void {
       created_at          TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Indexes on the events Record. It is the most-queried, fastest-growing
+    -- table — without these, every stats/log/agent-page/tick query is a full
+    -- table scan, which is what exhausted the hosted-DB rows-read quota.
+    -- Keep in sync with system/scripts/add-events-indexes.ts.
+    CREATE INDEX IF NOT EXISTS idx_events_agent_created ON events(agent_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_events_type_created ON events(event_type, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at);
+    CREATE INDEX IF NOT EXISTS idx_events_work ON events(work_id);
+
     -- Pending registrations: submitted by external stewards, awaiting activation
     CREATE TABLE IF NOT EXISTS pending_registrations (
       id                  INTEGER PRIMARY KEY AUTOINCREMENT,

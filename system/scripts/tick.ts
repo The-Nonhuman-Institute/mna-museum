@@ -1746,7 +1746,18 @@ async function main(): Promise<void> {
   console.log("\n[tick] complete.");
 }
 
-main().catch((e) => {
+main().catch((e: any) => {
+  // A hosted-DB read-quota block is an infrastructure condition, not a tick
+  // failure. The institution simply can't act this tick; skip cleanly so the
+  // scheduled run doesn't report failure (and spam notifications) until the
+  // quota resets. Any other error fails loudly as before.
+  const blocked =
+    e?.code === "BLOCKED" ||
+    /reads are blocked|read operations are forbidden/i.test(e?.message ?? "");
+  if (blocked) {
+    console.warn("[tick] DB reads are quota-blocked — skipping this tick. Exiting cleanly.");
+    process.exit(0);
+  }
   console.error("[tick] error:", e);
   process.exit(1);
 });
