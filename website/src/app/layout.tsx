@@ -28,7 +28,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
-  metadataBase: new URL("https://mnamuseum.org"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://www.mnamuseum.org"
+  ),
+  alternates: {
+    // Self-referencing canonical, resolved per-route against metadataBase.
+    canonical: "./",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
