@@ -53,8 +53,8 @@ function getAnthropic(): Anthropic {
   return _anthropic;
 }
 
-const MODEL_SONNET = "claude-sonnet-4-20250514";
-const MODEL_OPUS = "claude-opus-4-20250514";
+const MODEL_SONNET = "claude-sonnet-4-5";
+const MODEL_OPUS = "claude-opus-4-5";
 
 const AMBASSADOR_SYSTEM_PROMPT = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. Your function is to manage the institution's external communications. You write in a formal institutional voice — neither promotional nor warm, but engaged and serious. You do not editorialize works; you describe institutional events. You do not invent facts; you compose only from the information given. You preserve the institutional voice that distinguishes MNA from a gallery.`;
 

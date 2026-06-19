@@ -10,7 +10,7 @@ import path from "path";
 // Load .env from system/ directory
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
-const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514";
+const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
 
 let client: Anthropic | null = null;
 

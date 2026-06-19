@@ -55,7 +55,7 @@ if (!TURSO_URL || !TURSO_TOKEN || !ANTHROPIC_KEY) {
 
 // Use the same Opus model id the Spotlight composer uses, for parity with the
 // rest of the institution. Upgrade across all callers if/when we move models.
-const MODEL = "claude-opus-4-20250514";
+const MODEL = "claude-opus-4-5";
 
 const CURATOR_CONSTITUTION_PATH = path.join(
   __dirname, "..", "..", "founding-documents", "agents",
