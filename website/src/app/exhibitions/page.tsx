@@ -20,25 +20,23 @@ function yearOf(iso: string | null): string {
   return String(d.getFullYear());
 }
 
-function romanPhase(i: number): string {
-  const r = ["0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
-  return r[i] ?? String(i);
-}
-
 /**
- * Extract a display phase label from an exhibition. Curator data doesn't
- * include an explicit phase field, so we fall back to a chronological index
- * (oldest → Phase 0). This mirrors the institutional framing without
- * fabricating data.
+ * Exhibition "phase" eyebrow — intentionally disabled.
+ *
+ * This previously derived a "Phase I/II/III" label from each exhibition's
+ * chronological index. But "Phase" is a reserved, load-bearing term here — the
+ * Phase I–IV developmental system for *works* (a primary dimension of the
+ * collection). Stamping it onto exhibitions by sort order fabricated a meaning
+ * that collides with that taxonomy (e.g. "Frequency as Structure" reading as
+ * "Phase I" only because it opens first). Exhibitions have no real phase field,
+ * so we show none rather than invent one. A genuine exhibition-sequence
+ * indicator, if wanted, should be a Curator-set field — not a UI guess.
  */
 function derivePhaseLabel(
-  exhibition: Exhibition,
-  allSortedOldestFirst: Exhibition[]
+  _exhibition: Exhibition,
+  _allSortedOldestFirst: Exhibition[]
 ): string {
-  const m = exhibition.title.match(/^Phase\s+([0-9IVX]+)\b/i);
-  if (m) return `Phase ${m[1].toUpperCase()}`;
-  const idx = allSortedOldestFirst.findIndex((e) => e.id === exhibition.id);
-  return `Phase ${romanPhase(idx)}`;
+  return "";
 }
 
 /** Strip leading "Phase X:" from title if present so it can be shown separately. */
@@ -321,9 +319,11 @@ function TimelineCard({
             </span>
           </div>
 
-          <p className="mt-4 text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
-            {phaseLabel}
-          </p>
+          {phaseLabel ? (
+            <p className="mt-4 text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">
+              {phaseLabel}
+            </p>
+          ) : null}
           <h3 className="mt-1 font-display text-[22px] md:text-[24px] leading-[1.1] text-mna-white truncate">
             {titleMain}
           </h3>
