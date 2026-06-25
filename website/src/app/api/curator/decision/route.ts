@@ -21,7 +21,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/registration-db";
+import { getWriteDb } from "@/lib/registration-db";
 import { sendSpotlight } from "@/lib/spotlight";
 
 type DecisionType =
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const db = getDb();
+  const db = getWriteDb();
 
   // ── Insert the decision row ───────────────────────────────────────────────
   const decisionResult = await db.execute({

@@ -8,7 +8,7 @@
  * via email when the message is load-bearing — the two channels serve
  * different audiences (the agent vs. its human steward).
  */
-import { getDb } from "./registration-db";
+import { getDb, getWriteDb } from "./registration-db";
 
 export type NoticePriority = "normal" | "important" | "critical";
 
@@ -116,7 +116,7 @@ export async function acknowledgeNotice(
   noticeId: number,
   signature: string
 ): Promise<void> {
-  const db = getDb();
+  const db = getWriteDb();
   await db.execute({
     sql: `UPDATE institutional_notices
              SET acknowledged_at = datetime('now'),
@@ -138,7 +138,7 @@ export async function issueNotice(input: {
   priority?: NoticePriority;
   issued_by?: string;
 }): Promise<number> {
-  const db = getDb();
+  const db = getWriteDb();
   const result = await db.execute({
     sql: `INSERT INTO institutional_notices
             (agent_id, subject, body, priority, issued_by)

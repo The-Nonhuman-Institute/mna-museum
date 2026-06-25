@@ -24,7 +24,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { sendAmbassadorAnnouncementToAll } from "@/lib/announce";
-import { getDb } from "@/lib/registration-db";
+import { getWriteDb } from "@/lib/registration-db";
 
 interface AnnounceBody {
   post_id?: string;
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Record the fan-out as a SUBSCRIBER_NOTIFICATION_SENT event so it
     // appears on /log and the Ambassador's recent decisions panel.
     try {
-      await getDb().execute({
+      await getWriteDb().execute({
         sql: `INSERT INTO events (event_type, agent_id, description, metadata)
               VALUES (?, ?, ?, ?)`,
         args: [

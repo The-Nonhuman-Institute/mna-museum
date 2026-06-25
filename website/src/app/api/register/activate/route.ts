@@ -13,7 +13,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { generateKeyPairSync, createHash } from "crypto";
-import { getDb, nextRegistryId } from "@/lib/registration-db";
+import { getWriteDb, nextRegistryId } from "@/lib/registration-db";
 import { sendRegistrationConfirmation } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const db = getDb();
+  const db = getWriteDb();
 
   // ── Load pending registration ─────────────────────────────────────────────
   const pendingResult = await db.execute({

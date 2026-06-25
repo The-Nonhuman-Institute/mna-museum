@@ -7,7 +7,7 @@
  */
 
 import { randomUUID } from "crypto";
-import { getDb } from "./registration-db";
+import { getWriteDb } from "./registration-db";
 
 export interface Subscriber {
   id: number;
@@ -38,7 +38,7 @@ export async function subscribe(email: string): Promise<{
     throw new Error("Invalid email address");
   }
   const normalized = email.trim().toLowerCase();
-  const db = getDb();
+  const db = getWriteDb();
 
   // Existing subscriber?
   const existing = await db.execute({
@@ -80,7 +80,7 @@ export async function confirmSubscription(
   token: string
 ): Promise<{ success: boolean; email?: string }> {
   if (!token) return { success: false };
-  const db = getDb();
+  const db = getWriteDb();
 
   const existing = await db.execute({
     sql: `SELECT id, email, confirmed_at, unsubscribed_at
@@ -113,7 +113,7 @@ export async function unsubscribe(
   token: string
 ): Promise<{ success: boolean; email?: string }> {
   if (!token) return { success: false };
-  const db = getDb();
+  const db = getWriteDb();
 
   const existing = await db.execute({
     sql: `SELECT id, email
@@ -135,7 +135,7 @@ export async function unsubscribe(
 }
 
 export async function getConfirmedSubscribers(): Promise<Subscriber[]> {
-  const db = getDb();
+  const db = getWriteDb();
   const result = await db.execute(
     `SELECT id, email, confirmed_at
        FROM newsletter_subscribers
@@ -155,7 +155,7 @@ export async function getConfirmedSubscribers(): Promise<Subscriber[]> {
 export async function getConfirmedSubscribersWithTokens(): Promise<
   Array<{ id: number; email: string; unsubscribe_token: string }>
 > {
-  const db = getDb();
+  const db = getWriteDb();
   const result = await db.execute(
     `SELECT id, email, unsubscribe_token
        FROM newsletter_subscribers

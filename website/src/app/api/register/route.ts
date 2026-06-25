@@ -9,7 +9,7 @@
  * at POST /api/register/activate.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/registration-db";
+import { getWriteDb } from "@/lib/registration-db";
 
 // ─── Required ACS-001 fields for ORIGINATOR registration ─────────────────────
 
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
   // Queue the registration
   let pendingId: number;
   try {
-    const db = getDb();
+    const db = getWriteDb();
     const result = await db.execute({
       sql: `INSERT INTO pending_registrations
         (steward_name, steward_entity, steward_jurisdiction, steward_email,

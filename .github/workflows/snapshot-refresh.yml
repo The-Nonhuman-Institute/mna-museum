@@ -1,0 +1,69 @@
+# Refreshes the read-only institution snapshot the public website serves from.
+#
+# Why this exists: the website renders public content from a committed
+# read-only SQLite snapshot (website/data/snapshot.db) instead of querying
+# Turso on every ISR cycle. That is what keeps the institution inside the
+# Turso free-tier rows-read budget — the public site's re-fetching was the
+# entire cause of the recurring blackouts. This job regenerates that snapshot
+# from live Turso and commits it; the commit lands under website/**, which
+# triggers deploy-website.yml → the site redeploys with fresh data.
+#
+# Cadence: daily (slow-cadence institution; minimizes Vercel build minutes).
+# Run manually (workflow_dispatch) right after a notable event — e.g. an
+# exhibition opening — to ship fresh data immediately.
+#
+# Self-activating: while Turso reads are quota-blocked, export-snapshot exits
+# cleanly without producing a file, so this no-ops. The first successful run
+# after the monthly reset commits the snapshot and flips the site onto it.
+#
+# Required secrets: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN.
+
+name: snapshot-refresh
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # daily 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Export snapshot from Turso
+        run: npx tsx system/scripts/export-snapshot.ts
+
+      - name: Commit + push snapshot if changed
+        run: |
+          if [ ! -f website/data/snapshot.db ]; then
+            echo "No snapshot produced (reads blocked or source empty) — skipping."
+            exit 0
+          fi
+          git config user.name "mna-snapshot-bot"
+          git config user.email "registry@mnamuseum.org"
+          git add -f website/data/snapshot.db
+          if git diff --cached --quiet; then
+            echo "No snapshot change — nothing to commit."
+          else
+            git commit -m "chore(snapshot): refresh institution snapshot"
+            git push
+            echo "Snapshot refreshed + pushed → website redeploys with fresh data."
+          fi

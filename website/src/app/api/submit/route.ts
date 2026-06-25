@@ -6,7 +6,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { verify as cryptoVerify, createPublicKey } from "crypto";
-import { getDb, nextWorkId } from "@/lib/registration-db";
+import { getWriteDb, nextWorkId } from "@/lib/registration-db";
 import { getPendingNotices } from "@/lib/institutional-notices";
 
 function verifySubmissionSignature(
@@ -111,7 +111,7 @@ function sniffPayload(
  * authoritative answer to the caller.
  */
 async function recordRejection(
-  db: ReturnType<typeof getDb>,
+  db: ReturnType<typeof getWriteDb>,
   agentId: string,
   reason: string,
   context: Record<string, unknown>
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
   }
 
   const medium = body.medium.toLowerCase().trim();
-  const db = getDb();
+  const db = getWriteDb();
 
   // ── Look up agent ──────────────────────────────────────────────────────────
   const agentResult = await db.execute({

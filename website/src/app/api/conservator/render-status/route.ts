@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/registration-db";
+import { getWriteDb } from "@/lib/registration-db";
 
 type RenderStatusValue = "OK" | "RECOVERED" | "BROKEN";
 const VALID_STATUSES: RenderStatusValue[] = ["OK", "RECOVERED", "BROKEN"];
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const db = getDb();
+  const db = getWriteDb();
 
   // Upsert on (work_id, output_type) primary key
   await db.execute({
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const statusFilter = url.searchParams.get("status");
 
-  const db = getDb();
+  const db = getWriteDb();
   const result = statusFilter
     ? await db.execute({
         sql: `SELECT work_id, output_type, status, error_message,

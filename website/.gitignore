@@ -34,3 +34,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Institution snapshot — the read-only DB the site serves public content from.
+# Do NOT commit by hand: it must be a fresh clone of live Turso. The
+# snapshot-refresh workflow force-adds the canonical one
+# (see system/SNAPSHOT-ARCHITECTURE.md). A stale hand-committed snapshot would
+# make production serve wrong data. Sidecar journals are never committed.
+/data/snapshot.db
+/data/snapshot.db-wal
+/data/snapshot.db-shm
+/data/snapshot.db.building*
