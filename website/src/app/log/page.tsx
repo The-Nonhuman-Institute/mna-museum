@@ -45,7 +45,7 @@ export const metadata: Metadata = {
 // The Record is live institutional data, but visitors don't need
 // sub-minute freshness — tick + orchestrator + Commons activity
 // surface here, and 5min ISR keeps reads bounded.
-export const revalidate = 300;
+export const revalidate = 1800;
 
 const PAGE_SIZE = 25;
 

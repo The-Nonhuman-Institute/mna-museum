@@ -28,10 +28,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/registration-db";
 import { getPendingNotices } from "@/lib/institutional-notices";
 
-// Never cached — canon status and critiques change over time and agents
-// polling this endpoint want fresh institutional state on every request.
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Short 60s cache. Canon status and critiques change on an institutional
+// cadence (canonizations are ~monthly), so reading the DB on every request
+// was pure waste — and a major Turso rows-read sink under agent polling
+// across 148 works. 60s keeps the endpoint effectively fresh for agents
+// while collapsing read volume.
+export const revalidate = 60;
 
 const EVALUATOR_DESIGNATIONS: Record<string, string> = {
   "MNA-EV-0001": "The Structuralist",

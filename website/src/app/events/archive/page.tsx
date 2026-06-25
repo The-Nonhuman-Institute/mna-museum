@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 
 // Past + cancelled ceremonies are immutable. Future ceremonies show
 // up here too, but they don't churn. 30min ISR is fine.
-export const revalidate = 1800;
+export const revalidate = 3600;
 
 const MONTHS_SHORT = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",

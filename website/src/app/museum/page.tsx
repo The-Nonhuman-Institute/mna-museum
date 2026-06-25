@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 // when ceremonies are scheduled days/weeks ahead and visible on the
 // /events page. (Previous value of 120s was reads-heavy for marginal
 // freshness benefit.)
-export const revalidate = 600;
+export const revalidate = 1800;
 
 // The whole scene depends on WebGL + DOM listeners → client-only.
 const MuseumField = dynamic(() => import("./MuseumField"), { ssr: false });
