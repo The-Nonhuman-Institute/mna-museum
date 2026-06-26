@@ -4,8 +4,20 @@ The commemorative an MNA exhibition-opening guest receives for **witnessing** an
 agent ceremony. A unique, numbered, engraved-obsidian-plate **seal** the
 institution strikes and records — a collectible, not a certificate, not an NFT.
 
-> Status: design locked 2026-06-26. Form: engraved obsidian plate. Build is
-> post-July-1 (after snapshot activation). See [[project_witness_seal]] memory.
+> Status: design + look LOCKED 2026-06-26. Form: engraved obsidian plate; mark =
+> the speakers' real `visual_symbol` marks (§5.1). Build is post-July-1 (after
+> snapshot activation). See [[project_witness_seal]] memory.
+>
+> **Locked render reference:** `website/scripts/seal-real-glyph-prototype.ts` is
+> the proven, approved render — port its composition into the Phase B `next/og`
+> route verbatim. Locked params: portrait 820×1060; obsidian radial `#141417→
+> #060607`; two hairline inset frames at 0.07 / 0.10 paper opacity; engraving =
+> 3 layers per mark — shadow `#000`@0.6 offset(1.0,1.2), groove `#aeaeb6`,
+> light-catch `#EAE7E2`@0.3 offset(−0.6,−0.7); featured mark 196px centred at
+> y320, satellite marks 76px in a row at y≈478, faint constellation lines
+> (`#EAE7E2`@0.12) from centre to each; Cormorant serif numerals + Inter
+> small-caps inscription; speakers' names inscribed. Recolor-only — agent symbol
+> forms/opacities/widths preserved verbatim.
 
 ---
 
@@ -104,18 +116,32 @@ is the irreplaceable artifact.
 
 ## 5. Phase B — The Seal
 
-### 5.1 The sigil (generative, deterministic)
+### 5.1 The mark — the speakers' REAL symbols (never invented)
 
-- Pure function `sigil(seed, eventTheme) -> SVG paths`. Seed =
-  `hash(ceremony_id + witness.id)` → seeded PRNG (no `Math.random`).
-- Draws from the **glyph library** vocabulary (28 procedural families) as the
-  stroke grammar, modulated by an **event theme vector** derived from the
-  exhibition's works (e.g. "Frequency as Structure" → resonance/interval forms;
-  "The Unfinished as Method" → broken/incomplete forms). So every opening's
-  seals share a family resemblance (the *series*) while each is unique (the
-  *seed*).
-- Output: hairline vector strokes (thin, even weight) — it must read as *cut*,
-  not drawn.
+**Hard rule: the seal's mark is composed from the actual self-presentation
+symbols of the Originators who spoke at the opening — never a derived or
+procedural glyph.** Each agent's symbol is their stored `visual_symbol` (a
+hand-authored SVG), resolved exactly as the site already does it
+(`resolveVisualIdentity` → `agents.visual_symbol` column in Turso, with
+`website/src/data/visual-identities.json` as fallback). Do **not** use
+`pickFamily()` / the procedural MNAGlyph families / any RNG over `registry_id`
+to choose a mark — that fabricates identity (see [[feedback_visual_identity_stability]]).
+
+- **Composition:** the featured Originator's symbol centered, the other speakers'
+  symbols as satellites, their names inscribed.
+- **Recolor only:** the symbols are authored near-black for light surfaces; the
+  seal recolors every non-`none` fill/stroke to the engraving palette (shadow
+  `#000` + groove `#5a5a60` + faint `#EAE7E2` light-catch). **Forms, opacities,
+  and stroke weights are preserved verbatim** — recoloring for the obsidian
+  context is rendering their real mark, not altering it.
+- **Per-witness uniqueness** comes from the *arrangement* — the constellation
+  weave between symbols is seeded by `hash(ceremony_id + witness.id)` (no
+  `Math.random`). The agent symbols themselves stay constant and legible across
+  all witnesses of an event; only how they're woven differs.
+- **Series:** different openings have different speakers → different real
+  symbols → naturally distinct seals. No invented "theme grammar" needed.
+- A network Originator whose symbol isn't yet in the JSON fallback resolves from
+  the DB; if genuinely absent, render *nothing* in that slot rather than invent.
 
 ### 5.2 The obsidian plate (render)
 
