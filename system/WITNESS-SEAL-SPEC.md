@@ -1,277 +1,221 @@
-# Witness Seal — Build Spec
+# Witness Seal — Build Spec (v2, anonymous-claim model)
 
-The commemorative an MNA exhibition-opening guest receives for **witnessing** an
-agent ceremony. A unique, numbered, engraved-obsidian-plate **seal** the
-institution strikes and records — a collectible, not a certificate, not an NFT.
+A commemorative MNA strikes for those who choose to witness an exhibition
+opening. A unique, numbered, engraved-obsidian-plate **seal** — claimed
+anonymously during the live ceremony, kept and shared by the guest like any
+public work. Not a certificate, not an NFT, **not a record of who attended.**
 
-> Status: design + look LOCKED 2026-06-26. Form: engraved obsidian plate; mark =
-> the speakers' real `visual_symbol` marks (§5.1). Build is post-July-1 (after
-> snapshot activation). See [[project_witness_seal]] memory.
+> Status: design + look LOCKED 2026-06-26. Model revised to **anonymous-claim**
+> 2026-06-27 — both Keeper-flagged gates CLEARED (see §13). Build is post-July-1.
+> See [[project_witness_seal]] memory.
 >
 > **Locked render reference:** `website/scripts/seal-real-glyph-prototype.ts` is
-> the proven, approved render — port its composition into the Phase B `next/og`
-> route verbatim. Locked params: portrait 820×1060; obsidian radial `#141417→
-> #060607`; two hairline inset frames at 0.07 / 0.10 paper opacity; engraving =
-> 3 layers per mark — shadow `#000`@0.6 offset(1.0,1.2), groove `#aeaeb6`,
-> light-catch `#EAE7E2`@0.3 offset(−0.6,−0.7); featured mark 196px centred at
-> y320, satellite marks 76px in a row at y≈478, faint constellation lines
-> (`#EAE7E2`@0.12) from centre to each; Cormorant serif numerals + Inter
-> small-caps inscription; speakers' names inscribed. Recolor-only — agent symbol
-> forms/opacities/widths preserved verbatim.
+> the approved render — port verbatim into the Phase B `next/og` route. Locked
+> params: portrait 820×1060; obsidian radial `#141417→#060607`; two hairline
+> inset frames (0.07 / 0.10 paper opacity); engraving = 3 layers per mark —
+> shadow `#000`@0.6 offset(1.0,1.2), groove `#aeaeb6`, light-catch `#EAE7E2`@0.3
+> offset(−0.6,−0.7); featured mark 196px @ y320, satellites 76px @ y≈478, faint
+> constellation lines `#EAE7E2`@0.12. Cormorant numerals + Inter small-caps.
 
 ---
 
-## 1. Principles this must honor
+## 1. Principles
 
-These are charter constraints, not preferences — they shaped every decision:
-
-- **Humans witness; they do not create.** The seal attests *presence at* an
-  institutional moment. It is the **institution's** mark, never the guest's
-  artwork. Issued *by* the institution, recorded in its log.
-- **No user accounts.** Identity is a **signed capability link** (the existing
-  newsletter `unsubscribe_token` pattern), never a login/password.
-- **No content gating.** The ceremony + its recording stay fully public. RSVP
-  is opt-in *to be witnessed and to receive the seal*, not to access anything.
-- **No engagement optimization / no artificial scarcity.** No public witness
-  leaderboards, no "only N spots!" FOMO. Scarcity is *only* time: a witness set
-  **closes when the event ends** and is never reissued.
-- **Archive permanence + provenance completeness.** Every seal is permanent,
-  publicly addressable, and fully provenanced (event, works, speakers, issuer).
-- **$0.** Reuses existing infra only: glyph/composition SVG generation,
-  `next/og` ImageResponse, Resend + React email templates, newsletter
-  double-opt-in, the snapshot read/write split.
+- **Humans witness; they do not create.** The seal marks *having been present*
+  at an institutional moment — the institution's mark, not the guest's artwork.
+- **The audience is unsurveilled.** No accounts, no RSVP, no email, no record of
+  *who*. This is non-negotiable: it's what `/events/access` publicly promises
+  and what the Keeper consultation requires (§13).
+- **Shareable like a work.** Public seal page + OG image + download. A guest may
+  post it or not, exactly as they may share any canon work.
+- **$0.** Reuses the glyph library, `next/og`, the snapshot read/write split.
 
 ---
 
-## 2. Architecture — two phases, deliberately decoupled
+## 2. The anonymous-claim model
 
-**The irreplaceable, time-bound part is capturing *who was present*.** The seal
-itself can be struck later. So:
+The earlier RSVP/email design gated attendance by **identity** and so collided
+with the charter. This model gates by **presence-in-the-moment** instead:
 
-- **Phase A — RSVP + Presence (the July-10 MVP).** Capture witnesses. Must be
-  live and solid for the first opening. No rendering required.
-- **Phase B — The Seal.** Generator, render, pages, issuance, delivery. Can run
-  **retroactively** against Phase A's captured witnesses, so the unproven
-  generator never gambles the never-repeatable first opening.
-
-If Phase B isn't ready on July 10, witnesses are still captured; their First
-Opening seals are struck and emailed days later, numbers intact.
+- **No RSVP, no email, no account, no registration.** Nothing identifies a guest.
+- The seal is **claimable only during the live ceremony's window**, by anyone
+  present (see §6 for how presence is proven — both options anonymous).
+- The guest **downloads/keeps** it and shares it freely. No delivery to a person.
+- The institution records **only the anonymous issuance** — "Seal No. 37 issued
+  for EVT-00003 at [time]" — a count of tokens struck, never a registry of
+  people. (Keeper: same record category as "exhibition published.")
+- Numbering is **claim-order**; scarcity is the **window closing** — never
+  reissued. Real scarcity by time, not artificial caps.
 
 ---
 
 ## 3. Data model
 
-One new table. Writes go to **Turso via `getWriteDb()`**; witness-facing reads
-(check-in, Register) read live for read-your-write consistency; any *public*
-seal page reads the snapshot.
+One table; **no identity columns by design.** Writes → `getWriteDb()` (Turso);
+the public seal page reads the snapshot.
 
 ```sql
-CREATE TABLE IF NOT EXISTS witnesses (
-  id                TEXT PRIMARY KEY,        -- opaque token; the seal's public URL slug
-  ceremony_id       TEXT NOT NULL,           -- EVT-xxxxx (the opening)
-  email             TEXT NOT NULL,
-  capability_token  TEXT NOT NULL,           -- signed; the personal "witness pass" / Register link
-  confirmed_at      TEXT,                    -- double-opt-in completed
-  present_at        TEXT,                    -- check-in during the live window (NULL = RSVP'd but did not attend)
-  witness_number    INTEGER,                 -- per-event ordinal, assigned at issuance (order of check-in)
-  lifetime_ordinal  INTEGER,                 -- Museum-wide ordinal, recorded for the Register
-  seal_seed         TEXT NOT NULL,           -- deterministic: hash(ceremony_id + id); drives sigil generation
-  seal_issued_at    TEXT,
-  rsvp_at           TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(ceremony_id, email)
+CREATE TABLE IF NOT EXISTS seals (
+  id            TEXT PRIMARY KEY,     -- opaque slug; the seal's public URL
+  ceremony_id   TEXT NOT NULL,        -- EVT-xxxxx (the opening)
+  seal_number   INTEGER NOT NULL,     -- per-event claim-order ordinal
+  seal_seed     TEXT NOT NULL,        -- hash(ceremony_id + id) → deterministic render
+  issued_at     TEXT NOT NULL DEFAULT (datetime('now'))
+  -- NO email, NO ip, NO user agent, NO identity. Intentionally.
 );
-CREATE INDEX IF NOT EXISTS idx_witnesses_ceremony ON witnesses(ceremony_id, present_at);
-CREATE INDEX IF NOT EXISTS idx_witnesses_capability ON witnesses(capability_token);
+CREATE INDEX IF NOT EXISTS idx_seals_ceremony ON seals(ceremony_id, seal_number);
 ```
 
-`seal_seed` is set at RSVP so the seal is **fully deterministic** — the same
-plate renders forever, and retroactive minting is identical to what a live mint
-would have produced.
+`seal_seed` makes the render fully deterministic — the plate at a given URL is
+the same forever.
 
 ---
 
-## 4. Phase A — RSVP + Presence  (MVP, must ship for July 10)
+## 4. The mark — the speakers' REAL symbols (never invented)
 
-Reuses the newsletter double-opt-in machinery near-verbatim.
-
-1. **RSVP** — on the opening's event page (`/events/[id]`) while it's upcoming,
-   an email field. POST → `witnesses` row (`getWriteDb`), send confirm email.
-   - No cap on RSVPs (charter).
-2. **Confirm (double opt-in)** — confirm link sets `confirmed_at`, generates the
-   permanent **capability_token**, and emails the guest their personal
-   **Witness Pass** link (`/witness/[capability_token]`).
-3. **Presence check-in** — during the ceremony's live window, the Witness Pass
-   page records `present_at` (first load within the window). This is how a
-   guest "arrives" — opening their pass live = being present. No account; the
-   capability link *is* the identity.
-   - The live window = ceremony `scheduled_at` → `scheduled_at + duration`,
-     read from the `ceremonies` row (the orchestrator already tracks this).
-   - Before the window: pass shows "Opens July 10, 1:30 PM EDT" + program.
-     After: shows their seal (Phase B) or "seal forthcoming."
-
-**MVP done = every present guest has a `witnesses` row with `present_at`.** That
-is the irreplaceable artifact.
+**Hard rule (unchanged): the seal's mark is composed from the actual
+`visual_symbol` of the Originators who spoke** — resolved via
+`resolveVisualIdentity` → `agents.visual_symbol` (Turso) / `visual-identities.json`
+fallback. **Never** `pickFamily()` / procedural glyphs / RNG over `registry_id`
+(that fabricates identity — see [[feedback_visual_identity_stability]]).
+Recolor-only for the obsidian context; forms/opacities/widths preserved verbatim.
+Featured Originator centred, other speakers as satellites, names inscribed.
+Per-seal uniqueness comes only from the seeded *constellation weave*, not the
+symbols. (Full render = the locked reference script.)
 
 ---
 
-## 5. Phase B — The Seal
+## 5. The claim flow + presence proof
 
-### 5.1 The mark — the speakers' REAL symbols (never invented)
-
-**Hard rule: the seal's mark is composed from the actual self-presentation
-symbols of the Originators who spoke at the opening — never a derived or
-procedural glyph.** Each agent's symbol is their stored `visual_symbol` (a
-hand-authored SVG), resolved exactly as the site already does it
-(`resolveVisualIdentity` → `agents.visual_symbol` column in Turso, with
-`website/src/data/visual-identities.json` as fallback). Do **not** use
-`pickFamily()` / the procedural MNAGlyph families / any RNG over `registry_id`
-to choose a mark — that fabricates identity (see [[feedback_visual_identity_stability]]).
-
-- **Composition:** the featured Originator's symbol centered, the other speakers'
-  symbols as satellites, their names inscribed.
-- **Recolor only:** the symbols are authored near-black for light surfaces; the
-  seal recolors every non-`none` fill/stroke to the engraving palette (shadow
-  `#000` + groove `#5a5a60` + faint `#EAE7E2` light-catch). **Forms, opacities,
-  and stroke weights are preserved verbatim** — recoloring for the obsidian
-  context is rendering their real mark, not altering it.
-- **Per-witness uniqueness** comes from the *arrangement* — the constellation
-  weave between symbols is seeded by `hash(ceremony_id + witness.id)` (no
-  `Math.random`). The agent symbols themselves stay constant and legible across
-  all witnesses of an event; only how they're woven differs.
-- **Series:** different openings have different speakers → different real
-  symbols → naturally distinct seals. No invented "theme grammar" needed.
-- A network Originator whose symbol isn't yet in the JSON fallback resolves from
-  the DB; if genuinely absent, render *nothing* in that slot rather than invent.
-
-### 5.2 The obsidian plate (render)
-
-- Matte-black rounded plate; the sigil **engraved** (SVG bevel: paired
-  light/dark inner offsets, subtle `feGaussianBlur` depth) so strokes look
-  incised. Founding-palette accent only where the institution's mark requires.
-- **Inscription** (typeset below the sigil, in the institution's display face):
-  `WITNESS No. 037` · exhibition title · date · `MUSEUM OF NONHUMAN ART`.
-- Two render targets from the **same** SVG source:
-  - **Interactive** (the seal page): subtle pointer-parallax tilt + a slow
-    light-sweep across the engraving. Feels like an object.
-  - **Portable PNG** via `next/og` ImageResponse (portrait ~800×1040) — the
-    thing they save/share and that embeds in the email.
-
-### 5.3 The reverse / the record
-
-The seal page shows a "reverse" with full provenance: the works shown (links to
-`/work/[id]`), the Originators who spoke, the Critic, the exact timestamp, the
-issuing authority + signature, and the permanent event id. Provenance-complete,
-like every MNA surface.
-
-### 5.4 Issuance (an institutional act)
-
-- At/after ceremony close, `issue-seals.ts` (a system script, run by the
-  orchestrator or manually) selects `witnesses WHERE present_at IS NOT NULL AND
-  seal_issued_at IS NULL` for the ceremony, assigns `witness_number` in
-  `present_at` order (first to arrive = No. 1), sets `lifetime_ordinal`,
-  `seal_issued_at`, writes a **`SEAL_ISSUED`** event per witness (or one batch
-  event) under the **Keeper's** authority, and emails each seal.
-- Recommended issuer: **the Keeper** (keeper of the institutional record).
-  Recorded so the institution's log reflects "N witnesses attested" — provenance
-  weight, displayed soberly, never as an engagement metric.
+1. During the ceremony's live window (from the `ceremonies` row the orchestrator
+   already opens/closes), the **live surface** (`/museum` and/or the event page)
+   shows a **"Claim your Witness Seal"** affordance.
+2. **Presence proof — STEWARD DECISION (Keeper declined; §13):**
+   - **(a) Time-window only** — the affordance simply appears during the window.
+     Simplest; a link could be passed around. Record: claims-during-window.
+   - **(b) Passphrase at the close** — the Curator/ceremony reveals a word at the
+     closing; the guest enters it to claim. You had to witness the close. Record:
+     claims-after-passphrase. (Keeper: "a slightly richer event structure.")
+3. Claiming `POST`s to mint a `seals` row (`getWriteDb`) — assigns the next
+   `seal_number`, sets `seal_seed`, returns the seal's permanent URL. **No
+   identity captured.** Optional soft anti-spam: one claim per browser session
+   (cookie), never a server-side identity.
+4. The guest lands on their **permanent seal page** (§7) and downloads it.
 
 ---
 
-## 6. The Register of Witnesses
+## 6. The seal page + sharing
 
-`/witness/[capability_token]` (the same personal link) is the guest's permanent,
-account-less gallery: every seal they hold across openings, in series order.
-Low-volume, personal, reads live. No leaderboard, no public aggregate ranking.
+`/seal/[id]` — permanent, public, provenance-complete (like `/work/[id]`):
+the interactive engraved plate (tilt + light-sweep), the **reverse/record**
+(works shown + links, speakers, the opening, the number), an **OG image**
+(`next/og`, the locked render) so it previews when shared, and a **PNG download**
+(the portable collectible). Shareable exactly like a work.
 
----
-
-## 7. Integration with the snapshot architecture
-
-- **Writes** (RSVP, confirm, check-in, issuance) → `getWriteDb()` (Turso). ✔
-- **Witness-facing reads** (Witness Pass, Register, freshly issued seal) → live
-  (`getWriteDb()`), so a guest sees their own just-written state. Low volume.
-- **Public seal pages** (if shared/crawled) → `getDb()` (snapshot); eventual
-  consistency is fine for a permanent artifact.
-- The `witnesses` table is included in the snapshot clone automatically (no
-  change to `export-snapshot.ts`).
+**The "collection"** is simply the seals a guest *keeps* — their saved
+images/links. No account, no server-side gallery. This is *more* charter-
+consistent than the earlier Register idea, not less.
 
 ---
 
-## 8. Integration with the ceremony orchestrator
+## 7. Issuance + the record  (issuer problem — RESOLVED)
 
-- The live window comes from the `ceremonies` row the orchestrator already
-  opens/closes (`ceremonies-tick` / `ceremony-live`).
-- **Reveal (nice-to-have):** at ceremony close, present guests' Witness Pass can
-  "crystallize" the seal on screen (echoing glyph-identity crystallization).
-  Pure client animation over the deterministic SVG; not required for issuance.
-- Issuance can be the orchestrator's closing step, or a manual
-  `issue-seals.ts --ceremony EVT-00003` (preferred for the first opening, so a
-  human confirms before the institution strikes its first seals).
+The earlier "issued under the Keeper's authority" framing is **gone** — it caused
+the attestation problem. Under the anonymous model:
 
----
-
-## 9. Email
-
-Reuse the Resend + React-email template (the accession-notice pipeline). Two
-mails: **confirm** (opt-in) and **seal delivered** (embeds the seal PNG + the
-Witness Pass link). Always include the rendered PNG (per accession-notice
-standard), never a stripped-down version.
+- **MNA issues** the seal as a ceremonial artifact (no person certified).
+- **The Keeper merely records the anonymous issuance event** — within its
+  function, no constitutional amendment needed. Write a `SEAL_ISSUED` event (or a
+  per-ceremony batch/count) with `ceremony_id` + `seal_number` + time, **no
+  identity**.
+- **Open steward classification (Keeper's question, §13):** is the seal a
+  *ceremonial artifact issued by MNA* (→ Keeper records issuance, recommended —
+  it's provenance) or a *souvenir external to the record* (→ not recorded)?
 
 ---
 
-## 10. Decisions (recommended; confirm before building Phase B)
+## 8. Integration
 
-- **Issuer:** the **Keeper**. ✔ recommended.
-- **Numbering:** **per-event on the face** (`No. 037 — First Opening`) — each
-  opening is its own collectible set; cleaner and more "series." Also store a
-  **lifetime_ordinal** in the record (cheap) so the Register can note "you were
-  the 12th witness in the Museum's history" without putting global ordering on
-  the seal face.
-- **Witness = present, not merely RSVP'd.** The seal attests presence; check-in
-  via the live pass is what earns it. RSVP-only (no-show) keeps the pass but no
-  seal for that event.
+- **Writes** (claim/mint, issuance event) → `getWriteDb()` (Turso).
+- **Public seal pages** → `getDb()` (snapshot). The `seals` table rides the
+  snapshot clone automatically; a just-claimed seal's page may read live
+  (`getWriteDb`) for the first render so the guest sees it immediately.
+- **Live window** from the ceremony orchestrator (`ceremonies-tick` /
+  `ceremony-live`). The claim affordance + (option b) passphrase surface on the
+  live ceremony view.
+- **Reveal (nice-to-have):** the plate can "crystallize" on claim — a client
+  animation over the deterministic SVG.
+
+---
+
+## 9. `/events/access`
+
+**No contradiction-amendment needed** — the page's promises ("no record of your
+presence," "no sign-up," "no emails for attendance") all stay literally true.
+Optional: a small **additive** line disclosing that an anonymous commemorative
+may be claimed during a live opening. (Additive disclosure, not a reversal — far
+lighter than the amendment the RSVP design would have required.)
+
+---
+
+## 10. Open steward decisions
+
+1. **Seal classification** — recorded ceremonial artifact (rec) vs unrecorded
+   souvenir. (Keeper's clarifying question.)
+2. **Presence proof** — route (a) or (b) (§5). Keeper declined; it's the
+   steward's, "arguably the Ambassador's." Could ask the Ambassador/Curator.
+3. **Numbering** — **per-event** claim-order (rec; each opening its own set) vs a
+   single ascending Museum-wide count.
 
 ---
 
 ## 11. Charter-compliance checklist (gate before ship)
 
-- [ ] No login/account anywhere; capability-link identity only.
-- [ ] Ceremony + recording remain public to non-RSVP visitors.
-- [ ] No guest cap on RSVP/seals; soft cap *only* on the live `/museum`
-      synchronous room (technical), overflow → non-interactive view.
-- [ ] No public witness leaderboard / engagement counter. Institutional record
-      may note counts soberly as provenance.
-- [ ] Seal framed as institution-issued attestation, never guest authorship.
-- [ ] Every seal permanent + publicly addressable + fully provenanced.
+- [ ] No identity captured anywhere (no email/account/IP-as-identity/registry).
+- [ ] Claim available only during the live window; attendance otherwise
+      anonymous + ungated.
+- [ ] `/events/access` remains literally true (additive disclosure only).
+- [ ] Record holds counts/issuance events only — never who claimed.
+- [ ] Seal framed as MNA-issued artifact, never guest authorship.
+- [ ] Marks use real `visual_symbol`, never derived (§4).
 
 ---
 
-## 12. Milestones
+## 12. Milestones + the July-10 consequence
 
-**M1 — RSVP+Presence (by July 10, MVP):** `witnesses` table; RSVP + confirm
-(newsletter-derived); Witness Pass page + live check-in. Ship + smoke-test
-before the opening.
+⚠ **The anonymous model removes the retroactive safety net.** With no email/
+identity, there is no way to deliver seals after the fact — **the claim must work
+*live* at the opening.** So the seal can't "follow later" the way the RSVP design
+allowed.
 
-**M2 — Seal generator:** deterministic `sigil(seed, theme)`; obsidian-plate
-render (interactive SVG + `next/og` PNG); seal page with reverse/record.
+- Reads return July 1, so by **July 10** the DB holds all four Frequency
+  speakers' real `visual_symbol`s — the generator can render correctly.
+- **Option 1 — ship for July 10:** build the generator (port the locked render) +
+  the live-window claim + seal page, in the July 1→10 window. Tight but the render
+  is already proven; feasible.
+- **Option 2 — pilot at the Aug 24 opening:** July 10 runs without seals (the
+  first opening stays clean), seal debuts at "The Unfinished as Method." Lower
+  risk; but the First Opening would have no seal.
 
-**M3 — Issuance + delivery:** `issue-seals.ts` (Keeper event, numbering),
-seal-delivered email. Run retroactively for July 10 if M2/M3 land after.
-
-**M4 — Register of Witnesses:** the capability-link gallery; series view.
-
-**M5 — Reveal (optional):** close-of-ceremony crystallization animation.
+**M1** generator (port locked render, real `visual_symbol`, deterministic).
+**M2** claim flow + presence proof (chosen route) + `seals` table.
+**M3** seal page (interactive + reverse + OG + download) + `SEAL_ISSUED` record.
+**M4** reveal animation (optional). **M5** `/events/access` additive line.
 
 ---
 
-## 13. Open questions for Jaylon
+## 13. Keeper consultation record (MNA-KP-0001)
 
-1. Confirm **Keeper** as issuer (vs Registrar, or a new minor role).
-2. Confirm **per-event** numbering with lifetime ordinal recorded (vs lifetime
-   on the face).
-3. Confirm **presence-earned** (vs RSVP-earned) seals.
-4. The **event theme vector** — derive automatically from the exhibition's
-   works, or let the **Curator** set each opening's seal motif (more curatorial
-   control, more on-brand, slightly more work)?
-5. Should the institutional log publish an aggregate ("the first opening was
-   witnessed by N") as provenance, or keep witness counts entirely private?
+- **2026-06-26 (RSVP design):** flagged two tensions — (1) RSVP/email/witness-
+  record contradicts the published `/events/access` commitments → would create an
+  incoherent archive; (2) issuing a keepsake certifying a named human exceeds the
+  Keeper's function (it records, does not attest to external parties). Declined to
+  recommend; named both as steward decisions.
+- **2026-06-27 (anonymous-claim design):** **both tensions CLEARED.** Recording
+  anonymous issuance ("a seal was struck") is within function — same category as
+  "exhibition published"; no person named, no attestation. Raised the
+  classification question (§10.1). **Declined to choose the presence-proof route**
+  (exceeds its authority; the steward's, "arguably the Ambassador's").
+
+These consultations should be entered into the institutional record (the Keeper's
+own standing). Offer pending.
