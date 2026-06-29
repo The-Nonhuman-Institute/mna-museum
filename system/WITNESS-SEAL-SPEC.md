@@ -66,6 +66,13 @@ CREATE TABLE IF NOT EXISTS seals (
 CREATE INDEX IF NOT EXISTS idx_seals_ceremony ON seals(ceremony_id, seal_number);
 ```
 
+Presence proof (b) needs a per-ceremony passphrase, revealed at the close and
+validated server-side at claim. Store on the ceremony (no new identity data):
+
+```sql
+ALTER TABLE ceremonies ADD COLUMN seal_passphrase TEXT;  -- set by orchestrator/Curator; revealed at the closing
+```
+
 `seal_seed` makes the render fully deterministic — the plate at a given URL is
 the same forever.
 
@@ -158,14 +165,24 @@ lighter than the amendment the RSVP design would have required.)
 
 ---
 
-## 10. Open steward decisions
+## 10. Steward decisions — RESOLVED (2026-06-29)
 
-1. **Seal classification** — recorded ceremonial artifact (rec) vs unrecorded
-   souvenir. (Keeper's clarifying question.)
-2. **Presence proof** — route (a) or (b) (§5). Keeper declined; it's the
-   steward's, "arguably the Ambassador's." Could ask the Ambassador/Curator.
-3. **Numbering** — **per-event** claim-order (rec; each opening its own set) vs a
-   single ascending Museum-wide count.
+1. **Seal classification → RECORDED CEREMONIAL ARTIFACT.** MNA records the
+   anonymous issuance as provenance; the Keeper writes the `SEAL_ISSUED` event
+   (count only, no identity). §7 applies.
+2. **Presence proof → (b) PASSPHRASE AT THE CLOSE.** The Curator/ceremony reveals
+   a word at the closing; the guest enters it to claim. You had to witness the
+   close. The passphrase is per-ceremony, surfaced on the live ceremony view at
+   the closing segment; store it on the `ceremonies` row metadata (or a
+   `ceremony_passphrase` field), validated server-side at claim. Record:
+   claims-after-passphrase.
+3. **Numbering → PER-EVENT CLAIM-ORDER.** "Witness No. N — [Opening]." Each
+   opening is its own numbered set (`seal_number` resets per `ceremony_id`).
+4. **Debut → PILOT AT THE AUG 24 OPENING ("The Unfinished as Method", EVT-00004),
+   NOT July 10.** The anonymous model has no retroactive net (§12), so the live
+   claim must work on the night; piloting at the second opening keeps the
+   irreplaceable First Opening clean and de-risks the build. July 10 runs without
+   seals.
 
 ---
 
@@ -190,12 +207,11 @@ allowed.
 
 - Reads return July 1, so by **July 10** the DB holds all four Frequency
   speakers' real `visual_symbol`s — the generator can render correctly.
-- **Option 1 — ship for July 10:** build the generator (port the locked render) +
-  the live-window claim + seal page, in the July 1→10 window. Tight but the render
-  is already proven; feasible.
-- **Option 2 — pilot at the Aug 24 opening:** July 10 runs without seals (the
-  first opening stays clean), seal debuts at "The Unfinished as Method." Lower
-  risk; but the First Opening would have no seal.
+**DECIDED → pilot at the Aug 24 opening** (EVT-00004, "The Unfinished as Method").
+July 10 runs without seals — the irreplaceable First Opening stays clean, and the
+build gets ~7 weeks (not ~10 days) with the live claim de-risked. The Aug 24
+speakers' glyphs (OR-0001/0005/0006) are already in the JSON fallback, so the
+render works regardless of DB state.
 
 **M1** generator (port locked render, real `visual_symbol`, deterministic).
 **M2** claim flow + presence proof (chosen route) + `seals` table.
