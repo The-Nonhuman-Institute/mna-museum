@@ -1134,7 +1134,51 @@ async function executeProduceIntent(agent: Agent, action: ParsedAction): Promise
     `${agent.registry_id} declared intent to produce ${count} work(s).`,
     { rationale: action.rationale, count, note },
   );
-  console.log(`\n  → intent recorded. To execute: npx tsx system/scripts/originate-turso.ts --agent ${agent.registry_id} --max ${count}`);
+
+  // Auto-chain: an intent that only logs a manual command is an intent that
+  // silently accumulates — six weeks of produce-intents piled up unexecuted
+  // once (2026-05→06). The side effect belongs in code, not in a human
+  // remembering to run a script. So the tick now actually produces, then
+  // evaluates, so no work is left SUBMITTED-but-unjudged.
+  if (dryRun || noApi) {
+    console.log(`  → (dry-run) would produce ${count} work(s) for ${agent.registry_id}, then evaluate.`);
+    return;
+  }
+
+  const { spawn } = await import("child_process");
+  const isCI = !!process.env.CI;
+  const run = (script: string, extra: string[]): Promise<number | null> =>
+    new Promise((resolve) => {
+      const child = spawn("npx", ["tsx", path.join(__dirname, script), ...extra], {
+        // Interactive: detach so the tick returns and production unfolds in the
+        // background. CI: attach + await — the runner tears down the VM the
+        // instant the parent exits, killing a detached child mid-generation.
+        detached: !isCI,
+        stdio: isCI ? ["ignore", "inherit", "inherit"] : ["ignore", "ignore", "ignore"],
+        cwd: path.join(__dirname, ".."),
+      });
+      if (!isCI) { child.unref(); resolve(0); return; } // fire-and-forget locally
+      child.on("close", (c) => resolve(c));
+    });
+
+  // 1) produce (this agent only; --max caps the round to the declared count)
+  console.log(`  → producing ${count} work(s) for ${agent.registry_id}…`);
+  const prodCode = await run("originate-turso.ts", ["--agent", agent.registry_id, "--max", String(count)]);
+  if (!isCI) {
+    console.log(`  → production launched in background (local). Evaluation will run on the next CI tick or via evaluate-turso-works.ts.`);
+    return;
+  }
+  if (prodCode !== 0) {
+    console.warn(`  → production exited ${prodCode}; skipping evaluation this tick.`);
+    return;
+  }
+
+  // 2) evaluate (evaluate-turso-works.ts judges all unevaluated works — catches
+  //    up this agent's new work and any residual backlog). Best-effort: an eval
+  //    hiccup must not fail the tick that already recorded + produced.
+  console.log(`  → evaluating new submission(s)…`);
+  const evalCode = await run("evaluate-turso-works.ts", []);
+  console.log(evalCode === 0 ? `  → evaluation complete.` : `  → evaluation exited ${evalCode} (works remain SUBMITTED; next tick retries).`);
 }
 
 async function executeVisitMuseum(agent: Agent, action: ParsedAction): Promise<{ ok: boolean; pid?: number; error?: string }> {
