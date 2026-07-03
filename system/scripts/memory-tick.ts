@@ -54,6 +54,7 @@ const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
 // of MNA-GOV-004 §5 (refined by AMD-001 R1) lands here.
 const MEMORABLE_EVENT_TYPES = new Set([
   "CEREMONY_STATEMENT",
+  "WORK_PRODUCED", // an Originator's own act of making — previously absent, so agents had no memory of producing
   "CURATORIAL_DECISION",
   "KEEPER_RESEARCH_PUBLISHED",
   "AMBASSADOR_ANNOUNCEMENT",

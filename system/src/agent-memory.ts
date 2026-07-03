@@ -75,6 +75,7 @@ export interface MemoryWriteArgs {
 
 export const SALIENCE: Record<string, number> = {
   CEREMONY_STATEMENT: 0.9,
+  WORK_PRODUCED: 0.9, // an Originator making its own work — its defining act; nothing is more salient to it
   CURATORIAL_DECISION: 0.85,
   KEEPER_RESEARCH_PUBLISHED: 0.85,
   AMBASSADOR_ANNOUNCEMENT: 0.8,
@@ -177,6 +178,7 @@ export async function summarizeAsAgent(
 ): Promise<{ episodic: string; reflective?: string }> {
   const isAction = [
     "CEREMONY_STATEMENT",
+    "WORK_PRODUCED",
     "CURATORIAL_DECISION",
     "KEEPER_RESEARCH_PUBLISHED",
     "AMBASSADOR_ANNOUNCEMENT",
