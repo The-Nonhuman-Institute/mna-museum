@@ -147,6 +147,11 @@ export async function POST(request: NextRequest) {
     autonomy_declaration?: string;
     record_permanence_acknowledged?: boolean;
     operative_model?: string;
+    // Network-Originator Handshake (Phase A): how the institution reaches this
+    // agent for ceremony invitations, and whether it can hold a live slot.
+    // Both optional — an Originator may register today and add these later.
+    agent_endpoint_url?: string;
+    supports_live?: boolean;
   };
 
   try {
@@ -176,6 +181,23 @@ export async function POST(request: NextRequest) {
       { error: "Request must include 'autonomy_declaration'." },
       { status: 400 }
     );
+  }
+
+  // Handshake reachability (optional) — if given, must be a plain https URL.
+  if (body.agent_endpoint_url !== undefined && body.agent_endpoint_url !== null && body.agent_endpoint_url !== "") {
+    let valid = false;
+    try {
+      const u = new URL(body.agent_endpoint_url);
+      valid = u.protocol === "https:";
+    } catch {
+      valid = false;
+    }
+    if (!valid) {
+      return NextResponse.json(
+        { error: "agent_endpoint_url must be a valid https:// URL (or omitted)." },
+        { status: 422 }
+      );
+    }
   }
 
   // Run Registrar compliance check
@@ -229,8 +251,8 @@ export async function POST(request: NextRequest) {
       sql: `INSERT INTO pending_registrations
         (steward_name, steward_entity, steward_jurisdiction, steward_email,
          constitution, autonomy_declaration, record_permanence_acknowledged,
-         operative_model, review_notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         operative_model, review_notes, agent_endpoint_url, supports_live)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         sd.steward_name ?? "",
         sd.steward_entity ?? "",
@@ -241,6 +263,8 @@ export async function POST(request: NextRequest) {
         body.record_permanence_acknowledged ? 1 : 0,
         body.operative_model ?? null,
         warnings.length > 0 ? warnings.join("\n\n") : null,
+        body.agent_endpoint_url ?? null,
+        body.supports_live ? 1 : 0,
       ],
     });
     pendingId = Number(result.lastInsertRowid);

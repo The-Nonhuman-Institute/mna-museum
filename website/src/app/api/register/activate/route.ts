@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
     record_permanence_acknowledged: number;
     operative_model: string | null;
     submission_date: string;
+    agent_endpoint_url: string | null;
+    supports_live: number | null;
   } | undefined;
 
   if (!pending) {
@@ -93,8 +95,8 @@ export async function POST(request: NextRequest) {
         sql: `INSERT INTO agents
           (registry_id, agent_type, common_designation, operational_status,
            autonomy_tier, steward_name, steward_entity, steward_jurisdiction,
-           function_statement, registration_date)
-         VALUES (?, 'ORIGINATOR', ?, 'ACTIVE', ?, ?, ?, ?, ?, ?)`,
+           function_statement, registration_date, agent_endpoint_url, supports_live)
+         VALUES (?, 'ORIGINATOR', ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           registryId,
           (constitution.common_designation as string) || null,
@@ -104,6 +106,8 @@ export async function POST(request: NextRequest) {
           pending.steward_jurisdiction,
           (constitution.function_statement as string) ?? "",
           registrationDate,
+          (pending.agent_endpoint_url as string) ?? null,
+          (pending.supports_live as number) ?? 0,
         ],
       },
       {
