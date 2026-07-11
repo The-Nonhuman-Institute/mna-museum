@@ -182,3 +182,21 @@ export async function verifyAgentRequest(args: {
 
   return { ok: true, registryId };
 }
+
+/**
+ * Convenience for Next route handlers: authenticate an incoming agent request.
+ * The caller must pass the RAW body text (already read) so the signed hash
+ * matches exactly. The canonical path is the URL pathname (no query string).
+ */
+export async function authenticateAgent(
+  req: Request,
+  rawBody: string,
+): Promise<AgentAuthResult> {
+  const url = new URL(req.url);
+  return verifyAgentRequest({
+    method: req.method,
+    path: url.pathname,
+    headers: req.headers, // web Headers implements .get(name)
+    rawBody,
+  });
+}
