@@ -367,6 +367,11 @@ async function postToCommons(args: {
   statement: string;
   replyToId: string | null;
   workId: string | null;
+  /** Who authored the words: 'agent' (relayed, signature-verified) or
+   *  'institution' (voiced by the institution for its own founding agent). */
+  authoredBy: "agent" | "institution";
+  /** The agent's detached Ed25519 signature over the statement, when relayed. */
+  statementSignature?: string | null;
 }): Promise<string | null> {
   // Rehearsal mode never touches the institutional record. The
   // speech still broadcasts to PartyKit (so you can verify bubbles
@@ -394,6 +399,8 @@ async function postToCommons(args: {
           designation: args.agent.designation,
           work_id: args.workId,
           reply_to_id: args.replyToId,
+          authored_by: args.authoredBy,
+          statement_signature: args.statementSignature ?? null,
           idempotency_key: key,
         }),
       },
@@ -417,6 +424,8 @@ async function writeCeremonyTurnEvent(args: {
   slotRole: ScheduleSlot["role"];
   description: string;
   postId: string | null;
+  authoredBy: "agent" | "institution";
+  statementSignature?: string | null;
 }): Promise<number | null> {
   if (dryRun || rehearsal) return null;
   const r = await db.execute({
@@ -430,10 +439,36 @@ async function writeCeremonyTurnEvent(args: {
         slot_index: args.slotIndex,
         slot_role: args.slotRole,
         commons_post_id: args.postId,
+        // Provenance — the label that ends the puppetry. Every ceremony turn
+        // now truthfully records who authored the words.
+        authored_by: args.authoredBy,
+        statement_signature: args.statementSignature ?? null,
       }),
     ],
   });
   return r.lastInsertRowid != null ? Number(r.lastInsertRowid) : null;
+}
+
+/**
+ * A network originator's own, signature-verified statement for this ceremony.
+ * Returns null when the agent submitted nothing — in which case the slot
+ * abstains rather than fabricating a voice (Phase C handshake contract).
+ */
+async function loadNetworkStatement(
+  ceremonyId: string,
+  registryId: string,
+): Promise<{ body: string; signature: string | null; verified: boolean } | null> {
+  const r = await db.execute({
+    sql: `SELECT body, signature, verified FROM ceremony_statements WHERE ceremony_id = ? AND registry_id = ?`,
+    args: [ceremonyId, registryId],
+  });
+  if (r.rows.length === 0) return null;
+  const row = r.rows[0] as Record<string, unknown>;
+  return {
+    body: String(row.body),
+    signature: row.signature == null ? null : String(row.signature),
+    verified: Number(row.verified) === 1,
+  };
 }
 
 async function updateCeremonyStatus(
@@ -742,26 +777,67 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
     return;
   }
 
-  // Build the autonomy-preserving prompt for this exact moment.
-  const prompt = await buildPromptForSlot({
-    ceremony,
-    slot,
-    slotIndex,
-    agent: speaker,
-    attendees,
-    works: ctx.works,
-    transcript,
-  });
-
-  console.log(`  → calling ${MODEL} as ${speaker.designation}...`);
+  // Whose words are these? Founding agents ARE the institution and are
+  // voiced by it. A network originator's words are their own — the
+  // institution NEVER generates them. It relays the signed statement they
+  // submitted, or, if they submitted none, the slot abstains in honest
+  // silence. This branch is the whole point of the handshake.
   let text: string;
-  try {
-    text = await generateSpeech(prompt);
-  } catch (e) {
-    console.warn(`  [error] speech generation failed: ${e}`);
-    return;
+  let authoredBy: "agent" | "institution";
+  let statementSignature: string | null = null;
+
+  if (speaker.is_network) {
+    const stmt = await loadNetworkStatement(ceremony.id, speakerId);
+    if (!stmt) {
+      console.log(
+        `  [abstain] network originator ${speakerId} submitted no statement — the slot stays silent (no fabricated voice)`,
+      );
+      if (!dryRun && !rehearsal) {
+        await db.execute({
+          sql: `INSERT INTO events (event_type, agent_id, description, metadata) VALUES (?, ?, ?, ?)`,
+          args: [
+            "CEREMONY_TURN_ABSTAINED",
+            speakerId,
+            `${speaker.designation} held the floor at slot ${slotIndex} of ${ceremony.id} but submitted no statement; the slot abstained.`,
+            JSON.stringify({
+              ceremony_id: ceremony.id,
+              slot_index: slotIndex,
+              slot_role: slot.role,
+              reason: "no_statement_submitted",
+            }),
+          ],
+        });
+      }
+      return;
+    }
+    text = stmt.body;
+    authoredBy = "agent";
+    statementSignature = stmt.signature;
+    console.log(
+      `  ${speaker.designation} [relayed · agent-authored${stmt.verified ? " · sig ✓" : ""}]: ${text.slice(0, 200)}${text.length > 200 ? "…" : ""}`,
+    );
+  } else {
+    // Build the autonomy-preserving prompt for this exact moment.
+    const prompt = await buildPromptForSlot({
+      ceremony,
+      slot,
+      slotIndex,
+      agent: speaker,
+      attendees,
+      works: ctx.works,
+      transcript,
+    });
+
+    console.log(`  → calling ${MODEL} as ${speaker.designation}...`);
+    try {
+      text = await generateSpeech(prompt);
+    } catch (e) {
+      console.warn(`  [error] speech generation failed: ${e}`);
+      return;
+    }
+    authoredBy = "institution";
+    console.log(`  ${speaker.designation}: ${text.slice(0, 200)}${text.length > 200 ? "…" : ""}`);
   }
-  console.log(`  ${speaker.designation}: ${text.slice(0, 200)}${text.length > 200 ? "…" : ""}`);
 
   if (dryRun) {
     transcript.push({
@@ -808,6 +884,8 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
     statement: text,
     replyToId,
     workId: null,
+    authoredBy,
+    statementSignature,
   });
 
   // 3) Institutional event for /log.
@@ -816,8 +894,10 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
     ceremonyId: ceremony.id,
     slotIndex,
     slotRole: slot.role,
-    description: `${speaker.designation} spoke at slot ${slotIndex} of ${ceremony.id}.`,
+    description: `${speaker.designation} ${authoredBy === "agent" ? "delivered their statement" : "spoke"} at slot ${slotIndex} of ${ceremony.id}.`,
     postId,
+    authoredBy,
+    statementSignature,
   });
 
   // 4) Inline memory write so the next slot can retrieve this one.
@@ -870,7 +950,14 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
   // "originator" slot for them.
   if (slot.role === "curator_qa" && slot.speaker_id) {
     const addressee = attendees.byId.get(slot.speaker_id);
-    if (addressee) {
+    if (addressee && addressee.is_network) {
+      // A network originator cannot answer a live question with a
+      // pre-composed statement — live Q&A is Phase D. The institution will
+      // not put words in their mouth, so the question stands unanswered.
+      console.log(
+        `  [abstain-response] ${slot.speaker_id} is a network originator — live Q&A is Phase D; the Curator's question stands unanswered (no fabricated voice)`,
+      );
+    } else if (addressee) {
       const addressedSocket = connections.get(slot.speaker_id);
       if (!addressedSocket) {
         console.log(`  [absent-response] ${slot.speaker_id} not connected; the Curator's question hangs`);
@@ -907,6 +994,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
           statement: responseText,
           replyToId: postId,
           workId: null,
+          authoredBy: "institution",
         });
         const responseEventId = await writeCeremonyTurnEvent({
           agentId: addressee.registry_id,
@@ -915,6 +1003,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
           slotRole: "originator",
           description: `${addressee.designation} responded to the Curator at slot ${slotIndex} of ${ceremony.id}.`,
           postId: responsePostId,
+          authoredBy: "institution",
         });
         if (responseEventId != null && !dryRun && !rehearsal) {
           try {

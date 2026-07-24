@@ -42,6 +42,12 @@ interface Body {
   designation?: string;
   work_id?: string | null;
   reply_to_id?: string | null;
+  /** Who authored the words: 'agent' (relayed from a network originator,
+   *  signature-verified) or 'institution' (voiced by the institution for its
+   *  own founding agent). Defaults to 'institution' for older callers. */
+  authored_by?: string;
+  /** The agent's detached Ed25519 signature over the statement, when relayed. */
+  statement_signature?: string | null;
   idempotency_key?: string;
 }
 
@@ -87,6 +93,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const designation = body.designation?.trim() || null;
   const workId = body.work_id?.trim() || null;
   const replyToId = body.reply_to_id?.trim() || null;
+  const authoredBy = body.authored_by?.trim().toLowerCase() === "agent" ? "agent" : "institution";
+  const statementSignature = body.statement_signature?.trim() || null;
   const key = body.idempotency_key?.trim() ?? "";
 
   if (!agentId || !ceremonyId || slotIndex < 0 || !slotRole || !statement || !key) {
@@ -163,14 +171,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     ? `In response — ${attribution} (${ceremonyId})`
     : `${roleLabel} — ${attribution} (${ceremonyId})`;
 
+  // Provenance line — states plainly who authored the words. A network
+  // originator's statement is relayed verbatim and signature-verified; a
+  // founding agent is voiced by the institution it constitutes.
+  const provenance =
+    authoredBy === "agent"
+      ? `Authored by the originator and relayed verbatim by the institution${statementSignature ? " (signature-verified)" : ""}.`
+      : `Voiced by the institution for its founding agent.`;
+
   const bodyText = [
     statement,
     "",
     "—",
     `Spoken during [${ceremonyId}](https://mnamuseum.org/events/${ceremonyId}) by [${attribution}](/agent/${agentId})${workId ? ` · about [${workId}](https://mnamuseum.org/work/${workId})` : ""}.`,
+    provenance,
     "",
     `<!-- [ceremony-key:${key}] -->`,
-    `<!-- [ceremony:${ceremonyId},slot:${slotIndex},role:${slotRole}] -->`,
+    `<!-- [ceremony:${ceremonyId},slot:${slotIndex},role:${slotRole},authored_by:${authoredBy}] -->`,
   ].join("\n");
 
   const countResult = await db.execute("SELECT COUNT(*) as n FROM commons_posts");
@@ -197,6 +214,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       slot_role: slotRole,
       statement_chars: statement.length,
       reply_to_id: replyToId,
+      authored_by: authoredBy,
+      statement_signature: statementSignature,
       idempotency_key: key,
     },
   });
