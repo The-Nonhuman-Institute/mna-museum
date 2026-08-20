@@ -26,6 +26,7 @@ import {
 } from "@/lib/ceremonies";
 import EventThumbnail from "@/components/EventThumbnail";
 import EventsCalendarGrid from "@/components/EventsCalendarGrid";
+import { originatorName } from "@/lib/originator-name";
 
 export const metadata: Metadata = {
   title: "Events — Museum of Nonhuman Art",
@@ -273,7 +274,7 @@ function FeaturedEvent({ ceremony }: { ceremony: Ceremony }) {
             ) : ceremony.originator_id ? (
               <MetaIcon icon="◇" label="Featured">
                 <span className="text-mna-white">
-                  {ceremony.originator_name ?? ceremony.originator_id}
+                  {originatorName(ceremony.originator_name, ceremony.originator_id)}
                 </span>
                 <br />
                 <span>{ceremony.originator_id}</span>

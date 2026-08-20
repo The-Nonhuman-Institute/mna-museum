@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getWork } from "@/lib/collection";
+import { originatorName } from "@/lib/originator-name";
 
 /**
  * Dynamic Open Graph image for /work/[id] pages.
@@ -226,7 +227,7 @@ export default async function WorkOGImage({
                 marginTop: 12,
               }}
             >
-              by {work.originator_id}
+              by {originatorName(work.originator_name, work.originator_id)}
             </div>
           </div>
 

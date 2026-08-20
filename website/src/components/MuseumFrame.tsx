@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { originatorName as resolveOriginator } from "@/lib/originator-name";
 
 type FrameType = "1x1" | "3x4" | "16x9" | "21x9";
 
@@ -120,7 +121,9 @@ export default function MuseumFrame({
       {showPlacard && (workId || originatorId) && (
         <div className="mt-3 text-center">
           {(originatorName || originatorId) && (
-            <p className="text-[11px] text-[#8a8680]">{originatorName || originatorId}</p>
+            <p className="text-[11px] text-[#8a8680]">
+              {resolveOriginator(originatorName, originatorId ?? "")}
+            </p>
           )}
           {phase && (
             <p className="text-[9px] text-[#8a8680]/60 uppercase tracking-wider mt-0.5">

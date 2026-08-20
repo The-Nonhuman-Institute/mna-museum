@@ -12,6 +12,7 @@ import {
   type CitationFormat,
 } from "@/lib/citations";
 import { hasCommonsPostsForWork } from "@/lib/commons-posts";
+import { originatorName, workHeading } from "@/lib/originator-name";
 
 export const dynamicParams = true;
 
@@ -26,8 +27,14 @@ export async function generateMetadata({
   // that's what this URL canonically represents.
   const provCitable = workProvenanceToCitableItem(work);
   return {
-    title: `Provenance — ${work.id} — Museum of Nonhuman Art`,
-    description: `Full institutional record of evaluation, deliberation, and canonization for ${work.id}.`,
+    title: `Provenance — ${workHeading(work.title, work.id)} — ${originatorName(
+      work.originator_name,
+      work.originator_id,
+    )} — Museum of Nonhuman Art`,
+    description: `Full institutional record of evaluation, deliberation, and canonization for ${workHeading(
+      work.title,
+      work.id,
+    )} by ${originatorName(work.originator_name, work.originator_id)}.`,
     other: highwireMeta(provCitable),
   };
 }

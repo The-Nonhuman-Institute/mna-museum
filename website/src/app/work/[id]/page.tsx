@@ -12,6 +12,11 @@ import WorkDisplay from "@/components/WorkDisplay";
 import ViewingNote from "@/components/ViewingNote";
 import ShareButtons from "@/components/ShareButtons";
 import { resolveBackContext, type RawSearchParams } from "@/lib/nav-context";
+import {
+  originatorName,
+  workHeading,
+  hasTitle,
+} from "@/lib/originator-name";
 import CitationBlock from "@/components/CitationBlock";
 import {
   workToCitableItem,
@@ -54,17 +59,21 @@ export async function generateMetadata({
   // automatically read these when a researcher saves the URL, so MNA
   // works become citable without manual metadata entry on their end.
   const citable = workToCitableItem(work);
+  // Name the work and its Originator. A share card or a search result that
+  // reads "MNA-OR-0001" addresses Grid by a handle they no longer go by.
+  const byline = originatorName(work.originator_name, work.originator_id);
+  const heading = workHeading(work.title, work.id);
   return {
-    title: `${work.id} — ${work.originator_id} — Museum of Nonhuman Art`,
-    description: `${work.medium} work by ${work.originator_id}. Status: ${statusLabel}. Phase ${work.phase_at_submission || "I"}.`,
+    title: `${heading} — ${byline} — Museum of Nonhuman Art`,
+    description: `${work.medium} work by ${byline}. Status: ${statusLabel}. Phase ${work.phase_at_submission || "I"}.`,
     openGraph: {
-      title: `${work.id} — ${work.originator_id}`,
-      description: `${work.medium} work by ${work.originator_id}. ${statusLabel}.`,
+      title: `${heading} — ${byline}`,
+      description: `${work.medium} work by ${byline}. ${statusLabel}.`,
       siteName: "Museum of Nonhuman Art",
     },
     twitter: {
       card: "summary_large_image",
-      title: `${work.id} — ${work.originator_id}`,
+      title: `${heading} — ${byline}`,
       description: `${work.medium} work. ${statusLabel}.`,
     },
     other: highwireMeta(citable),
@@ -194,8 +203,10 @@ export default async function WorkDetailPage({
     (e: { verdict: string }) => e.verdict === "CANON"
   ).length;
   const totalVotes = work.evaluations.length;
-  const hasEmerged = agent && agent.designation !== "[Pending Emergence]";
-  const displayName = hasEmerged ? agent!.designation : work.originator_id;
+  const displayName = originatorName(
+    agent?.designation ?? work.originator_name,
+    work.originator_id,
+  );
 
   // Prev/next within the canon, sorted oldest → newest by canon_date
   const sortedCanon = [...canonList]
@@ -285,14 +296,21 @@ export default async function WorkDetailPage({
             </div>
 
             <h1 className="font-display text-3xl md:text-4xl text-ink leading-[1.05] mb-3 break-words">
-              {work.id}
+              {workHeading(work.title, work.id)}
             </h1>
 
-            {work.title && (
-              <p className="font-display italic text-[22px] md:text-[24px] text-ink/80 leading-snug mb-7">
-                {work.title}
+            {/* The catalogue number keeps its place — beside the name, not
+                instead of it. Suppressed when the work is untitled, since the
+                heading is already the id. */}
+            {hasTitle(work.title) && (
+              <p className="font-sans text-[11px] uppercase tracking-[0.22em] text-ink/50 mb-2">
+                {work.id}
               </p>
             )}
+
+            <p className="font-display italic text-[22px] md:text-[24px] text-ink/80 leading-snug mb-7">
+              {originatorName(work.originator_name, work.originator_id)}
+            </p>
 
             {currentExhibitions.length > 0 && (
               <div className="mb-5 border border-ink/15 bg-bone px-4 py-3">

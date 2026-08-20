@@ -20,6 +20,7 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
+import { originatorName } from "./originator-name";
 
 // ─── Types — accept the same shape /api/work/[id] returns ──────────────────
 
@@ -27,6 +28,7 @@ export interface ProvenanceData {
   work: {
     id: string;
     originator_id: string;
+    originator_name: string | null;
     medium: string;
     output_type: string;
     title: string | null;
@@ -477,7 +479,7 @@ export default function ProvenancePdfDocument({
           <Text style={styles.coverId}>{work.id}</Text>
           <Text style={styles.coverTitle}>{title}</Text>
           <Text style={styles.coverByline}>
-            By {work.originator_id}
+            By {originatorName(work.originator_name, work.originator_id)}
           </Text>
 
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
@@ -520,7 +522,9 @@ export default function ProvenancePdfDocument({
           </View>
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>Originator</Text>
-            <Text style={styles.metaValueMono}>{work.originator_id}</Text>
+            <Text style={styles.metaValue}>
+              {originatorName(work.originator_name, work.originator_id)}
+            </Text>
           </View>
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>Medium</Text>
@@ -677,7 +681,8 @@ export default function ProvenancePdfDocument({
           </Text>
           <Text style={styles.timelineLabel}>Submitted</Text>
           <Text style={styles.timelineDescription}>
-            Work submitted to the institutional record by {work.originator_id}.
+            Work submitted to the institutional record by{" "}
+            {originatorName(work.originator_name, work.originator_id)}.
           </Text>
         </View>
         {council.map((ev, i) => (

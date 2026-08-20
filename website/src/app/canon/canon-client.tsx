@@ -8,6 +8,7 @@ import WorkCard from "@/components/WorkCard";
 import WorkDisplay from "@/components/WorkDisplay";
 import InstitutionalSelect from "@/components/InstitutionalSelect";
 import { formatDate } from "@/lib/format-date";
+import { originatorLabel } from "@/lib/originator-name";
 
 type PhaseFilter = "ALL" | "I" | "II" | "III" | "IV";
 
@@ -35,18 +36,6 @@ const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "
 /** Detail-page href that carries the listing's filter state for the back link. */
 function workHrefWithQs(id: string, qs?: string): string {
   return `/work/${id}?from=canon${qs ? `&fromQs=${encodeURIComponent(qs)}` : ""}`;
-}
-
-function originatorLabel(name: string | null | undefined, id: string): string {
-  const n = (name || "").trim();
-  if (
-    n &&
-    n.toUpperCase() !== "PENDING_EMERGENCE" &&
-    n !== "[Pending Emergence]"
-  ) {
-    return n.toUpperCase();
-  }
-  return id;
 }
 
 /** "2026-04-24" → "APR 24, 2026" */

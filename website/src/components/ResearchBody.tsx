@@ -5,6 +5,7 @@ import Link from "next/link";
 import { marked } from "marked";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "./WorkDisplay";
+import { originatorName } from "@/lib/originator-name";
 
 /**
  * Convert a string of inline markdown (**bold**, *italic*, `code`,
@@ -79,7 +80,7 @@ function WorkModal({
         <div className="text-center mt-4">
           <p className="text-[12px] font-sans text-muted">{work.id}</p>
           <p className="text-[13px] text-foreground mt-1">
-            {work.originator_id}
+            {originatorName(work.originator_name, work.originator_id)}
             <span className="text-muted"> — {work.medium}</span>
           </p>
           <p className="text-[10px] text-muted/60 mt-1 uppercase tracking-wider">

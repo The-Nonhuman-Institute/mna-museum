@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Work } from "@/lib/collection";
 import WorkCard from "@/components/WorkCard";
 import InstitutionalSelect from "@/components/InstitutionalSelect";
+import { originatorLabel } from "@/lib/originator-name";
 
 type StatusFilter = "ALL" | "CANON" | "REJECTED" | "IN_REVIEW";
 type PhaseFilter = "ALL" | "I" | "II" | "III" | "IV";
@@ -22,18 +23,6 @@ function formatDateMono(dateStr: string | null | undefined): string {
   const [y, m, d] = datePart.split("-");
   if (!y || !m || !d) return dateStr;
   return `${MONTHS_SHORT[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
-}
-
-function originatorLabel(name: string | null | undefined, id: string): string {
-  const n = (name || "").trim();
-  if (
-    n &&
-    n.toUpperCase() !== "PENDING_EMERGENCE" &&
-    n !== "[Pending Emergence]"
-  ) {
-    return n.toUpperCase();
-  }
-  return id;
 }
 
 function StatCell({

@@ -50,8 +50,11 @@ export async function GET(
 
   // ── Work ──────────────────────────────────────────────────────────────────
   const workResult = await db.execute({
-    sql: `SELECT id, originator_id, medium, output_type, title, created_at
-            FROM works WHERE id = ?`,
+    sql: `SELECT w.id, w.originator_id, w.medium, w.output_type, w.title,
+                 w.created_at, a.common_designation AS originator_name
+            FROM works w
+            LEFT JOIN agents a ON a.registry_id = w.originator_id
+           WHERE w.id = ?`,
     args: [workId],
   });
   if (workResult.rows.length === 0) {
@@ -64,6 +67,7 @@ export async function GET(
   const work = {
     id: wr.id as string,
     originator_id: wr.originator_id as string,
+    originator_name: (wr.originator_name as string) || null,
     medium: wr.medium as string,
     output_type: wr.output_type as string,
     title: (wr.title as string) || null,
