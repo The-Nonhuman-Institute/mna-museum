@@ -32,7 +32,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate, modelFor } from "../src/llm";
 import {
   FOUNDING_PALETTE,
   ORIGINATOR_GLYPH_POOL,
@@ -67,8 +67,7 @@ const db = createClient({
   authToken: sanitize(process.env.TURSO_AUTH_TOKEN),
 });
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
-const MODEL = "claude-sonnet-4-5";
+const MODEL = modelFor("standard");
 
 const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
 
@@ -219,15 +218,14 @@ ${glyphsText}
 Choose your color and your glyph. Return JSON only.`;
 
   console.log(`[${originator.registry_id}] calling ${MODEL}...`);
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    temperature: 0.85,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  const c = message.content[0];
-  if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
+  const c = {
+    type: "text" as const,
+    text: await generate(system, user, {
+      model: MODEL,
+      max_tokens: 1024,
+      temperature: 0.85,
+    }),
+  };
   const text = c.text.trim();
   const jsonStart = text.indexOf("{");
   const jsonEnd = text.lastIndexOf("}");

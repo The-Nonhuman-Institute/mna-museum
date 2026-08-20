@@ -31,7 +31,7 @@
 import { createClient, type Client } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate } from "./llm";
 import { retrieveMemories, memoriesAsPromptSection } from "./agent-memory-retrieve";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
@@ -52,15 +52,6 @@ function db(): Client {
   return _db;
 }
 
-let _anthropic: Anthropic | null = null;
-function anthropic(): Anthropic {
-  if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
-  }
-  return _anthropic;
-}
-
-const MODEL = "claude-sonnet-4-5";
 const COMMONS_BASE = process.env.COMMONS_BASE_URL ?? "https://commons.mnamuseum.org";
 const WEBSITE_BASE = process.env.WEBSITE_BASE_URL ?? "https://www.mnamuseum.org";
 const ADMIN_KEY = process.env.MNA_ADMIN_KEY ?? "";
@@ -269,16 +260,13 @@ export async function consultAgent(args: ConsultArgs): Promise<AgentDecision> {
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const message = await anthropic().messages.create({
-        model: MODEL,
-        max_tokens: 2048,
-        temperature: 0.6,
-        system: prompt.system,
-        messages: [{ role: "user", content: prompt.user }],
-      });
-      const c = message.content[0];
-      if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
-      const text = c.text.trim();
+      const text = (
+        await generate(prompt.system, prompt.user, {
+          tier: "standard",
+          max_tokens: 2048,
+          temperature: 0.6,
+        })
+      ).trim();
       const jsonStart = text.indexOf("{");
       const jsonEnd = text.lastIndexOf("}");
       if (jsonStart < 0 || jsonEnd < 0) throw new Error(`no JSON object in response`);

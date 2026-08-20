@@ -15,18 +15,8 @@
  * via callbacks. The driver is `system/scripts/memory-consolidate.ts`.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { generate } from "./llm";
 import { blobToVector, cosineSimilarity } from "./embeddings";
-
-const MODEL = "claude-sonnet-4-5";
-
-let _anthropic: Anthropic | null = null;
-function anthropic(): Anthropic {
-  if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
-  }
-  return _anthropic;
-}
 
 /* ─── types ───────────────────────────────────────────────────────────── */
 
@@ -143,18 +133,9 @@ ${memoryList}
 
 Write the consolidated memory.`;
 
-  const message = await anthropic().messages.create({
-    model: MODEL,
-    max_tokens: 600,
-    temperature: 0.55,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  const c = message.content[0];
-  if (c.type !== "text") {
-    throw new Error(`unexpected response type: ${c.type}`);
-  }
-  let text = c.text.trim();
+  let text = (
+    await generate(system, user, { tier: "standard", max_tokens: 600, temperature: 0.55 })
+  ).trim();
   // Strip any accidental wrapping (quotes, JSON braces, code fences).
   text = text
     .replace(/^```[a-z]*\s*/i, "")

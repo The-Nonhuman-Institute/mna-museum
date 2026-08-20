@@ -32,7 +32,7 @@
  *   npx tsx system/scripts/curator-agent.ts                # compose and persist
  *   npx tsx system/scripts/curator-agent.ts --dry-run      # compose, print, do not persist
  */
-import Anthropic from "@anthropic-ai/sdk";
+import { generateStructured, modelFor } from "../src/llm";
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
@@ -55,7 +55,7 @@ if (!TURSO_URL || !TURSO_TOKEN || !ANTHROPIC_KEY) {
 
 // Use the same Opus model id the Spotlight composer uses, for parity with the
 // rest of the institution. Upgrade across all callers if/when we move models.
-const MODEL = "claude-opus-4-5";
+const MODEL = modelFor("deep");
 
 const CURATOR_CONSTITUTION_PATH = path.join(
   __dirname, "..", "..", "founding-documents", "agents",
@@ -73,7 +73,6 @@ const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 
 const db = createClient({ url: TURSO_URL, authToken: TURSO_TOKEN });
-const anthropic = new Anthropic({ apiKey: ANTHROPIC_KEY });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -488,42 +487,15 @@ interface CompositionPayload {
 // ─── Compose ─────────────────────────────────────────────────────────────────
 
 async function compose(systemPrompt: string, userMessage: string): Promise<CompositionPayload> {
-  console.log("[Curator] Calling Opus with full constitution as system prompt (streaming)...");
-  // Streaming is required for long requests (16k max_tokens may exceed the
-  // 10-minute non-streaming threshold). Final message is reconstructed at end.
-  const stream = anthropic.messages.stream({
-    model: MODEL,
-    max_tokens: 16000,
-    system: systemPrompt,
-    tools: [COMPOSITION_TOOL],
-    tool_choice: { type: "tool", name: "submit_curatorial_composition" },
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  let lastReportedTokens = 0;
-  stream.on("text", () => {
-    /* tool-call streaming doesn't emit much text — placeholder */
-  });
-  stream.on("inputJson", (_partial, _snapshot) => {
-    // crude heartbeat: roughly every 1000 output tokens, log
-    const tokens = Math.floor((stream as unknown as { _outputTokens?: number })._outputTokens || 0);
-    if (tokens - lastReportedTokens >= 1000) {
-      lastReportedTokens = tokens;
-      console.log(`[Curator] streaming... ${tokens} output tokens so far`);
-    }
-  });
-
-  const message = await stream.finalMessage();
-
-  const toolUse = message.content.find((c) => c.type === "tool_use");
-  if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error("Curator did not call the submit_curatorial_composition tool");
-  }
-  const usage = message.usage;
-  console.log(
-    `[Curator] Composition received. Input tokens: ${usage.input_tokens}, output tokens: ${usage.output_tokens}.`
+  console.log(`[Curator] Calling ${MODEL} with full constitution as system prompt...`);
+  const payload = await generateStructured<CompositionPayload>(
+    systemPrompt,
+    userMessage,
+    COMPOSITION_TOOL,
+    { tier: "deep", max_tokens: 16000 },
   );
-  return toolUse.input as CompositionPayload;
+  console.log("[Curator] Composition received.");
+  return payload;
 }
 
 // ─── Persist ──────────────────────────────────────────────────────────────────

@@ -45,7 +45,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate, modelFor } from "../src/llm";
 import PartySocket from "partysocket";
 import WS from "ws";
 import { writeMemoryFromEvent } from "../src/agent-memory";
@@ -76,7 +76,6 @@ const db = createClient({
   authToken: sanitize(process.env.TURSO_AUTH_TOKEN),
 });
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
 
 const PARTY_HOST =
   process.env.PARTY_HOST ||
@@ -92,7 +91,7 @@ const ADMIN_KEY = process.env.MNA_ADMIN_KEY ?? "";
 // reasoning headroom). We don't downshift to Haiku here — these are
 // the few institutional moments where speech quality matters more
 // than throughput.
-const MODEL = "claude-sonnet-4-5";
+const MODEL = modelFor("standard");
 
 // Speech bubble TTL — long enough for the audience to read a 1500-
 // char statement at ceremony pace, short enough that it clears before
@@ -679,15 +678,14 @@ async function generateSpeech(prompt: { system: string; user: string }): Promise
   const maxAttempts = 4;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const message = await anthropic.messages.create({
-        model: MODEL,
-        max_tokens: 1024,
-        temperature: 0.85,
-        system: prompt.system,
-        messages: [{ role: "user", content: prompt.user }],
-      });
-      const c = message.content[0];
-      if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
+      const c = {
+        type: "text" as const,
+        text: await generate(prompt.system, prompt.user, {
+          model: MODEL,
+          max_tokens: 1024,
+          temperature: 0.85,
+        }),
+      };
       let text = c.text.trim();
       if (
         (text.startsWith('"') && text.endsWith('"')) ||

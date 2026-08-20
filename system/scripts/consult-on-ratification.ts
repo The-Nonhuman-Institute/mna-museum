@@ -20,7 +20,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate, modelFor } from "../src/llm";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -50,8 +50,7 @@ const db = createClient({
   url: sanitize(process.env.TURSO_DATABASE_URL),
   authToken: sanitize(process.env.TURSO_AUTH_TOKEN),
 });
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
-const MODEL = "claude-sonnet-4-5";
+const MODEL = modelFor("standard");
 
 const GOV004_PATH = path.join(
   __dirname,
@@ -177,15 +176,14 @@ async function consult(agent: Agent): Promise<Decision> {
   const prompt = buildPrompt(agent, gov004, gov005);
 
   console.log(`[${agent.registry_id}] calling ${MODEL}...`);
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 4096,
-    temperature: 0.6,
-    system: prompt.system,
-    messages: [{ role: "user", content: prompt.user }],
-  });
-  const c = message.content[0];
-  if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
+  const c = {
+    type: "text" as const,
+    text: await generate(prompt.system, prompt.user, {
+      model: MODEL,
+      max_tokens: 4096,
+      temperature: 0.6,
+    }),
+  };
   const text = c.text.trim();
   const jsonStart = text.indexOf("{");
   const jsonEnd = text.lastIndexOf("}");

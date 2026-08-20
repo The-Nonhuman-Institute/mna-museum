@@ -21,7 +21,7 @@
  */
 
 import { createClient } from "@libsql/client";
-import { generateWithVision } from "./claude";
+import { generateWithVision, visionAvailable } from "./llm";
 import {
   retrieveMemories,
   memoriesAsPromptSection,
@@ -223,6 +223,13 @@ function buildUserPrompt(args: PerceiveArgs, memorySection: string): string {
 }
 
 export async function perceive(args: PerceiveArgs): Promise<PerceiveResult> {
+  // Not every provider has a vision model. Perception is an enhancement to a
+  // museum visit, not a precondition for one — when the active provider can't
+  // see, the visit proceeds without a recorded perception rather than failing.
+  if (!visionAvailable()) {
+    return { ok: false, error: "vision unavailable for the active LLM provider" };
+  }
+
   try {
     // Memory retrieval (MNA-GOV-004 §6). The query is the moment: the
     // work, the role's framing, and the optional ceremony context.

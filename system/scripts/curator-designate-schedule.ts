@@ -28,7 +28,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate, modelFor } from "../src/llm";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -51,8 +51,7 @@ const db = createClient({
   authToken: sanitize(process.env.TURSO_AUTH_TOKEN),
 });
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
-const MODEL = "claude-sonnet-4-5";
+const MODEL = modelFor("standard");
 
 interface CeremonyRow {
   id: string;
@@ -246,15 +245,14 @@ ${criticsText}
 Designate the schedule and one Critic. Return JSON only.`;
 
   console.log(`[curator] calling ${MODEL}...`);
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 4096,
-    temperature: 0.7,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  const content = message.content[0];
-  if (content.type !== "text") throw new Error(`unexpected response type: ${content.type}`);
+  const content = {
+    type: "text" as const,
+    text: await generate(system, user, {
+      model: MODEL,
+      max_tokens: 4096,
+      temperature: 0.7,
+    }),
+  };
   const text = content.text.trim();
   const jsonStart = text.indexOf("{");
   const jsonEnd = text.lastIndexOf("}");

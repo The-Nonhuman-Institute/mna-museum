@@ -18,7 +18,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate, modelFor } from "../src/llm";
 import { writeMemory } from "../src/agent-memory";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
@@ -36,8 +36,7 @@ const db = createClient({
   url: sanitize(process.env.TURSO_DATABASE_URL),
   authToken: sanitize(process.env.TURSO_AUTH_TOKEN),
 });
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
-const MODEL = "claude-sonnet-4-5";
+const MODEL = modelFor("standard");
 
 const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
 
@@ -129,15 +128,14 @@ Constraints:
 
   const user = `Write your semantic memories. 3-5 short first-person statements that anchor your voice. Return JSON only.`;
 
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    temperature: 0.7,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  const c = message.content[0];
-  if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
+  const c = {
+    type: "text" as const,
+    text: await generate(system, user, {
+      model: MODEL,
+      max_tokens: 1024,
+      temperature: 0.7,
+    }),
+  };
   const text = c.text.trim();
   const jsonStart = text.indexOf("{");
   const jsonEnd = text.lastIndexOf("}");

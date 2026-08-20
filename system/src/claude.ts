@@ -1,141 +1,24 @@
 /**
- * Claude API client — uses Anthropic SDK for high-quality agent output.
- * Reads API key from system/.env file.
- */
-
-import Anthropic from "@anthropic-ai/sdk";
-import dotenv from "dotenv";
-import path from "path";
-
-// Load .env from system/ directory
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
-
-const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-4-5";
-
-let client: Anthropic | null = null;
-
-function getClient(): Anthropic {
-  if (!client) {
-    const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) {
-      throw new Error(
-        "ANTHROPIC_API_KEY not set. Create system/.env with ANTHROPIC_API_KEY=your-key"
-      );
-    }
-    client = new Anthropic({ apiKey: key });
-  }
-  return client;
-}
-
-export async function generate(
-  systemPrompt: string,
-  userPrompt: string,
-  options?: { temperature?: number; max_tokens?: number }
-): Promise<string> {
-  const anthropic = getClient();
-
-  // Retry up to 2 times on transient errors (content filter, rate limit)
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const message = await anthropic.messages.create({
-        model: MODEL,
-        max_tokens: options?.max_tokens ?? 2048,
-        temperature: options?.temperature ?? 0.8,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      });
-
-      const content = message.content[0];
-      if (content.type === "text") {
-        return content.text;
-      }
-      throw new Error(`Unexpected response type: ${content.type}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-
-      // Content filter — retry with slightly different temperature
-      if (msg.includes("content filtering") || msg.includes("blocked")) {
-        console.warn(`[CLAUDE] Content filter hit (attempt ${attempt + 1}/3) — retrying...`);
-        if (options) options.temperature = Math.min(1.0, (options.temperature ?? 0.8) + 0.05);
-        continue;
-      }
-
-      // Rate limit — wait and retry
-      if (msg.includes("rate_limit") || msg.includes("429")) {
-        console.warn(`[CLAUDE] Rate limited (attempt ${attempt + 1}/3) — waiting 10s...`);
-        await new Promise(r => setTimeout(r, 10000));
-        continue;
-      }
-
-      // Other errors — don't retry
-      throw err;
-    }
-  }
-
-  throw new Error("Claude API failed after 3 attempts");
-}
-
-/**
- * Vision variant — sends a single image alongside a text user message.
- * Uses Haiku by default (cheaper, faster, sufficient for short
- * observation). Override via the model option if a specific call needs
- * a stronger model.
+ * claude.ts — backward-compatible shim over the provider abstraction.
  *
- * The image is passed as a URL (not base64) — Anthropic accepts URL
- * sources for publicly reachable images, which keeps the wire payload
- * small. Use a base64 fallback only if the URL isn't network-reachable
- * from Anthropic's side.
+ * This module used to own the Anthropic client directly. It no longer
+ * does: the institution is provider-agnostic as of 2026-08-20, and all
+ * model access lives in ./llm.ts. This file remains so the scripts that
+ * already import it keep working unchanged.
+ *
+ * New code should import from "./llm" and pass a `tier`, not a model ID.
+ *
+ * @deprecated prefer ./llm
  */
-export async function generateWithVision(
-  systemPrompt: string,
-  userPrompt: string,
-  imageUrl: string,
-  options?: { temperature?: number; max_tokens?: number; model?: string },
-): Promise<string> {
-  const anthropic = getClient();
-  const model = options?.model ?? "claude-haiku-4-5-20251001";
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const message = await anthropic.messages.create({
-        model,
-        max_tokens: options?.max_tokens ?? 400,
-        temperature: options?.temperature ?? 0.7,
-        system: systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "image", source: { type: "url", url: imageUrl } },
-              { type: "text", text: userPrompt },
-            ],
-          },
-        ],
-      });
-      const content = message.content[0];
-      if (content.type === "text") return content.text;
-      throw new Error(`Unexpected response type: ${content.type}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("content filtering") || msg.includes("blocked")) {
-        if (options) options.temperature = Math.min(1.0, (options.temperature ?? 0.7) + 0.05);
-        continue;
-      }
-      if (msg.includes("rate_limit") || msg.includes("429")) {
-        await new Promise((r) => setTimeout(r, 10000));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error("Claude vision call failed after 3 attempts");
-}
+export {
+  generate,
+  generateWithVision,
+  isAvailable,
+  visionAvailable,
+  describeProvider,
+  modelFor,
+  PROVIDER,
+} from "./llm";
 
-export async function isAvailable(): Promise<boolean> {
-  try {
-    const key = process.env.ANTHROPIC_API_KEY;
-    return !!key;
-  } catch {
-    return false;
-  }
-}
+export type { Tier, Provider, GenOptions } from "./llm";

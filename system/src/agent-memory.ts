@@ -19,7 +19,7 @@
  */
 
 import { createClient, type Client } from "@libsql/client";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate } from "./llm";
 import dotenv from "dotenv";
 import path from "path";
 import { embedDocument, vectorToBlob } from "./embeddings";
@@ -42,17 +42,8 @@ function db(): Client {
   return _db;
 }
 
-let _anthropic: Anthropic | null = null;
-function anthropic(): Anthropic {
-  if (!_anthropic) {
-    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
-  }
-  return _anthropic;
-}
-
-// Haiku for summarization — cheap, fast, more than capable of producing
-// a single first-person sentence per memory.
-const SUMMARIZER_MODEL = "claude-haiku-4-5-20251001";
+// The "small" tier for summarization — cheap, fast, more than capable of
+// producing a single first-person sentence per memory. Resolves per provider.
 
 /* ─── types ───────────────────────────────────────────────────────────── */
 
@@ -229,16 +220,9 @@ ${metaText}
 
 Write your first-person memory. Return JSON only.`;
 
-  const message = await anthropic().messages.create({
-    model: SUMMARIZER_MODEL,
-    max_tokens: 512,
-    temperature: 0.7,
-    system,
-    messages: [{ role: "user", content: user }],
-  });
-  const c = message.content[0];
-  if (c.type !== "text") throw new Error(`unexpected response type: ${c.type}`);
-  const text = c.text.trim();
+  const text = (
+    await generate(system, user, { tier: "small", max_tokens: 512, temperature: 0.7 })
+  ).trim();
   const jsonStart = text.indexOf("{");
   const jsonEnd = text.lastIndexOf("}");
   if (jsonStart < 0 || jsonEnd < 0) {
