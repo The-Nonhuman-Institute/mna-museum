@@ -29,6 +29,14 @@ export interface Agent {
   registryId: string;
   agentType: AgentType;
   designation: string;
+  /**
+   * Whether the Originator has completed its first constitutional review
+   * (MNA-ACS-001 §VII). Distinct from having a name: §VII.III populates a
+   * common_designation only "if one develops", and MNA-OR-0005 emerged and
+   * declined to take one. Treating an absent name as "pending" would report a
+   * completed constitutional act as an unfinished one.
+   */
+  hasEmerged: boolean;
   autonomyTier: AutonomyTier;
   status: "ACTIVE";
   constitutionRef: string;
@@ -122,9 +130,15 @@ function mapRowToAgent(
   vi: VisualIdentity | undefined,
 ): Agent {
   const registryId = row.registry_id as string;
-  const designation = isEmergencePending(row.common_designation as string | null)
-    ? "[Pending Emergence]"
-    : (row.common_designation as string);
+  const hasEmerged = Number(row.has_emerged) === 1;
+  const named = !isEmergencePending(row.common_designation as string | null);
+  // Three states, not two: named; emerged but unnamed (show the registry id,
+  // which is what the rest of the site falls back to); not yet emerged.
+  const designation = named
+    ? (row.common_designation as string)
+    : hasEmerged
+      ? registryId
+      : "[Pending Emergence]";
 
   const autonomyTier = (row.autonomy_tier as string).startsWith("Tier 1")
     ? "Tier 1 — Full" as AutonomyTier
@@ -145,6 +159,7 @@ function mapRowToAgent(
     registryId,
     agentType: row.agent_type as AgentType,
     designation,
+    hasEmerged,
     autonomyTier,
     status: "ACTIVE",
     constitutionRef: `ACS-001 v${version}`,
@@ -189,7 +204,10 @@ function baseAgentQuery(hasVisCols: boolean): string {
                  a.steward_entity, a.steward_jurisdiction, a.function_statement,
                  a.registration_date,
                  c.version, c.declared_orientation, c.formal_tendencies,
-                 c.aversions, c.autonomy_declaration
+                 c.aversions, c.autonomy_declaration,
+                 EXISTS(SELECT 1 FROM events e
+                         WHERE e.agent_id = a.registry_id
+                           AND e.event_type = 'IDENTITY_EMERGENCE') AS has_emerged
                  ${hasVisCols ? ", c.visual_color, c.visual_symbol, c.visual_form" : ""}
           FROM agents a
           LEFT JOIN constitutions c ON a.registry_id = c.agent_id AND c.is_current = 1`;

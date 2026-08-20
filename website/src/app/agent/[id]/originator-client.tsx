@@ -313,6 +313,8 @@ interface Props {
   peerOriginators: {
     registryId: string;
     designation: string;
+    /** Completed its first constitutional review (§VII). Not the same as named. */
+    hasEmerged?: boolean;
     relation: string;
     strength: number;
   }[];
@@ -504,6 +506,15 @@ export default function OriginatorDetailClient({
           <p className="text-[11px] font-sans text-mna-white/55 mb-5">
             Active since {activeSince}
           </p>
+          {/* An Originator that has completed its review but taken no name is
+              not "pending" — §VII.III populates a designation only if one
+              develops. Saying so plainly keeps a completed constitutional act
+              from reading as an unfinished one. */}
+          {agent.hasEmerged && agent.designation === agent.registryId && (
+            <p className="text-[11px] font-sans text-mna-white/45 -mt-3 mb-5 leading-relaxed">
+              Emerged under §VII — no common designation taken.
+            </p>
+          )}
         </div>
 
         {/* Tagline */}
