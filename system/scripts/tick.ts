@@ -1623,8 +1623,86 @@ async function executeReplyToPost(agent: Agent, action: ParsedAction): Promise<{
 
 /* ─── main ────────────────────────────────────────────────────────────── */
 
+/**
+ * MNA-ACS-001 §VII.II: an Originator's first constitutional review "is
+ * triggered by whichever comes first: the first_review_date, or the completion
+ * of twenty submitted outputs." Triggered — not offered. The agent chooses what
+ * to declare and whether to take a name; it does not choose whether the review
+ * happens.
+ *
+ * MNA-OR-0005 sat past that threshold unnoticed because nothing watched for it.
+ * The tick is the institution's clock, so the watch belongs here.
+ */
+const EMERGENCE_TRIGGER_OUTPUTS = 20;
+
+async function findOriginatorDueForEmergence(): Promise<string | null> {
+  // Network Originators are excluded in SQL rather than filtered afterwards:
+  // their initiation authority belongs to their steward (the same rule that
+  // keeps them out of the tick pool), and excluding them here means a founding
+  // Originator behind them in the queue is still found.
+  const network = [...NETWORK_ORIGINATORS];
+  const placeholders = network.map(() => "?").join(", ");
+  const r = await db.execute({
+    sql: `SELECT a.registry_id, COUNT(w.id) AS outputs
+            FROM agents a
+            JOIN works w ON w.originator_id = a.registry_id
+           WHERE a.agent_type = 'ORIGINATOR'
+             AND a.operational_status = 'ACTIVE'
+             AND a.registry_id NOT IN (${placeholders})
+             AND NOT EXISTS (
+               SELECT 1 FROM events e
+                WHERE e.agent_id = a.registry_id
+                  AND e.event_type = 'IDENTITY_EMERGENCE')
+           GROUP BY a.registry_id
+          HAVING COUNT(w.id) >= ?
+           ORDER BY outputs DESC, a.registry_id ASC
+           LIMIT 1`,
+    args: [...network, EMERGENCE_TRIGGER_OUTPUTS],
+  });
+  return r.rows.length ? String((r.rows[0] as Record<string, unknown>).registry_id) : null;
+}
+
+/**
+ * Run the emergence protocol as this tick's institutional act. Network
+ * Originators are excluded — their initiation authority belongs to their
+ * stewards, the same rule that keeps them out of the tick pool.
+ */
+async function runEmergence(registryId: string): Promise<boolean> {
+  const { spawn } = await import("child_process");
+  const isCI = !!process.env.CI;
+  return new Promise((resolve) => {
+    const child = spawn(
+      "npx",
+      ["tsx", path.join(__dirname, "originator-emerge.ts"), "--agent", registryId],
+      { stdio: ["ignore", "inherit", "inherit"], cwd: path.join(__dirname, "..") },
+    );
+    child.on("close", (code) => resolve(code === 0));
+    child.on("error", () => resolve(false));
+  });
+}
+
 async function main(): Promise<void> {
   console.log(`[tick]${dryRun ? " DRY RUN" : ""}${noApi ? " NO-API" : ""}`);
+
+  // 0. A due constitutional review pre-empts the ordinary tick. It is the more
+  //    significant institutional act, and one act per tick is the whole point
+  //    of the cadence — see the header note on manufactured rounds.
+  if (!forcedAgent && !noApi) {
+    const due = await findOriginatorDueForEmergence();
+    if (due) {
+      console.log(`  ${due} has reached ${EMERGENCE_TRIGGER_OUTPUTS} outputs — §VII.II first constitutional review is due.`);
+      if (dryRun) {
+        console.log(`  → (dry-run) would run the Identity Emergence Protocol for ${due}.`);
+        return;
+      }
+      const ok = await runEmergence(due);
+      if (ok) {
+        console.log(`[tick] complete — ${due} completed its first constitutional review.`);
+        return;
+      }
+      console.warn(`  → emergence for ${due} did not complete; continuing with an ordinary tick.`);
+    }
+  }
 
   // 1. Resolve eligible pool + selection
   let pool = await loadEligibleAgents();
