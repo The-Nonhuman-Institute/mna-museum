@@ -27,6 +27,12 @@ on:
 
 permissions:
   contents: write
+  # Needed to dispatch deploy-website below. A push made with the default
+  # GITHUB_TOKEN does NOT trigger other workflows (GitHub's anti-recursion
+  # rule), so the snapshot commit alone never redeployed the site — it sat
+  # stale from 2026-07-24 to 2026-08-20 without anyone noticing. We dispatch
+  # the deploy explicitly instead of relying on the push trigger.
+  actions: write
 
 jobs:
   refresh:
@@ -52,6 +58,7 @@ jobs:
         run: npx tsx system/scripts/export-snapshot.ts
 
       - name: Commit + push snapshot if changed
+        id: commit
         run: |
           if [ ! -f website/data/snapshot.db ]; then
             echo "No snapshot produced (reads blocked or source empty) — skipping."
@@ -65,5 +72,17 @@ jobs:
           else
             git commit -m "chore(snapshot): refresh institution snapshot"
             git push
-            echo "Snapshot refreshed + pushed → website redeploys with fresh data."
+            echo "Snapshot refreshed + pushed."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Deploy the website with the fresh snapshot
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The push above cannot trigger deploy-website.yml on its own —
+          # GitHub suppresses workflow triggers for pushes authenticated with
+          # the default GITHUB_TOKEN. Dispatch it directly.
+          gh workflow run deploy-website.yml --ref master
+          echo "deploy-website dispatched → site redeploys with fresh data."
