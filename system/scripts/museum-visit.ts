@@ -592,7 +592,7 @@ async function selectAnchorWork(
       sql: `SELECT w.id FROM works w
               JOIN canon_status cs ON cs.work_id = w.id
              WHERE w.originator_id = ? AND cs.status = 'CANON'
-          ORDER BY cs.decided_at DESC LIMIT 1`,
+          ORDER BY cs.canon_date DESC LIMIT 1`,
       args: [agent.registry_id],
     });
     if (r.rows.length > 0) {
