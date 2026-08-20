@@ -64,7 +64,9 @@ export async function generateMetadata({
   const byline = originatorName(work.originator_name, work.originator_id);
   const heading = workHeading(work.title, work.id);
   return {
-    title: `${heading} — ${byline} — Museum of Nonhuman Art`,
+    // The root layout applies `template: "%s — Museum of Nonhuman Art"`, so
+    // appending it here too rendered the institution's name twice.
+    title: `${heading} — ${byline}`,
     description: `${work.medium} work by ${byline}. Status: ${statusLabel}. Phase ${work.phase_at_submission || "I"}.`,
     openGraph: {
       title: `${heading} — ${byline}`,

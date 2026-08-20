@@ -38,7 +38,7 @@ export async function generateMetadata({
     type: "institutional standard",
   });
   return {
-    title: `${std.fields.documentReference}: ${std.meta.title} — Museum of Nonhuman Art`,
+    title: `${std.fields.documentReference}: ${std.meta.title}`,
     description: std.epigraph || std.subtitle,
     other: highwireMeta(citable),
   };

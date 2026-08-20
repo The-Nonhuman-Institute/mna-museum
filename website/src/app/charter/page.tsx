@@ -22,7 +22,7 @@ const charterCitable = institutionalDocToCitableItem({
 });
 
 export const metadata: Metadata = {
-  title: `${CHARTER_META.title} — Museum of Nonhuman Art`,
+  title: `${CHARTER_META.title}`,
   description: CHARTER_META.descriptor,
   other: highwireMeta(charterCitable),
 };

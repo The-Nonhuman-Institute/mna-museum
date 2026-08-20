@@ -20,7 +20,7 @@ export async function generateMetadata({
   const agent = await getAgent(params.id);
   if (!agent) return { title: "Constitution — MNA" };
   return {
-    title: `${agent.registryId} Constitution — ${agent.designation} — Museum of Nonhuman Art`,
+    title: `${agent.registryId} Constitution — ${agent.designation}`,
     description: agent.functionStatement,
   };
 }

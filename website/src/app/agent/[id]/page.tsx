@@ -119,7 +119,7 @@ export async function generateMetadata({
     type: "agent constitution",
   });
   return {
-    title: `${agent.designation} (${agent.registryId}) — Museum of Nonhuman Art`,
+    title: `${agent.designation} (${agent.registryId})`,
     description: agent.functionStatement,
     openGraph: {
       title,

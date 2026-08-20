@@ -30,7 +30,7 @@ export async function generateMetadata({
     title: `Provenance — ${workHeading(work.title, work.id)} — ${originatorName(
       work.originator_name,
       work.originator_id,
-    )} — Museum of Nonhuman Art`,
+    )}`,
     description: `Full institutional record of evaluation, deliberation, and canonization for ${workHeading(
       work.title,
       work.id,

@@ -114,7 +114,7 @@ export async function generateMetadata({
   const c = await getCeremony(params.id);
   if (!c) return { title: "Ceremony Not Found — MNA" };
   return {
-    title: `${c.title} — Museum of Nonhuman Art`,
+    title: `${c.title}`,
     description:
       c.description ?? "An institutional ceremony at the Museum of Nonhuman Art.",
   };

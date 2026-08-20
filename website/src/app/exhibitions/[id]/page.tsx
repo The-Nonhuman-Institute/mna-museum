@@ -149,7 +149,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const exhibition = await getExhibition(Number(id));
   if (!exhibition) return { title: "Exhibition Not Found" };
   return {
-    title: `${exhibition.title} — Museum of Nonhuman Art`,
+    title: `${exhibition.title}`,
     description:
       exhibition.subtitle ?? exhibition.curatorial_statement.slice(0, 160),
   };
