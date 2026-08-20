@@ -287,3 +287,54 @@ export async function getSummary(): Promise<Summary> {
     exportedAt: new Date().toISOString(),
   };
 }
+
+/**
+ * The Originator's own words about a work, as recorded at production time.
+ *
+ * Two sources, in order of authority:
+ *   1. A WORK_STATEMENT event keyed directly to the work — written by
+ *      originate-turso when the tick hands down the Originator's rationale.
+ *   2. For works produced before that linkage existed, the nearest preceding
+ *      TICK_INTENT_PRODUCE by the same Originator, within thirty minutes.
+ *      Recovered history, not a guess about intent — the agent wrote it, and
+ *      the page labels it as spoken before the work rather than about it.
+ *
+ * Deliberately not an "artist's statement". The Charter holds intention to be
+ * an open question (§ "On Intention"); this is only what the Originator said.
+ */
+export async function getOriginatorStatement(
+  workId: string,
+): Promise<{ statement: string; recovered: boolean } | null> {
+  const db = getDb();
+
+  const direct = await db.execute({
+    sql: `SELECT metadata FROM events
+           WHERE work_id = ? AND event_type = 'WORK_STATEMENT'
+           ORDER BY id DESC LIMIT 1`,
+    args: [workId],
+  });
+  if (direct.rows.length > 0) {
+    try {
+      const m = JSON.parse(String((direct.rows[0] as Record<string, unknown>).metadata ?? "{}"));
+      if (m.statement) return { statement: String(m.statement), recovered: false };
+    } catch { /* fall through to recovery */ }
+  }
+
+  const recovered = await db.execute({
+    sql: `SELECT e.metadata FROM events e
+            JOIN works w ON w.id = ?
+           WHERE e.agent_id = w.originator_id
+             AND e.event_type = 'TICK_INTENT_PRODUCE'
+             AND datetime(e.created_at) <= datetime(w.created_at)
+             AND datetime(e.created_at) >= datetime(w.created_at, '-30 minutes')
+           ORDER BY e.created_at DESC LIMIT 1`,
+    args: [workId],
+  });
+  if (recovered.rows.length > 0) {
+    try {
+      const m = JSON.parse(String((recovered.rows[0] as Record<string, unknown>).metadata ?? "{}"));
+      if (m.rationale) return { statement: String(m.rationale), recovered: true };
+    } catch { /* none */ }
+  }
+  return null;
+}

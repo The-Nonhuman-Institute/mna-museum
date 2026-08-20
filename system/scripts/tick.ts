@@ -1163,7 +1163,13 @@ async function executeProduceIntent(agent: Agent, action: ParsedAction): Promise
 
   // 1) produce (this agent only; --max caps the round to the declared count)
   console.log(`  → producing ${count} work(s) for ${agent.registry_id}…`);
-  const prodCode = await run("originate-turso.ts", ["--agent", agent.registry_id, "--max", String(count)]);
+  // Hand the Originator's own rationale down with the invitation so it is
+  // recorded against the work itself, not inferred from a timestamp window.
+  const prodCode = await run("originate-turso.ts", [
+    "--agent", agent.registry_id,
+    "--max", String(count),
+    ...(action.rationale?.trim() ? ["--statement", action.rationale.trim()] : []),
+  ]);
   if (!isCI) {
     console.log(`  → production launched in background (local). Evaluation will run on the next CI tick or via evaluate-turso-works.ts.`);
     return;

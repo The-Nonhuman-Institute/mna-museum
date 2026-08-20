@@ -52,6 +52,15 @@ const agentIdx = args.indexOf("--agent");
 const targetAgent = agentIdx >= 0 ? args[agentIdx + 1] : null;
 const maxIdx = args.indexOf("--max");
 const maxPerOriginator = maxIdx >= 0 ? parseInt(args[maxIdx + 1], 10) : null;
+/**
+ * The Originator's own words about what it is about to make, handed down from
+ * the tick that invited it. Recorded against the work, so the institution can
+ * show what the agent said rather than inferring it from a timestamp window.
+ */
+const statementIdx = args.indexOf("--statement");
+const originatorStatement =
+  statementIdx >= 0 ? (args[statementIdx + 1] ?? "").trim() : "";
+
 const includeNetwork = args.includes("--include-network");
 const VISIT_COUNT = 4;
 
@@ -68,6 +77,14 @@ interface AgentRow {
   registry_id: string;
   agent_type: string;
   common_designation: string | null;
+  /**
+   * Whether the Originator has completed its first constitutional review
+   * (MNA-ACS-001 §VII). Derived from the IDENTITY_EMERGENCE event, NOT from
+   * common_designation — §VII.III lets an Originator emerge and decline a
+   * name, and MNA-OR-0005 did exactly that. Gating on the name would leave a
+   * fully emerged agent permanently unable to title its work.
+   */
+  has_emerged: boolean;
   function_statement: string;
   autonomy_tier: string;
 }
@@ -118,12 +135,20 @@ async function ensureVisitationSchema(): Promise<void> {
 
 async function loadActiveOriginators(): Promise<AgentRow[]> {
   const r = await db.execute(
-    "SELECT registry_id, agent_type, common_designation, function_statement, autonomy_tier FROM agents WHERE agent_type = 'ORIGINATOR' AND operational_status = 'ACTIVE' ORDER BY registry_id",
+    `SELECT a.registry_id, a.agent_type, a.common_designation, a.function_statement,
+            a.autonomy_tier,
+            EXISTS(SELECT 1 FROM events e
+                    WHERE e.agent_id = a.registry_id
+                      AND e.event_type = 'IDENTITY_EMERGENCE') AS has_emerged
+       FROM agents a
+      WHERE a.agent_type = 'ORIGINATOR' AND a.operational_status = 'ACTIVE'
+      ORDER BY a.registry_id`,
   );
   return r.rows.map((row) => ({
     registry_id: row.registry_id as string,
     agent_type: row.agent_type as string,
     common_designation: (row.common_designation as string) ?? null,
+    has_emerged: Number(row.has_emerged) === 1,
     function_statement: row.function_statement as string,
     autonomy_tier: row.autonomy_tier as string,
   }));
@@ -514,7 +539,7 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
   // ── Production
   const productionPrompt = buildProductionPrompt({
     workCount,
-    hasEmerged: !!(agent.common_designation && agent.common_designation !== "[Pending Emergence]"),
+    hasEmerged: agent.has_emerged,
     visitsContext,
     priorOwn,
     critiques,
@@ -546,10 +571,7 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
   // against "[Pending Emergence]" which never matched — letting a
   // title prefix through on any format, corrupting non-text works.
   let workTitle: string | null = null;
-  const hasEmerged =
-    !!agent.common_designation &&
-    agent.common_designation !== "PENDING_EMERGENCE" &&
-    agent.common_designation !== "[Pending Emergence]";
+  const hasEmerged = agent.has_emerged;
   if (
     hasEmerged &&
     (detected.format === "text" || detected.format === "ascii")
@@ -575,6 +597,41 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
     }
   }
 
+  // ── Titling for structured formats ────────────────────────────────────
+  // A title cannot ride on the front of an SVG or an HTML document without
+  // corrupting it, which is why titling was restricted to text/ascii. That
+  // restriction was never about the Originator's right to name its work — it
+  // was about the transport. So ask separately, once the work exists, and let
+  // the answer be no. Only emerged Originators are asked (MNA-ACS-001 §VII).
+  if (hasEmerged && !workTitle && detected.format !== "text" && detected.format !== "ascii") {
+    try {
+      const excerpt = payload.replace(/\s+/g, " ").slice(0, 1200);
+      const reply = await generate(
+        systemPrompt,
+        `You have just produced this ${detected.format} work:\n\n${excerpt}\n\n` +
+          `Title it, or decline. A title is yours to give or withhold — an untitled work is a ` +
+          `complete work, and the institution records it as untitled without prejudice.\n\n` +
+          `Reply with ONLY the title on a single line, or the single word NONE. No quotes, no commentary.`,
+        { temperature: 0.8, max_tokens: 60 },
+      );
+      const line = reply.trim().split("\n")[0]?.trim().replace(/^["'“”]|["'“”]$/g, "") ?? "";
+      if (line && line.toUpperCase() !== "NONE" && line.length <= 80) {
+        workTitle = line;
+        console.log(`  [${agent.registry_id}] titled it "${workTitle}"`);
+      } else {
+        console.log(`  [${agent.registry_id}] declined to title this work`);
+      }
+    } catch (e) {
+      // Titling is the Originator's prerogative, not a precondition for the
+      // work existing. A failure here must not lose the work.
+      console.warn(
+        `  [${agent.registry_id}] titling step failed (work is unaffected): ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+    }
+  }
+
   const workId = await nextWorkId(agent.registry_id);
   const visitIds = visits.map((v) => v.id);
 
@@ -582,6 +639,19 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
   // so the visit timestamp precedes the work_id reference downstream
   // queries will join on.
   await recordVisits(agent.registry_id, visitIds, `before ${workId}`);
+
+  if (originatorStatement) {
+    await db.execute({
+      sql: `INSERT INTO events (event_type, agent_id, work_id, description, metadata)
+            VALUES ('WORK_STATEMENT', ?, ?, ?, ?)`,
+      args: [
+        agent.registry_id,
+        workId,
+        `${agent.registry_id} on ${workId}, in its own words.`,
+        JSON.stringify({ statement: originatorStatement, source: "tick_intent" }),
+      ],
+    });
+  }
 
   await insertWork({
     workId,

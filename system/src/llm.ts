@@ -99,14 +99,21 @@ const OUT_OF_FUNDS = /credit balance is too low|insufficient_quota|insufficient_
 /** Retrying cannot fix a request that is structurally too large. */
 const TOO_LARGE = /request too large|reduce your message size/i;
 
-async function withRetry<T>(label: string, fn: (attempt: number) => Promise<T>): Promise<T> {
+type FailureKind = "empty" | "other" | null;
+
+async function withRetry<T>(
+  label: string,
+  fn: (attempt: number, lastFailure: FailureKind) => Promise<T>,
+): Promise<T> {
   let lastErr: unknown;
+  let lastFailure: FailureKind = null;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return await fn(attempt);
+      return await fn(attempt, lastFailure);
     } catch (err: unknown) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
+      lastFailure = /empty content/i.test(msg) ? "empty" : "other";
 
       if (OUT_OF_FUNDS.test(msg)) {
         throw new Error(
@@ -281,17 +288,20 @@ export async function generate(
   const o = options ?? {};
   const model = o.model ?? modelFor(o.tier ?? "standard");
 
-  return withRetry(`generate(${PROVIDER}/${model})`, async (attempt) => {
+  return withRetry(`generate(${PROVIDER}/${model})`, async (attempt, lastFailure) => {
     // Nudge temperature on retry — content filters are often temperature-sensitive.
-    // Escalate the token budget on retry: the commonest transient failure on a
-    // reasoning model is "reasoning ate the whole budget, content came back empty".
+    // Escalate the token budget only when the previous failure was an empty
+    // completion — the reasoning-model case where the budget was the problem.
+    // Never escalate after a rate-limit: a TPM rejection means the request was
+    // already too big for the window, and asking for more guarantees a repeat.
+    const grew = lastFailure === "empty";
     const opts: GenOptions =
       attempt === 0
         ? o
         : {
             ...o,
             temperature: Math.min(1.0, (o.temperature ?? 0.8) + 0.05 * attempt),
-            max_tokens: (o.max_tokens ?? 2048) * (attempt + 1),
+            ...(grew ? { max_tokens: (o.max_tokens ?? 2048) * (attempt + 1) } : {}),
           };
     switch (PROVIDER) {
       case "anthropic": return anthropicGenerate(systemPrompt, userPrompt, model, opts);

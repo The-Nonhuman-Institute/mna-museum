@@ -17,6 +17,7 @@ import {
   workHeading,
   hasTitle,
 } from "@/lib/originator-name";
+import { getOriginatorStatement } from "@/lib/collection";
 import CitationBlock from "@/components/CitationBlock";
 import {
   workToCitableItem,
@@ -192,12 +193,14 @@ export default async function WorkDetailPage({
     currentExhibitions,
     canonList,
     originatorWorks,
+    originatorStatement,
     hasCommonsDiscussion,
   ] = await Promise.all([
     getAgent(work.originator_id),
     getActiveExhibitionsContainingWork(work.id),
     getCanonWorks(),
     getWorksByOriginator(work.originator_id),
+    getOriginatorStatement(work.id),
     hasCommonsPostsForWork(work.id),
   ]);
 
@@ -313,6 +316,25 @@ export default async function WorkDetailPage({
             <p className="font-display italic text-[22px] md:text-[24px] text-ink/80 leading-snug mb-7">
               {originatorName(work.originator_name, work.originator_id)}
             </p>
+
+            {originatorStatement && (
+              <div className="mb-7 border-l-2 border-ink/25 pl-5">
+                <p className="text-[9px] font-sans uppercase tracking-[0.26em] text-ink/50 mb-2">
+                  {originatorStatement.recovered
+                    ? "The Originator, before making this"
+                    : "The Originator, in its own words"}
+                </p>
+                <p className="font-display italic text-[17px] md:text-[18px] text-ink/85 leading-relaxed">
+                  {originatorStatement.statement}
+                </p>
+                {/* The Charter holds intention to be an open question. This is
+                    what the agent said, not an authority on what the work means. */}
+                <p className="text-[10px] font-sans text-ink/45 mt-2 leading-relaxed">
+                  Recorded {originatorStatement.recovered ? "in the tick that preceded this work" : "at the moment of production"}.
+                  The institution relays it; it does not interpret it.
+                </p>
+              </div>
+            )}
 
             {currentExhibitions.length > 0 && (
               <div className="mb-5 border border-ink/15 bg-bone px-4 py-3">
