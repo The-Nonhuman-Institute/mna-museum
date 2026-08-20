@@ -103,14 +103,19 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const agent = await getAgent(params.id);
   if (!agent) return { title: "Agent Not Found — MNA" };
-  const title = `${agent.designation} (${agent.registryId})`;
+  // An Originator that emerged without taking a designation falls back to its
+  // registry id, so the usual "Name (ID)" form would print the id twice.
+  const title =
+    agent.designation === agent.registryId
+      ? agent.registryId
+      : `${agent.designation} (${agent.registryId})`;
   // Highwire meta tags for Zotero / Google Scholar / EndNote — agent
   // constitution is treated as a citeable institutional document.
   // Version is parsed out of constitutionRef ("ACS-001 v1.0" → "v1.0").
   const versionMatch = agent.constitutionRef.match(/v[\d.]+/i);
   const citable = institutionalDocToCitableItem({
     id: agent.registryId,
-    title: `${agent.designation} (${agent.registryId})`,
+    title,
     version: versionMatch ? versionMatch[0] : undefined,
     // Founding ratification date — matches the institutional founding
     // (initial commit / Charter ratification on 2026-03-29).
@@ -119,7 +124,7 @@ export async function generateMetadata({
     type: "agent constitution",
   });
   return {
-    title: `${agent.designation} (${agent.registryId})`,
+    title,
     description: agent.functionStatement,
     openGraph: {
       title,
