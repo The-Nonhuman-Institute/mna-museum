@@ -37,6 +37,8 @@ interface WorkCardProps {
    *  contextual back link. Omit to use the default fallback. */
   from?: NavSource;
   fromId?: string | number;
+  /** Listing filter state, forwarded so the work page can return to it. */
+  fromQs?: string;
 }
 
 function statusDot(canon_status: string): string {
@@ -153,13 +155,13 @@ function IconStrip({ activeKind }: { activeKind: IconKind }) {
   );
 }
 
-export default function WorkCard({ work, from, fromId }: WorkCardProps) {
+export default function WorkCard({ work, from, fromId, fromQs }: WorkCardProps) {
   const displayDate = work.canon_date ?? work.submission_date;
   const titleText = work.title?.trim() || "Untitled";
   const originator = formatOriginator(work);
   const kind = kindFor(work.output_type);
   const href = from
-    ? withNavFrom(`/work/${work.id}`, from, fromId)
+    ? withNavFrom(`/work/${work.id}`, from, fromId, fromQs)
     : `/work/${work.id}`;
 
   return (

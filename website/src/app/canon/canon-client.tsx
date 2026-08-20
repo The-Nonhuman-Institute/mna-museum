@@ -32,6 +32,11 @@ const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "
  *  ID rather than by a placeholder string like "PENDING_EMERGENCE" or
  *  "[Pending Emergence]". This keeps presentation consistent regardless
  *  of whether the placeholder field is filled or left empty. */
+/** Detail-page href that carries the listing's filter state for the back link. */
+function workHrefWithQs(id: string, qs?: string): string {
+  return `/work/${id}?from=canon${qs ? `&fromQs=${encodeURIComponent(qs)}` : ""}`;
+}
+
 function originatorLabel(name: string | null | undefined, id: string): string {
   const n = (name || "").trim();
   if (
@@ -325,7 +330,7 @@ function LegendRow({
 
 /* ─── Rejected works dark band ───────────────────────────────────────────── */
 
-function RejectedBand({ rejected }: { rejected: Work[] }) {
+function RejectedBand({ rejected, fromQs }: { rejected: Work[]; fromQs?: string }) {
   if (rejected.length === 0) return null;
   const featured = rejected.slice(0, 3);
 
@@ -361,7 +366,7 @@ function RejectedBand({ rejected }: { rejected: Work[] }) {
               return (
                 <Link
                   key={w.id}
-                  href={`/work/${w.id}?from=canon`}
+                  href={workHrefWithQs(w.id, fromQs)}
                   className="block group bg-[#121212] hover:bg-[#181818] transition-colors p-4"
                 >
                   <div className="relative aspect-square overflow-hidden mb-4 bg-[#1c1c1c]">
@@ -435,28 +440,77 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>(initialPhase);
   const [mode, setMode] = useState<DisplayMode>(initialMode);
   const [page, setPage] = useState<number>(initialPage);
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("CANONIZED");
-  const [originatorFilter, setOriginatorFilter] = useState<string>("ALL");
-  const [mediumFilter, setMediumFilter] = useState<string>("ALL");
-  const [tierFilter, setTierFilter] = useState<string>("ALL");
-  const [dateSort, setDateSort] = useState<"NEWEST" | "OLDEST">("NEWEST");
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  // Every filter is seeded from the URL, not just phase/mode/page. Otherwise
+  // returning from a work page resets the archive to canon — you would lose
+  // the Rejected view you were browsing on every back-navigation.
+  const [statusFilter, setStatusFilter] = useState<string>(
+    searchParams.get("status") ?? "CANONIZED",
+  );
+  const [originatorFilter, setOriginatorFilter] = useState<string>(
+    searchParams.get("originator") ?? "ALL",
+  );
+  const [mediumFilter, setMediumFilter] = useState<string>(
+    searchParams.get("medium") ?? "ALL",
+  );
+  const [tierFilter, setTierFilter] = useState<string>(
+    searchParams.get("tier") ?? "ALL",
+  );
+  const [dateSort, setDateSort] = useState<"NEWEST" | "OLDEST">(
+    searchParams.get("sort") === "OLDEST" ? "OLDEST" : "NEWEST",
+  );
   const [showTimeline, setShowTimeline] = useState(false);
 
   function pushUrl(next: {
     phase?: PhaseFilter;
     mode?: DisplayMode;
     page?: number;
+    status?: string;
+    originator?: string;
+    medium?: string;
+    tier?: string;
+    sort?: "NEWEST" | "OLDEST";
+    query?: string;
   }) {
     const phase = next.phase ?? phaseFilter;
     const m = next.mode ?? mode;
     const p = next.page ?? page;
+    const status = next.status ?? statusFilter;
+    const originator = next.originator ?? originatorFilter;
+    const medium = next.medium ?? mediumFilter;
+    const tier = next.tier ?? tierFilter;
+    const sort = next.sort ?? dateSort;
+    const q = next.query ?? query;
     const params = new URLSearchParams();
     if (phase !== "ALL") params.set("phase", phase);
     if (m !== "grid") params.set("mode", m);
     if (p > 1) params.set("page", String(p));
+    if (status !== "CANONIZED") params.set("status", status);
+    if (originator !== "ALL") params.set("originator", originator);
+    if (medium !== "ALL") params.set("medium", medium);
+    if (tier !== "ALL") params.set("tier", tier);
+    if (sort !== "NEWEST") params.set("sort", sort);
+    if (q.trim()) params.set("q", q.trim());
     const qs = params.toString();
     router.replace(`/canon${qs ? `?${qs}` : ""}`, { scroll: false });
+  }
+
+  /**
+   * The current filter state as a query string, handed to detail links so the
+   * work page's "Back to Canon" returns to the exact view being browsed.
+   */
+  function currentQs(): string {
+    const params = new URLSearchParams();
+    if (phaseFilter !== "ALL") params.set("phase", phaseFilter);
+    if (mode !== "grid") params.set("mode", mode);
+    if (page > 1) params.set("page", String(page));
+    if (statusFilter !== "CANONIZED") params.set("status", statusFilter);
+    if (originatorFilter !== "ALL") params.set("originator", originatorFilter);
+    if (mediumFilter !== "ALL") params.set("medium", mediumFilter);
+    if (tierFilter !== "ALL") params.set("tier", tierFilter);
+    if (dateSort !== "NEWEST") params.set("sort", dateSort);
+    if (query.trim()) params.set("q", query.trim());
+    return params.toString();
   }
 
   const updatePhase = (filter: PhaseFilter) => {
@@ -693,6 +747,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
               onChange={(v) => {
                 setStatusFilter(v);
                 setPage(1);
+                pushUrl({ status: v, page: 1 });
               }}
             />
             <FilterDropdown
@@ -702,6 +757,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
               onChange={(v) => {
                 setOriginatorFilter(v);
                 setPage(1);
+                pushUrl({ originator: v, page: 1 });
               }}
             />
             <FilterDropdown
@@ -711,6 +767,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
               onChange={(v) => {
                 setMediumFilter(v);
                 setPage(1);
+                pushUrl({ medium: v, page: 1 });
               }}
             />
             <FilterDropdown
@@ -720,13 +777,17 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
               onChange={(v) => {
                 setTierFilter(v);
                 setPage(1);
+                pushUrl({ tier: v, page: 1 });
               }}
             />
             <FilterDropdown
               label="Date"
               value={dateSort}
               options={dateOptions}
-              onChange={(v) => setDateSort(v as "NEWEST" | "OLDEST")}
+              onChange={(v) => {
+                setDateSort(v as "NEWEST" | "OLDEST");
+                pushUrl({ sort: v as "NEWEST" | "OLDEST" });
+              }}
             />
             <button
               onClick={() => {
@@ -843,7 +904,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
             {filtered.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
                 {pageWorks.map((work) => (
-                  <WorkCard key={work.id} work={work} from="canon" />
+                  <WorkCard key={work.id} work={work} from="canon" fromQs={currentQs()} />
                 ))}
               </div>
             ) : (
@@ -873,6 +934,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
             canon={filteredCanon}
             rejected={filteredRejected}
             filterKey={`${phaseFilter}|${statusFilter}|${originatorFilter}|${mediumFilter}|${tierFilter}|${query}|${dateSort}`}
+            fromQs={currentQs()}
           />
         )}
       </section>
@@ -891,7 +953,7 @@ function CanonContent({ canon, rejected, counts }: CanonClientProps) {
 
       {/* ── Rejected works dark band ────────────────────────────────────── */}
       <div className="px-5 md:px-8">
-        <RejectedBand rejected={rejected} />
+        <RejectedBand rejected={rejected} fromQs={currentQs()} />
       </div>
     </div>
   );
@@ -1008,10 +1070,12 @@ function SignalView({
   canon,
   rejected,
   filterKey,
+  fromQs,
 }: {
   canon: Work[];
   rejected: Work[];
   filterKey: string;
+  fromQs?: string;
 }) {
   type Event = { work: Work; status: "canon" | "rejected" };
   type PlacedEvent = Event & { xPx: number; row: number };
@@ -1477,7 +1541,7 @@ function SignalView({
               return (
                 <Link
                   key={`${e.work.id}-${idx}`}
-                  href={`/work/${e.work.id}?from=canon`}
+                  href={workHrefWithQs(e.work.id, fromQs)}
                   className="group absolute focus:outline-none"
                   style={{
                     left: e.xPx,

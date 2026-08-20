@@ -1,5 +1,5 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate } from "./llm";
 import { getInstitutionalTurso } from "./institutional-turso";
 
 /**
@@ -15,13 +15,7 @@ function sanitize(raw: string | undefined): string {
   return (raw || "").replace(/[\s\u0000-\u001F\u007F]/g, "");
 }
 
-const MODEL = sanitize(process.env.ANTHROPIC_MODEL) || "claude-sonnet-4-20250514";
 
-function getAnthropicClient(): Anthropic {
-  const key = sanitize(process.env.ANTHROPIC_API_KEY);
-  if (!key) throw new Error("ANTHROPIC_API_KEY not set");
-  return new Anthropic({ apiKey: key });
-}
 
 const CRITICS = [
   { id: "MNA-CR-0001", approach: "structural" },
@@ -37,7 +31,6 @@ export interface CritiqueResult {
 export async function critiqueWork(workId: string): Promise<CritiqueResult> {
   const start = Date.now();
   const db = getInstitutionalTurso();
-  const anthropic = getAnthropicClient();
 
   // Load work
   const workRow = await db.execute({
@@ -94,13 +87,18 @@ export async function critiqueWork(workId: string): Promise<CritiqueResult> {
       const systemPrompt = buildCriticSystemPrompt(a, c);
       const userPrompt = buildCriticUserPrompt(work, evals.rows, critic.approach);
 
-      const response = await anthropic.messages.create({
-        model: MODEL,
-        max_tokens: 2048,
-        temperature: 0.7,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      });
+      const response = {
+        content: [
+          {
+            type: "text" as const,
+            text: await generate(systemPrompt, userPrompt, {
+              tier: "standard",
+              maxTokens: 2048,
+              temperature: 0.7,
+            }),
+          },
+        ],
+      };
 
       const text = response.content[0]?.type === "text" ? response.content[0].text : "";
       return { critic_id: critic.id, approach: critic.approach, body: text };

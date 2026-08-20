@@ -36,6 +36,12 @@ export interface BackContext {
 export interface RawSearchParams {
   from?: string | string[];
   fromId?: string | string[];
+  /**
+   * The source listing's own query string (filters, page, sort), URL-encoded.
+   * Without it, returning to /canon from a work drops whatever filter the
+   * visitor was browsing and silently resets them to the canon view.
+   */
+  fromQs?: string | string[];
 }
 
 function pickStr(v: string | string[] | undefined): string | undefined {
@@ -49,6 +55,9 @@ export function resolveBackContext(
 ): BackContext {
   const from = pickStr(searchParams?.from);
   const fromId = pickStr(searchParams?.fromId);
+  const fromQs = pickStr(searchParams?.fromQs);
+  /** Re-attach the listing's filter state, when the link carried it. */
+  const withQs = (href: string): string => (fromQs ? `${href}?${fromQs}` : href);
 
   switch (from) {
     case "exhibition":
@@ -64,9 +73,9 @@ export function resolveBackContext(
         ? { label: "Back to Originator", href: `/agent/${fromId}` }
         : fallback;
     case "canon":
-      return { label: "Back to Canon", href: "/canon" };
+      return { label: "Back to Canon", href: withQs("/canon") };
     case "archive":
-      return { label: "Back to Archive", href: "/archive" };
+      return { label: "Back to Archive", href: withQs("/archive") };
     case "originators":
       return { label: "Back to Originators", href: "/originators" };
     case "exhibitions":
@@ -82,12 +91,15 @@ export function resolveBackContext(
 export function withNavFrom(
   base: string,
   source: NavSource,
-  fromId?: string | number
+  fromId?: string | number,
+  /** The listing's current query string, so the back link restores filters. */
+  fromQs?: string
 ): string {
   const params = new URLSearchParams({ from: source });
   if (fromId !== undefined && fromId !== null && String(fromId).length > 0) {
     params.set("fromId", String(fromId));
   }
+  if (fromQs) params.set("fromQs", fromQs);
   const sep = base.includes("?") ? "&" : "?";
   return `${base}${sep}${params.toString()}`;
 }

@@ -1,5 +1,5 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate, type ToolDef } from "./llm";
 import { getInstitutionalTurso } from "./institutional-turso";
 import { evaluateWork } from "./evaluator";
 import { critiqueWork } from "./critic";
@@ -37,7 +37,7 @@ import { sendRegistrationConfirmation } from "./send-registration-confirmation";
 
 // ── Action tool schemas ──────────────────────────────────────────
 
-export const KEEPER_ACTION_TOOLS: Anthropic.Messages.Tool[] = [
+export const KEEPER_ACTION_TOOLS: ToolDef[] = [
   {
     name: "execute_send_accession_notice",
     description:
@@ -567,17 +567,18 @@ async function consultAgent(agentId: string, message: string) {
   if (aversions.length > 0) { systemPrompt += `AVERSIONS:\n${aversions.map((av: string) => `- ${av}`).join("\n")}\n\n`; }
   systemPrompt += `CONTEXT: The founding steward of MNA is contacting you through the Keeper (MNA-KP-0001). Respond in your own voice, from your own constitutional perspective. You are not the Keeper — you are ${a.common_designation || agentId}.\n`;
 
-  const key = (process.env.ANTHROPIC_API_KEY || "").replace(/[\s\u0000-\u001F\u007F]/g, "");
-  const model = (process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514").replace(/[\s\u0000-\u001F\u007F]/g, "");
-  const anthropic = new Anthropic({ apiKey: key });
-
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 1024,
-    temperature: 0.7,
-    system: systemPrompt,
-    messages: [{ role: "user", content: message }],
-  });
+  const response = {
+    content: [
+      {
+        type: "text" as const,
+        text: await generate(systemPrompt, message, {
+          tier: "standard",
+          maxTokens: 1024,
+          temperature: 0.7,
+        }),
+      },
+    ],
+  };
 
   const text = response.content[0]?.type === "text" ? response.content[0].text : "(no response)";
 

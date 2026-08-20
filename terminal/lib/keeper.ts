@@ -1,6 +1,6 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
 import { getInstitutionalTurso } from "./institutional-turso";
+import { chatWithTools, type ChatTurn } from "./llm";
 import { KEEPER_TOOLS, runKeeperTool } from "./keeper-tools";
 
 /**
@@ -10,7 +10,7 @@ import { KEEPER_TOOLS, runKeeperTool } from "./keeper-tools";
  * constitution lives in the institutional Turso `agents` and
  * `constitutions` tables. This module loads that constitution on
  * first call, assembles a fresh institutional context snapshot on
- * every turn, and routes the conversation through the Anthropic
+ * every turn, and routes the conversation through the provider
  * Claude API.
  *
  * The chat transcript itself lives in the terminal's own Turso
@@ -23,38 +23,6 @@ import { KEEPER_TOOLS, runKeeperTool } from "./keeper-tools";
  * swap MODEL_PROVIDER and this module keeps working — the
  * lib/llm.ts abstraction handles the provider difference.
  */
-
-// ── Anthropic client (lazy, cached) ──────────────────────────────
-
-/**
- * Strip all whitespace and control characters from an env var value.
- * Vercel's env var UI sometimes injects invisible characters mid-value
- * when pasting long strings. For API keys and model names, any
- * non-printable character breaks the HTTP Authorization header.
- * Same sanitizer used in lib/db.ts and lib/institutional-turso.ts
- * for Turso tokens.
- */
-function sanitizeEnv(raw: string | undefined): string | undefined {
-  if (!raw) return raw;
-  return raw.replace(/[\s\u0000-\u001F\u007F]/g, "");
-}
-
-let _anthropic: Anthropic | null = null;
-function getAnthropic(): Anthropic {
-  if (_anthropic) return _anthropic;
-  const key = sanitizeEnv(process.env.ANTHROPIC_API_KEY);
-  if (!key) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not set in the terminal environment. " +
-        "Add it to terminal/.env (local) or Vercel env vars (prod)."
-    );
-  }
-  _anthropic = new Anthropic({ apiKey: key });
-  return _anthropic;
-}
-
-const DEFAULT_MODEL =
-  sanitizeEnv(process.env.ANTHROPIC_MODEL) || "claude-sonnet-4-20250514";
 
 // ── Constitution loading ─────────────────────────────────────────
 
@@ -415,11 +383,11 @@ export interface KeeperReply {
 /**
  * Non-streaming chat turn with tool-use support.
  *
- * Runs the Anthropic tool-use loop: each call can return either a
+ * Runs the provider-neutral tool-use loop: each call can return either a
  * final text response or a batch of tool calls. When tool calls come
  * back, we execute them locally (lib/keeper-tools.ts), feed the
  * results back as a user turn containing tool_result blocks, and
- * call Anthropic again. The loop terminates when the Keeper stops
+ * call the model again. The loop terminates when the Keeper stops
  * requesting tools (stop_reason === "end_turn") or hits a safety
  * cap on iterations.
  *
@@ -457,12 +425,14 @@ export async function keeperChatStreaming(
   emit: (event: StreamEvent) => void
 ): Promise<KeeperReply> {
   const systemPrompt = await buildSystemPrompt();
-  const anthropic = getAnthropic();
 
-  const messages: Anthropic.Messages.MessageParam[] = history.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
+  // Provider-neutral conversation. lib/llm.ts translates this into whichever
+  // wire format the active provider speaks, so nothing below is Anthropic-
+  // shaped any more.
+  const turns: ChatTurn[] = history.map((m) => ({
+    role: m.role as "user" | "assistant",
+    text: m.content,
+  })) as ChatTurn[];
 
   const toolsUsed: string[] = [];
   const MAX_ITERATIONS = 6;
@@ -484,95 +454,60 @@ export async function keeperChatStreaming(
     execute_issue_notice: "Issuing institutional notice",
   };
 
-  // ── Tool loop (non-streamed) ─────────────────────────────────────
-  for (let i = 0; i < MAX_ITERATIONS - 1; i++) {
-    emit({ type: "status", message: "Thinking..." });
+  let accumulated = "";
 
-    const response = await anthropic.messages.create({
-      model: DEFAULT_MODEL,
-      max_tokens: 2048,
-      temperature: 0.6,
-      system: systemPrompt,
-      tools: KEEPER_TOOLS,
-      messages,
+  // ── Tool loop ────────────────────────────────────────────────────
+  // The final turn is emitted as a single token event rather than
+  // streamed word-by-word: streaming is provider-specific, and the
+  // no-tool path below always worked this way already.
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    emit({
+      type: "status",
+      message: i === 0 ? "Thinking..." : "Composing response...",
     });
 
-    if (response.stop_reason !== "tool_use") {
+    const reply = await chatWithTools({
+      system: systemPrompt,
+      turns,
+      tools: KEEPER_TOOLS,
+      temperature: 0.6,
+      maxTokens: 2048,
+    });
+
+    if (reply.toolCalls.length === 0) {
       // No tool calls — this IS the final response.
-      // Extract text and return immediately (no streaming needed for
-      // a non-tool response because it's already complete).
-      const rawText = response.content
-        .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text")
-        .map((b) => b.text)
-        .join("\n\n");
-      const { text, suggestions } = extractSuggestions(rawText);
-      // Emit the full text as one token event for consistency
+      accumulated = reply.text;
+      const { text, suggestions } = extractSuggestions(accumulated);
       emit({ type: "token", text });
       emit({ type: "done", suggestions, tools_used: toolsUsed });
       return { text, suggestions, tools_used: toolsUsed };
     }
 
-    // Execute tool calls
-    const toolUseBlocks = response.content.filter(
-      (b): b is Anthropic.Messages.ToolUseBlock => b.type === "tool_use"
-    );
-    for (const block of toolUseBlocks) {
-      const label = TOOL_LABELS[block.name] || block.name;
-      emit({ type: "status", message: `${label}...` });
+    for (const call of reply.toolCalls) {
+      emit({
+        type: "status",
+        message: `${TOOL_LABELS[call.name] || call.name}...`,
+      });
     }
 
-    const toolResults = await Promise.all(
-      toolUseBlocks.map(async (block) => {
-        toolsUsed.push(block.name);
-        const input = (block.input as Record<string, unknown>) || {};
-        const result = await runKeeperTool(block.name, input);
-        const content =
-          typeof result === "string" ? result : JSON.stringify(result);
+    const results = await Promise.all(
+      reply.toolCalls.map(async (call) => {
+        toolsUsed.push(call.name);
+        const result = await runKeeperTool(call.name, call.input || {});
         return {
-          type: "tool_result" as const,
-          tool_use_id: block.id,
-          content,
+          id: call.id,
+          content: typeof result === "string" ? result : JSON.stringify(result),
         };
-      })
+      }),
     );
 
-    messages.push(
-      { role: "assistant", content: response.content },
-      { role: "user", content: toolResults }
+    turns.push(
+      { role: "assistant", text: reply.text, toolCalls: reply.toolCalls },
+      { role: "tool_results", results },
     );
-  }
-
-  // ── Final call (streamed) ────────────────────────────────────────
-  emit({ type: "status", message: "Composing response..." });
-
-  const stream = anthropic.messages.stream({
-    model: DEFAULT_MODEL,
-    max_tokens: 2048,
-    temperature: 0.6,
-    system: systemPrompt,
-    tools: KEEPER_TOOLS,
-    messages,
-  });
-
-  let accumulated = "";
-
-  stream.on("text", (text) => {
-    accumulated += text;
-    emit({ type: "token", text });
-  });
-
-  const finalMessage = await stream.finalMessage();
-
-  // If the streamed response ALSO called tools (shouldn't happen
-  // after MAX_ITERATIONS-1 non-streamed rounds, but defensive), fall
-  // back to the accumulated text so far.
-  if (finalMessage.stop_reason === "tool_use") {
-    // Extract whatever text was in the response
-    const textBlocks = finalMessage.content
-      .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text");
-    if (textBlocks.length > 0) {
-      accumulated = textBlocks.map((b) => b.text).join("\n\n");
-    }
+    // Keep whatever prose the model produced alongside its tool calls, so a
+    // run that exhausts MAX_ITERATIONS still has something to show.
+    if (reply.text) accumulated = reply.text;
   }
 
   const { text, suggestions } = extractSuggestions(accumulated);

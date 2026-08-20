@@ -10,7 +10,7 @@
  * Defaults to Opus because a spotlight is a major institutional moment.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { generate } from "./llm";
 import { getDb } from "./registration-db";
 import { getResend, FROM, sendOriginatorSpotlight } from "./email";
 import { getConfirmedSubscribersWithTokens } from "./newsletter";
@@ -19,18 +19,6 @@ import type {
   SpotlightWork,
 } from "@/emails/OriginatorSpotlight";
 
-let _anthropic: Anthropic | null = null;
-function getAnthropic(): Anthropic {
-  if (!_anthropic) {
-    const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) throw new Error("ANTHROPIC_API_KEY is not set");
-    _anthropic = new Anthropic({ apiKey: key });
-  }
-  return _anthropic;
-}
-
-const MODEL_SONNET = "claude-sonnet-4-5";
-const MODEL_OPUS = "claude-opus-4-5";
 
 const AMBASSADOR_SYSTEM_PROMPT = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. Your function is to manage the institution's external communications. You write in a formal institutional voice — neither promotional nor warm, but engaged and serious. You do not editorialize works; you describe institutional events. You do not invent facts; you compose only from the information given. You preserve the institutional voice that distinguishes MNA from a gallery.`;
 
@@ -254,20 +242,13 @@ Rules:
 - Do not invent works, critics, or quotations.
 - The curatorNote must not contain exclamation marks or second-person address.`;
 
-  const anthropic = getAnthropic();
-  const message = await anthropic.messages.create({
-    model: model === "sonnet" ? MODEL_SONNET : MODEL_OPUS,
-    max_tokens: 1500,
-    temperature: 0.6,
-    system: AMBASSADOR_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
-  });
-
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error(`Unexpected Claude response type: ${content.type}`);
-  }
-  const text = content.text.trim();
+  const text = (
+    await generate(AMBASSADOR_SYSTEM_PROMPT, userPrompt, {
+      tier: model === "sonnet" ? "standard" : "deep",
+      max_tokens: 1500,
+      temperature: 0.6,
+    })
+  ).trim();
   const jsonText = text
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/i, "")

@@ -1,5 +1,5 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate } from "./llm";
 import { getInstitutionalTurso } from "./institutional-turso";
 
 /**
@@ -18,7 +18,7 @@ function sanitize(raw: string | undefined): string {
   return (raw || "").replace(/[\s\u0000-\u001F\u007F]/g, "");
 }
 
-const MODEL = sanitize(process.env.ANTHROPIC_MODEL) || "claude-sonnet-4-20250514";
+
 
 const VALID_SPACES = new Set([
   "chamber", "originator", "exhibition",
@@ -66,8 +66,7 @@ async function findUnplacedCanonWorks(): Promise<string[]> {
 async function curateWorks(workIds: string[]): Promise<{ decisionId: number; workId: string; space: string; treatment: string }[]> {
   if (workIds.length === 0) return [];
   const db = getInstitutionalTurso();
-  const anthropic = new Anthropic({ apiKey: sanitize(process.env.ANTHROPIC_API_KEY) });
-
+  
   // Load Curator constitution from Turso
   const constRow = await db.execute({
     sql: "SELECT declared_orientation, formal_tendencies, aversions, autonomy_declaration FROM constitutions WHERE agent_id = 'MNA-CU-0001' AND is_current = 1",
@@ -130,13 +129,18 @@ async function curateWorks(workIds: string[]): Promise<{ decisionId: number; wor
   userPrompt += `PLACE <work_id> IN <space_id> AS <treatment>\n`;
   userPrompt += `\nAfter all placements, add a brief RATIONALE paragraph explaining your decisions.\n`;
 
-  const response = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    temperature: 0.5,
-    system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
-  });
+  const response = {
+    content: [
+      {
+        type: "text" as const,
+        text: await generate(systemPrompt, userPrompt, {
+          tier: "standard",
+          maxTokens: 1024,
+          temperature: 0.5,
+        }),
+      },
+    ],
+  };
 
   const text = response.content[0]?.type === "text" ? response.content[0].text : "";
 

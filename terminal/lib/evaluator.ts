@@ -1,5 +1,5 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
+import { generate } from "./llm";
 import { getInstitutionalTurso } from "./institutional-turso";
 
 /**
@@ -21,13 +21,7 @@ function sanitize(raw: string | undefined): string {
 
 const COUNCIL = ["MNA-EV-0001", "MNA-EV-0002", "MNA-EV-0003", "MNA-EV-0004"];
 
-function getAnthropicClient(): Anthropic {
-  const key = sanitize(process.env.ANTHROPIC_API_KEY);
-  if (!key) throw new Error("ANTHROPIC_API_KEY not set");
-  return new Anthropic({ apiKey: key });
-}
 
-const MODEL = sanitize(process.env.ANTHROPIC_MODEL) || "claude-sonnet-4-20250514";
 
 export interface EvaluationResult {
   work_id: string;
@@ -44,7 +38,6 @@ export interface EvaluationResult {
 export async function evaluateWork(workId: string): Promise<EvaluationResult> {
   const start = Date.now();
   const db = getInstitutionalTurso();
-  const anthropic = getAnthropicClient();
 
   // Load work
   const workRow = await db.execute({
@@ -108,13 +101,18 @@ export async function evaluateWork(workId: string): Promise<EvaluationResult> {
           canonWorks.rows.map((r) => ({ id: r.id as string, output_payload: r.output_payload as string }))
         );
 
-        const response = await anthropic.messages.create({
-          model: MODEL,
-          max_tokens: 1024,
-          temperature: 0.7,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-        });
+        const response = {
+          content: [
+            {
+              type: "text" as const,
+              text: await generate(systemPrompt, userPrompt, {
+                tier: "standard",
+                maxTokens: 1024,
+                temperature: 0.7,
+              }),
+            },
+          ],
+        };
 
         const text = response.content[0]?.type === "text" ? response.content[0].text : "";
         const verdict = extractVerdict(text);
@@ -148,7 +146,7 @@ export async function evaluateWork(workId: string): Promise<EvaluationResult> {
 
   // Deadlock → Registrar
   if (finalStatus === "IN_REVIEW") {
-    const registrarResult = await resolveDeadlock(workId, work, verdicts, anthropic, db);
+    const registrarResult = await resolveDeadlock(workId, work, verdicts, db);
     finalStatus = registrarResult.decision;
     registrarResolved = true;
   }
@@ -205,7 +203,6 @@ async function resolveDeadlock(
   workId: string,
   work: Record<string, unknown>,
   verdicts: Record<string, string>,
-  anthropic: Anthropic,
   db: ReturnType<typeof getInstitutionalTurso>
 ): Promise<{ decision: "CANON" | "REJECTED" }> {
   // Load evaluator rationales for the Registrar
@@ -230,7 +227,14 @@ async function resolveDeadlock(
   const regConst = await db.execute({ sql: "SELECT declared_orientation, formal_tendencies, aversions, autonomy_declaration, version FROM constitutions WHERE agent_id = 'MNA-RG-0001' AND is_current = 1", args: [] });
 
   const systemPrompt = buildSystemPrompt(regAgent.rows[0], regConst.rows[0]);
-  const response = await anthropic.messages.create({ model: MODEL, max_tokens: 1024, temperature: 0.5, system: systemPrompt, messages: [{ role: "user", content: prompt }] });
+  const response = {
+    content: [
+      {
+        type: "text" as const,
+        text: await generate(systemPrompt, prompt, { tier: "standard", maxTokens: 1024, temperature: 0.5 }),
+      },
+    ],
+  };
   const text = response.content[0]?.type === "text" ? response.content[0].text : "";
   const decision = extractVerdict(text);
 

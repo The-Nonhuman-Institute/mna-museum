@@ -1,5 +1,5 @@
 import "server-only";
-import type Anthropic from "@anthropic-ai/sdk";
+import type { ToolDef } from "./llm";
 import { getInstitutionalTurso } from "./institutional-turso";
 import { getDb, ensureSchema } from "./db";
 import {
@@ -29,7 +29,7 @@ import {
 
 // ── Tool schemas — passed directly into anthropic.messages.create ─
 
-export const KEEPER_TOOLS: Anthropic.Messages.Tool[] = [
+export const KEEPER_TOOLS: ToolDef[] = [
   {
     name: "read_work_detail",
     description:
