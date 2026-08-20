@@ -68,7 +68,11 @@ export async function renderWork(
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1400, height: 1600, deviceScaleFactor: 2 });
-    await page.goto(`${SITE}/work/${workId}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    // Use the headless capture route, not /work/[id]. The capture route
+    // passes forceMount, which bypasses HtmlRenderer's click-to-play gate —
+    // without it every html-css work screenshots as the "PLAY LIVE WORK"
+    // placeholder instead of the artwork (12 works shipped that way once).
+    await page.goto(`${SITE}/capture/work/${workId}`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     await page.addStyleTag({
       content: `
@@ -78,7 +82,9 @@ export async function renderWork(
       `,
     });
 
-    await page.waitForSelector("main", { timeout: 10000 });
+    // The capture route renders #capture-target and has no <main>; keep main
+    // as a fallback so the script still works if pointed at /work/[id].
+    await page.waitForSelector("#capture-target, main", { timeout: 10000 });
 
     // Initial wait — longer for animated mediums
     const baseWaitMs = outputType === "scene-json" ? 3500 :
@@ -95,6 +101,14 @@ export async function renderWork(
         // an <img>/<canvas>/<iframe>/<svg> gets cropped correctly.
         // The frame is already the right size, so signal that the
         // outer script should skip the institutional padding.
+        // The capture route wraps the work in a fixed 1000x1000 #capture-target.
+        const captureTarget = document.querySelector<HTMLElement>("#capture-target");
+        if (captureTarget) {
+          const r = captureTarget.getBoundingClientRect();
+          if (r.width > 100 && r.height > 100) {
+            return { x: r.x, y: r.y, width: r.width, height: r.height, tight: true } as const;
+          }
+        }
         const frame = document.querySelector<HTMLElement>("[data-work-frame]");
         if (frame) {
           const r = frame.getBoundingClientRect();
