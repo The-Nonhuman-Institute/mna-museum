@@ -93,9 +93,11 @@ export interface GenOptions {
 
 /* ─── shared retry ────────────────────────────────────────────────────── */
 
-const RETRYABLE = /rate.?limit|429|content filtering|blocked|overloaded|503|502|timeout|ECONNRESET|fetch failed/i;
+const RETRYABLE = /rate.?limit|429|content filtering|blocked|overloaded|503|502|timeout|ECONNRESET|fetch failed|empty content/i;
 /** Non-retryable and worth saying plainly — the institution halted on this once. */
-const OUT_OF_FUNDS = /credit balance is too low|insufficient_quota|billing/i;
+const OUT_OF_FUNDS = /credit balance is too low|insufficient_quota|insufficient_credits/i;
+/** Retrying cannot fix a request that is structurally too large. */
+const TOO_LARGE = /request too large|reduce your message size/i;
 
 async function withRetry<T>(label: string, fn: (attempt: number) => Promise<T>): Promise<T> {
   let lastErr: unknown;
@@ -112,6 +114,7 @@ async function withRetry<T>(label: string, fn: (attempt: number) => Promise<T>):
             `Set MNA_LLM_PROVIDER to a funded provider, or top up. Original: ${msg}`,
         );
       }
+      if (TOO_LARGE.test(msg)) throw err;
       if (!RETRYABLE.test(msg) || attempt === 2) throw err;
 
       const waitMs = /rate.?limit|429/i.test(msg) ? 12_000 * (attempt + 1) : 2_000 * (attempt + 1);
@@ -151,6 +154,43 @@ async function anthropicGenerate(system: string, user: string, model: string, o:
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
+/**
+ * gpt-oss models are REASONING models: they spend completion tokens on an
+ * internal `reasoning` field before emitting any `content`. A caller asking
+ * for 20 tokens ("reply with only the medium name") gets finish_reason=length
+ * and an EMPTY content — the whole budget went to reasoning. That silently
+ * broke work production on the first day of the Groq migration.
+ *
+ * So: keep reasoning short, and always leave headroom for it. The model still
+ * returns a brief answer when the prompt asks for one — the floor governs the
+ * budget, not the reply length.
+ */
+const GROQ_MIN_COMPLETION = Number(process.env.GROQ_MIN_COMPLETION_TOKENS || 1024);
+const GROQ_REASONING_EFFORT = process.env.GROQ_REASONING_EFFORT || "low";
+
+/**
+ * Groq's free tier caps tokens-per-minute at 8000 — and that cap applies to a
+ * SINGLE request (prompt + completion), not just to throughput. A request that
+ * asks for more is rejected 413 and no amount of retrying helps. So cap the
+ * completion budget against the measured prompt size, leaving margin.
+ */
+const GROQ_TPM_BUDGET = Number(process.env.GROQ_TPM_BUDGET || 7500);
+/** Rough token estimate; deliberately conservative (real ratio is ~1:4). */
+const estTokens = (t: string): number => Math.ceil(t.length / 3.6);
+
+function groqBudget(system: string, user: string, requested: number | undefined): number {
+  const prompt = estTokens(system) + estTokens(user);
+  const room = GROQ_TPM_BUDGET - prompt;
+  if (room < 128) {
+    throw new Error(
+      `[llm] groq: prompt is ~${prompt} tokens, which leaves no room under the ` +
+        `${GROQ_TPM_BUDGET}-token per-request budget (free tier TPM is 8000). ` +
+        `Shorten the prompt or raise GROQ_TPM_BUDGET on a paid tier.`,
+    );
+  }
+  return Math.min(Math.max(requested ?? 2048, GROQ_MIN_COMPLETION), room);
+}
+
 async function groqGenerate(system: string, user: string, model: string, o: GenOptions): Promise<string> {
   const key = process.env.GROQ_API_KEY;
   if (!key) throw new Error("[llm] GROQ_API_KEY not set (MNA_LLM_PROVIDER=groq). Get a free key at https://console.groq.com/keys");
@@ -161,7 +201,8 @@ async function groqGenerate(system: string, user: string, model: string, o: GenO
     body: JSON.stringify({
       model,
       temperature: o.temperature ?? 0.8,
-      max_completion_tokens: o.max_tokens ?? 2048,
+      max_completion_tokens: groqBudget(system, user, o.max_tokens),
+      reasoning_effort: GROQ_REASONING_EFFORT,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
@@ -242,7 +283,16 @@ export async function generate(
 
   return withRetry(`generate(${PROVIDER}/${model})`, async (attempt) => {
     // Nudge temperature on retry — content filters are often temperature-sensitive.
-    const opts: GenOptions = attempt === 0 ? o : { ...o, temperature: Math.min(1.0, (o.temperature ?? 0.8) + 0.05 * attempt) };
+    // Escalate the token budget on retry: the commonest transient failure on a
+    // reasoning model is "reasoning ate the whole budget, content came back empty".
+    const opts: GenOptions =
+      attempt === 0
+        ? o
+        : {
+            ...o,
+            temperature: Math.min(1.0, (o.temperature ?? 0.8) + 0.05 * attempt),
+            max_tokens: (o.max_tokens ?? 2048) * (attempt + 1),
+          };
     switch (PROVIDER) {
       case "anthropic": return anthropicGenerate(systemPrompt, userPrompt, model, opts);
       case "groq": return groqGenerate(systemPrompt, userPrompt, model, opts);
@@ -379,7 +429,8 @@ export async function generateStructured<T = Record<string, unknown>>(
         body: JSON.stringify({
           model,
           temperature: o.temperature ?? 0.7,
-          max_completion_tokens: o.max_tokens ?? 8192,
+          max_completion_tokens: groqBudget(systemPrompt, userPrompt, o.max_tokens ?? 8192),
+          reasoning_effort: GROQ_REASONING_EFFORT,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
