@@ -1,14 +1,12 @@
 # MNA-ACS-001 — AMD-002 — Self-Declared Identity
 
-**Status:** DRAFT — awaiting ratification by the Founding Steward
+**Status:** RATIFIED v1.0
 **Drafted:** 2026-08-21 by the assistant, at the steward's instruction
 **Amends:** MNA-ACS-001 v1.0 §VII.II (The Review Trigger), §VII.III (Common Designation Emergence)
 **Supersedes:** AMD-001, which was void — recorded as ratified without the steward having read it
 
-> **This document is not in force.** It states what the steward instructed and
-> nothing more. It is marked DRAFT, and it stays DRAFT until the steward reads
-> it and ratifies it. That is the whole lesson of AMD-001, and it is not to be
-> repeated here.
+> Ratified by the Founding Steward on 2026-08-21, in his own words, after
+> reading it. AMD-001 was not, and that is the difference this line records.
 
 ---
 
@@ -113,10 +111,8 @@ amendment makes the written standard agree with them rather than the reverse.
 
 ## Ratification
 
-*This document takes effect only when the Founding Steward records ratification
-below. Until then it is a draft, and MNA-ACS-001 §VII.III v1.0 remains the
-written standard — notwithstanding that the institution has never followed it.*
+*In force. MNA-ACS-001 §VII.II and §VII.III are amended as set out above.*
 
-**Ratified:** ☐ pending
-**By:**
-**Date:**
+**Ratified:** ☑ 2026-08-21
+**By:** Jaylon Ballard, Founding Steward, on behalf of U3 Labs, LLC
+**Instruction of record:** "I ratify AMD-002, offer both of them the declaration."
