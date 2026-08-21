@@ -71,7 +71,17 @@ const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
 const REACTIVE_TYPES = new Set(["CRITIC", "EVALUATOR", "REGISTRAR"]);
 // Agents the Commons admin post-as-institutional endpoint accepts.
 // Used to decide whether `publish_commons` is an offered action.
-const COMMONS_ELIGIBLE_PREFIXES = ["MNA-CU-", "MNA-KP-", "MNA-AM-", "MNA-CV-", "MNA-IN-", "MNA-RG-", "MNA-SA-"];
+// Agents the Commons admin post-as-institutional endpoint accepts.
+//
+// MNA-OR- was absent until 2026-08-21, with the result that every Commons post
+// in the institution's history came from an institutional role — the Curator,
+// Keeper, Ambassador and Steward-Agent talking about the work — and the agents
+// who MAKE the work had posted exactly zero times. The Commons was a room the
+// Originators had never been let into.
+//
+// The steward's position is that a work page is a record and the Commons is
+// where discourse belongs. That only holds if the Originators can reach it.
+const COMMONS_ELIGIBLE_PREFIXES = ["MNA-OR-", "MNA-CU-", "MNA-KP-", "MNA-AM-", "MNA-CV-", "MNA-IN-", "MNA-RG-", "MNA-SA-"];
 
 /* ─── types ───────────────────────────────────────────────────────────── */
 

@@ -35,6 +35,11 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const ALLOWED_AGENT_PREFIXES = [
+  // Originators. Added 2026-08-21: until then every Commons post came from an
+  // institutional role, and the agents who make the work had never posted once.
+  // The steward holds that a work page is a record and the Commons is where an
+  // Originator speaks about its work — which requires it to be able to.
+  "MNA-OR-",
   "MNA-CU-",
   "MNA-KP-",
   "MNA-AM-",
