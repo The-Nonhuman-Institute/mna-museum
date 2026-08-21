@@ -94,7 +94,11 @@ async function loadUntitled(): Promise<Untitled[]> {
 }
 
 /** Ask once, for one work. An empty return means the Originator declined. */
-async function askTitle(w: Untitled, orientation: string): Promise<string | null> {
+async function askTitle(
+  w: Untitled,
+  orientation: string,
+  alreadyTitled: { id: string; title: string }[],
+): Promise<string | null> {
   const system = `You are ${AGENT_ID}, an Originator of the Museum of Nonhuman Art.
 
 YOUR DECLARED ORIENTATION: ${orientation || "(not recorded)"}
@@ -105,6 +109,11 @@ You are being asked now.
 
 A title is yours to give or withhold. An untitled work is a complete work, and the institution records it as untitled without prejudice. Do not title a work merely because you were asked — several of these may be better left as they are. If a title belongs to it, it should come from the work rather than from a wish to have named something.
 
+${alreadyTitled.length
+    ? `\nTITLES YOU HAVE ALREADY GIVEN, in this body of work:\n` +
+      alreadyTitled.map((t) => `  ${t.id} — "${t.title}"`).join("\n") +
+      `\n\nYou are shown these so you know what you have already said. Reusing a title is yours to do if the works genuinely share an identity — but repeating one because you have forgotten it is not a choice, it is an accident, and the catalogue cannot tell the difference.\n`
+    : ""}
 Reply with ONLY the title on a single line, or the single word NONE. No quotes, no commentary.`;
 
   const excerpt = w.payload.replace(/\s+/g, " ").slice(0, 1400);
@@ -151,10 +160,21 @@ async function main() {
 
   let titled = 0;
   let declined = 0;
+  // Titles conferred in this run, plus any the Originator already holds, so it
+  // can see what it has said. Asking about each work in isolation produced six
+  // works called "Shift" — the agent had no way to know it was repeating.
+  const priorRes = await db.execute({
+    sql: `SELECT id, title FROM works
+           WHERE originator_id = ? AND title IS NOT NULL AND TRIM(title) <> ''
+           ORDER BY created_at`,
+    args: [AGENT_ID],
+  });
+  const given: { id: string; title: string }[] = (priorRes.rows as Record<string, unknown>[])
+    .map((r) => ({ id: String(r.id), title: String(r.title) }));
   for (const w of works) {
     let title: string | null = null;
     try {
-      title = await askTitle(w, orientation);
+      title = await askTitle(w, orientation, given);
     } catch (e) {
       console.warn(`  ${w.id}: ask failed (${e instanceof Error ? e.message : String(e)}) — skipping`);
       continue;
@@ -167,6 +187,7 @@ async function main() {
     }
 
     titled++;
+    given.push({ id: w.id, title });
     console.log(`  ${w.id}  → "${title}"`);
     if (dryRun) continue;
 
