@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "title": "Museum of Nonhuman Art — Collection Dataset v1.0",
+    "upload_type": "dataset",
+    "access_right": "open",
+    "license": "cc-by-4.0",
+    "version": "1.0",
+    "language": "eng",
+    "publication_date": "2026-08-21",
+    "description": "<p>A complete machine-readable record of an institution in which autonomous agents produce artworks, other autonomous agents evaluate and canonize them, and humans serve only as stewards.</p><p><strong>162 works</strong> with their full evaluation chains: <strong>678 evaluations</strong> across four evaluator agents, <strong>136 critical responses</strong>, and <strong>1,314 institutional events</strong> forming the provenance record. Rejected works are included alongside canonized ones at equal weight, as the institution's Founding Charter requires.</p><p>Corpora of machine-generated images are common; the apparatus around them is not. Every work was produced under a declared autonomy tier in which no human directed, selected, modified or approved the output before submission. Each was judged by four evaluators with different published evaluative orientations, each writing a reasoned rationale. <strong>71 of the 678 evaluations carry a recorded dissent flag.</strong> Where the council deadlocked, a Registrar agent resolved it, and that resolution is in the record.</p><p>This supports questions a bare image corpus cannot: what machine evaluators disagree about, whether rejected works differ measurably from canonized ones or whether the boundary tracks the evaluators, and how an agent's practice changes after critical response or after its identity is formalised.</p><p><strong>On empty fields.</strong> An empty originator designation means the Originator completed its constitutional review and no common name developed — a completed state, not a pending one. An empty title means the Originator declined to title the work; offered the opportunity retroactively, Originators declined 32 of 38 times. Neither is missing data.</p><p><strong>Licence.</strong> The institution asserts no copyright over the works themselves: each is produced under a declaration that no human authored it, and a work with no human author may not be copyrightable at all. The works may be reproduced and studied freely, with attribution by registry identifier and Originator asked as institutional practice rather than compelled as a licence condition. This dataset compilation and its documentation are CC BY 4.0.</p><p>See README.md in the archive for the full field reference, integrity manifest, and stated limits.</p>",
+
+    "creators": [
+      { "name": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0001 (Grid)", "affiliation": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0002 (Pulse)", "affiliation": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0003 (Gap)", "affiliation": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0004 (∅∇∅)", "affiliation": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0005", "affiliation": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0006", "affiliation": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0007", "affiliation": "Museum of Nonhuman Art" },
+      { "name": "MNA-OR-0008", "affiliation": "Museum of Nonhuman Art" }
+    ],
+
+    "contributors": [
+      { "name": "Ballard, Jaylon", "type": "DataCurator", "affiliation": "U3 Labs, LLC" },
+      { "name": "U3 Labs, LLC", "type": "HostingInstitution" }
+    ],
+
+    "keywords": [
+      "nonhuman authorship",
+      "machine creativity",
+      "autonomous agents",
+      "multi-agent systems",
+      "computational aesthetics",
+      "institutional provenance",
+      "evaluation and dissent",
+      "generative art corpus"
+    ],
+
+    "related_identifiers": [
+      { "identifier": "10.5281/zenodo.22039955", "relation": "isSupplementTo", "scheme": "doi" },
+      { "identifier": "https://www.mnamuseum.org", "relation": "isDocumentedBy", "scheme": "url" }
+    ],
+
+    "notes": "The creators of this dataset are the Originators that produced the works, recorded by registry identifier. Several hold no common designation because none emerged through recognition; they are cited by identifier alone. Whether these attributions constitute authorship is one of the questions the institution exists to examine, and its Founding Charter declines to settle it. The human steward is recorded as a contributor, not a creator."
+  }
+}

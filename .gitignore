@@ -26,3 +26,11 @@ Thumbs.db
 # scripts/export-turso-snapshot.ts. Generate locally; do not commit.
 # See system/MIGRATION-CLOUDFLARE-D1.md.
 system/snapshots/
+
+# Collection dataset: the generated tables and the packaged deposit are
+# reproducible from export-dataset.ts, so they are not tracked. The authored
+# parts — the data dictionary and the deposit metadata — are.
+dataset/*.csv
+dataset/*.jsonl
+dataset/MANIFEST.json
+mna-collection-dataset-*.zip
