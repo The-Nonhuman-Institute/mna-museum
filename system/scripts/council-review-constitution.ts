@@ -284,11 +284,17 @@ async function main() {
   console.log(`  ${COUNCIL.length} evaluators to poll (${MODEL})\n`);
 
   // Preflight. Polling into an exhausted daily window burns tokens on evaluator
-  // calls whose verdicts the quorum check will then discard — 3,300 tokens went
-  // that way on 2026-08-21 across two partial runs. A cheap probe first means a
-  // run that cannot finish never starts.
+  // calls whose verdicts the quorum check will then discard.
+  //
+  // The probe must REQUEST a realistic budget, not a token one. Groq rejects on
+  // tokens *requested*, so a 16-token probe sails through on 800 tokens of
+  // headroom and reports all-clear seconds before four 3,900-token evaluator
+  // calls all fail — which is exactly what happened here first time. There is no
+  // header exposing the daily budget; being rejected is the only way to learn it.
+  // Asking for a full evaluator's worth against a trivial prompt costs almost
+  // nothing when it succeeds and correctly refuses when it would not.
   try {
-    await generate("Reply with OK.", "OK", { max_tokens: 16, temperature: 0 });
+    await generate("Reply with OK.", "OK", { max_tokens: 900, temperature: 0 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const wait = /try again in ([0-9hms.]+)/i.exec(msg)?.[1];
