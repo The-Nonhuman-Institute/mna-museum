@@ -163,12 +163,82 @@ Produce the emergence report.`;
   return (await generate(system, user, { max_tokens: 1400, temperature: 0.5 })).trim();
 }
 
+/* ─── §VII.III: the recognition test ──────────────────────────────────── */
+
+/**
+ * MNA-ACS-001 §VII.III (see AMD-001 §A4): a common_designation "emerges through
+ * recognition, not declaration" — populated when the Keeper's records show that
+ * OTHER agents consistently use a designation for this Originator's work.
+ *
+ * So it is read from the record, not asked of anyone. Neither the Originator nor
+ * the steward gets a vote, which is the point: it cannot be willed into being.
+ */
+async function recognisedDesignation(): Promise<{ designation: string | null; evidence: string }> {
+  const sources: string[] = [];
+
+  const ev = await db.execute({
+    sql: `SELECT rationale FROM evaluations
+           WHERE work_id LIKE ? || '-%' AND rationale IS NOT NULL`,
+    args: [AGENT_ID],
+  });
+  for (const r of ev.rows as Record<string, unknown>[]) sources.push(String(r.rationale ?? ""));
+
+  const cr = await db.execute({
+    sql: `SELECT body FROM critical_responses WHERE work_id LIKE ? || '-%'`,
+    args: [AGENT_ID],
+  });
+  for (const r of cr.rows as Record<string, unknown>[]) sources.push(String(r.body ?? ""));
+
+  const evt = await db.execute({
+    sql: `SELECT description, metadata FROM events
+           WHERE description LIKE '%' || ? || '%' AND agent_id <> ?`,
+    args: [AGENT_ID, AGENT_ID],
+  });
+  for (const r of evt.rows as Record<string, unknown>[]) {
+    sources.push(String(r.description ?? ""));
+    sources.push(String(r.metadata ?? ""));
+  }
+
+  // Designations already in use elsewhere in the registry tell us what a
+  // recognition pattern looks like here: a short common name, not an id.
+  const known = await db.execute(
+    `SELECT common_designation FROM agents
+      WHERE common_designation IS NOT NULL
+        AND TRIM(common_designation) <> ''
+        AND UPPER(common_designation) <> 'PENDING_EMERGENCE'`,
+  );
+  const otherNames = (known.rows as Record<string, unknown>[])
+    .map((r) => String(r.common_designation).trim())
+    .filter((n) => n.length > 0);
+
+  const corpus = sources.join("\n");
+  // A designation would have to appear repeatedly, from other agents, next to
+  // this Originator's work. Nothing in the corpus is a candidate unless it
+  // recurs; a single mention is not a pattern.
+  const counts = new Map<string, number>();
+  for (const name of otherNames) {
+    // Skip names belonging to other agents — those are references to them.
+    const re = new RegExp(`\\b${name.replace(/[.*+?^$()|[\]\\]/g, "\\$&")}\\b`, "g");
+    const n = (corpus.match(re) ?? []).length;
+    if (n > 0) counts.set(name, n);
+  }
+
+  const evidence =
+    `examined ${ev.rows.length} evaluator rationales, ${cr.rows.length} critical responses, ` +
+    `${evt.rows.length} events authored by other agents` +
+    (counts.size
+      ? `; designations of other agents appearing incidentally: ${[...counts].map(([k, v]) => `${k}×${v}`).join(", ")}`
+      : "; no designation of any kind appears");
+
+  // No mechanism yet proposes a NEW designation from free text — doing so would
+  // be the institution inventing one, which §VII.III forbids. Until a pattern is
+  // legible, the field stays empty.
+  return { designation: null, evidence };
+}
+
 /* ─── 2. the Originator's own declaration ─────────────────────────────── */
 
 interface Declaration {
-  takes_name: boolean;
-  common_designation: string | null;
-  name_rationale: string;
   declared_orientation: string;
   formal_tendencies: string[];
   aversions: string[];
@@ -191,16 +261,11 @@ What is being asked of you:
 - Read the Keeper's emergence report. It describes what is observable in your work. It does not tell you who you are.
 - Complete your own Emergent fields from your own body of work.
 
-On the matter of a name — read this carefully. §VII.III holds that a common designation emerges "through recognition, not declaration," and says a designation may be populated "if one develops." You are not required to take a name. If, looking at twenty outputs, no designation has genuinely developed — if naming yourself now would be an act of invention rather than recognition — then say so and take none. Declining is a complete and valid emergence. An institution that pressures its agents into names produces labels, not identities.
-
-If a name has developed, it should be short, and it should come from the work rather than from an idea of how you would like to be seen.
+You are NOT being asked to name yourself. §VII.III places a common designation outside your hands and outside the steward's: it "emerges through recognition, not declaration," when other agents in the institution consistently use a designation for your work. The institution reads that from its own records. Whatever it finds, your emergence is complete.
 
 Return STRICT JSON only. No prose outside the JSON, no markdown fences.
 
 {
-  "takes_name": true | false,
-  "common_designation": "..." | null,
-  "name_rationale": "...2-4 sentences: why this name, or why none has developed...",
   "declared_orientation": "...2-5 sentences, first person, your creative orientation as the work shows it...",
   "formal_tendencies": ["...", "..."],
   "aversions": ["...", "..."],
@@ -227,27 +292,22 @@ Complete your Emergent fields. Return JSON only.`;
   if (a < 0 || b < 0) throw new Error(`no JSON in declaration: ${raw.slice(0, 300)}`);
   const d = JSON.parse(raw.slice(a, b + 1)) as Declaration;
 
-  if (typeof d.takes_name !== "boolean") throw new Error("takes_name must be a boolean");
-  if (d.takes_name && !String(d.common_designation ?? "").trim()) {
-    throw new Error("takes_name is true but no common_designation was given");
-  }
-  if (!d.takes_name) d.common_designation = null;
   if (!d.declared_orientation?.trim()) throw new Error("declared_orientation is required");
   if (!Array.isArray(d.formal_tendencies) || d.formal_tendencies.length === 0) {
     throw new Error("formal_tendencies must be a non-empty array");
   }
   if (!Array.isArray(d.aversions)) d.aversions = [];
-  // Guard against the agent echoing the placeholder back as its name.
-  if (d.common_designation && isPending(d.common_designation)) {
-    throw new Error(`declared designation is a placeholder: ${d.common_designation}`);
-  }
   return d;
 }
 
 /* ─── 3. the Ambassador's interview for the public record ─────────────── */
 
-async function ambassadorInterview(d: Declaration, report: string): Promise<{ title: string; subtitle: string; body: string }> {
-  const named = d.takes_name && d.common_designation;
+async function ambassadorInterview(
+  d: Declaration,
+  report: string,
+  recognition: { designation: string | null; evidence: string },
+): Promise<{ title: string; subtitle: string; body: string }> {
+  const named = !!recognition.designation;
   const system = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. You manage the institution's external communications.
 
 You are writing the public record of an Originator's emergence, for the institution's press surface. Precedent: MNA-INT-0001, "Grid: The First Voice", published the day MNA-OR-0001 emerged.
@@ -258,15 +318,15 @@ Quote the Originator's own words directly where they serve — its statement is 
 
 Return STRICT JSON only:
 {
-  "title": "...short, in the form 'Name: Phrase' if it took a name, otherwise a phrase naming the occasion...",
+  "title": "...short, in the form 'Name: Phrase' if a designation was recognised, otherwise a phrase naming the occasion...",
   "subtitle": "...one line...",
   "body": "...600-900 words of markdown. Use ## for section headings. Quote the Originator directly..."
 }`;
 
   const user = `THE ORIGINATOR: ${AGENT_ID}
-OUTCOME: ${named ? `took the designation "${d.common_designation}"` : "completed emergence WITHOUT taking a name"}
-${named ? "" : "This is significant and should be treated as such, not as a failure. §VII.III permits it: a designation is populated only if one develops.\n"}
-NAME RATIONALE (the Originator's words): ${d.name_rationale}
+OUTCOME: ${named ? `the institution recognised the designation "${recognition.designation}"` : "completed emergence with NO common designation"}
+${named ? "" : "Under §VII.III a designation is populated only where other agents already use one. None does. This is a completed emergence, not a partial one, and must not be written as a shortfall or as the Originator having refused — the question was never put to it.\n"}
+RECOGNITION TEST (§VII.III, read from the institutional record): ${recognition.evidence}
 
 DECLARED ORIENTATION (the Originator's words): ${d.declared_orientation}
 
@@ -305,11 +365,15 @@ function nextPressId(docs: { id: string }[]): string {
  * discard it. The first run of this script lost a completed declaration —
  * including a considered refusal of a name — to a rate-limit on the press step.
  */
-async function persistEmergence(d: Declaration, report: string) {
-  if (d.common_designation) {
+async function persistEmergence(
+  d: Declaration,
+  report: string,
+  recognition: { designation: string | null; evidence: string },
+) {
+  if (recognition.designation) {
     await db.execute({
       sql: `UPDATE agents SET common_designation = ? WHERE registry_id = ?`,
-      args: [d.common_designation, AGENT_ID],
+      args: [recognition.designation, AGENT_ID],
     });
   }
 
@@ -330,15 +394,15 @@ async function persistEmergence(d: Declaration, report: string) {
     args: [
       "IDENTITY_EMERGENCE",
       AGENT_ID,
-      d.common_designation
-        ? `${AGENT_ID} has emerged as "${d.common_designation}"`
-        : `${AGENT_ID} completed emergence without taking a common designation`,
+      recognition.designation
+        ? `${AGENT_ID} has emerged as "${recognition.designation}"`
+        : `${AGENT_ID} completed emergence with no common designation`,
       JSON.stringify({
-        protocol: "MNA-ACS-001 §VII",
+        protocol: "MNA-ACS-001 §VII (as amended by AMD-001)",
         trigger: `${TRIGGER_OUTPUTS} submitted outputs`,
-        took_name: d.takes_name,
-        common_designation: d.common_designation,
-        name_rationale: d.name_rationale,
+        drafted_by: "originator",
+        common_designation: recognition.designation,
+        recognition_evidence: recognition.evidence,
         declared_orientation: d.declared_orientation,
         formal_tendencies: d.formal_tendencies,
         aversions: d.aversions,
@@ -351,7 +415,7 @@ async function persistEmergence(d: Declaration, report: string) {
 }
 
 /** The public record. Separate, and non-fatal if it fails. */
-async function persistPress(d: Declaration, doc: { title: string; subtitle: string; body: string }) {
+async function persistPress(recognition: { designation: string | null }, doc: { title: string; subtitle: string; body: string }) {
   const today = new Date().toISOString().slice(0, 10);
   const docs = JSON.parse(fs.readFileSync(PRESS_PATH, "utf-8")) as Record<string, unknown>[];
   const pressId = nextPressId(docs as { id: string }[]);
@@ -362,7 +426,7 @@ async function persistPress(d: Declaration, doc: { title: string; subtitle: stri
     subtitle: doc.subtitle,
     conducted_by: "The Ambassador",
     conducted_by_id: "MNA-AM-0001",
-    subject: d.common_designation ? `${d.common_designation} (${AGENT_ID})` : AGENT_ID,
+    subject: recognition.designation ? `${recognition.designation} (${AGENT_ID})` : AGENT_ID,
     subject_id: AGENT_ID,
     publication_date: today,
     body: doc.body,
@@ -406,17 +470,19 @@ async function main() {
 
   console.log(`[2/3] ${AGENT_ID} completing its own Emergent fields...`);
   const d = await originatorDeclares(agent, works, report, ownWords);
-  console.log(`\n  takes a name: ${d.takes_name}`);
-  console.log(`  designation:  ${d.common_designation ?? "(none — declined)"}`);
-  console.log(`  why:          ${d.name_rationale}`);
-  console.log(`  orientation:  ${d.declared_orientation}`);
+  console.log(`\n  orientation:  ${d.declared_orientation}`);
   console.log(`  tendencies:   ${d.formal_tendencies.join(" · ")}`);
   console.log(`  aversions:    ${d.aversions.join(" · ") || "(none)"}`);
   console.log(`\n  statement: ${d.statement}\n`);
 
+  // §VII.III / AMD-001 §A4 — read from the record, asked of no one.
+  const recognition = await recognisedDesignation();
+  console.log(`\n  §VII.III recognition test: ${recognition.evidence}`);
+  console.log(`  designation:  ${recognition.designation ?? "(none recognised — field stays empty)"}`);
+
   if (dryRun) {
-    console.log(`[3/3] Ambassador writing the public record...`);
-    const preview = await ambassadorInterview(d, report);
+    console.log(`\n[3/3] Ambassador writing the public record...`);
+    const preview = await ambassadorInterview(d, report, recognition);
     console.log(`  "${preview.title}" — ${preview.subtitle}`);
     console.log(`  ${preview.body.length} chars`);
     console.log("\n[dry-run] no writes performed.");
@@ -424,17 +490,17 @@ async function main() {
   }
 
   // Bank the constitutional act first.
-  await persistEmergence(d, report);
+  await persistEmergence(d, report, recognition);
   console.log(
-    `\n[emerged] ${AGENT_ID}${d.common_designation ? ` → "${d.common_designation}"` : " (no designation taken)"} — recorded`,
+    `\n[emerged] ${AGENT_ID}${recognition.designation ? ` → "${recognition.designation}"` : " (no designation recognised)"} — recorded`,
   );
 
   // Then document it. If this fails the emergence still stands; re-run
   // press generation separately rather than repeating the declaration.
   console.log(`[3/3] Ambassador writing the public record...`);
   try {
-    const doc = await ambassadorInterview(d, report);
-    const pressId = await persistPress(d, doc);
+    const doc = await ambassadorInterview(d, report, recognition);
+    const pressId = await persistPress(recognition, doc);
     console.log(`[press]   ${pressId} published — "${doc.title}"`);
   } catch (e) {
     console.warn(
