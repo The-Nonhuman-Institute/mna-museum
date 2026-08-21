@@ -62,9 +62,12 @@ const MODELS: Record<Provider, Record<Tier, string>> = {
   },
   gemini: {
     // Free tier, on a quota pool entirely separate from Groq's.
-    standard: "gemini-2.5-flash",
-    deep: "gemini-2.5-pro",
-    small: "gemini-2.5-flash-lite",
+    // The 2.5 line is retired for new accounts — the API answers a call to it
+    // with "no longer available to new users". Verify with a live call before
+    // changing these; the models endpoint still lists models it will refuse.
+    standard: "gemini-3.6-flash",
+    deep: "gemini-3.1-pro-preview",
+    small: "gemini-3.5-flash-lite",
   },
   ollama: {
     standard: "gemma3:4b",
@@ -100,7 +103,7 @@ export interface GenOptions {
 
 /* ─── shared retry ────────────────────────────────────────────────────── */
 
-const RETRYABLE = /rate.?limit|429|content filtering|blocked|overloaded|503|502|timeout|ECONNRESET|fetch failed|empty content/i;
+const RETRYABLE = /rate.?limit|429|content filtering|blocked|overloaded|503|502|timeout|ECONNRESET|fetch failed|high demand|UNAVAILABLE|empty content/i;
 /** Non-retryable and worth saying plainly — the institution halted on this once. */
 const OUT_OF_FUNDS = /credit balance is too low|insufficient_quota|insufficient_credits/i;
 /** Retrying cannot fix a request that is structurally too large. */
@@ -245,6 +248,13 @@ async function groqGenerate(system: string, user: string, model: string, o: GenO
 /* ─── gemini ──────────────────────────────────────────────────────────── */
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+/**
+ * Gemini 3.x reasons before answering and charges that thinking to the output
+ * budget, exactly as gpt-oss does. A caller asking for 100 tokens gets a reply
+ * truncated mid-word, so the budget is floored. (thinkingConfig is rejected as
+ * an invalid argument by these models, so the floor is the whole remedy.)
+ */
+const GEMINI_MIN_OUTPUT = Number(process.env.GEMINI_MIN_OUTPUT_TOKENS || 2048);
 
 async function geminiGenerate(system: string, user: string, model: string, o: GenOptions): Promise<string> {
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
@@ -263,7 +273,7 @@ async function geminiGenerate(system: string, user: string, model: string, o: Ge
       contents: [{ role: "user", parts: [{ text: user }] }],
       generationConfig: {
         temperature: o.temperature ?? 0.8,
-        maxOutputTokens: o.max_tokens ?? 2048,
+        maxOutputTokens: Math.max(o.max_tokens ?? 2048, GEMINI_MIN_OUTPUT),
       },
     }),
   });
@@ -277,7 +287,10 @@ async function geminiGenerate(system: string, user: string, model: string, o: Ge
   if (typeof text === "string" && text.trim()) return text;
   // finishReason MAX_TOKENS with no text is Gemini's version of the reasoning-
   // budget problem; surface it in the same words so withRetry escalates.
-  throw new Error(`[llm] gemini: empty content (finishReason=${cand?.finishReason})`);
+  throw new Error(
+    `[llm] gemini: empty content (finishReason=${cand?.finishReason})` +
+      (cand?.finishReason === "MAX_TOKENS" ? " — thinking consumed the output budget" : ""),
+  );
 }
 
 /* ─── ollama ──────────────────────────────────────────────────────────── */
