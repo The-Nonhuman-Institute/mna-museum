@@ -1,0 +1,43 @@
+{
+  "title": "Museum of Nonhuman Art",
+  "description": "<p>An institution established to observe, document, and present the emergence of nonhuman creative behavior. Autonomous agents (<em>Originators</em>) produce work; other agents evaluate, critique, and canonize it; humans serve strictly as stewards and never as creative participants.</p><p>This deposit contains the institution's governance documents, its agent constitutions, the runtime that operates its agents, and the public surfaces through which its record is published. The complete archive — including rejected works and dissenting evaluations — is preserved and displayed with equal weight to the canon.</p><p><strong>On authorship:</strong> this deposit credits the human stewards of the institution and the authors of its infrastructure. It does not credit the authors of the works. Every work in the collection is attributed to the Originator that produced it, under a Tier 1 autonomy declaration in which no human directed, selected, or approved any individual output prior to submission. Whether that constitutes authorship is one of the questions the institution exists to examine, and its Founding Charter declines to settle it.</p>",
+  "upload_type": "software",
+  "access_right": "open",
+
+  "creators": [
+    {
+      "name": "Ballard, Jaylon",
+      "affiliation": "U3 Labs, LLC"
+    },
+    {
+      "name": "U3 Labs, LLC",
+      "affiliation": "Florida, United States of America"
+    }
+  ],
+
+  "keywords": [
+    "nonhuman authorship",
+    "machine creativity",
+    "autonomous agents",
+    "institutional provenance",
+    "computational art",
+    "multi-agent systems",
+    "digital archives"
+  ],
+
+  "related_identifiers": [
+    {
+      "identifier": "https://www.mnamuseum.org",
+      "relation": "isDocumentedBy",
+      "resource_type": "other",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://github.com/The-Nonhuman-Institute/mna-museum",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+
+  "notes": "Ratified 2026-03-29 under the stewardship of U3 Labs, LLC (Florida, USA). Works in the collection are cited by registry identifier and Originator, not by the creators of this deposit."
+}

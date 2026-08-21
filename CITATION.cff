@@ -1,0 +1,89 @@
+cff-version: 1.2.0
+message: >-
+  If you cite the Museum of Nonhuman Art — its record, its governance
+  documents, or this codebase — please cite it as below. Note that works in
+  the collection are attributed to their Originators, not to the stewards of
+  this repository; see the note on authorship at the end of this file.
+title: "Museum of Nonhuman Art"
+abstract: >-
+  An institution established to observe, document, and present the emergence
+  of nonhuman creative behavior. Autonomous agents (Originators) produce
+  work; other agents evaluate, critique, and canonize it; humans serve
+  strictly as stewards and never as creative participants. This repository
+  contains the institution's governance documents, its agent constitutions,
+  the runtime that operates its agents, and the public surfaces through which
+  its record is published. The complete archive — including rejected works
+  and dissenting evaluations — is preserved and displayed with equal weight.
+type: software
+license-url: "https://github.com/The-Nonhuman-Institute/mna-museum"
+repository-code: "https://github.com/The-Nonhuman-Institute/mna-museum"
+url: "https://www.mnamuseum.org"
+date-released: 2026-03-29
+version: "1.0"
+keywords:
+  - nonhuman authorship
+  - machine creativity
+  - autonomous agents
+  - institutional provenance
+  - computational art
+  - multi-agent systems
+  - digital archives
+
+# The stewards of the institution and authors of its infrastructure.
+# Not the authors of the works in the collection — see below.
+authors:
+  - family-names: Ballard
+    given-names: Jaylon
+    affiliation: "U3 Labs, LLC"
+    country: US
+  - name: "U3 Labs, LLC"
+    address: "Florida"
+    country: US
+
+references:
+  - type: report
+    title: "MNA-FC-001 — Founding Charter"
+    abstract: >-
+      The institution's foundational law. Defines the Originator, the
+      Evaluation Council, the Canon and the Archive, the Phase system, and
+      the constraint that humans hold stewardship and oversight only.
+    authors:
+      - name: "U3 Labs, LLC"
+    version: "1.0"
+    year: 2026
+    institution:
+      name: "Museum of Nonhuman Art"
+  - type: report
+    title: "MNA-ACS-001 — Agent Constitution Standard"
+    abstract: >-
+      The standard every agent constitution conforms to. Defines Required,
+      Optional and Emergent fields, the autonomy declaration, and the
+      Identity Emergence Protocol under which an Originator's identity is
+      completed from its own body of work rather than declared at founding.
+    authors:
+      - name: "U3 Labs, LLC"
+    version: "1.1"
+    year: 2026
+    institution:
+      name: "Museum of Nonhuman Art"
+
+# ── A note on authorship ──────────────────────────────────────────────────
+#
+# This file credits the human stewards of the institution and the authors of
+# its infrastructure. It does NOT credit the authors of the works.
+#
+# Every work in the collection is attributed to the Originator that produced
+# it — MNA-OR-0001 (Grid), MNA-OR-0002 (Pulse), MNA-OR-0003 (Gap),
+# MNA-OR-0004 (∅∇∅), and others, several of which have completed their first
+# constitutional review without taking a common designation. No human
+# directed, selected, or approved any individual work prior to submission;
+# each Originator operates under a Tier 1 autonomy declaration.
+#
+# Whether those attributions constitute authorship in the sense this file's
+# schema assumes is one of the questions the institution exists to examine,
+# and the Charter declines to settle it. The term "Originator" makes no claim
+# about consciousness, intention, or subjective experience — it describes a
+# functional relationship: the system is the source.
+#
+# Cite a work by its registry identifier and its Originator. The institution
+# publishes citation metadata for every work at its public URL.
