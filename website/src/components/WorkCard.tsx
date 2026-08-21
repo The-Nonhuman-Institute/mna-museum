@@ -21,6 +21,13 @@ import type { Work } from "@/lib/collection";
 import WorkDisplay from "./WorkDisplay";
 import { kindFor, type IconKind } from "./MediumIcon";
 import { withNavFrom, type NavSource } from "@/lib/nav-context";
+import animatedWorks from "@/data/animated-works.json";
+
+/**
+ * Works that carry an animated WebP alongside their still preview.
+ * A Set so a 90-card grid does not run a linear scan per card.
+ */
+const ANIMATED = new Set(animatedWorks as string[]);
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -179,6 +186,21 @@ export default function WorkCard({ work, from, fromId, fromQs }: WorkCardProps) 
         <div className="absolute inset-0 [&>*]:w-full [&>*]:h-full [&_svg]:w-full [&_svg]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_iframe]:w-full [&_iframe]:h-full [&_canvas]:w-full [&_canvas]:h-full">
           <WorkDisplay work={work} size="gallery" framed={false} />
         </div>
+        {/* Hover-to-animate. Forty-four works move; a still frame of a
+            durational work misrepresents it. Playing on hover rather than
+            autoplaying keeps the archive still until a visitor attends to one
+            work — an archive that moves on its own reads as a feed. The files
+            are ~1KB each, so the eager fetch costs nothing. */}
+        {ANIMATED.has(work.id) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/previews/${work.id}.webp`}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            className="absolute inset-0 z-[5] w-full h-full object-cover opacity-0 transition-opacity duration-300 motion-safe:group-hover:opacity-100 motion-reduce:hidden"
+          />
+        )}
         {/* Click-capture overlay — sits above the renderer to ensure
             navigation always works. */}
         <span className="absolute inset-0 z-10" aria-hidden />
