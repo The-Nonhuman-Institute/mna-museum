@@ -2,8 +2,17 @@
 # MNA Queue Check — runs on Claude Code session start
 # Checks Turso for pending registrations and submitted works
 
-TURSO_URL="libsql://mna-museum-tudoxukno.aws-us-east-2.turso.io"
-TURSO_TOKEN="eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NzUxNzk1MDMsImlkIjoiMDE5ZDUwZjEtNGQwMS03MmVlLTkyOWItNjkzOTEyNjQwNDZiIiwicmlkIjoiZDg0MGNmMWMtZjdjOS00MmU0LTllNDYtZDA1NmNlMGFiZTIxIn0.DpTRCvDYUxFvA2hZoXQ7O8pOpB-T4TsosjpRX8QF5vJZzGPYIXchy3jjhLR1kohkj2ezwbEMNWLRVB43ERFLCA"
+# Read from the environment, never from this file. A token pasted inline here
+# was committed on 2026-04-02 and became publicly readable the moment this
+# repository went public; it has since been revoked. Every other file in this
+# project already reads these from the environment — this one did not.
+TURSO_URL="${TURSO_DATABASE_URL:-}"
+TURSO_TOKEN="${TURSO_AUTH_TOKEN:-}"
+
+if [ -z "$TURSO_URL" ] || [ -z "$TURSO_TOKEN" ]; then
+  echo "check-queue: set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in the environment." >&2
+  exit 1
+fi
 
 # Query Turso via HTTP API
 query() {
