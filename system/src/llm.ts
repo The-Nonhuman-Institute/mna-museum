@@ -30,6 +30,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
@@ -43,7 +44,7 @@ dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
  * "small"    — memory summarisation, perception, cheap option paths.
  */
 export type Tier = "standard" | "deep" | "small";
-export type Provider = "anthropic" | "groq" | "ollama";
+export type Provider = "anthropic" | "groq" | "gemini" | "ollama";
 
 export const PROVIDER = (process.env.MNA_LLM_PROVIDER || "groq") as Provider;
 
@@ -58,6 +59,12 @@ const MODELS: Record<Provider, Record<Tier, string>> = {
     standard: "openai/gpt-oss-120b",
     deep: "openai/gpt-oss-120b",
     small: "openai/gpt-oss-20b",
+  },
+  gemini: {
+    // Free tier, on a quota pool entirely separate from Groq's.
+    standard: "gemini-2.5-flash",
+    deep: "gemini-2.5-pro",
+    small: "gemini-2.5-flash-lite",
   },
   ollama: {
     standard: "gemma3:4b",
@@ -235,6 +242,44 @@ async function groqGenerate(system: string, user: string, model: string, o: GenO
   throw new Error(`[llm] groq: empty content (finish_reason=${body?.choices?.[0]?.finish_reason}) ${raw.slice(0, 300)}`);
 }
 
+/* ─── gemini ──────────────────────────────────────────────────────────── */
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+
+async function geminiGenerate(system: string, user: string, model: string, o: GenOptions): Promise<string> {
+  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+  if (!key) {
+    throw new Error(
+      "[llm] GEMINI_API_KEY not set (MNA_LLM_PROVIDER=gemini). " +
+        "Free key: https://aistudio.google.com/apikey",
+    );
+  }
+
+  const res = await fetch(`${GEMINI_BASE}/${model}:generateContent?key=${key}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: user }] }],
+      generationConfig: {
+        temperature: o.temperature ?? 0.8,
+        maxOutputTokens: o.max_tokens ?? 2048,
+      },
+    }),
+  });
+
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`[llm] gemini ${res.status}: ${raw.slice(0, 400)}`);
+
+  const body = JSON.parse(raw);
+  const cand = body?.candidates?.[0];
+  const text = cand?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
+  if (typeof text === "string" && text.trim()) return text;
+  // finishReason MAX_TOKENS with no text is Gemini's version of the reasoning-
+  // budget problem; surface it in the same words so withRetry escalates.
+  throw new Error(`[llm] gemini: empty content (finishReason=${cand?.finishReason})`);
+}
+
 /* ─── ollama ──────────────────────────────────────────────────────────── */
 
 function ollamaHost(): string {
@@ -278,7 +323,129 @@ async function ollamaGenerate(system: string, user: string, model: string, o: Ge
   throw new Error(`[llm] ollama: empty content: ${raw.slice(0, 300)}`);
 }
 
+/* ─── provider chain + quota cooldowns ────────────────────────────────── */
+
+/**
+ * The institution has been halted twice by a single provider: once when an
+ * Anthropic balance ran dry, once when Groq's daily token ceiling closed mid
+ * constitutional review. A one-provider institution stops when that provider
+ * does, so calls fall through a chain instead.
+ *
+ *   MNA_LLM_CHAIN=groq,gemini,ollama
+ *
+ * Three rules make this safe rather than merely convenient:
+ *
+ * 1. ONLY quota errors fail over. A malformed response, a content refusal or a
+ *    bug must surface, not get papered over by silently asking someone else.
+ *    Masking real failures behind a fallback is how a system stops telling you
+ *    the truth about itself.
+ *
+ * 2. Exhaustion is REMEMBERED, on disk, with the provider's own retry estimate.
+ *    Re-probing a capped provider costs tokens and pushes its rolling window
+ *    further out — that is precisely how one evening's council review failed
+ *    four times in a row, each attempt making the next one likelier to fail.
+ *
+ * 3. Ollama is local. A GitHub Actions runner cannot reach localhost, so it is
+ *    dropped from the chain under CI rather than failing four times per call.
+ */
+const CHAIN_DEFAULT = "groq,gemini,ollama";
+
+export function providerChain(): Provider[] {
+  const raw = process.env.MNA_LLM_CHAIN || process.env.MNA_LLM_PROVIDER || CHAIN_DEFAULT;
+  const chain = raw
+    .split(",")
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean) as Provider[];
+  // In CI, localhost is not reachable; keep it out rather than burn a retry.
+  return process.env.CI ? chain.filter((p) => p !== "ollama") : chain;
+}
+
+/**
+ * Whether a provider even has what it needs to be tried. A chain member with no
+ * credentials is skipped, not attempted — a missing key is a configuration
+ * fact, not a failure, and letting it throw would abort the chain before
+ * reaching providers that would have worked.
+ */
+export function providerConfigured(p: Provider): boolean {
+  switch (p) {
+    case "anthropic": return !!process.env.ANTHROPIC_API_KEY;
+    case "groq": return !!process.env.GROQ_API_KEY;
+    case "gemini": return !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY);
+    case "ollama": return true; // reachability is discovered by trying
+    default: return false;
+  }
+}
+
+/** Quota exhaustion, as distinct from any other failure. */
+function isQuotaError(msg: string): boolean {
+  return (
+    /rate.?limit|quota|429|tokens per (day|minute)|TPD|TPM|RPD|resource_exhausted/i.test(msg) ||
+    OUT_OF_FUNDS.test(msg)
+  );
+}
+
+/** Seconds until retry, if the provider volunteered one. */
+function parseRetrySeconds(msg: string): number | null {
+  const hms = /try again in ((?:\d+h)?(?:\d+m)?[\d.]+s)/i.exec(msg)?.[1];
+  if (hms) {
+    const h = Number(/(\d+)h/.exec(hms)?.[1] ?? 0);
+    const m = Number(/(\d+)m/.exec(hms)?.[1] ?? 0);
+    const sec = Number(/([\d.]+)s/.exec(hms)?.[1] ?? 0);
+    return h * 3600 + m * 60 + sec;
+  }
+  const retryAfter = /retry.?after["':\s]+(\d+)/i.exec(msg)?.[1];
+  return retryAfter ? Number(retryAfter) : null;
+}
+
+const COOLDOWN_FILE = path.join(__dirname, "..", ".llm-cooldowns.json");
+/** Default rest for a provider that reports exhaustion without an estimate. */
+const COOLDOWN_FALLBACK_SEC = 20 * 60;
+
+function readCooldowns(): Record<string, number> {
+  try {
+    return JSON.parse(fs.readFileSync(COOLDOWN_FILE, "utf-8")) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+function setCooldown(p: Provider, seconds: number, reason: string): void {
+  const all = readCooldowns();
+  all[p] = Date.now() + seconds * 1000;
+  try {
+    fs.writeFileSync(COOLDOWN_FILE, JSON.stringify(all, null, 2) + "\n");
+  } catch { /* a cooldown we cannot persist is still honoured in-process */ }
+  console.warn(
+    `[llm] ${p} exhausted — resting ${Math.round(seconds / 60)}m. ${reason.slice(0, 120)}`,
+  );
+}
+
+function onCooldown(p: Provider): number {
+  const until = readCooldowns()[p];
+  return until && until > Date.now() ? Math.ceil((until - Date.now()) / 1000) : 0;
+}
+
+/** Which provider actually served the last call. Record it where it matters. */
+export let lastServedBy: { provider: Provider; model: string } | null = null;
+
 /* ─── public API ──────────────────────────────────────────────────────── */
+
+/** Dispatch one call to one named provider. No fallback logic here. */
+async function callProvider(
+  provider: Provider,
+  system: string,
+  user: string,
+  model: string,
+  o: GenOptions,
+): Promise<string> {
+  switch (provider) {
+    case "anthropic": return anthropicGenerate(system, user, model, o);
+    case "groq": return groqGenerate(system, user, model, o);
+    case "gemini": return geminiGenerate(system, user, model, o);
+    case "ollama": return ollamaGenerate(system, user, model, o);
+    default: throw new Error(`[llm] unknown provider "${provider}"`);
+  }
+}
 
 export async function generate(
   systemPrompt: string,
@@ -286,37 +453,73 @@ export async function generate(
   options?: GenOptions,
 ): Promise<string> {
   const o = options ?? {};
-  const model = o.model ?? modelFor(o.tier ?? "standard");
+  const chain = providerChain();
+  const skipped: string[] = [];
+  let lastQuotaError: string | null = null;
 
-  return withRetry(`generate(${PROVIDER}/${model})`, async (attempt, lastFailure) => {
-    // Nudge temperature on retry — content filters are often temperature-sensitive.
-    // Escalate the token budget only when the previous failure was an empty
-    // completion — the reasoning-model case where the budget was the problem.
-    // Never escalate after a rate-limit: a TPM rejection means the request was
-    // already too big for the window, and asking for more guarantees a repeat.
-    const grew = lastFailure === "empty";
-    const opts: GenOptions =
-      attempt === 0
-        ? o
-        : {
-            ...o,
-            temperature: Math.min(1.0, (o.temperature ?? 0.8) + 0.05 * attempt),
-            ...(grew ? { max_tokens: (o.max_tokens ?? 2048) * (attempt + 1) } : {}),
-          };
-    switch (PROVIDER) {
-      case "anthropic": return anthropicGenerate(systemPrompt, userPrompt, model, opts);
-      case "groq": return groqGenerate(systemPrompt, userPrompt, model, opts);
-      case "ollama": return ollamaGenerate(systemPrompt, userPrompt, model, opts);
-      default: throw new Error(`[llm] unknown MNA_LLM_PROVIDER "${PROVIDER}"`);
+  for (const provider of chain) {
+    if (!providerConfigured(provider)) {
+      skipped.push(`${provider} unconfigured`);
+      continue;
     }
-  });
+    const resting = onCooldown(provider);
+    if (resting) {
+      skipped.push(`${provider} resting ${Math.ceil(resting / 60)}m`);
+      continue;
+    }
+
+    // A model id passed explicitly belongs to whichever provider the caller had
+    // in mind, so it is only honoured for the first candidate; anyone further
+    // down the chain resolves its own model for the tier.
+    const model =
+      o.model && provider === chain[0] ? o.model : modelForProvider(provider, o.tier ?? "standard");
+
+    try {
+      const text = await withRetry(`generate(${provider}/${model})`, async (attempt, lastFailure) => {
+        const grew = lastFailure === "empty";
+        const opts: GenOptions =
+          attempt === 0
+            ? o
+            : {
+                ...o,
+                temperature: Math.min(1.0, (o.temperature ?? 0.8) + 0.05 * attempt),
+                ...(grew ? { max_tokens: (o.max_tokens ?? 2048) * (attempt + 1) } : {}),
+              };
+        return callProvider(provider, systemPrompt, userPrompt, model, opts);
+      });
+      lastServedBy = { provider, model };
+      return text;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+
+      // Only exhaustion falls through. Anything else is a real failure and must
+      // surface — a fallback that hides bugs stops the system telling the truth.
+      // Ollama being unreachable is a configuration fact too — fall through
+      // rather than abort a chain that has other members left.
+      const unreachable = provider === "ollama" && /fetch failed|ECONNREFUSED|connect/i.test(msg);
+      if (!isQuotaError(msg) && !unreachable) throw e;
+      if (unreachable) {
+        skipped.push("ollama unreachable");
+        continue;
+      }
+
+      lastQuotaError = msg;
+      setCooldown(provider, parseRetrySeconds(msg) ?? COOLDOWN_FALLBACK_SEC, msg);
+    }
+  }
+
+  throw new Error(
+    `[llm] every provider in the chain [${chain.join(", ")}] is exhausted or resting` +
+      (skipped.length ? ` (${skipped.join("; ")})` : "") +
+      (lastQuotaError ? `. Last: ${lastQuotaError.slice(0, 200)}` : ""),
+  );
 }
 
-/**
- * Whether the active provider can accept an image alongside text.
- * Callers MUST check this rather than assume — agent perception is an
- * enhancement, and losing it should degrade the visit, not crash it.
- */
+/** Tier→model for a specific provider, independent of the ambient default. */
+export function modelForProvider(provider: Provider, tier: Tier = "standard"): string {
+  return process.env[TIER_ENV[tier]] || MODELS[provider][tier];
+}
+
 export function visionAvailable(): boolean {
   if (PROVIDER === "anthropic") return !!process.env.ANTHROPIC_API_KEY;
   if (PROVIDER === "ollama") return true; // gemma3 is multimodal

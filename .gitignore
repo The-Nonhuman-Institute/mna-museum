@@ -34,3 +34,6 @@ dataset/*.csv
 dataset/*.jsonl
 dataset/MANIFEST.json
 mna-collection-dataset-*.zip
+
+# Provider cooldown state — local, ephemeral, never shared
+system/.llm-cooldowns.json

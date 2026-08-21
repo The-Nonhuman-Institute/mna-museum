@@ -5,10 +5,24 @@
  *   npx tsx system/scripts/llm-doctor.ts
  *   MNA_LLM_PROVIDER=ollama npx tsx system/scripts/llm-doctor.ts
  */
-import { generate, isAvailable, visionAvailable, describeProvider, PROVIDER } from "../src/llm";
+import {
+  generate,
+  isAvailable,
+  visionAvailable,
+  describeProvider,
+  providerChain,
+  modelForProvider,
+  lastServedBy,
+  PROVIDER,
+} from "../src/llm";
 
 async function main() {
   console.log(`[llm-doctor] ${describeProvider()}`);
+  const chain = providerChain();
+  console.log(`[llm-doctor] chain: ${chain.join(" → ")}${process.env.CI ? "  (ollama dropped under CI)" : ""}`);
+  for (const p of chain) {
+    console.log(`[llm-doctor]   ${p.padEnd(10)} standard=${modelForProvider(p, "standard")}`);
+  }
   console.log(`[llm-doctor] vision available: ${visionAvailable()}`);
 
   const ok = await isAvailable();
@@ -36,7 +50,10 @@ async function main() {
   if (!m) { console.error("[llm-doctor] FAIL — no JSON object in reply"); process.exit(1); }
   try { JSON.parse(m[0]); } catch { console.error("[llm-doctor] FAIL — reply JSON did not parse"); process.exit(1); }
 
-  console.log(`[llm-doctor] PASS — ${PROVIDER} is answering and can emit parseable JSON.`);
+  console.log(
+    `[llm-doctor] PASS — served by ${lastServedBy?.provider ?? PROVIDER}` +
+      `${lastServedBy ? ` (${lastServedBy.model})` : ""}, answering with parseable JSON.`,
+  );
 }
 
 main().catch((e) => { console.error(`[llm-doctor] error: ${e.message}`); process.exit(1); });
