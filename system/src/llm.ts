@@ -397,9 +397,17 @@ function isQuotaError(msg: string): boolean {
   );
 }
 
-/** Seconds until retry, if the provider volunteered one. */
+/**
+ * Seconds until retry, if the provider volunteered one.
+ *
+ * Providers phrase this differently and the difference matters: Groq says
+ * "try again in 22m11s", Gemini says "Please retry in 16.3s". Matching only
+ * Groq's wording meant Gemini's estimate was missed, the 20-minute fallback
+ * applied, and a provider needing 16 SECONDS was benched for 20 MINUTES —
+ * which is what made the chain look exhausted when it was merely paced.
+ */
 function parseRetrySeconds(msg: string): number | null {
-  const hms = /try again in ((?:\d+h)?(?:\d+m)?[\d.]+s)/i.exec(msg)?.[1];
+  const hms = /(?:try again|retry) in ((?:\d+h)?(?:\d+m)?[\d.]+s)/i.exec(msg)?.[1];
   if (hms) {
     const h = Number(/(\d+)h/.exec(hms)?.[1] ?? 0);
     const m = Number(/(\d+)m/.exec(hms)?.[1] ?? 0);
@@ -413,6 +421,8 @@ function parseRetrySeconds(msg: string): number | null {
 const COOLDOWN_FILE = path.join(__dirname, "..", ".llm-cooldowns.json");
 /** Default rest for a provider that reports exhaustion without an estimate. */
 const COOLDOWN_FALLBACK_SEC = 20 * 60;
+/** A per-minute pace limit is not exhaustion — never rest longer for one. */
+const COOLDOWN_RATE_LIMIT_MAX_SEC = 90;
 
 function readCooldowns(): Record<string, number> {
   try {
@@ -517,7 +527,12 @@ export async function generate(
       }
 
       lastQuotaError = msg;
-      setCooldown(provider, parseRetrySeconds(msg) ?? COOLDOWN_FALLBACK_SEC, msg);
+      const stated = parseRetrySeconds(msg);
+      // Distinguish "you are going too fast" from "you are out for the day".
+      const perMinute = /per minute|RPM|TPM|requests per minute/i.test(msg) ||
+        (stated !== null && stated <= COOLDOWN_RATE_LIMIT_MAX_SEC);
+      const rest = stated ?? (perMinute ? COOLDOWN_RATE_LIMIT_MAX_SEC : COOLDOWN_FALLBACK_SEC);
+      setCooldown(provider, rest, msg);
     }
   }
 
