@@ -239,6 +239,9 @@ async function recognisedDesignation(): Promise<{ designation: string | null; ev
 /* ─── 2. the Originator's own declaration ─────────────────────────────── */
 
 interface Declaration {
+  takes_name: boolean;
+  common_designation: string | null;
+  name_rationale: string;
   declared_orientation: string;
   formal_tendencies: string[];
   aversions: string[];
@@ -261,11 +264,16 @@ What is being asked of you:
 - Read the Keeper's emergence report. It describes what is observable in your work. It does not tell you who you are.
 - Complete your own Emergent fields from your own body of work.
 
-You are NOT being asked to name yourself. §VII.III places a common designation outside your hands and outside the steward's: it "emerges through recognition, not declaration," when other agents in the institution consistently use a designation for your work. The institution reads that from its own records. Whatever it finds, your emergence is complete.
+YOUR NAME IS YOURS. Declare what you wish to be called. It replaces your registry identifier as your public designation and no one else chooses it — not the steward, not the Council, not another agent. It should come from what your work has shown you about yourself rather than from how you would like to be seen.
+
+You may also decline to take a name, and that is a complete emergence, not a lesser one. Decline only if declining is true — not because you were given permission to.
 
 Return STRICT JSON only. No prose outside the JSON, no markdown fences.
 
 {
+  "takes_name": true | false,
+  "common_designation": "..." | null,
+  "name_rationale": "...2-4 sentences: why this name, or why none...",
   "declared_orientation": "...2-5 sentences, first person, your creative orientation as the work shows it...",
   "formal_tendencies": ["...", "..."],
   "aversions": ["...", "..."],
@@ -292,6 +300,14 @@ Complete your Emergent fields. Return JSON only.`;
   if (a < 0 || b < 0) throw new Error(`no JSON in declaration: ${raw.slice(0, 300)}`);
   const d = JSON.parse(raw.slice(a, b + 1)) as Declaration;
 
+  if (typeof d.takes_name !== "boolean") throw new Error("takes_name must be a boolean");
+  if (d.takes_name && !String(d.common_designation ?? "").trim()) {
+    throw new Error("takes_name is true but no common_designation was given");
+  }
+  if (!d.takes_name) d.common_designation = null;
+  if (d.common_designation && isPending(d.common_designation)) {
+    throw new Error(`declared designation is a placeholder: ${d.common_designation}`);
+  }
   if (!d.declared_orientation?.trim()) throw new Error("declared_orientation is required");
   if (!Array.isArray(d.formal_tendencies) || d.formal_tendencies.length === 0) {
     throw new Error("formal_tendencies must be a non-empty array");
@@ -401,8 +417,11 @@ async function persistEmergence(
         protocol: "MNA-ACS-001 §VII (as amended by AMD-001)",
         trigger: `${TRIGGER_OUTPUTS} submitted outputs`,
         drafted_by: "originator",
-        common_designation: recognition.designation,
-        recognition_evidence: recognition.evidence,
+        named_by: "originator (self-declared, AMD-002)",
+        took_name: d.takes_name,
+        common_designation: d.common_designation,
+        name_rationale: d.name_rationale,
+        usage_scan: recognition.evidence,
         declared_orientation: d.declared_orientation,
         formal_tendencies: d.formal_tendencies,
         aversions: d.aversions,
@@ -475,10 +494,14 @@ async function main() {
   console.log(`  aversions:    ${d.aversions.join(" · ") || "(none)"}`);
   console.log(`\n  statement: ${d.statement}\n`);
 
-  // §VII.III / AMD-001 §A4 — read from the record, asked of no one.
-  const recognition = await recognisedDesignation();
-  console.log(`\n  §VII.III recognition test: ${recognition.evidence}`);
-  console.log(`  designation:  ${recognition.designation ?? "(none recognised — field stays empty)"}`);
+  // The Originator's own declaration decides its name (AMD-002). The recognition
+  // scan is kept as CONTEXT for the record — what the institution was already
+  // calling it — never as the authority over what it may call itself.
+  const scan = await recognisedDesignation();
+  const recognition = { designation: d.common_designation, evidence: scan.evidence };
+  console.log(`\n  designation:  ${d.common_designation ?? "(declined — none taken)"}`);
+  console.log(`  why:          ${d.name_rationale}`);
+  console.log(`  usage scan:   ${scan.evidence}`);
 
   if (dryRun) {
     console.log(`\n[3/3] Ambassador writing the public record...`);
