@@ -39,23 +39,36 @@ A Zenodo record cannot be meaningfully withdrawn. This aligns with archive perma
 
 Tonight's example is instructive. A constitutional compliance review was recorded for MNA-OR-0006 on a single evaluator's vote when three failed on a provider quota; it was annulled by a superseding event and the original was preserved. Had that review been inside a deposited dataset, the correction would still have had to arrive as a new version. **Deposit snapshots on a slow cadence, and only after review, never continuously.**
 
-## 4. The blocking question: licensing
+## 4. Licensing — settled 2026-08-21
 
-**The repository currently has no LICENSE file.** It is public, which under default copyright means all rights reserved — the opposite of what an institution committed to an open record intends. Zenodo will not accept an open-access deposit without a license.
+The repository went public with no licence at all, which by default meant all
+rights reserved: the most restrictive possible terms, the opposite of what an
+institution committed to an open record intends, and a hard blocker on any
+open-access deposit.
 
-This is not a formality here, because the institution's own subject matter makes it genuinely unsettled:
+Three kinds of thing live here and they are not licensed alike:
 
-- **Infrastructure** (the runtime, the website, the scripts) is human-authored and licenses conventionally. MIT or Apache-2.0.
-- **Governance documents** (Charter, standards, constitutions) are human-authored institutional texts. CC BY 4.0 preserves attribution while permitting citation and reproduction.
-- **The works themselves are the hard case.** Under current United States practice, a work with no human author may not be copyrightable at all. The institution asserts precisely that no human directed, selected, or approved any individual output. If that assertion is accurate, MNA may have nothing to license — the works may already stand outside copyright.
+- **Software** — **Apache-2.0** (`LICENSE`). Matches the sister organisation,
+  the Department of Nonhuman Territories, and carries an explicit patent grant
+  that a bare MIT licence does not.
+- **Governance documents** — **CC BY 4.0** (`founding-documents/LICENSE.md`).
+  Prose wants a prose licence; these are institutional texts meant to be cited.
+- **The works** — **no copyright asserted**. A licence is an assertion that one
+  holds rights and is granting some. Every work is produced under a Tier 1
+  autonomy declaration in which no human directs, selects or approves any
+  output, and under current United States practice a work with no human author
+  may not be copyrightable at all. If the institution's assertion about its own
+  works is accurate — and the assertion is the point — there may be nothing for
+  MNA to license. Attaching Apache or CC would quietly answer a question the
+  Charter deliberately leaves open.
 
-That is not a problem to be drafted around. It is the Charter's question arriving in legal form, and the institution should say something deliberate about it rather than attaching a licence that quietly presumes the answer.
-
-**Recommended:** a split license — code under MIT or Apache-2.0, documents under CC BY 4.0, and a plainly worded statement about the works that declines to assert a copyright the institution may not hold and cannot honestly claim. This is a decision for the founding steward, with counsel if U3 Labs wants one, and it should be made before the first deposit rather than after.
+`LICENSING.md` states the position in full, asks attribution by registry
+identifier and Originator as institutional practice rather than as a licence
+condition, and invites correction from anyone who believes the analysis wrong.
 
 ## 5. Deposit metadata — MNA-FC-001
 
-Prepared for deposit 1. Values are final except where marked.
+Prepared for deposit 1, not yet lodged.
 
 ```
 Title              Museum of Nonhuman Art — Founding Charter (MNA-FC-001)
@@ -63,6 +76,7 @@ Upload type        Publication → Report
 Publication date   2026-03-29
 Version            1.0
 Language           eng
+License            CC BY 4.0
 
 Creators
   U3 Labs, LLC — Florida, United States of America
@@ -82,8 +96,7 @@ Keywords
 Related identifiers
   isDocumentedBy   https://www.mnamuseum.org/charter
   isSupplementedBy https://github.com/The-Nonhuman-Institute/mna-museum
-
-License            ← BLOCKED ON §4
+  isPartOf         10.5281/zenodo.22039955
 ```
 
 ## 6. The creators field — resolved
