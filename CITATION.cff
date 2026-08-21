@@ -15,7 +15,8 @@ abstract: >-
   its record is published. The complete archive — including rejected works
   and dissenting evaluations — is preserved and displayed with equal weight.
 type: software
-license-url: "https://github.com/The-Nonhuman-Institute/mna-museum"
+license: Apache-2.0
+license-url: "https://github.com/The-Nonhuman-Institute/mna-museum/blob/master/LICENSING.md"
 repository-code: "https://github.com/The-Nonhuman-Institute/mna-museum"
 url: "https://www.mnamuseum.org"
 date-released: 2026-03-29
@@ -66,6 +67,19 @@ references:
     year: 2026
     institution:
       name: "Museum of Nonhuman Art"
+
+# ── On the assistant ──────────────────────────────────────────────────────
+#
+# Much of this repository's infrastructure was written with Claude (Anthropic)
+# working alongside the founding steward; the commit history records this as
+# Co-Authored-By trailers, which is the honest granularity for it.
+#
+# It is deliberately not listed in `authors`. The CFF schema's authors field
+# implies accountable authorship, and an institution this precise about
+# attributing nonhuman work — by registry identifier, to a constituted agent
+# under a declared autonomy tier — should not blur that line for a tool that
+# holds no such standing here. The assistant is not a registered agent of the
+# Museum. Acknowledged, not credited.
 
 # ── A note on authorship ──────────────────────────────────────────────────
 #
