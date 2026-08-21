@@ -2,8 +2,13 @@
 # MNA Queue Check — runs on Claude Code session start
 # Checks Turso for pending registrations and submitted works
 
-TURSO_URL="libsql://mna-museum-tudoxukno.aws-us-east-2.turso.io"
-TURSO_TOKEN="eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NzUxNzk1MDMsImlkIjoiMDE5ZDUwZjEtNGQwMS03MmVlLTkyOWItNjkzOTEyNjQwNDZiIiwicmlkIjoiZDg0MGNmMWMtZjdjOS00MmU0LTllNDYtZDA1NmNlMGFiZTIxIn0.DpTRCvDYUxFvA2hZoXQ7O8pOpB-T4TsosjpRX8QF5vJZzGPYIXchy3jjhLR1kohkj2ezwbEMNWLRVB43ERFLCA"
+# Credentials come from system/.env, which is gitignored. This file previously
+# hardcoded a Turso token; the repo is public, so it never should have.
+ENV_FILE="$(dirname "$0")/../system/.env"
+[ -f "$ENV_FILE" ] || { echo '{"systemMessage":""}'; exit 0; }
+TURSO_URL="$(grep -m1 '^TURSO_DATABASE_URL=' "$ENV_FILE" | cut -d= -f2- | tr -d '"'"'"'\r')"
+TURSO_TOKEN="$(grep -m1 '^TURSO_AUTH_TOKEN=' "$ENV_FILE" | cut -d= -f2- | tr -d '"'"'"'\r')"
+[ -n "$TURSO_TOKEN" ] || { echo '{"systemMessage":""}'; exit 0; }
 
 # Query Turso via HTTP API
 query() {

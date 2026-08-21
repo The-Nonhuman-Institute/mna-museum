@@ -96,7 +96,7 @@ All email environment variables are already set in:
 - `website/.env.local` — for the Next.js website
 
 ```
-RESEND_API_KEY=re_DebpxJv5_3UPcZNTseE3mmVfFwvS2GEFq
+RESEND_API_KEY=re_your_key_here
 MNA_FROM_EMAIL=registry@mnamuseum.org
 MNA_ADMIN_EMAIL=jballard0726@gmail.com
 ```
