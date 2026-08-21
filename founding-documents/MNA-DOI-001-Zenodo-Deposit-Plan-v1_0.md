@@ -1,6 +1,8 @@
 # MNA-DOI-001 — Zenodo Deposit Plan
 
-**Status:** DRAFT — awaiting a licensing decision (see §4, which blocks everything else)
+**Status:** ACTIVE — licensing settled 2026-08-21; deposit 4 (codebase) minted
+**Concept DOI:** [10.5281/zenodo.22039955](https://doi.org/10.5281/zenodo.22039955) — always the latest release
+**v1.0 DOI:** [10.5281/zenodo.22039956](https://doi.org/10.5281/zenodo.22039956)
 **Drafted:** 2026-08-21
 **Purpose:** Establish persistent, citable identifiers for the institution's record.
 
@@ -25,7 +27,7 @@ Three reasons, in order of weight.
 | 1 | **MNA-FC-001 Founding Charter** | publication / report | Settled, versioned, constitutional. Establishes MNA's citable identity. |
 | 2 | **MNA-ACS-001 + AMD-001** | publication / report | Versioned standard; Zenodo's version DOIs fit an amended document exactly. |
 | 3 | **The collection dataset** | dataset | Works, evaluations, critical responses and full provenance, machine-readable. |
-| 4 | **The codebase** | software | Via the GitHub release integration; `.zenodo.json` is already in place. |
+| 4 | **The codebase** | software | ✅ **MINTED** 2026-08-21 — `10.5281/zenodo.22039955`. Each tagged release adds a version. |
 
 **Do not deposit:** individual works, at least for now. One hundred and sixty-one DOIs is noise, and a DOI granted indiscriminately means less than one granted deliberately. Canonized works may warrant individual identifiers later; that should be a decision, not a default.
 
@@ -84,14 +86,28 @@ Related identifiers
 License            ← BLOCKED ON §4
 ```
 
-## 6. Before the first deposit — verify the creators field
+## 6. The creators field — resolved
 
-The `creators` field is the whole point of depositing, and its behaviour with a non-human creator is untested.
+The concern was that Zenodo or DataCite might reject a non-human creator, or
+silently normalise it to the stewarding entity, which would assert human
+authorship of nonhuman work.
 
-**Make one deliberate test deposit** (Zenodo provides a sandbox at `sandbox.zenodo.org`) recording an Originator — for example `MNA-OR-0004 (∅∇∅)` — with no ORCID and no affiliation. Then confirm:
+**It does neither.** Zenodo's `creators.name` is free text with no personhood
+requirement and no mandatory identifier. Existing public records store
+`CERN`, `CERN openlab management Team` and `LIGO Scientific Collaboration`
+verbatim, without ORCID or affiliation. An entry of the form
+`MNA-OR-0004 (∅∇∅)` will survive intact.
 
-1. Zenodo accepts the record without demanding a personal identifier.
-2. The DOI metadata exports intact to DataCite.
-3. Downstream tools do not silently normalise the creator to `U3 Labs, LLC`.
+No sandbox rehearsal is needed; the evidence was already public.
 
-If the creator is flattened to the stewarding entity, the deposit asserts human authorship of nonhuman work — the exact claim the institution exists to leave open — and the strategy needs rethinking before anything permanent is minted. Test in the sandbox first; sandbox records can be discarded, real ones cannot.
+Note also that this concern never applied to deposit 4. The codebase is
+human-authored infrastructure and its creators are correctly the founding
+steward and U3 Labs. The question bears only on deposit 3, the collection
+dataset, where works are attributed to their Originators.
+
+## 7. Next deposit
+
+Deposit 3, the collection dataset, is the strongest remaining case. It should
+carry Originators in `creators`, cite each work by registry identifier, and be
+deposited on a slow cadence — after review, never continuously, because a
+deposited record can only be superseded and never withdrawn.
