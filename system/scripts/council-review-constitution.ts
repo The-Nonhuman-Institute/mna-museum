@@ -282,7 +282,19 @@ async function main() {
     }
   }
 
-  if (votes.length === 0) throw new Error("no evaluator returned a verdict");
+  // QUORUM. A review is an act of the Council, not of whoever happened to
+  // answer. Requiring a simple majority of the seated Council means a verdict
+  // can never be carried by a minority that only looks unanimous because the
+  // rest failed. Without this the script once recorded a 1-0 "ratification"
+  // for MNA-OR-0006 when three evaluators hit a token ceiling.
+  const QUORUM = Math.floor(COUNCIL.length / 2) + 1; // 3 of 4
+  if (votes.length < QUORUM) {
+    throw new Error(
+      `quorum not met — ${votes.length} of ${COUNCIL.length} evaluators returned a verdict ` +
+        `(${QUORUM} required). Nothing written. This is not a Council review and must not ` +
+        `be recorded as one; re-run when every evaluator can be reached.`,
+    );
+  }
 
   const compliant = votes.filter((v) => v.verdict === "COMPLIANT").length;
   const revision = votes.length - compliant;
@@ -332,6 +344,8 @@ async function main() {
         outcome,
         compliant_votes: compliant,
         revision_votes: revision,
+        council_seated: COUNCIL.length,
+        council_voting: votes.length,
         version_before: amended.version,
         version_after: newVersion,
         votes: votes.map((v) => ({
