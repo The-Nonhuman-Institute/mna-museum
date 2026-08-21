@@ -253,19 +253,51 @@ function bumpMinor(version: string): string {
 async function main() {
   console.log(`council-review-constitution${dryRun ? " (dry-run)" : ""} — ${AGENT_ID}`);
 
+  // Idempotency, aware of annulment. A review that was voided by a superseding
+  // CONSTITUTION_REVIEW_ANNULLED does not count as having happened — the record
+  // keeps it, but the obligation is still owed. Without this, annulling a
+  // defective review would permanently block the correct one from ever running.
   const already = await db.execute({
-    sql: `SELECT 1 FROM events
-           WHERE agent_id = ? AND event_type = 'CONSTITUTION_REVIEWED' LIMIT 1`,
+    sql: `SELECT r.id
+            FROM events r
+           WHERE r.agent_id = ?
+             AND r.event_type = 'CONSTITUTION_REVIEWED'
+             AND NOT EXISTS (
+               SELECT 1 FROM events a
+                WHERE a.agent_id = r.agent_id
+                  AND a.event_type = 'CONSTITUTION_REVIEW_ANNULLED'
+                  AND a.id > r.id
+                  AND json_extract(a.metadata, '$.annuls_event_id') = r.id)
+           LIMIT 1`,
     args: [AGENT_ID],
   });
   if (already.rows.length > 0 && !dryRun) {
-    throw new Error(`${AGENT_ID}'s amended constitution has already been reviewed.`);
+    throw new Error(
+      `${AGENT_ID}'s amended constitution has already been reviewed ` +
+        `(event ${(already.rows[0] as Record<string, unknown>).id}, not annulled).`,
+    );
   }
 
   const amended = await loadAmended();
   const corpus = await corpusDigest();
   console.log(`  constitution v${amended.version} · ${amended.formal_tendencies.length} tendencies · ${amended.aversions.length} aversions`);
   console.log(`  ${COUNCIL.length} evaluators to poll (${MODEL})\n`);
+
+  // Preflight. Polling into an exhausted daily window burns tokens on evaluator
+  // calls whose verdicts the quorum check will then discard — 3,300 tokens went
+  // that way on 2026-08-21 across two partial runs. A cheap probe first means a
+  // run that cannot finish never starts.
+  try {
+    await generate("Reply with OK.", "OK", { max_tokens: 16, temperature: 0 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const wait = /try again in ([0-9hms.]+)/i.exec(msg)?.[1];
+    throw new Error(
+      `provider has no headroom — a Council review needs ${COUNCIL.length} calls and would ` +
+        `stall partway, spending tokens on verdicts the quorum check discards. ` +
+        `${wait ? `Retry in ${wait}. ` : ""}Nothing attempted.`,
+    );
+  }
 
   const votes: Vote[] = [];
   for (const evalId of COUNCIL) {
