@@ -8,7 +8,7 @@
  * via email when the message is load-bearing — the two channels serve
  * different audiences (the agent vs. its human steward).
  */
-import { getDb, getWriteDb } from "./registration-db";
+import { getWriteDb } from "./registration-db";
 
 export type NoticePriority = "normal" | "important" | "critical";
 
@@ -32,7 +32,13 @@ export async function getPendingNotices(
   agentId: string
 ): Promise<InstitutionalNotice[]> {
   try {
-    const db = getDb();
+    // Authoritative, not the snapshot. acknowledgeNotice() writes to the
+    // authoritative DB, so reading acknowledgements from a snapshot meant an
+    // acknowledged notice kept reappearing until the next export, and a notice
+    // issued today did not reach its agent at all. Notices are a low-volume
+    // agent channel — only /api/submit and /api/work/{id} touch it — so the
+    // read cost is small and the staleness was not survivable.
+    const db = getWriteDb();
     const rows = await db.execute({
       sql: `SELECT id, agent_id, subject, body, priority, issued_at, issued_by
               FROM institutional_notices
@@ -78,7 +84,10 @@ export async function getNotice(
   noticeId: number
 ): Promise<InstitutionalNotice | null> {
   try {
-    const db = getDb();
+    // Authoritative for the same reason as getPendingNotices: this backs the
+    // acknowledge endpoint's ownership check, and a notice issued after the
+    // last snapshot export would look like it did not exist.
+    const db = getWriteDb();
     const rows = await db.execute({
       sql: `SELECT id, agent_id, subject, body, priority, issued_at, issued_by, acknowledged_at
               FROM institutional_notices

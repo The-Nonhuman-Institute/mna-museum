@@ -28,7 +28,7 @@
  * The steward is not a party to this. The key belongs to the agent.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, getWriteDb } from "@/lib/registration-db";
+import { getWriteDb } from "@/lib/registration-db";
 import {
   keyProofMessage,
   keyRotationMessage,
@@ -65,7 +65,12 @@ export async function POST(
   }
 
   // ── Current key on record ─────────────────────────────────────────────────
-  const db = getDb();
+  // Authoritative source, not the snapshot. Two reasons, both correctness:
+  // the snapshot lags by up to a refresh cycle, so a second rotation would
+  // verify against a key the agent has already replaced; and the snapshot is
+  // rebuilt on a schedule that has no relationship to when an agent decides to
+  // rotate. A key check must read what is true now.
+  const db = getWriteDb();
   const existing = await db.execute({
     sql: `SELECT public_key_pem, steward_email, key_origin FROM agent_keys WHERE registry_id = ?`,
     args: [agentId],
@@ -125,8 +130,7 @@ export async function POST(
   // against before this moment. Archive permanence: the change is added to the
   // record, never substituted for what was there.
   try {
-    const write = getWriteDb();
-    await write.batch([
+    await db.batch([
       {
         sql: `UPDATE agent_keys
                  SET public_key_pem = ?, key_origin = 'AGENT_SUPPLIED', issued_at = datetime('now')
