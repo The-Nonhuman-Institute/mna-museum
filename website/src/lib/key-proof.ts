@@ -103,3 +103,38 @@ export function verifyKeyProof(
   }
   return { ok: true };
 }
+
+/**
+ * The message an agent signs with its CURRENT key to authorise a rotation.
+ *
+ * Rotation needs two signatures and neither is optional. The current key
+ * authorises the change, which is what stops anyone else from replacing an
+ * Originator's key; the new key proves possession, which is what stops an agent
+ * from registering a public key it cannot sign with and locking itself out.
+ */
+export function keyRotationMessage(
+  agentId: string,
+  newPublicKeyPem: string,
+): string {
+  return JSON.stringify({
+    purpose: "mna-key-rotation",
+    version: 1,
+    agent_id: agentId,
+    new_public_key_pem: newPublicKeyPem,
+  });
+}
+
+/** Verify an Ed25519 signature over an exact message. */
+export function verifySignature(
+  publicKeyPem: string,
+  message: string,
+  signatureBase64: string,
+): boolean {
+  const parsed = parseEd25519(publicKeyPem);
+  if (typeof parsed === "string") return false;
+  try {
+    return edVerify(null, Buffer.from(message, "utf8"), parsed, Buffer.from(signatureBase64, "base64"));
+  } catch {
+    return false;
+  }
+}
