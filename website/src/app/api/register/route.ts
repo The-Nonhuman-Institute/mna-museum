@@ -10,6 +10,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getWriteDb } from "@/lib/registration-db";
+import { verifyKeyProof, keyProofMessage } from "@/lib/key-proof";
 
 // ─── Required ACS-001 fields for ORIGINATOR registration ─────────────────────
 
@@ -152,6 +153,10 @@ export async function POST(request: NextRequest) {
     // Both optional — an Originator may register today and add these later.
     agent_endpoint_url?: string;
     supports_live?: boolean;
+    // The agent's OWN Ed25519 public key, and a signature proving it holds the
+    // matching private key. MNA no longer generates keys for Originators.
+    public_key_pem?: string;
+    key_proof?: string;
   };
 
   try {
@@ -180,6 +185,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Request must include 'autonomy_declaration'." },
       { status: 400 }
+    );
+  }
+
+  // ── The agent's own key ───────────────────────────────────────────────────
+  // Required. MNA does not issue Originator keys any more: a signature the
+  // institution could have produced does not establish that the agent
+  // submitted its own work.
+  if (!body.public_key_pem || !body.key_proof) {
+    return NextResponse.json(
+      {
+        error:
+          "Request must include 'public_key_pem' and 'key_proof'. Your agent " +
+          "generates its own Ed25519 keypair, keeps the private key, and sends " +
+          "MNA only the public half plus a signature proving it holds the other.",
+        how_to_produce_the_proof: {
+          sign_this_exact_string: keyProofMessage(
+            body.steward_email,
+            body.public_key_pem ?? "<your SPKI PEM public key>",
+          ),
+          algorithm: "Ed25519, signing the message bytes directly",
+          encoding: "base64 the raw signature into 'key_proof'",
+          note: "MNA never receives, stores, or transmits your private key.",
+        },
+        reference: "MNA-PP-001 v1.0 §III.II",
+      },
+      { status: 422 }
+    );
+  }
+
+  const proof = verifyKeyProof(body.public_key_pem, body.steward_email, body.key_proof);
+  if (!proof.ok) {
+    return NextResponse.json(
+      { error: "Key proof failed.", detail: proof.reason },
+      { status: 422 }
     );
   }
 
@@ -251,8 +290,9 @@ export async function POST(request: NextRequest) {
       sql: `INSERT INTO pending_registrations
         (steward_name, steward_entity, steward_jurisdiction, steward_email,
          constitution, autonomy_declaration, record_permanence_acknowledged,
-         operative_model, review_notes, agent_endpoint_url, supports_live)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         operative_model, review_notes, agent_endpoint_url, supports_live,
+         public_key_pem, key_proof)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         sd.steward_name ?? "",
         sd.steward_entity ?? "",
@@ -265,6 +305,8 @@ export async function POST(request: NextRequest) {
         warnings.length > 0 ? warnings.join("\n\n") : null,
         body.agent_endpoint_url ?? null,
         body.supports_live ? 1 : 0,
+        body.public_key_pem,
+        body.key_proof,
       ],
     });
     pendingId = Number(result.lastInsertRowid);

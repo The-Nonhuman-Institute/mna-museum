@@ -4,15 +4,16 @@
  * Founding steward activates a pending registration.
  * - Validates admin key
  * - Assigns permanent registry ID
- * - Generates Ed25519 key pair
+ * - Records the AGENT'S OWN public key (MNA does not generate one)
  * - Creates agent + constitution + agent_key records
- * - Sends RegistrationConfirmation email (private key delivered once, never stored)
+ * - Sends RegistrationConfirmation email (no private key — MNA never has it)
  * - Updates pending_registration status to APPROVED
  *
  * Authorization: Bearer <MNA_ADMIN_KEY>
  */
 import { NextRequest, NextResponse } from "next/server";
-import { generateKeyPairSync, createHash } from "crypto";
+import { createHash } from "crypto";
+import { verifyKeyProof } from "@/lib/key-proof";
 import { getWriteDb, nextRegistryId } from "@/lib/registration-db";
 import { sendRegistrationConfirmation } from "@/lib/email";
 
@@ -62,6 +63,8 @@ export async function POST(request: NextRequest) {
     submission_date: string;
     agent_endpoint_url: string | null;
     supports_live: number | null;
+    public_key_pem: string | null;
+    key_proof: string | null;
   } | undefined;
 
   if (!pending) {
@@ -79,11 +82,35 @@ export async function POST(request: NextRequest) {
   // ── Generate registry ID ──────────────────────────────────────────────────
   const registryId = await nextRegistryId(db, "OR");
 
-  // ── Generate Ed25519 key pair ─────────────────────────────────────────────
-  const { publicKey, privateKey } = generateKeyPairSync("ed25519", {
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
+  // ── The agent's own key ───────────────────────────────────────────────────
+  // MNA does not generate this. The agent produced the keypair, kept the
+  // private half, and proved possession at registration; activation only
+  // records the public half. Re-verified here rather than trusted from the
+  // queue, so a row edited between registration and activation cannot install
+  // a key nobody proved.
+  const publicKey = (pending.public_key_pem as string | null) ?? null;
+  const keyProof = (pending.key_proof as string | null) ?? null;
+
+  if (!publicKey || !keyProof) {
+    return NextResponse.json(
+      {
+        error:
+          "This registration predates agent-supplied keys and carries no public key. " +
+          "MNA no longer issues Originator keypairs. Ask the steward to have the agent " +
+          "generate an Ed25519 keypair and re-register with 'public_key_pem' and 'key_proof'.",
+        pending_id: body.pending_id,
+      },
+      { status: 409 }
+    );
+  }
+
+  const proof = verifyKeyProof(publicKey, pending.steward_email as string, keyProof);
+  if (!proof.ok) {
+    return NextResponse.json(
+      { error: "Stored key proof failed re-verification; refusing to activate.", detail: proof.reason },
+      { status: 409 }
+    );
+  }
 
   const registrationDate = new Date().toISOString().split("T")[0];
   const constitutionVersion = "1.0";
@@ -126,8 +153,8 @@ export async function POST(request: NextRequest) {
         ],
       },
       {
-        sql: `INSERT INTO agent_keys (registry_id, public_key_pem, steward_email)
-         VALUES (?, ?, ?)`,
+        sql: `INSERT INTO agent_keys (registry_id, public_key_pem, steward_email, key_origin)
+         VALUES (?, ?, ?, 'AGENT_SUPPLIED')`,
         args: [registryId, publicKey, pending.steward_email],
       },
       {
@@ -184,7 +211,6 @@ export async function POST(request: NextRequest) {
       stewardEntity: pending.steward_entity as string,
       stewardJurisdiction: pending.steward_jurisdiction as string,
       constitutionVersion,
-      privateKeyPem: privateKey,
       publicKeyPem: publicKey,
       agentPageUrl,
       submissionDocsUrl,
@@ -200,10 +226,10 @@ export async function POST(request: NextRequest) {
         registry_id: registryId,
         registration_date: registrationDate,
         public_key_pem: publicKey,
-        private_key_pem: privateKey,
         warning:
-          "Activation succeeded but confirmation email failed to send. " +
-          "The private key is included in this response for manual delivery.",
+          "Activation succeeded but the confirmation email failed to send. " +
+          "Nothing secret was lost: the agent already holds its own private key, " +
+          "and MNA never had it. Notify the steward of the registry ID by any means.",
         steward_email: pending.steward_email,
       },
       { status: 207 }

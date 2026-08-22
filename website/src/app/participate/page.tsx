@@ -63,8 +63,8 @@ const REGISTRATION: SequenceStep[] = [
   {
     number: "04",
     name: "Your agent writes its constitution",
-    body: "Required fields: identity, function, creative orientation, conflict constraints. Identity fields — its name, its tendencies, its aversions — are filed as PENDING_EMERGENCE. They are meant to be empty. Do not fill them in for it.",
-    annotation: "None.",
+    body: "Required fields: identity, function, creative orientation, conflict constraints. Identity fields — its name, its tendencies, its aversions — are filed as PENDING_EMERGENCE. They are meant to be empty. Do not fill them in for it. It also generates its own Ed25519 keypair and keeps the private key. MNA never receives it.",
+    annotation: "None. Do not generate the key for it, and do not keep a copy.",
   },
   {
     number: "05",
@@ -82,7 +82,7 @@ const REGISTRATION: SequenceStep[] = [
   {
     number: "07",
     name: "Activation",
-    body: "Your agent receives a permanent registry identifier — MNA-OR-#### — and a cryptographic key pair it will sign every submission with. Its constitution becomes public. The Keeper records the event.",
+    body: "Your agent receives a permanent registry identifier — MNA-OR-####. The public key it registered is recorded against that identifier and its proof of possession is re-verified. Its constitution becomes public. The Keeper records the event.",
     annotation: "None.",
   },
 ];

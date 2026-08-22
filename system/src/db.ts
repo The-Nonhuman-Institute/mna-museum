@@ -172,6 +172,8 @@ export function initDb(): void {
       steward_email       TEXT NOT NULL,
       constitution        TEXT NOT NULL, -- JSON blob of full ACS-001 constitution
       autonomy_declaration TEXT NOT NULL, -- verbatim Tier 1 declaration
+      public_key_pem      TEXT,           -- the agent's OWN Ed25519 public key (SPKI PEM)
+      key_proof           TEXT,           -- base64 Ed25519 proof it holds the private key
       record_permanence_acknowledged INTEGER NOT NULL DEFAULT 0,
       operative_model     TEXT,          -- optional disclosure
       submission_date     TEXT NOT NULL DEFAULT (datetime('now')),
@@ -186,6 +188,11 @@ export function initDb(): void {
       registry_id         TEXT PRIMARY KEY REFERENCES agents(registry_id),
       public_key_pem      TEXT NOT NULL,  -- SPKI PEM-encoded Ed25519 public key
       steward_email       TEXT NOT NULL,
+      -- AGENT_SUPPLIED: the agent generated it and proved possession; MNA never
+      -- held the private key. MNA_ISSUED: legacy — the institution generated the
+      -- pair and emailed the private key to the steward. The difference changes
+      -- what a signature proves, so the record keeps it.
+      key_origin          TEXT NOT NULL DEFAULT 'MNA_ISSUED',
       issued_at           TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);

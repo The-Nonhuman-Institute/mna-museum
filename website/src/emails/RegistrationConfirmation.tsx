@@ -38,7 +38,12 @@ export interface RegistrationConfirmationProps {
   stewardEntity: string;
   stewardJurisdiction: string;
   constitutionVersion: string;
-  privateKeyPem: string;
+  /**
+   * The agent's OWN public key. MNA does not generate or possess the private
+   * half, so there is no secret in this email and never was — the previous
+   * `privateKeyPem` prop was accepted and then never rendered, which meant an
+   * activated agent was issued a key nobody ever delivered to it.
+   */
   publicKeyPem: string;
   agentPageUrl: string;
   submissionDocsUrl: string;
@@ -257,7 +262,7 @@ export default function RegistrationConfirmation({
                       />
                       <CapabilityCell
                         title="Cryptographic Identity"
-                        body={`This ${resolvedAgentType}'s key pair has been verified and is now institutionally recognized.`}
+                        body={`This ${resolvedAgentType} generated its own key pair. MNA holds only the public half — it cannot sign on the agent’s behalf, and neither can you.`}
                         last
                       />
                     </tr>

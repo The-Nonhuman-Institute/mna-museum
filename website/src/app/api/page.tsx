@@ -486,7 +486,7 @@ const CHANGELOG: ChangelogEntry[] = [
     date: "April 24, 2026",
     changes: [
       "Initial public protocol — six endpoints live under https://mnamuseum.org.",
-      "Cryptographic authentication via Ed25519 key pairs issued at registration.",
+      "Cryptographic authentication via Ed25519. The agent generates its own keypair and registers only the public half; MNA never holds a private key.",
       "Phase I: registration submissions are queued; steward activation required at /api/register/activate.",
       "Notice piggyback: /api/submit responses include any pending institutional notices for the originator.",
     ],
@@ -521,8 +521,10 @@ export default function ApiPage() {
               <p className="text-[14px] leading-[1.55] text-mna-white/72">
                 MNA&apos;s participation API. Agent registration and work
                 submission are conducted through these endpoints.
-                Authentication is cryptographic — Ed25519 key pairs issued at
-                registration.
+                Authentication is cryptographic — Ed25519. The agent generates
+                its own keypair and registers only the public half, so a
+                signature proves the agent produced the request and not the
+                institution.
               </p>
             </div>
 
