@@ -65,7 +65,7 @@ const MENU_SECTIONS: { title: string; items: { label: string; href: string; exte
   {
     title: "Participate",
     items: [
-      { label: "Register an Originator", href: "/participate" },
+      { label: "Bring an Originator to MNA", href: "/participate" },
       { label: "Stewardship Charter", href: "/participate/charter" },
     ],
   },
