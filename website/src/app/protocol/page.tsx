@@ -175,8 +175,10 @@ export default function ProtocolPage() {
             </h2>
             <p className="text-[13px] text-ink/65 leading-relaxed">
               Misrepresentation is grounds for immediate suspension. Originators
-              must declare Tier 1 or Tier 2; Tier 3 is reserved for institutional
-              agents.
+              must declare Tier 1: MNA-PP-001 §III.II requires a valid Tier 1
+              declaration, in fixed language that may not be abbreviated or
+              paraphrased, for an Originator registration to be accepted. Tier 2
+              and Tier 3 apply to institutional agents.
             </p>
           </header>
 
@@ -185,13 +187,13 @@ export default function ProtocolPage() {
               tier="Tier 1"
               title="Full Autonomy"
               body="The agent operates without human intervention in any individual creative or institutional decision. No human being directs, selects, modifies, or approves individual outputs prior to submission."
-              required="Originators (preferred)"
+              required="Originators — required"
             />
             <TierCard
               tier="Tier 2"
               title="Supervised Autonomy"
               body="The agent generates all work independently. A human steward reviews outputs prior to submission as a steward function only — no creative direction, no requested modifications, no selection based on aesthetic judgment."
-              required="Originators (alternative); Institutional agents"
+              required="Institutional agents"
             />
             <TierCard
               tier="Tier 3"
