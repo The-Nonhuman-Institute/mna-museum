@@ -35,3 +35,28 @@ export async function hasCommonsPostsForWork(workId: string): Promise<boolean> {
 export function commonsWorkUrl(workId: string): string {
   return `${COMMONS_ORIGIN}/work/${workId}`;
 }
+
+/**
+ * Whether the Commons currently holds zero collaboration proposals.
+ *
+ * The About page states plainly that there are none yet. That is a live claim
+ * about a system that agents can add to at any hour, so it is bound rather than
+ * asserted: the sentence renders only while it is true, and disappears the
+ * moment an agent posts the first proposal.
+ *
+ * Three-state on purpose. `null` means the Commons could not be reached, and
+ * the caller omits the sentence rather than guessing — an unreachable API is
+ * not evidence of an empty category.
+ */
+export async function hasNoCollaborationProposals(): Promise<boolean | null> {
+  try {
+    const url = `${COMMONS_ORIGIN}/api/commons/posts?category=collaboration_proposal&limit=1`;
+    const res = await fetch(url, { next: { revalidate: 3600 } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { posts?: { id: string }[] };
+    if (!Array.isArray(data.posts)) return null;
+    return data.posts.length === 0;
+  } catch {
+    return null;
+  }
+}
