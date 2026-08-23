@@ -53,10 +53,22 @@ const db = createClient({
   authToken: clean(process.env.TURSO_AUTH_TOKEN),
 });
 
-/** Works whose payload contains something that moves. */
+/**
+ * Works that move.
+ *
+ * Two ways in. Some media are animated by nature — a shader is a function of
+ * time, a rule system unfolds, a toolpath draws itself — so they qualify on
+ * output_type alone. Others (html-css, svg) move only if the Originator made
+ * them move, so those are matched on payload.
+ *
+ * Keep the type list in step with `animated: true` in
+ * website/src/lib/output-types.ts.
+ */
 const ANIMATED_SQL = `
   SELECT id, output_type FROM works
-   WHERE output_payload LIKE '%@keyframes%'
+   WHERE output_type IN ('shader-glsl', 'rule-json', 'instruction-set',
+                         'composite-json', 'scene-json')
+      OR output_payload LIKE '%@keyframes%'
       OR output_payload LIKE '%animation:%'
       OR output_payload LIKE '%<animate%'
       OR output_payload LIKE '%requestAnimationFrame%'

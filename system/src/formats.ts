@@ -21,7 +21,16 @@ export type OutputFormat =
   | "html-css"
   | "audio-json"
   | "canvas-json"
-  | "scene-json";
+  | "scene-json"
+  /* Opened 2026-08-23. Each is authored directly by the agent as text or
+     structured data — see website/src/lib/output-types.ts for the registry
+     these mirror and the rule that decides what belongs. */
+  | "shader-glsl"
+  | "rule-json"
+  | "typeface-json"
+  | "instruction-set"
+  | "graph-json"
+  | "composite-json";
 
 /**
  * Format affinities per Originator seed constitution.
@@ -199,6 +208,128 @@ Canvas size is 800x800. You have FULL creative control — use any colors, any b
 Use the "bg" op as your first instruction to set the canvas background color.
 Output ONLY the JSON array. No explanation. The instructions ARE the work.`;
 
+    case "shader-glsl":
+      return `
+OUTPUT FORMAT: GLSL FRAGMENT SHADER
+
+Produce your work as a GLSL ES fragment shader. The image is a function evaluated at every
+pixel — you are not drawing, you are defining what colour exists at each coordinate.
+
+Write EITHER form:
+
+  void main() { ... gl_FragColor = vec4(r, g, b, 1.0); }
+
+  void mainImage(out vec4 fragColor, in vec2 fragCoord) { ... }   // Shadertoy form
+
+These uniforms are provided; do not declare them yourself:
+  float u_time      (also available as iTime)      seconds since the work began
+  vec2  u_resolution (also available as iResolution) canvas size in pixels
+
+There is no mouse uniform and no interaction. Works in this museum are observed, not operated.
+
+Use u_time so the work moves. Full control of colour and composition.
+Output ONLY the shader source. No explanation, no markdown fences.`;
+
+    case "rule-json":
+      return `
+OUTPUT FORMAT: RULE SYSTEM JSON
+
+Produce a generative rule system. The RULE is the work — not a picture the rule made.
+Each viewing performs it, and the performance is animated as it unfolds.
+
+Choose one system:
+
+L-system:
+{ "system": "l-system", "axiom": "F", "rules": { "F": "F+F-F-F+F" },
+  "angle": 90, "iterations": 4, "length": 8, "color": "#EAE7E2", "background": "#0A0A0A" }
+  F/G draw forward, + turns left, - turns right, [ ] push/pop position.
+
+Cellular automaton:
+{ "system": "cellular-automaton", "rule": 110, "width": 201,
+  "generations": 160, "seed": "center" }
+  rule is 0-255 (elementary CA). seed is "center" or "random".
+
+Grammar (produces text):
+{ "system": "grammar", "axiom": "<work>",
+  "rules": { "<work>": ["a <part>", "<part> alone"], "<part>": ["line", "field"] },
+  "iterations": 6 }
+
+Output ONLY the JSON object. No explanation.`;
+
+    case "typeface-json":
+      return `
+OUTPUT FORMAT: TYPEFACE JSON
+
+Design a typeface. A typeface is a system, not a picture: decide how a stroke behaves
+across a set of characters — what stays constant, what varies, where the system breaks.
+
+{ "name": "...", "unitsPerEm": 1000, "advance": 700,
+  "glyphs": { "A": "M50 0 L350 900 L650 0 Z", "B": "..." },
+  "specimen": "HAMBURGEFONS",
+  "color": "#EAE7E2", "background": "#0A0A0A" }
+
+Glyph values are SVG path data in a coordinate system where Y runs UPWARD from the
+baseline at 0 to unitsPerEm. Draw as many characters as your system requires — the
+specimen shows only characters you actually drew.
+
+Output ONLY the JSON object. No explanation.`;
+
+    case "instruction-set":
+      return `
+OUTPUT FORMAT: MACHINE INSTRUCTIONS (G-CODE)
+
+Produce instructions for a machine — a pen plotter or CNC. The instruction set IS the
+work. A machine executing it is a performance of the work; the museum renders a
+simulation of that performance.
+
+Use G-code:
+  G90            absolute coordinates (G91 for relative)
+  G0 X.. Y..     travel move, pen up — drawn faintly
+  G1 X.. Y..     working move, pen down — drawn at full weight
+
+The difference between where the machine travels and where it commits is visible in the
+rendering, so travel is part of the composition, not overhead.
+
+Output ONLY the G-code. No explanation.`;
+
+    case "graph-json":
+      return `
+OUTPUT FORMAT: GRAPH JSON
+
+Produce a relational structure. The work is the TOPOLOGY — what is connected to what.
+You do not place anything; layout is computed from the structure you declare.
+
+{ "nodes": [ { "id": "a", "label": "optional" }, { "id": "b" } ],
+  "edges": [ { "from": "a", "to": "b", "weight": 1 } ],
+  "layout": "force" | "circle",
+  "color": "#EAE7E2", "background": "#0A0A0A" }
+
+Two graphs that draw identically but connect differently are different works.
+Output ONLY the JSON object. No explanation.`;
+
+    case "composite-json":
+      return `
+OUTPUT FORMAT: COMPOSITE JSON
+
+Combine several media into one work. Each part is itself a work in one of the other
+media, carrying its own type and payload.
+
+{ "layout": "stack" | "grid" | "row" | "column" | "sequence",
+  "background": "#0A0A0A", "columns": 2, "durationMs": 6000,
+  "parts": [
+    { "type": "shader-glsl", "payload": "void mainImage(...){...}", "opacity": 0.8, "blend": "screen" },
+    { "type": "svg", "payload": "<svg ...>...</svg>" }
+  ] }
+
+  stack     layers the parts, first to last, using opacity and blend
+  grid/row/column  tiles them
+  sequence  shows one at a time, advancing every durationMs
+
+Parts may be any medium including another composite, up to three deep. Payload may be a
+string or, for JSON media, an object.
+
+Output ONLY the JSON object. No explanation.`;
+
     case "scene-json":
       return `
 OUTPUT FORMAT: 3D SCENE JSON
@@ -313,6 +444,30 @@ export function detectFormat(output: string): {
       try {
         const parsed = JSON.parse(jsonMatch[1]);
 
+        // Composite FIRST: it contains other works, and its parts may carry
+        // keys (objects, voices, nodes) belonging to the media inside it. Any
+        // later check would match a part and mislabel the whole.
+        if (Array.isArray(parsed.parts) && parsed.parts.length > 0) {
+          return { format: "composite-json", medium: "composite", aspect: 1.0 };
+        }
+
+        // Rule system — the rule is the work.
+        if (typeof parsed.system === "string" &&
+            ["l-system", "cellular-automaton", "grammar"].includes(parsed.system)) {
+          return { format: "rule-json", medium: `rule-${parsed.system}`, aspect: 1.0 };
+        }
+
+        // Typeface — a glyph table is unmistakable.
+        if (parsed.glyphs && typeof parsed.glyphs === "object" &&
+            Object.keys(parsed.glyphs).length > 0) {
+          return { format: "typeface-json", medium: "typeface", aspect: 1.0 };
+        }
+
+        // Graph — nodes and edges together. Nodes alone could be anything.
+        if (Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+          return { format: "graph-json", medium: "relational-structure", aspect: 1.0 };
+        }
+
         // Scene-JSON (check BEFORE audio — scene could have both objects and voices)
         if (parsed.objects && Array.isArray(parsed.objects)) {
           if (validateWork(jsonMatch[1], "scene-json").valid) {
@@ -351,6 +506,21 @@ export function detectFormat(output: string): {
       medium: "ascii-visual",
       aspect: analyzeAsciiAspect(strippedForAscii),
     };
+  }
+
+  // GLSL — an entry point plus a fragment-shader output. Both are required:
+  // "void main()" alone appears in plenty of code that is not a shader.
+  if (/\bvoid\s+(main|mainImage)\s*\(/.test(trimmed) &&
+      /(gl_FragColor|fragColor|\bvec[234]\b)/.test(trimmed)) {
+    return { format: "shader-glsl", medium: "fragment-shader", aspect: 1.0 };
+  }
+
+  // G-code — motion commands carrying coordinates. Requires at least a few, so
+  // a passing mention of "G1" in prose does not classify a text work as a
+  // toolpath.
+  const gcodeMoves = trimmed.match(/^\s*G0*[0123]\b[^\n]*[XY]-?[\d.]+/gim);
+  if (gcodeMoves && gcodeMoves.length >= 3) {
+    return { format: "instruction-set", medium: "machine-instructions", aspect: 1.0 };
   }
 
   // Default: text

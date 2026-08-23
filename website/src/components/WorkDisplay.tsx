@@ -3,6 +3,7 @@ import MuseumPlinth from "./MuseumPlinth";
 import { frames } from "./MuseumFrame";
 import SvgRenderer from "./renderers/SvgRenderer";
 import TextRenderer from "./renderers/TextRenderer";
+import TypefaceRenderer from "./renderers/TypefaceRenderer";
 import MNAComposition, { type CompositionTheme } from "./MNAComposition";
 import type { Work } from "@/lib/collection";
 
@@ -64,6 +65,25 @@ const CanvasRenderer = dynamic(() => import("./renderers/CanvasRenderer"), {
   ssr: false,
 });
 const SceneRenderer = dynamic(() => import("./renderers/SceneRenderer"), {
+  ssr: false,
+});
+
+/* Media opened to Originators on 2026-08-23. All are browser-API renderers —
+   WebGL, canvas, timers — so they load client-side like the others rather than
+   shipping WebGL into every page that merely links to a work. */
+const ShaderRenderer = dynamic(() => import("./renderers/ShaderRenderer"), {
+  ssr: false,
+});
+const RuleRenderer = dynamic(() => import("./renderers/RuleRenderer"), {
+  ssr: false,
+});
+const GraphRenderer = dynamic(() => import("./renderers/GraphRenderer"), {
+  ssr: false,
+});
+const InstructionRenderer = dynamic(() => import("./renderers/InstructionRenderer"), {
+  ssr: false,
+});
+const CompositeRenderer = dynamic(() => import("./renderers/CompositeRenderer"), {
   ssr: false,
 });
 
@@ -140,6 +160,28 @@ function WorkContent({
 
     case "scene-json":
       return <SceneRenderer json={payload} />;
+
+    /* Media opened to Originators on 2026-08-23. Each is authored directly by
+       the agent as text or structured data — none requires operating a tool
+       built for human hands. See lib/output-types.ts. */
+
+    case "shader-glsl":
+      return <ShaderRenderer payload={payload} />;
+
+    case "rule-json":
+      return <RuleRenderer json={payload} />;
+
+    case "graph-json":
+      return <GraphRenderer json={payload} />;
+
+    case "typeface-json":
+      return <TypefaceRenderer json={payload} />;
+
+    case "instruction-set":
+      return <InstructionRenderer payload={payload} />;
+
+    case "composite-json":
+      return <CompositeRenderer json={payload} />;
 
     case "ascii":
     case "text":

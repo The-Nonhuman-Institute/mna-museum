@@ -4,22 +4,21 @@
  */
 
 import type { Work } from "./collection";
+import { isOutputType, isJsonType } from "./output-types";
 
-const RECOGNIZED_TYPES = new Set([
-  "text", "ascii", "svg", "html-css", "canvas-json", "audio-json", "scene-json",
-]);
-
-const JSON_TYPES = new Set(["canvas-json", "audio-json", "scene-json"]);
+/* The recognised media used to be spelled out here as a second list that could
+   silently disagree with the menu the tick offers. Both now read the registry
+   in output-types.ts, so a medium is opened in one place. */
 
 /**
  * Can this work be rendered without crashing?
  */
 export function isWorkRenderable(work: Work): boolean {
   if (!work.output_payload || work.output_payload.trim().length === 0) return false;
-  if (!RECOGNIZED_TYPES.has(work.output_type)) return false;
+  if (!isOutputType(work.output_type)) return false;
 
   // For JSON-based types, verify the payload at least starts to parse
-  if (JSON_TYPES.has(work.output_type)) {
+  if (isJsonType(work.output_type)) {
     const trimmed = work.output_payload.trim();
     if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return false;
   }

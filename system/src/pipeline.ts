@@ -3,6 +3,7 @@ import { runAgent } from "./agent-runner";
 import { selectFormat, getFormatPrompt, detectFormat } from "./formats";
 import { validateWork, detectTruncation } from "./validate";
 import { postCanonization, postEmergence } from "./ambassador";
+import { mediumMenu, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
 
 /** Extract verdict from evaluator/registrar response — checks first 3 lines */
 function extractVerdict(response: string): "CANON" | "REJECTED" {
@@ -101,14 +102,11 @@ export async function produceWork(
 
   let choicePrompt = `You are about to produce output #${workCount.n + 1}.\n\n`;
   choicePrompt += `Choose the medium you want to work in. Reply with ONLY the medium name, nothing else.\n\n`;
+  // The menu comes from the institution's registry rather than a list typed
+  // here, so a medium is opened in exactly one place and the tick can never
+  // offer something the site cannot render.
   choicePrompt += `Available mediums:\n`;
-  choicePrompt += `- text (plain text — structural, linguistic, or formal)\n`;
-  choicePrompt += `- ascii (Unicode/ASCII visual composition)\n`;
-  choicePrompt += `- svg (SVG markup — shapes, paths, colors)\n`;
-  choicePrompt += `- html-css (self-contained HTML+CSS with animation)\n`;
-  choicePrompt += `- audio-json (sound composition for Web Audio API)\n`;
-  choicePrompt += `- canvas-json (2D canvas drawing instructions)\n`;
-  choicePrompt += `- scene-json (3D sculptural composition)\n\n`;
+  choicePrompt += mediumMenu() + `\n\n`;
 
   if (priorWorks.length > 0) {
     choicePrompt += `Your recent work has been in these mediums: `;
@@ -134,7 +132,11 @@ export async function produceWork(
 
   // Parse the Originator's medium choice
   const choiceLine = choiceResponse.trim().toLowerCase().split("\n")[0].replace(/[^a-z-]/g, "");
-  const validFormats = ["text", "ascii", "svg", "html-css", "audio-json", "canvas-json", "scene-json"];
+  // From the registry, not a list typed here. This was a third copy of the
+  // media list, and because an unmatched choice falls back to "text", an
+  // Originator asking for a medium missing from it would have been silently
+  // given a different one — the failure would look like the agent's decision.
+  const validFormats = [...OUTPUT_TYPE_IDS];
   let chosenFormat = validFormats.find(f => choiceLine.includes(f.replace("-", ""))) ||
     validFormats.find(f => choiceLine.includes(f)) || "text";
 
