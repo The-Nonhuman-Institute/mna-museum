@@ -284,6 +284,15 @@ function renderCanvasWork(
   ctx.drawImage(workCanvas, drawX, drawY, drawW, drawH);
 }
 
+/**
+ * How long a shared 3D rotation runs.
+ *
+ * Six seconds rather than three. Instagram treats anything under three seconds
+ * as barely a video, and a single unhurried revolution reads as a deliberate
+ * look at the work instead of a twitch.
+ */
+const SCENE_VIDEO_DURATION_MS = 6000;
+
 // ─── 3D Scene GIF ─────────────────────────────────────────────────────────────
 
 function parseSceneJson(json: string): Record<string, unknown> | null {
@@ -433,25 +442,36 @@ export async function generateSceneVideo(
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
-  // Record one full rotation (3 seconds at 30fps = 90 frames)
-  const durationMs = 3000;
-  const fps = 30;
-  const totalFrames = Math.round(durationMs / 1000 * fps);
-  const angleStep = (Math.PI * 2) / totalFrames;
+  // One full rotation, paced by the CLOCK rather than by frame count.
+  //
+  // This used to render a fixed 90 frames, one per requestAnimationFrame, and
+  // call that "3 seconds at 30fps". requestAnimationFrame does not run at 30fps;
+  // it runs at the display's refresh rate. MediaRecorder captures the canvas in
+  // real time, so the finished video was as long as the loop took in wall clock:
+  // 90/60 = 1.5s on an ordinary screen, and 0.75s on a 120Hz iPad or ProMotion
+  // Mac. Shared to Instagram or X it looped in the feed and then ended almost
+  // immediately when opened — the faster the device, the shorter the video.
+  //
+  // Driving the angle from elapsed time fixes it at any refresh rate: a fast
+  // display renders more frames of the same rotation, not a shorter one.
+  const durationMs = SCENE_VIDEO_DURATION_MS;
 
   recorder.start();
 
-  // Render frames using requestAnimationFrame for proper timing
-  let frame = 0;
+  const startedAt = performance.now();
   await new Promise<void>((resolve) => {
     function renderFrame() {
-      if (frame >= totalFrames) {
+      const elapsed = performance.now() - startedAt;
+
+      if (elapsed >= durationMs) {
         recorder.stop();
         resolve();
         return;
       }
 
-      const angle = initialAngle + frame * angleStep;
+      // Exactly one revolution over the full duration, so the last frame meets
+      // the first and the loop is seamless wherever a platform restarts it.
+      const angle = initialAngle + (elapsed / durationMs) * Math.PI * 2;
       camera.position.x = center.x + Math.sin(angle) * radius;
       camera.position.z = center.z + Math.cos(angle) * radius;
       camera.position.y = baseY;
@@ -469,7 +489,6 @@ export async function generateSceneVideo(
       cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
         0, attrY, vW, VIDEO_ATTR_HEIGHT);
 
-      frame++;
       requestAnimationFrame(renderFrame);
     }
     requestAnimationFrame(renderFrame);
