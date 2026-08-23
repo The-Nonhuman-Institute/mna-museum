@@ -15,6 +15,7 @@
 import type { Work } from "./collection";
 import { parseWorkColors, detectSvgBackground } from "./work-colors";
 import * as THREE from "three";
+import { OUTPUT_TYPES, OUTPUT_TYPE_IDS } from "./output-types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -653,6 +654,226 @@ export async function generateAudioWaveformImage(
   });
 }
 
+/**
+ * Media whose renderers paint into a canvas we can composite from.
+ *
+ * Derived from the registry's `animated` flag, minus the two that cannot use
+ * this path: scene-json has its own orbit recording, and html-css renders in a
+ * sandboxed iframe that cannot be drawn to a canvas.
+ */
+const RECORDABLE_MEDIA = new Set(
+  OUTPUT_TYPE_IDS.filter(
+    (id) => OUTPUT_TYPES[id].animated && id !== "scene-json" && id !== "html-css",
+  ) as string[],
+);
+
+// ─── Rendered-media video ─────────────────────────────────────────────────────
+
+/**
+ * Video for any medium that animates in a canvas.
+ *
+ * Shaders, rule systems, toolpaths and composites all move, and every one of
+ * them shared as a still — which is the same misrepresentation the static
+ * html-css share makes, now across more of the collection.
+ *
+ * Rather than reimplement each renderer's drawing loop here (which would be a
+ * second copy to keep in step, and would drift), this MOUNTS THE REAL RENDERER
+ * offscreen and records what it actually paints. The shared video is the work as
+ * the site draws it, not an approximation of it.
+ *
+ * Composites are handled by the same code: every canvas and SVG inside the
+ * container is composited in document order at its own position, so a grid stays
+ * a grid and a stack stays a stack.
+ */
+
+interface Layer {
+  el: HTMLElement;
+  /** Live canvases redraw every frame; rasterised SVG is drawn from cache. */
+  image?: HTMLImageElement;
+}
+
+/** CSS blend modes that have a canvas equivalent. Others fall back to normal. */
+const BLEND_MAP: Record<string, GlobalCompositeOperation> = {
+  screen: "screen",
+  multiply: "multiply",
+  overlay: "overlay",
+  lighten: "lighten",
+  darken: "darken",
+  "color-dodge": "color-dodge",
+  "color-burn": "color-burn",
+  difference: "difference",
+  exclusion: "exclusion",
+};
+
+/** Rasterise an inline SVG once; SVG layers in a composite do not animate. */
+function rasterizeSvg(svg: SVGElement): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    try {
+      const clone = svg.cloneNode(true) as SVGElement;
+      const rect = svg.getBoundingClientRect();
+      clone.setAttribute("width", String(Math.max(1, Math.round(rect.width))));
+      clone.setAttribute("height", String(Math.max(1, Math.round(rect.height))));
+      const src = new XMLSerializer().serializeToString(clone);
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function generateRenderedVideo(
+  work: Work,
+  colors: ReturnType<typeof getContrastColors>,
+  attrStrip: HTMLCanvasElement,
+): Promise<File | null> {
+  const { createRoot } = await import("react-dom/client");
+  const React = await import("react");
+
+  const vW = VIDEO_W;
+  const vH = VIDEO_H;
+  const sceneH = vH - VIDEO_SAFE_BOTTOM;
+
+  // Offscreen, but laid out and painting. display:none would stop rAF.
+  const host = document.createElement("div");
+  host.style.cssText =
+    `position:fixed;left:-99999px;top:0;width:${vW}px;height:${sceneH}px;` +
+    `overflow:hidden;pointer-events:none;`;
+  document.body.appendChild(host);
+
+  const root = createRoot(host);
+
+  try {
+    const payload = work.safe_render_payload?.length
+      ? work.safe_render_payload
+      : work.output_payload;
+
+    const mod = await import("@/components/renderers/CompositeRenderer");
+    const Composite = mod.default;
+
+    // Every medium is expressed as a one-part composite, so this function needs
+    // exactly one component and the part dispatch stays in one place.
+    const spec = JSON.stringify({
+      layout: "stack",
+      background: colors.bg,
+      parts: [{ type: work.output_type, payload }],
+    });
+
+    root.render(React.createElement(Composite, { json: spec }));
+
+    // Wait for something to paint. Renderers mount asynchronously (dynamic
+    // imports, WebGL context creation), so poll rather than guess a delay.
+    const deadline = performance.now() + 8000;
+    let layers: Layer[] = [];
+    while (performance.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 120));
+      const canvases = Array.from(host.querySelectorAll("canvas")) as HTMLCanvasElement[];
+      const svgs = Array.from(host.querySelectorAll("svg")) as unknown as SVGElement[];
+      if (canvases.some((c) => c.width > 1 && c.height > 1) || svgs.length > 0) {
+        const ordered = Array.from(host.querySelectorAll("canvas, svg")) as HTMLElement[];
+        layers = [];
+        for (const el of ordered) {
+          if (el.tagName.toLowerCase() === "svg") {
+            const img = await rasterizeSvg(el as unknown as SVGElement);
+            if (img) layers.push({ el, image: img });
+          } else {
+            layers.push({ el });
+          }
+        }
+        break;
+      }
+    }
+    if (layers.length === 0) return null;
+
+    // Give an unfolding work a moment of head start so the recording does not
+    // open on an empty frame.
+    await new Promise((r) => setTimeout(r, 400));
+
+    const composite = document.createElement("canvas");
+    composite.width = vW;
+    composite.height = vH;
+    composite.style.cssText = "position:fixed;left:-99999px;top:0";
+    document.body.appendChild(composite);
+    const cCtx = composite.getContext("2d");
+    if (!cCtx) return null;
+
+    const stream = composite.captureStream(30);
+    const mimeType = MediaRecorder.isTypeSupported("video/mp4")
+      ? "video/mp4"
+      : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9"
+        : "video/webm";
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    const hostRect = host.getBoundingClientRect();
+    const attrY = sceneH;
+
+    recorder.start();
+    const startedAt = performance.now();
+
+    await new Promise<void>((resolve) => {
+      const frame = () => {
+        // Clock-paced, like every other timed thing here. A frame-counted
+        // recording is a different length on every display.
+        if (performance.now() - startedAt >= SCENE_VIDEO_DURATION_MS) {
+          recorder.stop();
+          resolve();
+          return;
+        }
+
+        cCtx.globalCompositeOperation = "source-over";
+        cCtx.globalAlpha = 1;
+        cCtx.fillStyle = colors.bg;
+        cCtx.fillRect(0, 0, vW, vH);
+
+        for (const layer of layers) {
+          const r = layer.el.getBoundingClientRect();
+          const x = r.left - hostRect.left;
+          const y = r.top - hostRect.top;
+          if (r.width < 1 || r.height < 1) continue;
+
+          const cs = getComputedStyle(layer.el);
+          cCtx.globalAlpha = Number(cs.opacity || "1");
+          const parentBlend = getComputedStyle(layer.el.parentElement ?? layer.el).mixBlendMode;
+          cCtx.globalCompositeOperation = BLEND_MAP[parentBlend] ?? "source-over";
+
+          try {
+            const src = layer.image ?? (layer.el as HTMLCanvasElement);
+            cCtx.drawImage(src as CanvasImageSource, x, y, r.width, r.height);
+          } catch {
+            /* a tainted or zero-size source is skipped, not fatal */
+          }
+        }
+
+        cCtx.globalAlpha = 1;
+        cCtx.globalCompositeOperation = "source-over";
+        cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
+          0, attrY, vW, VIDEO_ATTR_HEIGHT);
+
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+
+    const blob = await new Promise<Blob>((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+    });
+
+    document.body.removeChild(composite);
+    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+    return new File([blob], `${work.id}.${ext}`, { type: mimeType });
+  } catch {
+    return null;
+  } finally {
+    try { root.unmount(); } catch { /* already gone */ }
+    if (host.parentNode) document.body.removeChild(host);
+  }
+}
+
 // ─── Main entry point ─────────────────────────────────────────────────────────
 
 export type ShareOutput =
@@ -677,11 +898,26 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
   }
 
   // ── 3D works → video (MP4/WebM) at 9:16 portrait ──
+  // scene-json keeps its own path: the shared video is a camera orbit, which is
+  // a reading of the sculpture rather than a recording of the page.
   if (work.output_type === "scene-json") {
     const videoAttrStrip = renderAttributionStrip(work, colors, VIDEO_W, VIDEO_ATTR_HEIGHT, VIDEO_PAD, 1);
     const video = await generateSceneVideo(work, colors, videoAttrStrip);
     if (video) return { type: "video", file: video };
     return null;
+  }
+
+  // ── Other animated media → video, by recording the real renderer ──
+  //
+  // html-css is deliberately absent. It renders inside a sandboxed iframe, and
+  // an iframe cannot be drawn to a canvas, so there is nothing here to record.
+  // That gap is real and is not closed by this path.
+  if (RECORDABLE_MEDIA.has(work.output_type)) {
+    const videoAttrStrip = renderAttributionStrip(work, colors, VIDEO_W, VIDEO_ATTR_HEIGHT, VIDEO_PAD, 1);
+    const video = await generateRenderedVideo(work, colors, videoAttrStrip);
+    if (video) return { type: "video", file: video };
+    // Fall through to the still. A work that would not record is still shareable
+    // — archive permanence applies to sharing too.
   }
 
   // ── HTML-CSS works → static snapshot PNG ──
