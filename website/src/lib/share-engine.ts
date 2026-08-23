@@ -874,6 +874,184 @@ async function generateRenderedVideo(
   }
 }
 
+// ─── Animated-preview video (html-css) ────────────────────────────────────────
+
+/**
+ * Video for html-css works, decoded from their animated preview.
+ *
+ * html-css is the one animated medium the offscreen-renderer path cannot reach:
+ * it renders inside a sandboxed iframe, and an iframe cannot be drawn to a
+ * canvas. Fifty works — the largest group in the collection — therefore shared
+ * as a still frame of something that moves.
+ *
+ * They are not unreachable, because the institution already renders them
+ * elsewhere: generate-work-animations.ts captures each animated work
+ * server-side with Puppeteer and writes an animated WebP to
+ * /previews/{id}.webp. This decodes that file and plays it back under the
+ * recorder.
+ *
+ * Frames are pulled with ImageDecoder rather than by putting the WebP in an
+ * <img> and letting the browser animate it. That was the obvious approach and
+ * it does not work: measured against a twelve-frame preview, an <img> yielded
+ * TWO distinct frames over four seconds, whether on screen or off. The
+ * resulting video was a still that claimed to be a video, which is worse than
+ * an honest still. ImageDecoder returned all twelve, and decoding also means
+ * the playback clock is ours rather than the browser's.
+ *
+ * Where ImageDecoder is unavailable this returns null and the caller falls back
+ * to the static PNG. A share that silently degrades to a motionless video would
+ * misrepresent the work, so no video is better than a fake one. Support is
+ * good in Chromium and should be confirmed on the browsers stewards actually
+ * share from before this is assumed to cover everyone.
+ */
+
+interface DecodedFrame {
+  image: CanvasImageSource;
+  /** Milliseconds this frame is held. */
+  durationMs: number;
+  close?: () => void;
+}
+
+type ImageDecoderCtor = new (init: { data: ArrayBuffer; type: string }) => {
+  tracks: { ready: Promise<void>; selectedTrack?: { frameCount: number } };
+  completed: Promise<void>;
+  decode(opts?: { frameIndex: number }): Promise<{
+    image: CanvasImageSource & { duration?: number | null; close?: () => void };
+  }>;
+  close?: () => void;
+};
+
+async function decodeAnimatedWebp(url: string): Promise<DecodedFrame[] | null> {
+  const ctor = (window as unknown as { ImageDecoder?: ImageDecoderCtor }).ImageDecoder;
+  if (!ctor) return null;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.arrayBuffer();
+
+    const decoder = new ctor({ data, type: "image/webp" });
+    await decoder.tracks.ready;
+    await decoder.completed;
+
+    const count = decoder.tracks.selectedTrack?.frameCount ?? 0;
+    if (count < 2) return null; // a single frame is a still, not an animation
+
+    const frames: DecodedFrame[] = [];
+    for (let i = 0; i < Math.min(count, 60); i++) {
+      const { image } = await decoder.decode({ frameIndex: i });
+      frames.push({
+        image,
+        // VideoFrame reports duration in microseconds. 250ms is what
+        // generate-work-animations.ts writes when a file carries none.
+        durationMs: image.duration ? image.duration / 1000 : 250,
+        close: image.close?.bind(image),
+      });
+    }
+    decoder.close?.();
+    return frames;
+  } catch {
+    return null;
+  }
+}
+
+async function generateAnimatedPreviewVideo(
+  work: Work,
+  colors: ReturnType<typeof getContrastColors>,
+  attrStrip: HTMLCanvasElement,
+): Promise<File | null> {
+  const frames = await decodeAnimatedWebp(`/previews/${work.id}.webp`);
+  if (!frames || frames.length === 0) return null;
+
+  const totalMs = frames.reduce((n, f) => n + f.durationMs, 0);
+  if (totalMs <= 0) return null;
+
+  const vW = VIDEO_W;
+  const vH = VIDEO_H;
+  const sceneH = vH - VIDEO_SAFE_BOTTOM;
+
+  const composite = document.createElement("canvas");
+  composite.width = vW;
+  composite.height = vH;
+  composite.style.cssText = "position:fixed;left:-99999px;top:0";
+  document.body.appendChild(composite);
+
+  try {
+    const cCtx = composite.getContext("2d");
+    if (!cCtx) return null;
+
+    const stream = composite.captureStream(30);
+    const mimeType = MediaRecorder.isTypeSupported("video/mp4")
+      ? "video/mp4"
+      : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9"
+        : "video/webm";
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    // Fit the square preview above the attribution strip.
+    const first = frames[0].image as unknown as { displayWidth?: number; width?: number; displayHeight?: number; height?: number };
+    const srcW = first.displayWidth ?? first.width ?? 480;
+    const srcH = first.displayHeight ?? first.height ?? 480;
+    const areaW = vW - VIDEO_PAD * 2;
+    const areaH = sceneH - VIDEO_PAD * 2;
+    const scale = Math.min(areaW / srcW, areaH / srcH);
+    const dw = srcW * scale;
+    const dh = srcH * scale;
+    const dx = (vW - dw) / 2;
+    const dy = (sceneH - dh) / 2;
+
+    /** Which frame is showing at a given point in the loop. */
+    const frameAt = (ms: number): DecodedFrame => {
+      let t = ms % totalMs;
+      for (const f of frames) {
+        if (t < f.durationMs) return f;
+        t -= f.durationMs;
+      }
+      return frames[frames.length - 1];
+    };
+
+    recorder.start();
+    const startedAt = performance.now();
+
+    await new Promise<void>((resolve) => {
+      const draw = () => {
+        const elapsed = performance.now() - startedAt;
+        if (elapsed >= SCENE_VIDEO_DURATION_MS) {
+          recorder.stop();
+          resolve();
+          return;
+        }
+        cCtx.fillStyle = colors.bg;
+        cCtx.fillRect(0, 0, vW, vH);
+        try {
+          cCtx.drawImage(frameAt(elapsed).image, dx, dy, dw, dh);
+        } catch {
+          /* skip a frame rather than abandon the recording */
+        }
+        cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
+          0, sceneH, vW, VIDEO_ATTR_HEIGHT);
+        requestAnimationFrame(draw);
+      };
+      requestAnimationFrame(draw);
+    });
+
+    const blob = await new Promise<Blob>((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+    });
+
+    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+    return new File([blob], `${work.id}.${ext}`, { type: mimeType });
+  } catch {
+    return null;
+  } finally {
+    // VideoFrames hold decoder memory until closed.
+    for (const f of frames) { try { f.close?.(); } catch { /* already closed */ } }
+    if (composite.parentNode) document.body.removeChild(composite);
+  }
+}
+
 // ─── Main entry point ─────────────────────────────────────────────────────────
 
 export type ShareOutput =
@@ -920,8 +1098,16 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
     // — archive permanence applies to sharing too.
   }
 
-  // ── HTML-CSS works → static snapshot PNG ──
-  // (Video capture is unreliable on mobile Safari — share a captured moment instead)
+  // ── HTML-CSS works → video when an animated preview exists ──
+  // The iframe cannot be recorded, but the server-side animated WebP can be.
+  // Falls through to the static snapshot below when there is no WebP.
+  if (work.output_type === "html-css") {
+    const videoAttrStrip = renderAttributionStrip(work, colors, VIDEO_W, VIDEO_ATTR_HEIGHT, VIDEO_PAD, 1);
+    const video = await generateAnimatedPreviewVideo(work, colors, videoAttrStrip);
+    if (video) return { type: "video", file: video };
+  }
+
+  // ── Static works, and html-css with no animated preview → PNG ──
 
   // ── Static works → PNG ──
   const canvas = document.createElement("canvas");
