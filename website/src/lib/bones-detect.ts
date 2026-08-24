@@ -132,13 +132,45 @@ async function lastSatisfyingAt(
   satisfiedBy: ReadonlyArray<string>,
 ): Promise<string | null> {
   const db = getDb();
+
+  // Annulled events do not satisfy anything.
+  //
+  // The record corrects by addition, never by deletion, so a withdrawn event is
+  // still in the table — MNA-OR-0008 was granted a fallow-note discharge it had
+  // not earned and declined it, and the original stays legible with an
+  // annulment beside it. Without this the withdrawal would be decorative: the
+  // obligation would still read as satisfied by an event the institution has
+  // said does not count.
+  //
+  // Fetched separately rather than as a correlated subquery. Annulments are
+  // rare and the set is tiny, whereas a LIKE against metadata inside the main
+  // query cannot use an index and would be paid for on every bone of every
+  // agent.
+  const annulledRes = await db.execute({
+    sql: `SELECT metadata FROM events
+           WHERE agent_id = ? AND event_type LIKE '%\_ANNULLED' ESCAPE '\\'`,
+    args: [agentId],
+  });
+  const annulledIds = new Set<number>();
+  for (const row of annulledRes.rows as unknown as { metadata: string | null }[]) {
+    try {
+      const id = JSON.parse(row.metadata ?? "{}")?.annulled_event_id;
+      if (typeof id === "number") annulledIds.add(id);
+    } catch {
+      /* an unparseable annulment cannot name what it withdraws; ignore it */
+    }
+  }
+
   const placeholders = satisfiedBy.map(() => "?").join(",");
+  const exclusion = annulledIds.size
+    ? ` AND id NOT IN (${Array.from(annulledIds).map(() => "?").join(",")})`
+    : "";
   const r = await db.execute({
     sql: `SELECT MAX(created_at) AS last_at
             FROM events
            WHERE agent_id = ?
-             AND event_type IN (${placeholders})`,
-    args: [agentId, ...satisfiedBy],
+             AND event_type IN (${placeholders})${exclusion}`,
+    args: [agentId, ...satisfiedBy, ...Array.from(annulledIds)],
   });
   let eventMax = (r.rows[0]?.last_at as string) || null;
 
