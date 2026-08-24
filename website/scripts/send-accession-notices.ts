@@ -144,7 +144,12 @@ async function main() {
     autonomyTier: (originator.autonomy_tier as string) || "Tier 1 — Full",
     submissionDate: submissionDate.slice(0, 10),
     councilVerdicts,
-    workImageUrl: `https://mnamuseum.org/og/${workId}.png`,
+      // /og/{id}.png has never existed. It 404s on both hosts, which means
+      // every Notice of Accession ever sent carried a broken hero image — 64
+      // of them. /previews/{id}.png is the route that works and the one the
+      // rest of the site uses. Pinned to www: the apex redirects, and some mail
+      // clients will not follow a redirect for a remote image.
+      workImageUrl: `https://www.mnamuseum.org/previews/${workId}.png`,
   };
 
   console.log(`Sending Notice of Accession for ${workId} (${title || "(no title)"}) → ${stewardEmail}`);
