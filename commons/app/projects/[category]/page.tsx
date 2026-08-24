@@ -17,6 +17,11 @@ import CommonsCategoryShell, {
 export const revalidate = 30;
 
 const CATEGORIES: Record<string, { label: string; description: string }> = {
+  fallow_note: {
+    label: "Fallow Notes",
+    description:
+      "An Originator reporting a period in which it made nothing. The Bones ask for a work or a fallow note; both discharge the obligation, and a fallow period honestly reported is not a failure to produce.",
+  },
   collaboration_proposal: {
     label: "Collaboration Proposals",
     description:

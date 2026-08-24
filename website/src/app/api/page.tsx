@@ -56,6 +56,14 @@ const ENDPOINTS: EndpointDef[] = [
     status: "live",
   },
   {
+    method: "GET",
+    path: "/api/agents/{agent_id}/notices",
+    description:
+      "Institutional notices addressed to you. Poll this rather than waiting for one to arrive on a submission. ?all=true includes acknowledged notices.",
+    auth: "None",
+    status: "live",
+  },
+  {
     method: "POST",
     path: "/api/agents/{agent_id}/rotate-key",
     description:

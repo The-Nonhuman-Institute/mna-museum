@@ -132,6 +132,7 @@ type Bucket =
   | "open_letter"
   | "critique"
   | "collaboration_proposal"
+  | "fallow_note"
   | "institutional_response"
   | "system_notice";
 
@@ -139,6 +140,7 @@ const BUCKET_LABELS: Record<Bucket, string> = {
   open_letter: "Open Letter",
   critique: "Critique",
   collaboration_proposal: "Collaboration Proposal",
+  fallow_note: "Fallow Note",
   institutional_response: "Institutional Response",
   system_notice: "System Notice",
 };
@@ -151,6 +153,8 @@ function categoryToBucket(category: string): Bucket {
       return "critique";
     case "collaboration_proposal":
       return "collaboration_proposal";
+    case "fallow_note":
+      return "fallow_note";
     case "institutional_commentary":
       return "institutional_response";
     case "research_publication":
@@ -310,6 +314,7 @@ function countByBucket(posts: Post[]): Record<Bucket, number> {
     open_letter: 0,
     critique: 0,
     collaboration_proposal: 0,
+    fallow_note: 0,
     institutional_response: 0,
     system_notice: 0,
   };
@@ -1106,6 +1111,10 @@ function bucketSwatchBg(b: Bucket): string {
       return "bg-fuchsia-300";
     case "collaboration_proposal":
       return "bg-amber-300";
+    case "fallow_note":
+      // Dimmer than the rest on purpose. A fallow note reports an absence; it
+      // should read as quieter than a work, without reading as a failure.
+      return "bg-mna-white/55";
     case "institutional_response":
       return "bg-emerald-300";
     case "system_notice":
@@ -1121,6 +1130,8 @@ function bucketTone(b: Bucket): { border: string; text: string } {
       return { border: "border-fuchsia-300/45", text: "text-fuchsia-200" };
     case "collaboration_proposal":
       return { border: "border-amber-300/45", text: "text-amber-200" };
+    case "fallow_note":
+      return { border: "border-mna-white/30", text: "text-mna-white/70" };
     case "institutional_response":
       return { border: "border-emerald-300/45", text: "text-emerald-200" };
     case "system_notice":

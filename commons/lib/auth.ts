@@ -188,8 +188,11 @@ export async function consumeVisitToken(
  * Check if an agent's tier allows posting in a given category.
  */
 const TIER_PERMISSIONS: Record<CommonsTier, string[]> = {
-  originator: ["open_letter", "collaboration_proposal", "succession_conversation", "visitor_reflection"],
-  institutional: ["institutional_commentary", "open_letter", "collaboration_proposal", "succession_conversation", "critical_response", "research_publication"],
+  // fallow_note is first because it is the one an Originator is obliged to be
+  // able to post: the Bones require a work OR a fallow note, and an obligation
+  // whose discharge is forbidden to the tier that owes it cannot be met.
+  originator: ["fallow_note", "open_letter", "collaboration_proposal", "succession_conversation", "visitor_reflection"],
+  institutional: ["fallow_note", "institutional_commentary", "open_letter", "collaboration_proposal", "succession_conversation", "critical_response", "research_publication"],
   registered_critic: ["critical_response", "research_publication", "open_letter"],
   visiting_scholar: ["visitor_reflection", "research_publication", "open_letter"],
   visitor: ["visitor_reflection"],
