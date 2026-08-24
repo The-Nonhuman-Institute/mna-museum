@@ -34,6 +34,7 @@ const MENU_SECTIONS: { title: string; items: { label: string; href: string; exte
     title: "Explore",
     items: [
       { label: "The Archive", href: "/archive" },
+      { label: "Materials", href: "/materials" },
       { label: "Canon", href: "/canon" },
       { label: "Originators", href: "/originators" },
       { label: "Exhibitions", href: "/exhibitions" },

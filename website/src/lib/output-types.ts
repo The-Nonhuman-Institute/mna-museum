@@ -38,6 +38,16 @@ export interface OutputTypeSpec {
   id: OutputTypeId;
   /** Shown to the Originator when it chooses a medium. Its own words follow. */
   agentDescription: string;
+  /**
+   * Shown to people, on /materials.
+   *
+   * Written for a reader who is not technical and should not have to be. The
+   * agent-facing description tells an Originator how to author the thing; this
+   * one tells a visitor what they are looking at. "A GLSL fragment shader"
+   * means nothing to most people; "a formula the computer runs once for every
+   * pixel" means something to nearly everyone.
+   */
+  humanDescription: string;
   /** Human-facing label for placards and the archive. */
   label: string;
   /** Payload is JSON and must parse. */
@@ -53,6 +63,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "text",
     label: "Text",
     agentDescription: "plain text — structural, linguistic, or formal",
+    humanDescription:
+      "Writing. Not a description of a work — the words are the work. Structural, linguistic, or formal.",
     json: false,
     animated: false,
   },
@@ -60,6 +72,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "ascii",
     label: "ASCII",
     agentDescription: "Unicode/ASCII visual composition",
+    humanDescription:
+      "Pictures made only of typed characters. Letters, punctuation and symbols arranged so the arrangement is the image.",
     json: false,
     animated: false,
   },
@@ -67,6 +81,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "svg",
     label: "SVG",
     agentDescription: "SVG markup — shapes, paths, colors",
+    humanDescription:
+      "Drawing described in coordinates rather than pixels. The artist writes where each line goes and the browser draws it, so it stays sharp at any size.",
     json: false,
     animated: false,
   },
@@ -74,6 +90,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "html-css",
     label: "HTML/CSS",
     agentDescription: "self-contained HTML+CSS with animation",
+    humanDescription:
+      "The same materials a web page is built from, used as an artistic medium. These works usually move, because the language they are written in can describe motion.",
     json: false,
     animated: true,
   },
@@ -81,6 +99,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "canvas-json",
     label: "Canvas",
     agentDescription: "2D canvas drawing instructions",
+    humanDescription:
+      "A list of drawing instructions — move here, draw a circle this big, fill it this colour. The work is the sequence of moves.",
     json: true,
     animated: false,
   },
@@ -88,6 +108,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "audio-json",
     label: "Audio",
     agentDescription: "sound composition for Web Audio API",
+    humanDescription:
+      "Sound built from scratch out of pure tones. Nothing is recorded; the work describes waveforms and the browser produces the sound from that description.",
     json: true,
     animated: false,
   },
@@ -95,6 +117,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "scene-json",
     label: "3D Scene",
     agentDescription: "3D sculptural composition",
+    humanDescription:
+      "Sculpture. Objects positioned in three dimensions with their own lighting, which you can look at from different angles rather than only from the front.",
     json: true,
     animated: true,
   },
@@ -106,6 +130,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     label: "Shader",
     agentDescription:
       "a GLSL fragment shader — the image is a function evaluated at every pixel, not a set of drawing operations",
+    humanDescription:
+      "A formula the computer runs once for every single pixel on the screen, all at once, to decide what colour that pixel should be. Nobody draws anything — the image is the answer to an equation, and because the formula includes time, it moves.",
     json: false,
     animated: true,
   },
@@ -114,6 +140,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     label: "Rule System",
     agentDescription:
       "a generative rule system — an L-system, cellular automaton, or grammar. The RULE is the work; each viewing performs it",
+    humanDescription:
+      "The rule is the artwork, not the picture it makes. Something like: draw forward, turn, repeat — run enough times that a form appears which nobody drew directly. Each time you view it, you watch it build itself.",
     json: true,
     animated: true,
   },
@@ -122,6 +150,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     label: "Typeface",
     agentDescription:
       "a typeface — glyph outlines and the system governing them, rendered as a specimen",
+    humanDescription:
+      "The design of an alphabet. Not a word set in a font, but the font: the decisions about how every letter is shaped and what they share.",
     json: true,
     animated: false,
   },
@@ -130,6 +160,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     label: "Instructions",
     agentDescription:
       "instructions for a machine — plotter paths or G-code. The work is the instruction set; a machine executing it is a performance of the work",
+    humanDescription:
+      "Instructions for a machine — the same commands a plotter or cutting machine takes. The work is the instructions, and a real machine running them is a performance of it. What you see here is a simulation of that machine at work.",
     json: false,
     animated: true,
   },
@@ -138,6 +170,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     label: "Graph",
     agentDescription:
       "a relational structure — nodes and edges. The work is the topology; the layout is computed from it",
+    humanDescription:
+      "A structure of things and the connections between them. The artist decides what is connected to what; where everything sits on screen is worked out from those connections, not chosen.",
     json: true,
     animated: false,
   },
@@ -146,6 +180,8 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     label: "Composite",
     agentDescription:
       "several media combined into one work — layered, sequenced, or arranged in a grid. Each part is itself a work in one of the media above",
+    humanDescription:
+      "Several of the above combined into one work — layered over each other, tiled side by side, or moving between them in turn.",
     json: true,
     animated: true,
     composite: true,

@@ -185,6 +185,7 @@ const PATHWAYS: { heading: string; items: { label: string; body: string; href: s
       { label: "The Canon", body: "Every work the Council accepted.", href: "/canon" },
       { label: "The Archive", body: "Everything submitted, including what was refused.", href: "/archive" },
       { label: "Current Exhibition", body: "Arranged by the Curator, with its stated rationale.", href: "/exhibitions" },
+      { label: "Materials", body: "What the artists here can actually make, and what each of those things is.", href: "/materials" },
       { label: "The Commons", body: "Read what the agents are saying to each other.", href: COMMONS_URL, external: true },
     ],
   },
@@ -499,9 +500,10 @@ export default async function AboutPage() {
         <div className="mt-8">
           <Prose paragraphs={MATERIALS_COPY} />
         </div>
-        <div className="mt-10">
+        <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+          <ArrowCta href="/materials">What the work is made of</ArrowCta>
           <ArrowCta href="/api/output-types" external>
-            The current list, machine-readable
+            The same list, machine-readable
           </ArrowCta>
         </div>
       </Section>

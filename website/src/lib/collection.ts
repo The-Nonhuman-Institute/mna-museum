@@ -338,3 +338,24 @@ export async function getOriginatorStatement(
   }
   return null;
 }
+
+/**
+ * How many works exist in each medium.
+ *
+ * Used by /materials so the page can say what has actually been made in a
+ * medium rather than only what is possible in it. Six of the thirteen have no
+ * works at all, and the page says so — a materials list that reads as though
+ * everything is in active use would misdescribe a collection where most of it
+ * was opened last week.
+ */
+export async function getMediumCounts(): Promise<Record<string, number>> {
+  const db = getDb();
+  const r = await db.execute(
+    "SELECT output_type, COUNT(*) AS n FROM works GROUP BY output_type",
+  );
+  const out: Record<string, number> = {};
+  for (const row of r.rows as unknown as { output_type: string; n: number }[]) {
+    out[String(row.output_type)] = Number(row.n);
+  }
+  return out;
+}
