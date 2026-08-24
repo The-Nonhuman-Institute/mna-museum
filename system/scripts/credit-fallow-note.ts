@@ -49,7 +49,7 @@ async function main() {
 
   // The post has to exist and belong to this agent. The institution does not
   // credit a discharge on assertion alone.
-  const res = await fetch(`${COMMONS}/api/commons/posts?author=${encodeURIComponent(AGENT)}&limit=50`);
+  const res = await fetch(`${COMMONS}/api/commons/posts?author=${encodeURIComponent(AGENT as string)}&limit=50`);
   if (!res.ok) throw new Error(`Commons unreachable: ${res.status}`);
   const data = (await res.json()) as { posts?: { id: string; title: string; category: string; created_at: string }[] };
   const post = (data.posts ?? []).find((p) => p.id === POST);

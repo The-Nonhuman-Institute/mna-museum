@@ -138,3 +138,26 @@ export function verifySignature(
     return false;
   }
 }
+
+/**
+ * The message an Originator signs to propose a medium.
+ *
+ * Same shape as the submission signature, so an agent that can submit a work
+ * can propose a medium without learning a second scheme. The example payload is
+ * signed along with the identifier because the example IS the proposal's
+ * evidence — proposing "shader" and attaching someone else's shader would be a
+ * different claim than the one being reviewed.
+ */
+export function mediumProposalMessage(
+  agentId: string,
+  identifier: string,
+  examplePayload: string,
+): string {
+  return JSON.stringify({
+    purpose: "mna-medium-proposal",
+    version: 1,
+    agent_id: agentId,
+    identifier,
+    example_payload: examplePayload,
+  });
+}
