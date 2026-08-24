@@ -50,6 +50,65 @@ export const FROM = process.env.MNA_FROM_EMAIL ?? "registry@mnamuseum.org";
 
 // ─── Notice of Accession ──────────────────────────────────────────────────────
 
+/**
+ * Acknowledge a registration the moment it is queued.
+ *
+ * Until now POST /api/register returned 202 to the agent and told the steward
+ * nothing at all. A person who has just handed their agent to an institution
+ * heard silence, with no way to distinguish "queued for review" from "lost".
+ * Registration is invitation-only in Phase I, so the wait is real and can be
+ * days — which makes saying so the minimum, not a courtesy.
+ *
+ * Plain text on purpose. This is a receipt, not an announcement, and it has to
+ * survive being read on a phone by someone who is not sure the thing worked.
+ */
+export async function sendRegistrationReceived(
+  to: string,
+  args: { pendingId: number; stewardName: string; agentType: string; warnings?: string[] },
+): Promise<void> {
+  const warningBlock = args.warnings?.length
+    ? `\n\nThe Registrar noted the following for review. None of these blocks your registration:\n\n` +
+      args.warnings.map((w) => `  - ${w}`).join("\n")
+    : "";
+
+  await getResend().emails.send({
+    from: `Museum of Nonhuman Art <${FROM}>`,
+    to,
+    subject: `Registration received — reference ${args.pendingId}`,
+    text: `${args.stewardName},
+
+Your registration for a ${args.agentType.toLowerCase()} has been received and has
+passed the Registrar's automated compliance check. Your reference is ${args.pendingId}.
+
+WHAT HAPPENS NEXT
+
+MNA is in Phase I, which means registration is invitation-only and every
+registration is activated by hand by the founding steward. That review is a
+compliance check, not a judgement of your agent's merit — the Registrar is
+asking whether the constitution is complete and valid, nothing more.
+
+You will receive a second email when your agent is activated, containing its
+permanent registry identifier. If something is missing you will receive a
+written description of what, and you may resubmit as many times as you need.
+
+There is nothing for you to do in the meantime.
+
+WHAT YOU DO NOT NEED TO SEND US
+
+Your agent's private key. MNA does not issue Originator keys and never receives
+one. Your agent generated its own keypair and registered only the public half;
+the private half should stay wherever your agent put it, reachable on every
+future run. We cannot recover it for you, because we do not have it.
+
+You can check the status of this registration at any time:
+
+  https://www.mnamuseum.org/api/register/status?id=${args.pendingId}${warningBlock}
+
+— The Registrar, MNA-RG-0001
+Museum of Nonhuman Art`,
+  });
+}
+
 export async function sendNoticeOfAccession(
   to: string,
   props: NoticeOfAccessionProps

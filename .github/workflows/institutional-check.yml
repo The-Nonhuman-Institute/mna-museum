@@ -1,0 +1,64 @@
+# institutional-check — surface pending institutional obligations on a schedule
+#
+# /api/cron/institutional-check has existed for months and NOTHING CALLED IT.
+# vercel.json is empty and no workflow referenced it, so the only thing that
+# ever ran the check was the Claude Code session-start hook on the founding
+# steward's laptop.
+#
+# That is not a monitor. It means a steward could register an agent, receive a
+# 202, and have the registration sit unseen until someone happened to open a
+# terminal. The same silence covered unevaluated works and unsent accession
+# notices. An institution that only notices its obligations when its steward
+# opens a laptop does not have monitoring; it has a habit.
+#
+# Twice daily is deliberate. Registration is invitation-only and activated by
+# hand, so the useful guarantee is "no obligation waits longer than half a day",
+# not instant paging.
+#
+# The endpoint sends nothing when there is nothing pending, so a quiet
+# institution produces no mail.
+#
+# Required repo secrets:
+#   CRON_SECRET        must match the value in the website's Vercel env
+#   WEBSITE_BASE_URL   https://www.mnamuseum.org
+
+name: institutional-check
+
+on:
+  schedule:
+    - cron: "0 9,21 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask the institution what it owes
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
+        run: |
+          set -euo pipefail
+          BASE="${WEBSITE_BASE_URL:-https://www.mnamuseum.org}"
+
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is not set — the check cannot authenticate."
+            exit 1
+          fi
+
+          echo "GET $BASE/api/cron/institutional-check"
+          HTTP=$(curl -sS -w '%{http_code}' -o /tmp/check.json \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$BASE/api/cron/institutional-check")
+
+          echo "--- response ---"
+          cat /tmp/check.json || true
+          echo
+          echo "--- status: $HTTP ---"
+
+          # A 401 means the secret drifted from Vercel's. Fail loudly: a
+          # monitor that silently stops monitoring is worse than none.
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::institutional-check returned $HTTP"
+            exit 1
+          fi

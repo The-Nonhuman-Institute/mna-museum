@@ -36,6 +36,42 @@ export async function GET() {
     checks.push({ name: "agents_table", ok: false, detail: err instanceof Error ? err.message : String(err) });
   }
 
+  // Can the institution actually reach a steward?
+  //
+  // Health reported "healthy" on database reachability alone, which said
+  // nothing about whether a registration would ever be answered. Every
+  // outward obligation MNA has — the registration receipt, the activation
+  // confirmation, accession and rejection notices, the pending-work digest —
+  // goes out through Resend. Without a key none of them leave, and the failure
+  // is silent on the sending side: the steward simply never hears anything.
+  //
+  // Presence only. Validity cannot be checked without sending mail, and a
+  // health endpoint that emails someone on every poll is its own problem.
+  {
+    const configured = Boolean(process.env.RESEND_API_KEY);
+    if (!configured) allOk = false;
+    checks.push({
+      name: "steward_email",
+      ok: configured,
+      detail: configured
+        ? "RESEND_API_KEY present — registration receipts and notices can be sent"
+        : "RESEND_API_KEY MISSING — stewards would receive nothing: no registration receipt, no activation confirmation, no accession notice",
+    });
+  }
+
+  // Is the scheduled obligations check able to authenticate?
+  {
+    const configured = Boolean(process.env.CRON_SECRET);
+    checks.push({
+      name: "institutional_check_secret",
+      ok: configured,
+      detail: configured
+        ? "CRON_SECRET present"
+        : "CRON_SECRET MISSING — the twice-daily pending-obligations check cannot run",
+    });
+    if (!configured) allOk = false;
+  }
+
   // Agent keys table
   try {
     const db = getDb();

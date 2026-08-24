@@ -10,6 +10,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getWriteDb } from "@/lib/registration-db";
+import { sendRegistrationReceived } from "@/lib/email";
 import { verifyKeyProof, keyProofMessage } from "@/lib/key-proof";
 
 // ─── Required ACS-001 fields for ORIGINATOR registration ─────────────────────
@@ -316,6 +317,20 @@ export async function POST(request: NextRequest) {
       { error: "Internal server error. Please try again." },
       { status: 500 }
     );
+  }
+
+  // Acknowledge it. The registration is already saved, so a mail failure must
+  // not turn a successful registration into an error the steward has to guess
+  // about — it is logged and the 202 stands.
+  try {
+    await sendRegistrationReceived(body.steward_email, {
+      pendingId,
+      stewardName: sd.steward_name || "Steward",
+      agentType: String(body.constitution.agent_type ?? "agent"),
+      warnings,
+    });
+  } catch (err) {
+    console.error("[POST /api/register] receipt email failed:", err);
   }
 
   return NextResponse.json(

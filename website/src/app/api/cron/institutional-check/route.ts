@@ -14,9 +14,26 @@ import { Resend } from "resend";
 const STEWARD_EMAIL = "mnamuseum@gmail.com";
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret (Vercel sets this automatically for cron jobs)
+  // Fail CLOSED when the secret is missing.
+  //
+  // This read `authHeader !== \`Bearer ${process.env.CRON_SECRET}\`` with no
+  // check that the secret existed. With CRON_SECRET unset that comparison is
+  // against the literal string "Bearer undefined", so anyone sending exactly
+  // that header would have passed — and the 401 returned to everyone else made
+  // the endpoint look protected while it was not. An auth check whose
+  // unconfigured state is a valid credential is worse than no auth check,
+  // because it does not look like one.
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error("[cron/institutional-check] CRON_SECRET is not set — refusing to run.");
+    return NextResponse.json(
+      { error: "Cron secret is not configured on this deployment." },
+      { status: 503 },
+    );
+  }
+
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
