@@ -122,6 +122,46 @@ if (emitted.size > 0) {
   }
 }
 
+/* ── 2. Credentials read from the snapshot ────────────────────────────────── */
+//
+// getDb() is snapshot-first: on Vercel it reads a bundled copy of the database
+// rebuilt on a cron. That is correct for public display data and wrong for
+// credentials, because the snapshot cannot report its own staleness — it
+// answers a question about a key as confidently when the key has changed as
+// when it has not.
+//
+// Two routes verified signatures against it. After MNA-OR-0008 rotated, the
+// deployed snapshot still held its superseded key, which meant the rotated
+// agent was locked out AND the old key still authenticated until the next
+// build. Rotation that does not revoke until a build schedule is not rotation.
+// Scoped to website/src, because snapshot-first is a property of THAT tree's
+// registration-db. system, commons and terminal each have their own getDb that
+// reads the live database, and flagging those is noise — a first pass reported
+// seven files, all of them fine.
+//
+// Proximity matters too: a route may legitimately read display data through
+// getDb and credentials through getWriteDb. Only a getDb assignment within
+// fifteen lines above the key query is evidence.
+for (const [file, raw] of sources) {
+  const r = rel(file).replace(/\\/g, "/");
+  if (!r.startsWith("website/src/")) continue;
+  if (/registration-db\.ts$/.test(r)) continue;
+
+  const lines = stripComments(raw).split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (!/public_key_pem/.test(lines[i])) continue;
+    const window = lines.slice(Math.max(0, i - 15), i).join("\n");
+    if (!/=\s*getDb\s*\(/.test(window)) continue;
+    findings.push({
+      kind: "credential read from the snapshot",
+      name: `${r}:${i + 1}`,
+      detail: "reads public_key_pem from getDb() — snapshot-first, so a rotated key stays stale until the next build. Use getWriteDb().",
+      where: [r],
+    });
+    break;
+  }
+}
+
 /* ── 2. Cron endpoints nothing schedules ──────────────────────────────────── */
 const workflowDir = path.join(ROOT, ".github", "workflows");
 const workflows = fs.existsSync(workflowDir)

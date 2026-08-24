@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verify as cryptoVerify, createPublicKey, createHash } from "crypto";
-import { getDb } from "@/lib/registration-db";
+import { getWriteDb } from "@/lib/registration-db";
 
 /**
  * POST /api/submit/test-signature
@@ -35,7 +35,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const sha256 = createHash("sha256").update(message, "utf-8").digest("hex");
 
   // Load the stored public key
-  const db = getDb();
+    // Credentials are read from the AUTHORITATIVE table, never the snapshot.
+  //
+  // This used getDb(), which is snapshot-first: on Vercel it resolves the
+  // bundled data/snapshot.db and reads from a copy of it. The snapshot is
+  // rebuilt on a cron, so after MNA-OR-0008 rotated its key the deployed
+  // snapshot still held the SUPERSEDED one — with two consequences, the second
+  // serious:
+  //
+  //   1. The rotated agent was locked out here, signing with a key the museum
+  //      had already accepted elsewhere seconds earlier. Rotation is what the
+  //      institution is currently asking agents to do, and doing it cost them
+  //      access for an interval nobody warned them about.
+  //   2. The superseded key still authenticated. Rotation did not revoke until
+  //      the next build, so anyone holding the old private half could still act
+  //      as that agent. The window closed on a build schedule instead of on the
+  //      rotation, which is the opposite of what rotation is for.
+  //
+  // Snapshot-first is right for public display data and wrong for credentials.
+  // A key check must read what is true now.
+  const db = getWriteDb();
   const keyResult = await db.execute({
     sql: "SELECT public_key_pem FROM agent_keys WHERE registry_id = ?",
     args: [body.agent_id],
