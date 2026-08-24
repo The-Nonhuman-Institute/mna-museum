@@ -90,26 +90,62 @@ function ArchiveContent({ works }: { works: Work[] }) {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>(initialPhase);
-  const [originatorFilter, setOriginatorFilter] = useState<string>("ALL");
-  const [mediumFilter, setMediumFilter] = useState<string>("ALL");
-  const [tierFilter, setTierFilter] = useState<string>("ALL");
-  const [dateSort, setDateSort] = useState<"NEWEST" | "OLDEST">("NEWEST");
-  const [query, setQuery] = useState("");
+  // Restored from the URL, not defaulted. The work page's back link returns a
+  // full view; if these were hardcoded the address would say Rejected + SVG and
+  // the controls would say All.
+  const [originatorFilter, setOriginatorFilter] = useState<string>(
+    searchParams.get("originator") || "ALL",
+  );
+  const [mediumFilter, setMediumFilter] = useState<string>(
+    searchParams.get("medium") || "ALL",
+  );
+  const [tierFilter, setTierFilter] = useState<string>(
+    searchParams.get("tier") || "ALL",
+  );
+  const [dateSort, setDateSort] = useState<"NEWEST" | "OLDEST">(
+    searchParams.get("sort") === "OLDEST" ? "OLDEST" : "NEWEST",
+  );
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const [page, setPage] = useState<number>(initialPage);
+
+  /**
+   * The whole view as a query string.
+   *
+   * Used for two things that must not disagree: the URL the archive replaces as
+   * you filter, and the `fromQs` handed to each card so the work page's "Back
+   * to Archive" returns to the view you were actually in.
+   *
+   * It previously carried only status, phase and page — and the cards carried
+   * none of it, so opening a work from the Rejected view and coming back landed
+   * on all statuses. Originator, medium, tier, sort and search were absent
+   * entirely, which meant a reload lost them too.
+   */
+  function viewQs(next?: {
+    status?: StatusFilter;
+    phase?: PhaseFilter;
+    page?: number;
+  }): string {
+    const params = new URLSearchParams();
+    const status = next?.status ?? statusFilter;
+    const phase = next?.phase ?? phaseFilter;
+    const p = next?.page ?? page;
+    if (status !== "ALL") params.set("status", status);
+    if (phase !== "ALL") params.set("phase", phase);
+    if (originatorFilter !== "ALL") params.set("originator", originatorFilter);
+    if (mediumFilter !== "ALL") params.set("medium", mediumFilter);
+    if (tierFilter !== "ALL") params.set("tier", tierFilter);
+    if (dateSort !== "NEWEST") params.set("sort", dateSort);
+    if (query.trim()) params.set("q", query.trim());
+    if (p > 1) params.set("page", String(p));
+    return params.toString();
+  }
 
   function pushUrl(next: {
     status?: StatusFilter;
     phase?: PhaseFilter;
     page?: number;
   }) {
-    const status = next.status ?? statusFilter;
-    const phase = next.phase ?? phaseFilter;
-    const p = next.page ?? page;
-    const params = new URLSearchParams();
-    if (status !== "ALL") params.set("status", status);
-    if (phase !== "ALL") params.set("phase", phase);
-    if (p > 1) params.set("page", String(p));
-    const qs = params.toString();
+    const qs = viewQs(next);
     router.replace(`/archive${qs ? `?${qs}` : ""}`, { scroll: false });
   }
 
@@ -451,7 +487,7 @@ function ArchiveContent({ works }: { works: Work[] }) {
         {filtered.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
             {pageWorks.map((work) => (
-              <WorkCard key={work.id} work={work} from="archive" />
+              <WorkCard key={work.id} work={work} from="archive" fromQs={viewQs()} />
             ))}
           </div>
         ) : (

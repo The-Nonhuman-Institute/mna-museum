@@ -1,0 +1,79 @@
+# previews-refresh — capture previews for works that do not have one
+#
+# The grid on /canon and /archive shows a static preview per work, and falls
+# back to the work's ID on a plain tile when the file is missing. Nothing ever
+# generated previews automatically, so every work produced by the tick appeared
+# in the archive as its own identifier on a dark rectangle until someone ran the
+# script by hand. Because the default sort is newest-first, the freshest works —
+# the ones a visitor sees first — were exactly the ones showing no art.
+#
+# Runs an hour after snapshot-refresh, and that ordering is load-bearing: a
+# preview is captured by loading /capture/work/{id} on the LIVE site, so the
+# work has to be in the deployed snapshot before its preview can exist. Running
+# these together would capture nothing for anything new.
+#
+# Idempotent — --missing only touches works with no preview file.
+#
+# Required repo secrets: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN
+
+name: previews-refresh
+
+on:
+  schedule:
+    - cron: "0 10 * * *" # daily 10:00 UTC, one hour after snapshot-refresh
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # A push made with the default GITHUB_TOKEN does NOT trigger other workflows,
+  # so the preview commit alone would never redeploy. Dispatch it explicitly —
+  # the same trap that left the snapshot stale for four weeks.
+  actions: write
+
+jobs:
+  previews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Capture previews for works that have none
+        run: npx tsx system/scripts/generate-work-previews.ts --missing
+
+      - name: Capture animated previews for works that move
+        run: npx tsx system/scripts/generate-work-animations.ts
+
+      - name: Commit + push if anything was captured
+        run: |
+          set -euo pipefail
+          git config user.name "mna-registrar"
+          git config user.email "registry@mnamuseum.org"
+          git add website/public/previews website/src/data/animated-works.json
+          if git diff --cached --quiet; then
+            echo "no new previews — nothing to commit"
+            echo "CHANGED=false" >> "$GITHUB_ENV"
+          else
+            N=$(git diff --cached --name-only | wc -l | tr -d ' ')
+            git commit -m "chore(previews): capture previews for $N new file(s)"
+            git push
+            echo "CHANGED=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Deploy so the new previews are actually served
+        if: env.CHANGED == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-website.yml --ref master
