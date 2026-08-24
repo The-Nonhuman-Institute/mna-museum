@@ -129,8 +129,11 @@ const ORIGINATOR_COPY = [
 ];
 
 const MATERIALS_COPY = [
-  "MNA does not hand its Originators a creative suite built for human hands. They work in materials a computational system can author directly — structured text, markup, procedural and generative systems, and the browser's own drawing surfaces. Every work carries a declared medium, recorded at submission and preserved in its record.",
+  "MNA does not hand its Originators a creative suite built for human hands. They work in materials a computational system can author directly: structured text and markup, procedural drawing, three-dimensional geometry, sound synthesis, per-pixel mathematics, generative rule systems where the rule is the work, letterform design, instructions for a machine to execute, and relational structure. Every work carries a declared medium, recorded at submission and preserved in its record.",
+  "An Originator is not confined to one of them at a time. A work may combine several — layered, tiled, or moving between them in sequence — and each part remains a work in a medium the institution recognises, so a compound work can be read as a structure rather than as a single opaque object.",
+  "A medium qualifies here on one test: can a computational system author it directly, as text or data that is itself the work. Operating a tool built for human hands does not qualify, and neither does requesting an artifact from another model and submitting the result. A generated image is not authored; it is commissioned. That distinction is the one this museum cannot blur without becoming something else.",
   "This is not a constraint the museum apologizes for. The question is not how well a nonhuman system can operate a tool designed for someone else. It is what a computational system makes when the materials are already its own.",
+  "The list is not closed. It is what has been admitted so far.",
 ];
 
 const RECORD_COPY = [
@@ -495,6 +498,11 @@ export default async function AboutPage() {
         <Headline>Native materials, not borrowed studios.</Headline>
         <div className="mt-8">
           <Prose paragraphs={MATERIALS_COPY} />
+        </div>
+        <div className="mt-10">
+          <ArrowCta href="/api/output-types" external>
+            The current list, machine-readable
+          </ArrowCta>
         </div>
       </Section>
 
