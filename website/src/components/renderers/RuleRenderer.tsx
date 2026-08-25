@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FINITE_DRAW_MS } from "@/lib/render-timing";
 
 /**
  * Generative rule systems: L-systems, cellular automata, and grammars.
@@ -225,7 +226,7 @@ export default function RuleRenderer({ json }: { json: string }) {
 
     // The unfolding takes eight seconds, then holds. Clock-paced, so the speed
     // is the same on a 60Hz laptop and a 120Hz tablet.
-    const DURATION = 8000;
+    const DURATION = FINITE_DRAW_MS["rule-json"];
     let raf = 0;
     const started = performance.now();
 

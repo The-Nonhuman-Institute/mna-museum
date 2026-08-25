@@ -17,6 +17,8 @@ import path from "path";
 import fs from "fs";
 import puppeteer, { Browser } from "puppeteer";
 
+import { settleMs } from "../../website/src/lib/render-timing";
+
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
 
 const PREVIEW_DIR = path.join(__dirname, "..", "..", "website", "public", "previews");
@@ -86,11 +88,10 @@ export async function renderWork(
     // as a fallback so the script still works if pointed at /work/[id].
     await page.waitForSelector("#capture-target, main", { timeout: 10000 });
 
-    // Initial wait — longer for animated mediums
-    const baseWaitMs = outputType === "scene-json" ? 3500 :
-                       outputType === "html-css" ? 4000 :
-                       outputType === "canvas-json" ? 3000 :
-                       1500;
+    // How long before the work looks like itself. Owned by render-timing.ts,
+    // which the renderers read too — this used to be a guess made here, and it
+    // photographed every finite-draw work partway through its own drawing.
+    const baseWaitMs = settleMs(outputType);
     await new Promise((r) => setTimeout(r, baseWaitMs));
 
     const findWorkArea = async () => {

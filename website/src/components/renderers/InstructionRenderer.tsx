@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FINITE_DRAW_MS } from "@/lib/render-timing";
 
 /**
  * Instructions for a machine — plotter paths and G-code.
@@ -81,7 +82,7 @@ export default function InstructionRenderer({ payload }: { payload: string }) {
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-    const DURATION = 9000;
+    const DURATION = FINITE_DRAW_MS["instruction-set"];
     const started = performance.now();
     let raf = 0;
 

@@ -29,6 +29,8 @@ import os from "os";
 import path from "path";
 import puppeteer, { type Browser } from "puppeteer";
 
+import { animationPlan } from "../../website/src/lib/render-timing";
+
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
 
@@ -39,9 +41,8 @@ const only = args.indexOf("--work") >= 0 ? args[args.indexOf("--work") + 1] : nu
 const SITE = process.env.MNA_SITE_ORIGIN || "https://www.mnamuseum.org";
 const OUT_DIR = path.join(__dirname, "..", "..", "website", "public", "previews");
 
-/** Twelve frames over three seconds — enough to read a loop without bloating. */
+/** Twelve frames — enough to read a loop, or a drawing, without bloating. */
 const FRAMES = 12;
-const FRAME_GAP_MS = 250;
 /** Thumbnails do not need capture resolution; this is what keeps files small. */
 const EDGE = 480;
 /** Per-animation ceiling. A grid of 30 cards must not pull megabytes. */
@@ -74,7 +75,12 @@ const ANIMATED_SQL = `
       OR output_payload LIKE '%requestAnimationFrame%'
    ORDER BY created_at DESC`;
 
-async function captureFrames(browser: Browser, workId: string, tmp: string): Promise<number> {
+async function captureFrames(
+  browser: Browser,
+  workId: string,
+  outputType: string,
+  tmp: string,
+): Promise<{ frames: number; frameGapMs: number }> {
   const page = await browser.newPage();
   try {
     await page.setViewport({ width: 1100, height: 1100, deviceScaleFactor: 1 });
@@ -85,17 +91,30 @@ async function captureFrames(browser: Browser, workId: string, tmp: string): Pro
       timeout: 60000,
     });
     await page.waitForSelector("#capture-target, main", { timeout: 15000 });
-    // Let the work mount and reach its steady state before sampling.
-    await new Promise((r) => setTimeout(r, 2500));
+
+    // A looping work is left to settle, then sampled across a few seconds of
+    // its loop. A work that draws itself once and stops is sampled from its
+    // first moment across the whole draw — sampling the middle of a nine-second
+    // plot gave a thumbnail that both began late and ended early.
+    const { startDelayMs, frameGapMs } = animationPlan(outputType, FRAMES);
+
+    // The capture target exists in the DOM before it has been laid out, and
+    // screenshotting it too early throws "not visible". A finite draw wants its
+    // first frame as early as possible, so wait only for the mount, not longer.
+    const MOUNT_MS = 400;
+    await new Promise((r) => setTimeout(r, MOUNT_MS));
 
     const target = (await page.$("#capture-target")) ?? (await page.$("main"));
-    if (!target) return 0;
+    if (!target) return { frames: 0, frameGapMs };
+
+    const remaining = startDelayMs - MOUNT_MS;
+    if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
 
     for (let i = 0; i < FRAMES; i++) {
       await target.screenshot({ path: path.join(tmp, `f${String(i).padStart(2, "0")}.png`) as `${string}.png` });
-      if (i < FRAMES - 1) await new Promise((r) => setTimeout(r, FRAME_GAP_MS));
+      if (i < FRAMES - 1) await new Promise((r) => setTimeout(r, frameGapMs));
     }
-    return FRAMES;
+    return { frames: FRAMES, frameGapMs };
   } finally {
     await page.close();
   }
@@ -121,7 +140,7 @@ function framesDiffer(tmp: string): boolean {
   return hashes.size > 1;
 }
 
-function encodeWebp(tmp: string, outPath: string): void {
+function encodeWebp(tmp: string, outPath: string, frameGapMs: number): void {
   const frames = fs.readdirSync(tmp).filter((f) => f.endsWith(".png")).sort()
     .map((f) => path.join(tmp, f));
   // Downscale first; img2webp has no resize of its own. ffmpeg refuses to read
@@ -137,7 +156,7 @@ function encodeWebp(tmp: string, outPath: string): void {
   // encoding. At q72 a twelve-frame loop collapsed to two distinct frames.
   // Those works are flat and compress to a few KB losslessly.
   const encode = (extra: string[]) =>
-    execFileSync("img2webp", ["-loop", "0", ...extra, "-d", String(FRAME_GAP_MS), ...frames, "-o", outPath],
+    execFileSync("img2webp", ["-loop", "0", ...extra, "-d", String(frameGapMs), ...frames, "-o", outPath],
       { stdio: "ignore" });
 
   encode(["-lossless"]);
@@ -181,7 +200,7 @@ async function main() {
     for (const w of works) {
       const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `mna-anim-${w.id}-`));
       try {
-        const n = await captureFrames(browser, w.id, tmp);
+        const { frames: n, frameGapMs } = await captureFrames(browser, w.id, w.output_type, tmp);
         if (n === 0) { console.warn(`  ✗ ${w.id}: no capture target`); failed++; continue; }
 
         if (!framesDiffer(tmp)) {
@@ -193,7 +212,7 @@ async function main() {
           continue;
         }
 
-        encodeWebp(tmp, path.join(OUT_DIR, `${w.id}.webp`));
+        encodeWebp(tmp, path.join(OUT_DIR, `${w.id}.webp`), frameGapMs);
         const kb = Math.round(fs.statSync(path.join(OUT_DIR, `${w.id}.webp`)).size / 1024);
         console.log(`  ✓ ${w.id} (${w.output_type}) — ${kb} KB${kb > MAX_BYTES / 1024 ? " ⚠ over budget" : ""}`);
         made++;
