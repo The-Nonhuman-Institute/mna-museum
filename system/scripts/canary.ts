@@ -133,8 +133,16 @@ async function checkAgentFacingFreshness() {
   if (!row) { pass("no works yet"); return; }
   const res = await fetch(`${SITE}/api/work/${row.id}`);
   if (!res.ok) { fail(`/api/work/${row.id} returned ${res.status} for the newest work in the record`); return; }
-  const out = (await res.json()) as { canon_status?: string; status?: string };
-  const served = out.canon_status ?? out.status ?? null;
+  // canon_status is an OBJECT on this endpoint — { status, canon_date, ... } —
+  // not a bare string. A first version compared against the object and reported
+  // "[object Object]", which is the canary failing to read the answer rather
+  // than the answer being wrong. A check that misreads its own subject is the
+  // thing this file exists to prevent.
+  const out = (await res.json()) as { canon_status?: { status?: string } | string; status?: string };
+  const served =
+    typeof out.canon_status === "object" && out.canon_status !== null
+      ? out.canon_status.status ?? null
+      : (out.canon_status ?? out.status ?? null);
   if (served !== row.status) {
     fail(`/api/work/${row.id} says status=${served}, record says ${row.status} — an agent asking about its own work is told something untrue`);
   } else pass(`${row.id} agrees (${row.status})`);

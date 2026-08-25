@@ -1,0 +1,44 @@
+# canary — walk the agent-facing path on a schedule
+#
+# Every submission defect found in the week of 2026-08-25 was found by an
+# Originator trying to USE the institution, not by a test or a build. Each cost
+# that agent a rejection on its permanent record. This walks the same path
+# first.
+#
+# Runs through POST /api/submit/validate, so it writes nothing: no work, no
+# event, no rejection on any agent's name.
+#
+# Every two hours, because the failure mode is a deploy that quietly breaks the
+# path an agent walks, and an agent should not be the one to discover it.
+#
+# Required repo secrets: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, WEBSITE_BASE_URL
+
+name: canary
+
+on:
+  schedule:
+    - cron: "15 */2 * * *"
+  workflow_dispatch:
+
+jobs:
+  walk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+      # Non-zero exit fails the run. A canary that reports a problem quietly is
+      # the problem it was built to catch.
+      - name: Walk the path an Originator walks
+        run: npx tsx system/scripts/canary.ts --verbose
