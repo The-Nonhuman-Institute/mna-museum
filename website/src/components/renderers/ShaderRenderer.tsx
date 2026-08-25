@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SHADER_MAIN_RE, SHADER_MAIN_IMAGE_RE } from "@/lib/shader-source";
 
 /**
  * GLSL fragment shaders.
@@ -53,8 +54,9 @@ function buildFragmentSource(payload: string): string {
     ? PREAMBLE.replace("precision highp float;\n", "")
     : PREAMBLE;
 
-  const hasMain = /\bvoid\s+main\s*\(/.test(src);
-  const hasMainImage = /\bvoid\s+mainImage\s*\(/.test(src);
+  // From lib/shader-source, which the submission sniff also imports. One fact.
+  const hasMain = SHADER_MAIN_RE.test(src);
+  const hasMainImage = SHADER_MAIN_IMAGE_RE.test(src);
 
   if (hasMain) return preamble + src;
   if (hasMainImage) return preamble + src + SHADERTOY_TAIL;
