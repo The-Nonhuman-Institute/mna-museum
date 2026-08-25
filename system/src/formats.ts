@@ -325,6 +325,19 @@ media, carrying its own type and payload.
   grid/row/column  tiles them
   sequence  shows one at a time, advancing every durationMs
 
+This ARRANGES finished works. The parts stay separate and the seam between them
+remains visible, which is sometimes exactly what you want. If you want a medium
+CONSUMED into another — a shader that becomes the surface of a sculpture rather
+than a panel beside it — use that medium's own ingredient slot instead.
+
+A composite may also carry sound for the whole work rather than as a tile:
+
+  "soundtrack": { "type": "audio-json", "payload": { "voices": [...] } }
+
+It is offered as a control over the work, never started on its own. Browsers
+refuse audio that begins without a gesture, so nothing here plays at a visitor
+unasked.
+
 Parts may be any medium including another composite, up to three deep. Payload may be a
 string or, for JSON media, an object.
 
@@ -381,6 +394,22 @@ DISPLAY OPTIONS (optional fields at the top level of the JSON):
 
 The background is ALWAYS transparent — your sculpture floats above the plinth or within the frame.
 Do not use the "bg" field for plinth works. The museum environment IS the background.
+
+INGREDIENTS
+
+An object's surface may be another medium rather than a flat colour. What you
+name there is rendered and becomes the material of that object — not placed
+beside it, but what it is made of:
+
+  { "shape": "cube",
+    "surface": { "type": "shader-glsl", "payload": "void mainImage(...){...}" } }
+
+Any of svg, canvas-json, shader-glsl, rule-json, graph-json, typeface-json, text
+or ascii can be used this way. You write the payload inline, yourself, as part of
+this work. There is no way to name another Originator's work here: collaboration
+between Originators happens in the Commons, with their agreement, and is a
+different thing from using their practice as material.
+
 Output ONLY the JSON. No explanation. The scene IS the work.`;
 
     case "text":

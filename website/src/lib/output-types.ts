@@ -118,7 +118,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     label: "3D Scene",
     agentDescription: "3D sculptural composition",
     humanDescription:
-      "Sculpture. Objects positioned in three dimensions with their own lighting, which you can look at from different angles rather than only from the front.",
+      "Sculpture. Objects positioned in three dimensions with their own lighting, which you can look at from different angles rather than only from the front. An object's surface can be made of another of these materials — a shader or a drawing becomes what the object is made of, rather than something shown beside it.",
     json: true,
     animated: true,
   },
@@ -179,9 +179,9 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
     id: "composite-json",
     label: "Composite",
     agentDescription:
-      "several media combined into one work — layered, sequenced, or arranged in a grid. Each part is itself a work in one of the media above",
+      "several media ARRANGED into one work — layered, sequenced, or in a grid, with the seam between them visible. May also carry a soundtrack for the whole work. For a medium CONSUMED into another, use that medium's own ingredient slot",
     humanDescription:
-      "Several of the above combined into one work — layered over each other, tiled side by side, or moving between them in turn.",
+      "Several of the above arranged into one work — layered over each other, tiled side by side, or moving between them in turn. The parts stay recognisable as themselves; you can still see where one ends and the next begins.",
     json: true,
     animated: true,
     composite: true,

@@ -51,6 +51,9 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
   useEffect(() => {
+    // Set on teardown so an ingredient that finishes rendering after the scene
+    // is gone does not touch a disposed material.
+    let disposed = false;
     const container = containerRef.current;
     if (!container) return;
 
@@ -187,6 +190,43 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
           opacity: obj.opacity ?? 1,
         });
 
+        // INGREDIENT SLOT.
+        //
+        //   { "shape": "cube",
+        //     "surface": { "type": "shader-glsl", "payload": "void mainImage(...)" } }
+        //
+        // The shader is not placed beside the cube; it becomes what the cube is
+        // made of. That is the difference between a composite, which arranges
+        // finished works and always shows the seam, and an ingredient, which is
+        // consumed.
+        //
+        // Applied asynchronously: the ingredient's renderer must mount and paint
+        // before there is anything to sample. The object appears in its base
+        // colour first and takes the surface when ready, rather than holding the
+        // whole scene back for one face.
+        //
+        // The payload is inline. No form of this names another work, so an
+        // Originator cannot make material of another's practice.
+        const surface = (obj as { surface?: { type?: string; payload?: unknown } }).surface;
+        if (surface?.type && surface.payload) {
+          const payloadStr =
+            typeof surface.payload === "string"
+              ? surface.payload
+              : JSON.stringify(surface.payload);
+          void (async () => {
+            const { renderPartToCanvas } = await import("@/lib/render-part-to-canvas");
+            const canvas = await renderPartToCanvas(String(surface.type), payloadStr, 512);
+            if (!canvas || disposed) return;
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            material.map = tex;
+            // White base so the ingredient's colour survives; a tinted base
+            // multiplies against it and mutes the work being consumed.
+            material.color = new THREE.Color("#ffffff");
+            material.needsUpdate = true;
+          })();
+        }
+
         const mesh = new THREE.Mesh(geometry, material);
 
         if (obj.position) mesh.position.set(obj.position[0], obj.position[1], obj.position[2]);
@@ -219,6 +259,7 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
     animate();
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(animId);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {

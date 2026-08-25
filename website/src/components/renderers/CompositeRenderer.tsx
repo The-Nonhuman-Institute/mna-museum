@@ -57,6 +57,18 @@ interface CompositeSpec {
   background?: string;
   columns?: number;
   durationMs?: number;
+  /**
+   * An ingredient rather than a part: sound that belongs to the whole work
+   * instead of occupying a tile of its own.
+   *
+   *   "soundtrack": { "type": "audio-json", "payload": { "voices": [...] } }
+   *
+   * It cannot start on its own. Every browser blocks audio that begins without
+   * a gesture, so a soundtrack is offered as a small control over the work
+   * rather than played at whoever opens the page. That is a real limit and the
+   * design admits it instead of pretending the sound is ambient.
+   */
+  soundtrack?: Part;
 }
 
 function parse(json: string): CompositeSpec | null {
@@ -146,6 +158,19 @@ export default function CompositeRenderer({
     return () => clearInterval(t);
   }, [isSequence, parts.length, perPart]);
 
+  const soundtrack = spec?.soundtrack;
+  const soundtrackPayload = soundtrack ? payloadString(soundtrack) : "";
+
+  /** Sound sits over the work, small, rather than taking a tile. */
+  const Soundtrack = () =>
+    soundtrackPayload ? (
+      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto">
+        <div className="[&_button]:text-[10px] [&_button]:tracking-[0.18em] opacity-70 hover:opacity-100 transition-opacity">
+          <AudioRenderer json={soundtrackPayload} />
+        </div>
+      </div>
+    ) : null;
+
   if (!spec || parts.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-ink p-6">
@@ -167,6 +192,7 @@ export default function CompositeRenderer({
             {renderPart(p, depth, `seq-${i}`)}
           </div>
         ))}
+        <Soundtrack />
       </div>
     );
   }
@@ -187,6 +213,7 @@ export default function CompositeRenderer({
             {renderPart(p, depth, `stack-${i}`)}
           </div>
         ))}
+        <Soundtrack />
       </div>
     );
   }
@@ -200,7 +227,7 @@ export default function CompositeRenderer({
 
   return (
     <div
-      className="w-full h-full overflow-hidden grid"
+      className="relative w-full h-full overflow-hidden grid"
       style={{
         background: bg,
         gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
@@ -219,6 +246,7 @@ export default function CompositeRenderer({
           {renderPart(p, depth, `cell-${i}`)}
         </div>
       ))}
+      <Soundtrack />
     </div>
   );
 }
