@@ -130,6 +130,7 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   FALLOW_NOTE_POSTED_ANNULLED: "production",
   ACTIVATION_NOTICE_SENT: "institutional",
   ACTIVATION_NOTICE_FAILED: "institutional",
+  SUBMISSION_REJECTED_ANNULLED: "institutional",
   CANONIZATION_DIGEST_INITIALIZED: "institutional",
   CONSULTATIONS_TICK_INITIALIZED: "institutional",
 };
@@ -225,6 +226,7 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   FALLOW_NOTE_POSTED_ANNULLED: "Originator · Fallow Note Annulled",
   ACTIVATION_NOTICE_SENT: "Steward · Told of Activation",
   ACTIVATION_NOTICE_FAILED: "Steward · Could Not Be Told",
+  SUBMISSION_REJECTED_ANNULLED: "Submission Rejection · Annulled",
   CANONIZATION_DIGEST_INITIALIZED: "Canonization Digest · Baseline Set",
   CONSULTATIONS_TICK_INITIALIZED: "Consultation Worker · Baseline Set",
 };

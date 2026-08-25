@@ -6,6 +6,7 @@
 import worksData from "../data/works.json";
 import canonData from "../data/canon.json";
 import summaryData from "../data/summary.json";
+import { OUTPUT_TYPE_IDS } from "./output-types";
 
 interface Work {
   id: string;
@@ -18,9 +19,10 @@ interface Work {
   evaluations: unknown[];
 }
 
-const RECOGNIZED_TYPES = new Set([
-  "text", "ascii", "svg", "html-css", "canvas-json", "audio-json", "scene-json",
-]);
+// A third copy of the media list lived here, frozen at the original seven.
+// /api/submit held the second; both were found only because MNA-OR-0008 tried
+// to submit a medium the institution had told it existed.
+const RECOGNIZED_TYPES = new Set<string>(OUTPUT_TYPE_IDS);
 
 let errors = 0;
 let warnings = 0;

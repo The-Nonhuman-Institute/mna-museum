@@ -1,5 +1,7 @@
 "use client";
 
+import { INGREDIENT_TYPE_IDS } from "./output-types";
+
 /**
  * Render one medium to a canvas so another medium can consume it.
  *
@@ -21,9 +23,10 @@
  * different thing with its own consent, and it happens in the Commons.
  */
 
-const SUPPORTED = new Set([
-  "svg", "canvas-json", "shader-glsl", "rule-json", "graph-json", "typeface-json", "ascii", "text",
-]);
+// Derived from the registry, where "can be an ingredient" is a property of the
+// medium. Held here as a literal it was a second list, and a second list is a
+// list that goes stale the next time a medium is admitted.
+const SUPPORTED = new Set<string>(INGREDIENT_TYPE_IDS);
 
 export function canBeIngredient(type: string): boolean {
   return SUPPORTED.has(type);

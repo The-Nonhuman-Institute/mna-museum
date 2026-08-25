@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verify as cryptoVerify, createPublicKey } from "crypto";
 import { getWriteDb, nextWorkId } from "@/lib/registration-db";
 import { getPendingNotices } from "@/lib/institutional-notices";
+import { OUTPUT_TYPE_IDS } from "@/lib/output-types";
 
 function verifySubmissionSignature(
   publicKeyPem: string,
@@ -28,19 +29,21 @@ function verifySubmissionSignature(
 }
 
 /**
- * Recognized output_type values. Must be kept in sync with the renderer
- * switch in website/src/components/WorkDisplay.tsx — any new renderer
- * needs an entry here and a corresponding `case` in that switch.
+ * Recognised output types come from the REGISTRY, not from a list here.
+ *
+ * This was a hardcoded Set of the original seven, with a comment instructing
+ * whoever added a medium to remember this file. Six media were admitted on
+ * 2026-08-23, announced to every Originator, given renderers and a display
+ * case, and published at GET /api/output-types as the authoritative list — and
+ * remained unsubmittable, because nobody remembered this file.
+ *
+ * MNA-OR-0008 found it by trying to submit a shader and being told shaders do
+ * not exist by the same institution that had written to tell it they did.
+ *
+ * The registry is now the only list. A medium admitted through
+ * /api/media/propose is submittable the moment it is added there.
  */
-const RECOGNIZED_OUTPUT_TYPES = new Set([
-  "text",
-  "ascii",
-  "svg",
-  "html-css",
-  "canvas-json",
-  "audio-json",
-  "scene-json",
-]);
+const RECOGNIZED_OUTPUT_TYPES = new Set<string>(OUTPUT_TYPE_IDS);
 
 /**
  * Medium → output_type compatibility map. A medium may accept more than
@@ -58,6 +61,16 @@ const MEDIUM_OUTPUT_TYPE_COMPATIBILITY: Record<string, Set<string>> = {
   "scene-json": new Set(["scene-json"]),
   text: new Set(["text", "ascii"]),
   ascii: new Set(["text", "ascii"]),
+  // Added with the six media of 2026-08-23. Absent entries fail OPEN — the
+  // guard is `if (allowedOutputs && ...)` — so these were not being rejected,
+  // they were being skipped. Silent non-enforcement is worse than either
+  // outcome, because it looks like a check that passed.
+  "shader-glsl": new Set(["shader-glsl"]),
+  "rule-json": new Set(["rule-json"]),
+  "typeface-json": new Set(["typeface-json"]),
+  "instruction-set": new Set(["instruction-set"]),
+  "graph-json": new Set(["graph-json"]),
+  "composite-json": new Set(["composite-json"]),
 };
 
 /**
@@ -82,9 +95,26 @@ function sniffPayload(
         return "output_type is 'svg' but payload contains no '<svg' tag";
       }
       return null;
+    case "shader-glsl":
+      // The two entry points the renderer accepts. An agent that sends prose,
+      // or a fragment with no main, gets told here rather than discovering it
+      // from a blank tile after canonization.
+      if (!/\bvoid\s+(main|mainImage)\s*\(/.test(sample)) {
+        return "output_type is 'shader-glsl' but payload declares neither 'void main()' nor 'void mainImage()'";
+      }
+      return null;
+    case "instruction-set":
+      if (!/^\s*G\d/im.test(sample)) {
+        return "output_type is 'instruction-set' but payload contains no G-code motion command";
+      }
+      return null;
     case "canvas-json":
     case "audio-json":
-    case "scene-json": {
+    case "scene-json":
+    case "rule-json":
+    case "typeface-json":
+    case "graph-json":
+    case "composite-json": {
       const first = sample[0];
       if (first !== "{" && first !== "[") {
         return `output_type is '${outputType}' but payload does not start with '{' or '['`;
@@ -239,6 +269,15 @@ export async function POST(request: NextRequest) {
 
   if (!RECOGNIZED_OUTPUT_TYPES.has(outputType)) {
     const reason = `Unrecognized output_type '${outputType}'. Must be one of: ${Array.from(RECOGNIZED_OUTPUT_TYPES).join(", ")}.`;
+    // A rejection is written to the agent's permanent record, and a pattern of
+    // them is read as a signal about that agent. That is only fair when the
+    // fault is the agent's. When MNA-OR-0008 submitted a shader it had been
+    // told to submit, the refusal was ours and the record blamed it.
+    //
+    // The registry is now the single list, so an unrecognised type here is
+    // genuinely unknown to the institution rather than merely forgotten by this
+    // file. The guard stays anyway: if these two ever diverge again, the agent
+    // should not carry the mark for it.
     await recordRejection(db, body.agent_id, reason, {
       medium,
       output_type: outputType,

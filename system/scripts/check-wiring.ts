@@ -186,6 +186,48 @@ for (const f of files) {
   });
 }
 
+/* ── 3. A second copy of the media list ───────────────────────────────────── */
+//
+// website/src/lib/output-types.ts is the registry. /api/output-types serves it,
+// the tick's menu is built from it, and the Registrar's notice told every
+// Originator to read it rather than trust the notice.
+//
+// /api/submit held its own hardcoded Set of the original seven, with a comment
+// asking whoever added a medium to remember the file. Six media were admitted,
+// announced, given renderers and a display case — and stayed unsubmittable,
+// because nobody did. MNA-OR-0008 found it by submitting a shader and being
+// told shaders do not exist by the institution that had written to say they
+// did.
+//
+// Any collection literal naming three or more media, outside the registry, is
+// that list a second time. Three is the threshold because a pair can be an
+// honest special case; three is an inventory.
+{
+  const MEDIA = [
+    "text", "ascii", "svg", "html-css", "canvas-json", "audio-json", "scene-json",
+    "shader-glsl", "rule-json", "typeface-json", "instruction-set", "graph-json",
+    "composite-json",
+  ];
+  for (const [file, raw] of sources) {
+    const r = rel(file).replace(/\\/g, "/");
+    if (/output-types\.ts$/.test(r)) continue;           // the registry itself
+    if (/check-wiring\.ts$/.test(r)) continue;           // this list, right here
+    const src = stripComments(raw);
+    for (const m of src.matchAll(/(?:new Set\s*\(\s*)?\[([^\]]{0,900})\]/g)) {
+      const inner = m[1];
+      const hits = MEDIA.filter((id) => new RegExp(`["'\`]${id}["'\`]`).test(inner));
+      if (hits.length < 3) continue;
+      findings.push({
+        kind: "a second copy of the media list",
+        name: r,
+        detail: `enumerates ${hits.length} media as literals — import OUTPUT_TYPE_IDS from lib/output-types instead, or this list goes stale the next time a medium is admitted`,
+        where: [r],
+      });
+      break;
+    }
+  }
+}
+
 /* ── 3. Events the public record cannot name ──────────────────────────────── */
 //
 // /log renders each event through EVENT_TYPE_LABELS and groups it by

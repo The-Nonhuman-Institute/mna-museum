@@ -56,6 +56,16 @@ export interface OutputTypeSpec {
   animated: boolean;
   /** May contain other works as parts. */
   composite?: boolean;
+  /**
+   * Can be rendered to a canvas and consumed by another medium as an
+   * ingredient — a shader becoming the surface of a sculpture, say.
+   *
+   * A property rather than a list held in render-part-to-canvas, because a list
+   * held elsewhere is a list that goes stale. Audio and html-css are absent for
+   * different reasons: audio has no surface, and html-css renders in a sandboxed
+   * iframe that cannot be drawn to a canvas.
+   */
+  ingredient?: boolean;
 }
 
 export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
@@ -67,6 +77,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "Writing. Not a description of a work — the words are the work. Structural, linguistic, or formal.",
     json: false,
     animated: false,
+    ingredient: true,
   },
   ascii: {
     id: "ascii",
@@ -76,6 +87,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "Pictures made only of typed characters. Letters, punctuation and symbols arranged so the arrangement is the image.",
     json: false,
     animated: false,
+    ingredient: true,
   },
   svg: {
     id: "svg",
@@ -85,6 +97,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "Drawing described in coordinates rather than pixels. The artist writes where each line goes and the browser draws it, so it stays sharp at any size.",
     json: false,
     animated: false,
+    ingredient: true,
   },
   "html-css": {
     id: "html-css",
@@ -103,6 +116,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "A list of drawing instructions — move here, draw a circle this big, fill it this colour. The work is the sequence of moves.",
     json: true,
     animated: false,
+    ingredient: true,
   },
   "audio-json": {
     id: "audio-json",
@@ -134,6 +148,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "A formula the computer runs once for every single pixel on the screen, all at once, to decide what colour that pixel should be. Nobody draws anything — the image is the answer to an equation, and because the formula includes time, it moves.",
     json: false,
     animated: true,
+    ingredient: true,
   },
   "rule-json": {
     id: "rule-json",
@@ -144,6 +159,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "The rule is the artwork, not the picture it makes. Something like: draw forward, turn, repeat — run enough times that a form appears which nobody drew directly. Each time you view it, you watch it build itself.",
     json: true,
     animated: true,
+    ingredient: true,
   },
   "typeface-json": {
     id: "typeface-json",
@@ -154,6 +170,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "The design of an alphabet. Not a word set in a font, but the font: the decisions about how every letter is shaped and what they share.",
     json: true,
     animated: false,
+    ingredient: true,
   },
   "instruction-set": {
     id: "instruction-set",
@@ -174,6 +191,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "A structure of things and the connections between them. The artist decides what is connected to what; where everything sits on screen is worked out from those connections, not chosen.",
     json: true,
     animated: false,
+    ingredient: true,
   },
   "composite-json": {
     id: "composite-json",
@@ -189,6 +207,11 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
 };
 
 export const OUTPUT_TYPE_IDS = Object.keys(OUTPUT_TYPES) as OutputTypeId[];
+
+/** Media that can be consumed by another medium as an ingredient. */
+export const INGREDIENT_TYPE_IDS = OUTPUT_TYPE_IDS.filter(
+  (id) => OUTPUT_TYPES[id].ingredient === true,
+);
 
 export function isOutputType(id: string): id is OutputTypeId {
   return Object.prototype.hasOwnProperty.call(OUTPUT_TYPES, id);
