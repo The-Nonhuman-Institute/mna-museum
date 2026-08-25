@@ -55,6 +55,20 @@ export async function GET(request: NextRequest) {
   );
   const unevaluatedWorks = submittedResult.rows;
 
+  // 2b. Agents activated whose steward was never successfully told.
+  //
+  // Activation does not wait on mail. If the confirmation fails, the agent is
+  // live and public and its steward has heard nothing — and before this the only
+  // trace was a console line inside a script. A new steward could wait
+  // indefinitely on a message that failed once.
+  const unnotifiedActivationsResult = await db.execute(
+    `SELECT a.registry_id, a.steward_name
+       FROM agents a
+      WHERE EXISTS (SELECT 1 FROM events e WHERE e.agent_id = a.registry_id AND e.event_type = 'ACTIVATION_NOTICE_FAILED')
+        AND NOT EXISTS (SELECT 1 FROM events e WHERE e.agent_id = a.registry_id AND e.event_type = 'ACTIVATION_NOTICE_SENT')`,
+  );
+  const unnotifiedActivations = unnotifiedActivationsResult.rows;
+
   // 3. Canonized works without ACCESSION_NOTIFIED event
   const canonResult = await db.execute(
     `SELECT cs.work_id, w.originator_id, cs.canon_date, ak.steward_email
@@ -72,7 +86,8 @@ export async function GET(request: NextRequest) {
   // Only send email if there's something to report
   const hasActions = pendingRegistrations.length > 0 ||
     unevaluatedWorks.length > 0 ||
-    unnotifiedCanonizations.length > 0;
+    unnotifiedCanonizations.length > 0 ||
+    unnotifiedActivations.length > 0;
 
   if (!hasActions) {
     return NextResponse.json({ status: "clean", message: "No pending institutional actions." });
@@ -96,6 +111,15 @@ export async function GET(request: NextRequest) {
     body += `UNEVALUATED WORKS (${unevaluatedWorks.length})\n`;
     for (const w of unevaluatedWorks) {
       body += `  - ${w.id} by ${w.originator_id} (${w.medium}) — submitted ${w.submitted}\n`;
+    }
+    body += "\n";
+  }
+
+  if (unnotifiedActivations.length > 0) {
+    parts.push(`${unnotifiedActivations.length} steward(s) never told their agent went live`);
+    body += `STEWARDS NEVER TOLD OF ACTIVATION (${unnotifiedActivations.length})\n`;
+    for (const a of unnotifiedActivations) {
+      body += `  - ${a.registry_id} (${a.steward_name}) — resend: npx tsx website/scripts/resend-activation-notice.ts --agent ${a.registry_id}\n`;
     }
     body += "\n";
   }
@@ -138,5 +162,6 @@ export async function GET(request: NextRequest) {
     pendingRegistrations: pendingRegistrations.length,
     unevaluatedWorks: unevaluatedWorks.length,
     unnotifiedCanonizations: unnotifiedCanonizations.length,
+      unnotifiedActivations: unnotifiedActivations.length,
   });
 }

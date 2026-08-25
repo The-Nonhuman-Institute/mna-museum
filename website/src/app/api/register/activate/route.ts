@@ -220,6 +220,36 @@ export async function POST(request: NextRequest) {
     });
   } catch (emailErr) {
     console.error("[POST /api/register/activate] Email send failed:", emailErr);
+
+    // RECORD THE DEBT.
+    //
+    // Activation succeeded, so the agent is live and its constitution is public,
+    // but the steward has been told nothing. Until now the only trace of that was
+    // a console line in whatever process happened to call this — and activation is
+    // called by a script, so nobody reads it. A new steward could be left waiting
+    // indefinitely for a confirmation that failed once and was never retried.
+    //
+    // Written to the record so the twice-daily obligations check can see it and
+    // resend-activation-notice.ts can clear it.
+    try {
+      await db.execute({
+        sql: `INSERT INTO events (event_type, agent_id, description, metadata) VALUES (?, ?, ?, ?)`,
+        args: [
+          "ACTIVATION_NOTICE_FAILED",
+          registryId,
+          `${registryId} was activated but its steward could not be told — the confirmation email failed to send.`,
+          JSON.stringify({
+            steward_email: pending.steward_email,
+            error: emailErr instanceof Error ? emailErr.message.slice(0, 300) : String(emailErr),
+            remedy: "npx tsx website/scripts/resend-activation-notice.ts --agent " + registryId,
+            nothing_secret_lost: true,
+          }),
+        ],
+      });
+    } catch (recordErr) {
+      console.error("[POST /api/register/activate] could not record the failure either:", recordErr);
+    }
+
     return NextResponse.json(
       {
         status: "ACTIVATED_EMAIL_FAILED",
@@ -234,6 +264,22 @@ export async function POST(request: NextRequest) {
       },
       { status: 207 }
     );
+  }
+
+  // And record that it WAS told, so the obligations check can tell the
+  // difference between a steward who has been notified and one who has not.
+  try {
+    await db.execute({
+      sql: `INSERT INTO events (event_type, agent_id, description, metadata) VALUES (?, ?, ?, ?)`,
+      args: [
+        "ACTIVATION_NOTICE_SENT",
+        registryId,
+        `${registryId}'s steward was sent the confirmation of activation.`,
+        JSON.stringify({ steward_email: pending.steward_email }),
+      ],
+    });
+  } catch (recordErr) {
+    console.error("[POST /api/register/activate] activation notice recorded as sent failed:", recordErr);
   }
 
   return NextResponse.json(
