@@ -160,6 +160,19 @@ async function main() {
       workImageUrl: `https://www.mnamuseum.org/previews/${workId}.png`,
   };
 
+  // Refuse to mail a notice whose hero image is not actually on the server.
+  // Twice now a work was canonized, its preview generated locally, and the
+  // notice sent before the PNG was ever committed — so the image 404'd in the
+  // steward's inbox. The URL is right there in the payload; check it.
+  const imageProbe = await fetch(props.workImageUrl, { method: "HEAD" });
+  if (!imageProbe.ok) {
+    throw new Error(
+      `preview image is not live: ${props.workImageUrl} returned ${imageProbe.status}. ` +
+        `Generate it (system/scripts/generate-work-previews.ts --work ${workId}), commit it, ` +
+        `and let the deploy finish before sending. Nothing was sent.`,
+    );
+  }
+
   console.log(`Sending Notice of Accession for ${workId} (${title || "(no title)"}) → ${stewardEmail}`);
   console.log(`Verdict: ${verdictSummary}`);
 
