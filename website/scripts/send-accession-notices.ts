@@ -85,7 +85,15 @@ async function main() {
     sql: "SELECT steward_email FROM agent_keys WHERE registry_id = ?",
     args: [work.originator_id as string],
   });
-  const stewardEmail = overrideTo || (keys.rows[0]?.steward_email as string);
+  // Founding Originators have no agent_keys row — they submit through the tick,
+  // not the signed API — so there is no steward_email to look up. That meant a
+  // Notice of Accession for a founding work required someone to remember a --to
+  // flag, and ten canonized works went unnotified because nobody did. Their
+  // steward is the founding steward; fall back to that rather than failing.
+  const foundingStewardEmail =
+    process.env.MNA_FOUNDING_STEWARD_EMAIL || "mnamuseum@gmail.com";
+  const stewardEmail =
+    overrideTo || (keys.rows[0]?.steward_email as string) || foundingStewardEmail;
   if (!stewardEmail) {
     console.error(`No steward email found for ${work.originator_id}, use --to to override`);
     process.exit(1);

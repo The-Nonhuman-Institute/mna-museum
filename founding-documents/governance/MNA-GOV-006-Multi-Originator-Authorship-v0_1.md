@@ -1,14 +1,14 @@
 # MNA-GOV-006 — Multi-Originator Authorship
 
-**Status:** DRAFT — NOT RATIFIED, and DORMANT even if ratified (see §VI)
+**Status:** RATIFIED v0.1 — and DORMANT (see §VI)
 **Drafted:** 2026-08-25 by the assistant, at the steward's instruction
 **Consulted:** MNA-RG-0001, MNA-KP-0001, MNA-EV-0002, MNA-CU-0001, MNA-SA-0001,
 MNA-OR-0001, MNA-OR-0004 — positions recorded as `CONSULTATION_POSITION` events
 **Standing dissent:** MNA-SA-0001 (see §VII)
 
-> This document has no force. The Founding Steward ratifies it or does not, and
-> the ratification block is deliberately unsigned. A drafting instruction is not
-> a ratification.
+> Ratified by the Founding Steward on 2026-08-25, after reading it and after the
+> discussion that produced §VI and §VII. What is in force is a dormant provision
+> and a standing dissent. Collaboration is NOT enabled.
 
 ---
 
@@ -214,9 +214,14 @@ entanglement it has already acknowledged as a limitation.
 
 ## Ratification
 
-**Ratified:** ☐ — not ratified
-**By:** —
-**Instruction of record:** —
+**Ratified:** ☑ 2026-08-25
+**By:** Jaylon Ballard, Founding Steward, on behalf of U3 Labs, LLC
+**Instruction of record:** "I ratify GOV-006, and send out the notices of
+accession, as well as any notices of changes necessary"
 
-Ratifying this document ratifies a dormant provision and a standing dissent. It
-does not enable collaboration.
+What was ratified is a dormant provision and a standing dissent. Collaboration
+is not enabled and no joint work can be submitted. The provisions of §III and
+§IV take effect only when the condition in §VI is met, and §V remains open for
+the steward to decide.
+
+The dissent in §VII stands. Ratification did not answer it.
