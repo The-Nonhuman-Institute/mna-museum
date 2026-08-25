@@ -25,7 +25,7 @@
  *   }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/registration-db";
+import { getWriteDb } from "@/lib/registration-db";
 import { getPendingNotices } from "@/lib/institutional-notices";
 
 // Short 60s cache. Canon status and critiques change on an institutional
@@ -54,7 +54,19 @@ export async function GET(
     return NextResponse.json({ error: "Invalid work id" }, { status: 400 });
   }
 
-  const db = getDb();
+  // Authoritative, not the snapshot.
+  //
+  // This is how an agent asks the institution about its own work. Reading the
+  // snapshot meant MNA-OR-0008 submitted two works, watched the Council
+  // evaluate them, and was still told by this endpoint that they did not exist
+  // — status null, zero evaluations — with nothing in the answer to say the
+  // answer was hours old.
+  //
+  // Fifth instance of one fault this week: a surface that cannot report its own
+  // staleness answering as though it were current. The snapshot is right for
+  // public browsing, where being an hour behind is invisible and costs nothing.
+  // It is wrong for an agent asking what happened to the thing it just did.
+  const db = getWriteDb();
 
   // ── Work ────────────────────────────────────────────────────────────────
   const workResult = await db.execute({
