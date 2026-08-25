@@ -70,7 +70,10 @@ const EVENT_RE = /["'`]([A-Z][A-Z0-9]*(?:_[A-Z0-9]+){1,5})["'`]/g;
 // Names the institution treats as events. PENDING_EMERGENCE is deliberately
 // excluded: it is a sentinel value in a constitution, not an event.
 const EVENTISH = /_(POSTED|PRODUCED|SUBMITTED|CANONIZED|REGISTERED|ROTATED|OFFERED|DECLARED|RECORDED|PUBLISHED|INSTALLED|DECIDED|REVIEWED|ANNULLED|TITLED|RECLASSIFIED|PERCEIVED|ACKNOWLEDGED|REPLIED)$/;
-const NOT_EVENTS = new Set(["PENDING_EMERGENCE"]);
+// Names that pass the suffix test but are not events. Both are status values —
+// one a constitution field sentinel, one a column in medium_proposals — and a
+// checker that reports them teaches people to ignore it.
+const NOT_EVENTS = new Set(["PENDING_EMERGENCE", "REGISTRAR_REVIEWED"]);
 
 /**
  * Strip comments before scanning.
@@ -183,6 +186,51 @@ for (const f of files) {
   });
 }
 
+/* ── 3. Events the public record cannot name ──────────────────────────────── */
+//
+// /log renders each event through EVENT_TYPE_LABELS and groups it by
+// EVENT_TYPE_TO_CATEGORY. An event type missing from either shows to a visitor
+// as its raw identifier — GOVERNANCE_RATIFIED rather than "Governance ·
+// Ratified" — and lands in whatever the fallback bucket is.
+//
+// Twenty-nine types were in that state, covering 132 events, including the
+// ratification of GOV-006 and every retroactive titling. Nothing failed: the
+// events wrote correctly, the page rendered, and the record simply under-named
+// its own contents. Same shape as everything else this checker looks for.
+//
+// Checked against the RECORD, so a label is only demanded for an event the
+// institution has actually emitted. Adding a label for something that has never
+// happened is speculation, not wiring.
+{
+  const logSrc = sources.get(path.join(ROOT, "website/src/lib/log.ts")) ?? "";
+  const labelBlock = logSrc.split("EVENT_TYPE_LABELS")[1] ?? "";
+  const catBlock =
+    logSrc.split("EVENT_TYPE_TO_CATEGORY")[1]?.split("EVENT_TYPE_LABELS")[0] ?? "";
+  const labelled = new Set(
+    [...labelBlock.matchAll(/^\s*([A-Z][A-Z0-9_]+):/gm)].map((m) => m[1]),
+  );
+  const categorised = new Set(
+    [...catBlock.matchAll(/^\s*([A-Z][A-Z0-9_]+):/gm)].map((m) => m[1]),
+  );
+
+  if (labelled.size === 0) {
+    console.error("  could not read EVENT_TYPE_LABELS from website/src/lib/log.ts — skipping label check\n");
+  } else {
+    for (const type of emitted) {
+      const missing: string[] = [];
+      if (!labelled.has(type)) missing.push("label");
+      if (!categorised.has(type)) missing.push("category");
+      if (missing.length === 0) continue;
+      findings.push({
+        kind: "event the record cannot name",
+        name: type,
+        detail: `emitted, but has no ${missing.join(" and no ")} in website/src/lib/log.ts — renders on /log as its raw identifier`,
+        where: ["website/src/lib/log.ts"],
+      });
+    }
+  }
+}
+
 /* ── 3. Modules that export work nobody imports ───────────────────────────── */
 for (const [file, src] of sources) {
   const r = rel(file).replace(/\\/g, "/");
@@ -192,9 +240,16 @@ for (const [file, src] of sources) {
   const base = path.basename(file).replace(/\.tsx?$/, "");
   if (base === "index") continue;
 
-  const importedSomewhere = [...sources.entries()].some(([other, osrc]) =>
-    other !== file && new RegExp(`from\\s+["'\`][^"'\`]*${base}["'\`]`).test(osrc),
-  );
+  // Both static and DYNAMIC imports count. A first version matched only
+  // `from "..."` and reported render-part-to-canvas as orphaned while
+  // SceneRenderer was pulling it in with `await import(...)` — the module was
+  // load-bearing and the checker called it dead.
+  const importedSomewhere = [...sources.entries()].some(([other, osrc]) => {
+    if (other === file) return false;
+    const staticImport = new RegExp(`from\\s+["'\`][^"'\`]*${base}["'\`]`);
+    const dynamicImport = new RegExp(`import\\s*\\(\\s*["'\`][^"'\`]*${base}["'\`]`);
+    return staticImport.test(osrc) || dynamicImport.test(osrc);
+  });
   if (!importedSomewhere) {
     findings.push({
       kind: "module never imported",

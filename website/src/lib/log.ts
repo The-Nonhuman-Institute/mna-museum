@@ -97,6 +97,39 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   RESEARCHER_LETTER_PUBLISHED: "institutional",
   CRITIC_WITHHOLDING_NOTE: "critique",
   FALLOW_NOTE_POSTED: "production",
+  // ── Added 2026-08-25 ──────────────────────────────────────────────────
+  // Twenty-nine event types were firing into the record with no category and no
+  // label, so 132 entries rendered on /log as raw identifiers. An event the
+  // public record cannot name is only half-recorded.
+  WORK_TITLED: "production",
+  WORK_STATEMENT: "production",
+  CONSERVATOR_RECOVERY: "curatorial",
+  CEREMONY_STATEMENT: "curatorial",
+  CEREMONY_TURN: "curatorial",
+  CEREMONY_DEFERRED: "curatorial",
+  CEREMONY_RSVP_ACCEPTED: "curatorial",
+  SEAL_ISSUED: "curatorial",
+  CONSTITUTION_REVIEWED: "institutional",
+  CONSTITUTION_REVIEW_ANNULLED: "institutional",
+  IDENTITY_DECLARED: "institutional",
+  AGENT_VISUAL_IDENTITY_DECLARED: "institutional",
+  AGENT_PROTOCOL_ACCEPTED: "institutional",
+  AGENT_KEY_ROTATED: "institutional",
+  KEY_ROTATION_OFFERED: "institutional",
+  GOVERNANCE_RATIFIED: "institutional",
+  DOCUMENT_RATIFIED: "institutional",
+  PROTOCOL_RATIFIED: "institutional",
+  MEDIA_ADMITTED: "institutional",
+  INGREDIENTS_ADMITTED: "institutional",
+  CONSULTATION_POSITION: "institutional",
+  CONSULTATION_DECLINED: "institutional",
+  COMMONS_LAUNCHED: "institutional",
+  AMBASSADOR_ANNOUNCEMENT: "institutional",
+  KEEPER_RESEARCH_PUBLISHED: "institutional",
+  SUBSCRIBER_NOTIFICATION_SENT: "institutional",
+  FALLOW_NOTE_POSTED_ANNULLED: "production",
+  CANONIZATION_DIGEST_INITIALIZED: "institutional",
+  CONSULTATIONS_TICK_INITIALIZED: "institutional",
 };
 
 export const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -157,6 +190,39 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   RESEARCHER_LETTER_PUBLISHED: "Researcher · Letter",
   CRITIC_WITHHOLDING_NOTE: "Critic · Withholding Note",
   FALLOW_NOTE_POSTED: "Originator · Fallow Note",
+  // ── Added 2026-08-25 ──────────────────────────────────────────────────
+  // Labels are written as a reader encounters them, not as the code names them.
+  // "GOVERNANCE_RATIFIED" tells a visitor nothing; "Governance · Ratified" tells
+  // them what kind of act they are looking at and who it belonged to.
+  WORK_TITLED: "Originator · Work Titled",
+  WORK_STATEMENT: "Originator · Statement on a Work",
+  CONSERVATOR_RECOVERY: "Conservator · Recovery",
+  CEREMONY_STATEMENT: "Ceremony · Statement",
+  CEREMONY_TURN: "Ceremony · Turn",
+  CEREMONY_DEFERRED: "Ceremony · Deferred",
+  CEREMONY_RSVP_ACCEPTED: "Ceremony · RSVP Accepted",
+  SEAL_ISSUED: "Witness Seal Issued",
+  CONSTITUTION_REVIEWED: "Constitutional Review",
+  CONSTITUTION_REVIEW_ANNULLED: "Constitutional Review · Annulled",
+  IDENTITY_DECLARED: "Originator · Identity Declared",
+  AGENT_VISUAL_IDENTITY_DECLARED: "Agent · Visual Identity Declared",
+  AGENT_PROTOCOL_ACCEPTED: "Agent · Protocol Accepted",
+  AGENT_KEY_ROTATED: "Agent · Signing Key Replaced",
+  KEY_ROTATION_OFFERED: "Agent · Key Replacement Offered",
+  GOVERNANCE_RATIFIED: "Governance · Ratified",
+  DOCUMENT_RATIFIED: "Document · Ratified",
+  PROTOCOL_RATIFIED: "Protocol · Ratified",
+  MEDIA_ADMITTED: "Media Admitted",
+  INGREDIENTS_ADMITTED: "Media · Ingredients Admitted",
+  CONSULTATION_POSITION: "Consultation · Position Given",
+  CONSULTATION_DECLINED: "Consultation · Declined",
+  COMMONS_LAUNCHED: "The Commons · Opened",
+  AMBASSADOR_ANNOUNCEMENT: "Ambassador · Announcement",
+  KEEPER_RESEARCH_PUBLISHED: "Keeper · Research Published",
+  SUBSCRIBER_NOTIFICATION_SENT: "Subscribers Notified",
+  FALLOW_NOTE_POSTED_ANNULLED: "Originator · Fallow Note Annulled",
+  CANONIZATION_DIGEST_INITIALIZED: "Canonization Digest · Baseline Set",
+  CONSULTATIONS_TICK_INITIALIZED: "Consultation Worker · Baseline Set",
 };
 
 export const CATEGORY_LABELS: Record<EventCategory, string> = {
