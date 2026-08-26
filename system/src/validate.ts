@@ -1,3 +1,5 @@
+import { playableNotes } from "../../website/src/lib/audio-voices";
+
 /**
  * MNA Output Validation System
  *
@@ -181,23 +183,28 @@ function validateAudioJson(payload: string): ValidationResult {
     return { valid: errors.length === 0, errors, warnings };
   }
 
-  for (let i = 0; i < data.voices.length; i++) {
-    const voice = data.voices[i] as { type?: string; notes?: unknown[] };
-    if (!voice.type || !VALID_OSCILLATOR_TYPES.has(voice.type)) {
-      warnings.push(`Voice ${i}: invalid type "${voice.type}"`);
+  // Read through the shared reader rather than walking voice.notes here. This
+  // insisted every voice carry a notes array, so a payload whose voices ARE
+  // notes was called invalid while the player, the share path and the museum
+  // each disagreed differently about the same file. One reader, one answer.
+  const notes = playableNotes(data);
+  if (notes.length === 0) {
+    errors.push(
+      "Audio-JSON has no playable notes — expected voices: [{ type, notes: [...] }], " +
+        "or voices carrying freq/start/duration directly",
+    );
+  }
+
+  for (let i = 0; i < notes.length; i++) {
+    const note = notes[i];
+    if (!VALID_OSCILLATOR_TYPES.has(note.type)) {
+      warnings.push(`Note ${i}: invalid oscillator type "${note.type}"`);
     }
-    if (!Array.isArray(voice.notes) || voice.notes.length === 0) {
-      errors.push(`Voice ${i}: missing or empty notes array`);
-    } else {
-      for (let j = 0; j < voice.notes.length; j++) {
-        const note = voice.notes[j] as { freq?: number; start?: number; duration?: number; gain?: number };
-        if (typeof note.freq !== "number" || note.freq < 1 || note.freq > 25000) {
-          warnings.push(`Voice ${i} note ${j}: freq ${note.freq} outside safe range`);
-        }
-        if (typeof note.gain !== "number" || note.gain < 0 || note.gain > 1) {
-          warnings.push(`Voice ${i} note ${j}: gain ${note.gain} outside 0-1 range`);
-        }
-      }
+    if (note.freq < 1 || note.freq > 25000) {
+      warnings.push(`Note ${i}: freq ${note.freq} outside safe range`);
+    }
+    if (note.gain < 0 || note.gain > 1) {
+      warnings.push(`Note ${i}: gain ${note.gain} outside 0-1 range`);
     }
   }
 

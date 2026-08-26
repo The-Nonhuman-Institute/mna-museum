@@ -1,0 +1,116 @@
+# The operations round — MNA-OPS-001 §V.
+#
+# The institution checking on itself, on a schedule, with nobody watching. It
+# repairs what §V marks repairable and writes to the founding steward only when
+# it finds something it could not fix. Silence means the institution is well.
+#
+# It never evaluates, canonises, authors, registers, or deletes, and it never
+# touches a work's output_payload. Those prohibitions are in the handbook and
+# in the script; this file only schedules the work.
+#
+# Free: the repository is public, so Actions minutes are not billed. Nothing
+# here depends on the founding steward's terminal being open.
+
+name: ops-round
+
+on:
+  schedule:
+    # Every three hours, offset from the tick at :00 and the previews job at :30
+    # so a round sees a settled institution rather than one mid-change.
+    - cron: "45 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Detect only — make no repairs"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  # A push made with GITHUB_TOKEN does not trigger other workflows, so a round
+  # that commits previews must dispatch the deploy explicitly. This is the trap
+  # that left the site four weeks stale.
+  actions: write
+
+concurrency:
+  # Two rounds at once would race each other's repairs.
+  group: ops-round
+  cancel-in-progress: false
+
+jobs:
+  round:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPS_ROUND_OUTPUT: ${{ github.workspace }}/ops-findings.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The round compares the deployed commit against origin/master.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+
+      - name: Install website deps
+        working-directory: website
+        run: npm ci
+
+      - name: Pillow, for the blank-preview check
+        run: python3 -m pip install --quiet --disable-pip-version-check pillow
+
+      - name: Run the round
+        id: round
+        run: |
+          npx tsx system/scripts/ops-round.ts ${{ inputs.dry_run && '--dry-run' || '' }} | tee round.log
+          echo "escalations=$(python3 -c "import json;print(json.load(open('$OPS_ROUND_OUTPUT'))['escalations'])")" >> "$GITHUB_OUTPUT"
+          echo "repaired=$(python3 -c "import json;print(json.load(open('$OPS_ROUND_OUTPUT'))['repaired'])")" >> "$GITHUB_OUTPUT"
+
+      - name: Commit anything the round repaired
+        id: commit
+        run: |
+          git config user.name  "mna-operations"
+          git config user.email "registry@mnamuseum.org"
+          git add -A website/public/previews website/src/data/animated-works.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "the round changed no files"
+          else
+            git commit -m "ops: repairs from the operations round
+
+Made by the scheduled round under MNA-OPS-001 §V. Repairs only; no work
+payload was modified."
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy, because a GITHUB_TOKEN push will not
+        if: steps.commit.outputs.changed == 'true'
+        run: gh workflow run deploy-website.yml --ref master
+
+      - name: Tell the steward, but only if something needs a person
+        if: steps.round.outputs.escalations != '0'
+        run: npx tsx system/scripts/ops-notify.ts "$OPS_ROUND_OUTPUT"
+
+      - name: Keep the findings with the run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ops-findings
+          path: |
+            ops-findings.json
+            round.log
+          retention-days: 30

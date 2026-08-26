@@ -11,9 +11,9 @@
  * Next.js also forbids a route file exporting anything but handlers, which is
  * the framework arriving at the same conclusion by a different road.
  */
-import { OUTPUT_TYPE_IDS } from "@/lib/output-types";
+import { OUTPUT_TYPE_IDS } from "./output-types";
 import { playableNotes } from "./audio-voices";
-import { hasShaderEntryPoint, SHADER_ENTRY_POINT_ERROR } from "@/lib/shader-source";
+import { hasShaderEntryPoint, SHADER_ENTRY_POINT_ERROR } from "./shader-source";
 
 /**
  * Recognised output types come from the REGISTRY, not from a list here.

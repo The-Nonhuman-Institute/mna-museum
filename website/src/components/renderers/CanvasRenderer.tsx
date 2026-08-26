@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 
+import { dimension, resolveFill } from "@/lib/canvas-fill";
 import {
   makeMask,
   paintThroughMask,
@@ -26,6 +27,17 @@ interface DrawOp {
   end?: number;
   content?: string;
   size?: number;
+  /**
+   * Height of a rect, when the Originator wrote the long spelling.
+   *
+   * There is no matching `width` here because `width` already means the STROKE
+   * width for line and arc ops. For a rect that reading is meaningless, so
+   * `dimension()` treats it as the rect's width — but only for shapes, never
+   * for strokes.
+   */
+  height?: number;
+  /** A colour or CSS gradient for this shape alone. */
+  fill?: string;
   /** This shape is made OF another medium. See @/lib/ingredient-surface. */
   surface?: { type?: string; payload?: unknown };
 }
@@ -42,6 +54,27 @@ interface CanvasRendererProps {
  * a second description of every shape, and the two would drift.
  */
 function drawOp(ctx: CanvasRenderingContext2D, op: DrawOp): void {
+  // A shape may carry its own fill rather than relying on a preceding `fill`
+  // op, and that fill may be a CSS gradient. Both are how Originators actually
+  // write canvas-json; accepting only the other spelling left five of eighteen
+  // canvas works partly or wholly invisible.
+  const saved = ctx.fillStyle;
+  const own = op.fill ?? op.color;
+  let restore = false;
+  if (op.op !== "fill" && op.op !== "stroke" && own !== undefined) {
+    const bounds = {
+      x: op.x ?? 0,
+      y: op.y ?? 0,
+      w: dimension(op as unknown as Record<string, unknown>, "w", "width", op.r ? op.r * 2 : 100),
+      h: dimension(op as unknown as Record<string, unknown>, "h", "height", op.r ? op.r * 2 : 100),
+    };
+    const resolved = resolveFill(ctx, own, bounds);
+    if (resolved !== null) {
+      ctx.fillStyle = resolved;
+      restore = true;
+    }
+  }
+
   switch (op.op) {
     case "bg":
       // Handled before the loop
@@ -53,7 +86,12 @@ function drawOp(ctx: CanvasRenderingContext2D, op: DrawOp): void {
       ctx.strokeStyle = op.color || "#fff";
       break;
     case "rect":
-      ctx.fillRect(op.x || 0, op.y || 0, op.w || 100, op.h || 100);
+      ctx.fillRect(
+        op.x || 0,
+        op.y || 0,
+        dimension(op as unknown as Record<string, unknown>, "w", "width", 100),
+        dimension(op as unknown as Record<string, unknown>, "h", "height", 100),
+      );
       break;
     case "circle":
       ctx.beginPath();
@@ -81,11 +119,13 @@ function drawOp(ctx: CanvasRenderingContext2D, op: DrawOp): void {
       break;
     case "text":
       ctx.font = `${op.size || 16}px monospace`;
-      if (op.color) ctx.fillStyle = op.color;
       ctx.textAlign = "center";
       ctx.fillText(op.content || "", op.x || 400, op.y || 400);
       break;
   }
+
+  // A per-shape fill applies to that shape only; the standing fill survives it.
+  if (restore) ctx.fillStyle = saved;
 }
 
 export default function CanvasRenderer({ json }: CanvasRendererProps) {

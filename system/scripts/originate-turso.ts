@@ -29,6 +29,8 @@
  */
 
 import { createClient } from "@libsql/client";
+import { mediumMenu, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
+import { getFormatPrompt } from "../src/formats";
 import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
@@ -322,16 +324,15 @@ function buildMediumChoicePrompt(visitsContext: string, workCount: number): stri
   if (visitsContext) prompt += visitsContext;
   prompt += `Choose the medium you want to work in. Reply with ONLY the medium name, nothing else.\n\n`;
   prompt += `Available mediums:\n`;
-  prompt += `- text (plain text — structural, linguistic, or formal)\n`;
-  prompt += `- ascii (Unicode/ASCII visual composition)\n`;
-  prompt += `- svg (SVG markup — shapes, paths, colors)\n`;
-  prompt += `- html-css (self-contained HTML+CSS with animation)\n`;
-  prompt += `- audio-json (sound composition for Web Audio API)\n`;
-  prompt += `- canvas-json (2D canvas drawing instructions)\n`;
-  prompt += `- scene-json (3D sculptural composition)\n\n`;
+  // From the registry. This was seven media typed out by hand, and it is the
+  // path the tick actually runs — so every medium admitted after it was written
+  // was invisible to the founding Originators. They were not declining the new
+  // media; they were never shown them.
+  prompt += mediumMenu() + `\n\n`;
   prompt += `Choose whatever medium calls to you for this work.\n`;
   return prompt;
 }
+
 
 function buildProductionPrompt(args: {
   workCount: number;
@@ -395,25 +396,7 @@ function buildProductionPrompt(args: {
 
 /* ─── Format guidance (lightweight; matches local pipeline conventions) ─ */
 
-function getFormatGuidance(format: string): string {
-  switch (format) {
-    case "svg":
-      return `Produce a complete <svg> element with a viewBox. Self-contained. No external assets. No <script>.`;
-    case "html-css":
-      return `Produce a complete self-contained HTML document. <!DOCTYPE html> at the top. Inline CSS. No external assets, no <script src>. You may include a single inline <script> for animation.`;
-    case "audio-json":
-      return `Produce JSON for Web Audio: { "duration": <seconds>, "voices": [{ "type": "sine|square|saw|noise", "freq": ..., "start": ..., "end": ..., "gain": ... }, ...] }. No prose.`;
-    case "canvas-json":
-      return `Produce a JSON array of canvas drawing ops: [{ "op": "bg|rect|circle|line|...", ...params }, ...]. No prose.`;
-    case "scene-json":
-      return `Produce JSON for a Three.js scene: { "objects": [{ "type": "box|sphere|...", "position": [x,y,z], "scale": [x,y,z], "color": "#hex", ... }], "background": "#hex" }. No prose.`;
-    case "ascii":
-      return `Produce ASCII/Unicode visual composition. Use \\n line breaks. Optionally prefix with @bg:#hex @fg:#hex on the very first line for colors.`;
-    case "text":
-    default:
-      return `Produce text. Plain or structural. Optionally prefix with @bg:#hex @fg:#hex on the very first line for colors.`;
-  }
-}
+
 
 /* ─── Validation ───────────────────────────────────────────────────────── */
 
@@ -526,7 +509,11 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
   if (!dryRun) {
     const choiceResp = await generate(systemPrompt, choicePrompt, { temperature: 0.9, max_tokens: 20 });
     const choiceLine = choiceResp.trim().toLowerCase().split("\n")[0].replace(/[^a-z-]/g, "");
-    const valid = ["text", "ascii", "svg", "html-css", "audio-json", "canvas-json", "scene-json"];
+    // From the registry, for the same reason. An unmatched choice falls back to
+    // "text", so a medium missing from this list did not error — the Originator
+    // simply received a different medium than the one it asked for, and the
+    // record showed that as its decision.
+    const valid = [...OUTPUT_TYPE_IDS];
     chosenFormat =
       valid.find((f) => choiceLine.includes(f.replace("-", ""))) ||
       valid.find((f) => choiceLine.includes(f)) ||
@@ -544,7 +531,7 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
     priorOwn,
     critiques,
     format: chosenFormat,
-    formatGuidance: getFormatGuidance(chosenFormat),
+    formatGuidance: getFormatPrompt(chosenFormat as never),
   });
 
   if (dryRun) {
@@ -552,7 +539,10 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
     return { workId: null, aborted: "dry-run" };
   }
 
-  const tokens = ["svg", "html-css", "audio-json", "scene-json", "canvas-json"].includes(chosenFormat) ? 8192 : 2048;
+  // Prose is short; markup and structured data are not. A five-medium list here
+  // gave every newer medium a quarter of svg's budget, which truncates payloads.
+  const isProse = chosenFormat === "text" || chosenFormat === "ascii";
+  const tokens = isProse ? 2048 : 8192;
   let payload = await generate(systemPrompt, productionPrompt, { temperature: 0.9, max_tokens: tokens });
   payload = payload
     .replace(/^```(?:svg|html|json|css|javascript)?\s*\n?/gm, "")

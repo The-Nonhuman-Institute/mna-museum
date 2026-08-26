@@ -30,6 +30,7 @@ import path from "path";
 import puppeteer, { type Browser } from "puppeteer";
 
 import { animationPlan } from "../../website/src/lib/render-timing";
+import { OUTPUT_TYPES, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -62,13 +63,14 @@ const db = createClient({
  * output_type alone. Others (html-css, svg) move only if the Originator made
  * them move, so those are matched on payload.
  *
- * Keep the type list in step with `animated: true` in
- * website/src/lib/output-types.ts.
+ * The type list IS `animated: true` in the registry, read directly — kept in
+ * step by hand it drifted, and a medium admitted later never animated.
  */
+const ANIMATED_TYPES = OUTPUT_TYPE_IDS.filter((id) => OUTPUT_TYPES[id].animated);
+
 const ANIMATED_SQL = `
   SELECT id, output_type FROM works
-   WHERE output_type IN ('shader-glsl', 'rule-json', 'instruction-set',
-                         'composite-json', 'scene-json')
+   WHERE output_type IN (${ANIMATED_TYPES.map((t) => `'${t}'`).join(", ")})
       OR output_payload LIKE '%@keyframes%'
       OR output_payload LIKE '%animation:%'
       OR output_payload LIKE '%<animate%'

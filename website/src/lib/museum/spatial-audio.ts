@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { audioDuration, playableNotes } from "../audio-voices";
 
 // Spatial audio — proximity-based playback
 // Each audio work gets one persistent AudioContext that stays alive
@@ -57,13 +58,23 @@ function repairJson(str: string): string {
   return fixed;
 }
 
+/** A station is ambience, not a recital — enough notes to be alive, not all of them. */
+const MAX_STATION_NOTES = 48;
+
 function initStation(station: AudioStation): boolean {
   try {
     let jsonStr = station.payload;
     try { JSON.parse(jsonStr); } catch { jsonStr = repairJson(jsonStr); }
     const data = JSON.parse(jsonStr);
-    const duration = Math.min(data.duration || 60, 120);
-    const voices = (data.voices || []).slice(0, 3);
+    // Through the shared reader: a voice may hold notes, or a voice may BE a
+    // note. Reading voice.notes directly meant a station whose work used the
+    // second form stood in the museum playing nothing.
+    //
+    // Capped by NOTES, not by voices. The old slice(0, 3) meant "three voices,
+    // each with its own line", which for a flat payload would be three single
+    // notes — a cap far tighter than intended.
+    const notes = playableNotes(data).slice(0, MAX_STATION_NOTES);
+    const duration = Math.min(audioDuration(data, notes) || 60, 120);
 
     const ctx = new AudioContext();
     const master = ctx.createGain();
@@ -75,16 +86,15 @@ function initStation(station: AudioStation): boolean {
 
     // Schedule voices
     const now = ctx.currentTime;
-    for (const voice of voices) {
-      const type = (voice.type || "sine") as OscillatorType;
-      for (const note of (voice.notes || [])) {
+    {
+      for (const note of notes) {
         const freq = Math.max(20, Math.min(note.freq || 440, 4000));
         const start = Math.max(0, note.start || 0);
         const dur = Math.max(0.01, Math.min(note.duration || 1, 60));
         const gain = Math.max(0, Math.min(note.gain || 0.3, 0.4));
 
         const osc = ctx.createOscillator();
-        osc.type = type;
+        osc.type = note.type;
         osc.frequency.value = freq;
 
         const noteGain = ctx.createGain();

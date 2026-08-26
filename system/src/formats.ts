@@ -1,4 +1,5 @@
 import { INGREDIENT_TYPE_IDS } from "../../website/src/lib/output-types";
+import { hasShaderEntryPoint } from "../../website/src/lib/shader-source";
 
 /**
  * Output format definitions for Originator production.
@@ -589,7 +590,7 @@ export function detectFormat(output: string): {
 
   // GLSL — an entry point plus a fragment-shader output. Both are required:
   // "void main()" alone appears in plenty of code that is not a shader.
-  if (/\bvoid\s+(main|mainImage)\s*\(/.test(trimmed) &&
+  if (hasShaderEntryPoint(trimmed) &&
       /(gl_FragColor|fragColor|\bvec[234]\b)/.test(trimmed)) {
     return { format: "shader-glsl", medium: "fragment-shader", aspect: 1.0 };
   }

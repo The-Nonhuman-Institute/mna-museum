@@ -1,0 +1,79 @@
+# CI — the definition of done, enforced.
+#
+# MNA-OPS-001 §III says a change is done when it typechecks, lints, is covered
+# by a test that would fail without it, and introduces no second source. Before
+# this workflow existed, none of that was checked anywhere: every push deployed
+# unverified, and the only checks were the ones a person remembered to run.
+#
+# Free — the repository is public, so Actions minutes are not billed.
+
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push supersedes an in-flight run on the same branch.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  website:
+    name: website — typecheck, lint, tests, contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install
+        working-directory: website
+        run: npm ci
+
+      # The contract tests read system/ as well as website/, so its sources
+      # must be present — they are, via checkout — but its deps are not needed:
+      # nothing is executed from system/ here, only read.
+
+      - name: Typecheck
+        working-directory: website
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Lint
+        working-directory: website
+        run: npm run lint
+
+      - name: Tests and single-source contracts
+        working-directory: website
+        run: npm test
+
+  system:
+    name: system — typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+
+      - name: Install
+        working-directory: system
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: system
+        run: npx tsc --noEmit -p tsconfig.json

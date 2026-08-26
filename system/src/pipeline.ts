@@ -208,7 +208,16 @@ export async function produceWork(
   // ─── VALIDATION GATE ────────────────────────────────────────────────────────
   // Attempt production up to 2 times. Retry with doubled tokens on truncation.
 
-  const baseTokens = ["svg", "html-css", "audio-json", "scene-json", "canvas-json"].includes(chosenFormat) ? 8192 : 2048;
+  // Prose is short; markup and structured data are not. This was a list of five
+  // media, written before the other eight existed, so every medium admitted
+  // since generated on a quarter of svg's budget — which is a truncation
+  // factory, and truncated payloads are what the Conservator keeps repairing.
+  //
+  // Stated as "is this prose" rather than "is this one of these five", so a
+  // medium admitted tomorrow gets the generous budget by default. The safe
+  // direction to be wrong in.
+  const isProse = chosenFormat === "text" || chosenFormat === "ascii";
+  const baseTokens = isProse ? 2048 : 8192;
 
   let cleanOutput = "";
   let detected = { format: "text" as string, medium: "structural-text", aspect: 1.0 };
