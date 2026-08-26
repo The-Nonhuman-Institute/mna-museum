@@ -789,7 +789,7 @@ interface MountedWork {
  */
 async function mountWorkOffscreen(
   work: Work,
-  colors: ReturnType<typeof getContrastColors>,
+  background: string,
   width: number,
   height: number,
 ): Promise<MountedWork | null> {
@@ -821,7 +821,7 @@ async function mountWorkOffscreen(
     // one component and the part dispatch stays in one place.
     const spec = JSON.stringify({
       layout: "stack",
-      background: colors.bg,
+      background,
       parts: [{ type: work.output_type, payload }],
     });
 
@@ -895,12 +895,80 @@ function drawLayers(
  * "MNA-OR-0008-W-0015". Mounting the real renderer covers every medium the
  * registry has and every one it gains.
  */
-async function generateRenderedStill(
-  work: Work,
-  colors: ReturnType<typeof getContrastColors>,
-): Promise<HTMLCanvasElement | null> {
+/** The ground a renderer paints on when nothing overrides it. */
+const WORK_GROUND = "#0A0A0A";
+
+/**
+ * Crop a rendered still to what it actually drew.
+ *
+ * A renderer fills its container from the top, so a specimen that needs half
+ * the height leaves the rest empty — and fitting that whole square into the
+ * share frame shrinks the work and floats it above a band of nothing. Measured
+ * against the ground colour, so a work that genuinely fills its canvas is
+ * returned untouched.
+ */
+function trimToContent(canvas: HTMLCanvasElement, ground: string): HTMLCanvasElement {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+  const { width: w, height: h } = canvas;
+  let data: Uint8ClampedArray;
+  try {
+    data = ctx.getImageData(0, 0, w, h).data;
+  } catch {
+    return canvas; // tainted canvas — not worth failing the share over
+  }
+
+  const g = ground.replace("#", "");
+  const gr = parseInt(g.substring(0, 2), 16);
+  const gg = parseInt(g.substring(2, 4), 16);
+  const gb = parseInt(g.substring(4, 6), 16);
+  const TOL = 12;
+
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (data[i + 3] < 8) continue;
+      if (
+        Math.abs(data[i] - gr) <= TOL &&
+        Math.abs(data[i + 1] - gg) <= TOL &&
+        Math.abs(data[i + 2] - gb) <= TOL
+      ) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < 0 || maxY < 0) return canvas; // nothing drawn
+
+  const margin = Math.round(Math.min(w, h) * 0.04);
+  minX = Math.max(0, minX - margin);
+  minY = Math.max(0, minY - margin);
+  maxX = Math.min(w - 1, maxX + margin);
+  maxY = Math.min(h - 1, maxY + margin);
+
+  const cw = maxX - minX + 1;
+  const ch = maxY - minY + 1;
+  if (cw >= w * 0.95 && ch >= h * 0.95) return canvas;
+
+  const out = document.createElement("canvas");
+  out.width = cw;
+  out.height = ch;
+  const octx = out.getContext("2d");
+  if (!octx) return canvas;
+  octx.fillStyle = ground;
+  octx.fillRect(0, 0, cw, ch);
+  octx.drawImage(canvas, minX, minY, cw, ch, 0, 0, cw, ch);
+  return out;
+}
+
+async function generateRenderedStill(work: Work): Promise<HTMLCanvasElement | null> {
   const SIDE = LOGICAL;
-  const mounted = await mountWorkOffscreen(work, colors, SIDE, SIDE);
+  // The work keeps its own ground rather than adopting the share background.
+  // A typeface designed on near-black was being drawn onto cream, which is a
+  // different work than the one the site shows.
+  const mounted = await mountWorkOffscreen(work, WORK_GROUND, SIDE, SIDE);
   if (!mounted) return null;
   try {
     // Let a work that draws itself finish drawing before photographing it.
@@ -911,10 +979,12 @@ async function generateRenderedStill(
     out.height = SIDE;
     const ctx = out.getContext("2d");
     if (!ctx) return null;
-    ctx.fillStyle = colors.bg;
+    // The renderer's ground is a CSS background on its container, which never
+    // reaches the canvases we composite. Paint it ourselves.
+    ctx.fillStyle = WORK_GROUND;
     ctx.fillRect(0, 0, SIDE, SIDE);
     drawLayers(ctx, mounted.layers, mounted.hostRect);
-    return out;
+    return trimToContent(out, WORK_GROUND);
   } catch {
     return null;
   } finally {
@@ -931,7 +1001,7 @@ async function generateRenderedVideo(
   const vH = VIDEO_H;
   const sceneH = vH - VIDEO_SAFE_BOTTOM;
 
-  const mounted = await mountWorkOffscreen(work, colors, vW, sceneH);
+  const mounted = await mountWorkOffscreen(work, colors.bg, vW, sceneH);
   if (!mounted) return null;
   const { layers, hostRect } = mounted;
 
@@ -1293,7 +1363,7 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
         // and anything the registry gains later. Draw it with its own renderer.
         // These used to fall through to a card bearing only the work's ID, so a
         // twenty-six glyph specimen shared as the text "MNA-OR-0008-W-0015".
-        const rendered = await generateRenderedStill(work, colors);
+        const rendered = await generateRenderedStill(work);
         if (rendered) {
           const fit = Math.min(WORK_AREA_W / rendered.width, WORK_AREA_H / rendered.height);
           const drawW = rendered.width * fit;
