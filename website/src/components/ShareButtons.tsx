@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { Work } from "@/lib/collection";
-import { generateShareFiles } from "@/lib/share-engine";
+import { generateShareFiles, predictShareKind } from "@/lib/share-engine";
 import { canGenerateShare } from "@/lib/validate-work";
 
 function ShareIcon() {
@@ -29,11 +29,12 @@ interface ShareButtonsProps {
   work: Work;
 }
 
-function downloadLabel(outputType: string): string {
-  if (outputType === "scene-json") return "Video";
-  if (outputType === "html-css") return "Image";
-  if (outputType === "audio-json") return "Audio";
-  return "Image";
+function downloadLabel(work: Work): string {
+  switch (predictShareKind(work)) {
+    case "video": return "Video";
+    case "audio": return "Audio";
+    default: return "Image";
+  }
 }
 
 export default function ShareButtons({ work }: ShareButtonsProps) {
@@ -45,41 +46,77 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
       ? `${window.location.origin}/work/${work.id}`
       : `https://mnamuseum.org/work/${work.id}`;
 
+  // A file that is made but not yet handed to the share sheet. See below.
+  const [readyFile, setReadyFile] = useState<File | null>(null);
+
+  const shareText = `${work.id} — Phase ${work.phase_at_submission || "I"}, ${work.medium} — Museum of Nonhuman Art`;
+
+  const openShareSheet = useCallback(
+    async (file: File) => {
+      await navigator.share({
+        title: `${work.id} — Museum of Nonhuman Art`,
+        text: shareText,
+        url: workUrl,
+        files: [file],
+      });
+    },
+    [work.id, shareText, workUrl],
+  );
+
   const handleShare = useCallback(async () => {
+    // Second tap. The file already exists, so navigator.share is called inside
+    // this gesture and the sheet opens.
+    if (readyFile) {
+      try {
+        await openShareSheet(readyFile);
+        setReadyFile(null);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === "AbortError") return;
+        downloadFile(readyFile);
+        setReadyFile(null);
+      }
+      return;
+    }
+
     setGenerating(true);
     try {
       const result = await generateShareFiles(work);
       if (!result) { setGenerating(false); return; }
-
-      const phase = work.phase_at_submission || "I";
-      const shareText = `${work.id} — Phase ${phase}, ${work.medium} — Museum of Nonhuman Art`;
-
-      // Determine which file to share
       const shareFile = result.type === "audio" ? result.audioFile : result.file;
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
-        await navigator.share({
-          title: `${work.id} — Museum of Nonhuman Art`,
-          text: shareText,
-          url: workUrl,
-          files: [shareFile],
-        });
+      const canShareFile =
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [shareFile] });
+
+      if (canShareFile) {
+        try {
+          await openShareSheet(shareFile);
+        } catch (e: unknown) {
+          const err = e as Error;
+          if (err?.name === "AbortError") {
+            // The steward closed the sheet. Nothing to recover from.
+          } else if (err?.name === "NotAllowedError" || err?.name === "SecurityError") {
+            // Safari requires navigator.share to be called while the tap that
+            // started it is still "active". Recording a video takes seconds, so
+            // by the time the file exists the activation has expired and the
+            // share is refused — which is why every animated work fell through
+            // to a download prompt on iOS while a PNG, made instantly, reached
+            // the share sheet. Keep the finished file and let the next tap
+            // present it: that tap is a fresh gesture and Safari allows it.
+            setReadyFile(shareFile);
+          } else {
+            downloadFile(shareFile);
+          }
+        }
       } else {
         downloadFile(shareFile);
       }
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        try {
-          const result = await generateShareFiles(work);
-          if (result) {
-            const file = result.type === "audio" ? result.audioFile : result.file;
-            downloadFile(file);
-          }
-        } catch {}
-      }
+    } catch {
+      /* generation failed; nothing to hand over */
     }
     setGenerating(false);
-  }, [work, workUrl]);
+  }, [work, readyFile, openShareSheet]);
 
   const handleDownload = useCallback(async () => {
     setGenerating(true);
@@ -123,18 +160,18 @@ export default function ShareButtons({ work }: ShareButtonsProps) {
           title="Share this work"
         >
           <ShareIcon />
-          <span>{generating ? "Generating..." : "Share"}</span>
+          <span>{generating ? "Generating..." : readyFile ? "Tap to share" : "Share"}</span>
         </button>
         <span className="text-muted/20">|</span>
         <button
           onClick={handleDownload}
           disabled={generating}
           className="flex items-center gap-1.5 text-[11px] text-muted/60 hover:text-foreground transition-colors duration-200 uppercase tracking-[0.12em] disabled:opacity-30"
-          aria-label={`Download ${downloadLabel(work.output_type)}`}
-          title={`Download ${downloadLabel(work.output_type)}`}
+          aria-label={`Download ${downloadLabel(work)}`}
+          title={`Download ${downloadLabel(work)}`}
         >
           <DownloadIcon />
-          <span>{downloadLabel(work.output_type)}</span>
+          <span>{downloadLabel(work)}</span>
         </button>
       </div>
     </div>

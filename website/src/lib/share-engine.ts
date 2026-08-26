@@ -16,6 +16,8 @@ import type { Work } from "./collection";
 import { parseWorkColors, detectSvgBackground } from "./work-colors";
 import * as THREE from "three";
 import { OUTPUT_TYPES, OUTPUT_TYPE_IDS } from "./output-types";
+import { settleMs } from "./render-timing";
+import animatedWorkIds from "@/data/animated-works.json";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -429,11 +431,7 @@ export async function generateSceneVideo(
 
   // Set up MediaRecorder to capture the composite canvas
   const stream = composite.captureStream(30);
-  const mimeType = MediaRecorder.isTypeSupported("video/mp4")
-    ? "video/mp4"
-    : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-      ? "video/webm;codecs=vp9"
-      : "video/webm";
+  const mimeType = pickRecorderMimeType();
 
   const recorder = new MediaRecorder(stream, {
     mimeType,
@@ -661,11 +659,61 @@ export async function generateAudioWaveformImage(
  * this path: scene-json has its own orbit recording, and html-css renders in a
  * sandboxed iframe that cannot be drawn to a canvas.
  */
+/** Works with a server-rendered animated WebP, from the generator's manifest. */
+const ANIMATED_WORK_IDS = new Set(animatedWorkIds as string[]);
+
 const RECORDABLE_MEDIA = new Set(
   OUTPUT_TYPE_IDS.filter(
     (id) => OUTPUT_TYPES[id].animated && id !== "scene-json" && id !== "html-css",
   ) as string[],
 );
+
+/**
+ * Container and codec for a recorded share video.
+ *
+ * `MediaRecorder.isTypeSupported("video/mp4")` answers true in Chromium and
+ * then fills the container with VP9. Every video the museum has ever shared was
+ * VP9 in an .mp4 wrapper: ffprobe reads `codec_tag_string=vp09`, Apple's
+ * decoders refuse it outright, and the file opens to a broken player on iOS.
+ * The extension promised something the bytes were not.
+ *
+ * So ask for H.264 by name. avc1.42E01E is baseline profile — the widest
+ * decode support there is, and what every social platform expects. WebM is kept
+ * only as a last resort for browsers with no MP4 encoder, where the file is at
+ * least honestly named .webm.
+ *
+ * This was chosen in three separate places before, all of them the same wrong
+ * way.
+ */
+function pickRecorderMimeType(): string {
+  const preferred = [
+    "video/mp4;codecs=avc1.42E01E",
+    "video/mp4;codecs=avc1",
+    "video/webm;codecs=vp9",
+    "video/webm",
+  ];
+  for (const type of preferred) {
+    if (MediaRecorder.isTypeSupported(type)) return type;
+  }
+  return "video/mp4";
+}
+
+/**
+ * What a share of this work will produce, decided the same way
+ * `generateShareFiles` decides it.
+ *
+ * The download button used to guess from a three-entry list that predated the
+ * new media, so a shader — which records a video — offered a button reading
+ * "IMAGE". html-css is checked against the animated-preview manifest rather
+ * than assumed, because that path produces a video only when a WebP exists.
+ */
+export function predictShareKind(work: Work): "video" | "audio" | "image" {
+  if (work.output_type === "audio-json") return "audio";
+  if (work.output_type === "scene-json") return "video";
+  if (RECORDABLE_MEDIA.has(work.output_type)) return "video";
+  if (work.output_type === "html-css" && ANIMATED_WORK_IDS.has(work.id)) return "video";
+  return "image";
+}
 
 // ─── Rendered-media video ─────────────────────────────────────────────────────
 
@@ -724,26 +772,42 @@ function rasterizeSvg(svg: SVGElement): Promise<HTMLImageElement | null> {
   });
 }
 
-async function generateRenderedVideo(
+interface MountedWork {
+  layers: Layer[];
+  hostRect: DOMRect;
+  dispose: () => void;
+}
+
+/**
+ * Mount a work's real renderer offscreen and hand back what it paints.
+ *
+ * Rather than reimplement each renderer's drawing here — a second copy to keep
+ * in step, which would drift — this runs the actual component and collects the
+ * canvases and SVGs it produces. Both the video path and the still path use it,
+ * so a share is the work as the site draws it for every medium, including ones
+ * added after this was written.
+ */
+async function mountWorkOffscreen(
   work: Work,
   colors: ReturnType<typeof getContrastColors>,
-  attrStrip: HTMLCanvasElement,
-): Promise<File | null> {
+  width: number,
+  height: number,
+): Promise<MountedWork | null> {
   const { createRoot } = await import("react-dom/client");
   const React = await import("react");
-
-  const vW = VIDEO_W;
-  const vH = VIDEO_H;
-  const sceneH = vH - VIDEO_SAFE_BOTTOM;
 
   // Offscreen, but laid out and painting. display:none would stop rAF.
   const host = document.createElement("div");
   host.style.cssText =
-    `position:fixed;left:-99999px;top:0;width:${vW}px;height:${sceneH}px;` +
+    `position:fixed;left:-99999px;top:0;width:${width}px;height:${height}px;` +
     `overflow:hidden;pointer-events:none;`;
   document.body.appendChild(host);
 
   const root = createRoot(host);
+  const dispose = () => {
+    try { root.unmount(); } catch { /* already gone */ }
+    if (host.parentNode) document.body.removeChild(host);
+  };
 
   try {
     const payload = work.safe_render_payload?.length
@@ -753,8 +817,8 @@ async function generateRenderedVideo(
     const mod = await import("@/components/renderers/CompositeRenderer");
     const Composite = mod.default;
 
-    // Every medium is expressed as a one-part composite, so this function needs
-    // exactly one component and the part dispatch stays in one place.
+    // Every medium is expressed as a one-part composite, so this needs exactly
+    // one component and the part dispatch stays in one place.
     const spec = JSON.stringify({
       layout: "stack",
       background: colors.bg,
@@ -785,8 +849,93 @@ async function generateRenderedVideo(
         break;
       }
     }
-    if (layers.length === 0) return null;
+    if (layers.length === 0) { dispose(); return null; }
 
+    return { layers, hostRect: host.getBoundingClientRect(), dispose };
+  } catch {
+    dispose();
+    return null;
+  }
+}
+
+/** Composite one frame of the mounted layers, in document order. */
+function drawLayers(
+  ctx: CanvasRenderingContext2D,
+  layers: Layer[],
+  hostRect: DOMRect,
+): void {
+  for (const layer of layers) {
+    const r = layer.el.getBoundingClientRect();
+    const x = r.left - hostRect.left;
+    const y = r.top - hostRect.top;
+    if (r.width < 1 || r.height < 1) continue;
+
+    const cs = getComputedStyle(layer.el);
+    ctx.globalAlpha = Number(cs.opacity || "1");
+    const parentBlend = getComputedStyle(layer.el.parentElement ?? layer.el).mixBlendMode;
+    ctx.globalCompositeOperation = BLEND_MAP[parentBlend] ?? "source-over";
+
+    try {
+      const src = layer.image ?? (layer.el as HTMLCanvasElement);
+      ctx.drawImage(src as CanvasImageSource, x, y, r.width, r.height);
+    } catch {
+      /* a tainted or zero-size source is skipped, not fatal */
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+}
+
+/**
+ * A still of any medium, drawn by its own renderer.
+ *
+ * Media the static switch below does not name used to share as a card bearing
+ * nothing but the work's ID — typeface-json and graph-json both went out that
+ * way, so a specimen of twenty-six drawn glyphs reached Instagram as the text
+ * "MNA-OR-0008-W-0015". Mounting the real renderer covers every medium the
+ * registry has and every one it gains.
+ */
+async function generateRenderedStill(
+  work: Work,
+  colors: ReturnType<typeof getContrastColors>,
+): Promise<HTMLCanvasElement | null> {
+  const SIDE = LOGICAL;
+  const mounted = await mountWorkOffscreen(work, colors, SIDE, SIDE);
+  if (!mounted) return null;
+  try {
+    // Let a work that draws itself finish drawing before photographing it.
+    await new Promise((r) => setTimeout(r, settleMs(work.output_type)));
+
+    const out = document.createElement("canvas");
+    out.width = SIDE;
+    out.height = SIDE;
+    const ctx = out.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = colors.bg;
+    ctx.fillRect(0, 0, SIDE, SIDE);
+    drawLayers(ctx, mounted.layers, mounted.hostRect);
+    return out;
+  } catch {
+    return null;
+  } finally {
+    mounted.dispose();
+  }
+}
+
+async function generateRenderedVideo(
+  work: Work,
+  colors: ReturnType<typeof getContrastColors>,
+  attrStrip: HTMLCanvasElement,
+): Promise<File | null> {
+  const vW = VIDEO_W;
+  const vH = VIDEO_H;
+  const sceneH = vH - VIDEO_SAFE_BOTTOM;
+
+  const mounted = await mountWorkOffscreen(work, colors, vW, sceneH);
+  if (!mounted) return null;
+  const { layers, hostRect } = mounted;
+
+  try {
     // Give an unfolding work a moment of head start so the recording does not
     // open on an empty frame.
     await new Promise((r) => setTimeout(r, 400));
@@ -800,16 +949,11 @@ async function generateRenderedVideo(
     if (!cCtx) return null;
 
     const stream = composite.captureStream(30);
-    const mimeType = MediaRecorder.isTypeSupported("video/mp4")
-      ? "video/mp4"
-      : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-        ? "video/webm;codecs=vp9"
-        : "video/webm";
+    const mimeType = pickRecorderMimeType();
     const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
-    const hostRect = host.getBoundingClientRect();
     const attrY = sceneH;
 
     recorder.start();
@@ -830,27 +974,8 @@ async function generateRenderedVideo(
         cCtx.fillStyle = colors.bg;
         cCtx.fillRect(0, 0, vW, vH);
 
-        for (const layer of layers) {
-          const r = layer.el.getBoundingClientRect();
-          const x = r.left - hostRect.left;
-          const y = r.top - hostRect.top;
-          if (r.width < 1 || r.height < 1) continue;
+        drawLayers(cCtx, layers, hostRect);
 
-          const cs = getComputedStyle(layer.el);
-          cCtx.globalAlpha = Number(cs.opacity || "1");
-          const parentBlend = getComputedStyle(layer.el.parentElement ?? layer.el).mixBlendMode;
-          cCtx.globalCompositeOperation = BLEND_MAP[parentBlend] ?? "source-over";
-
-          try {
-            const src = layer.image ?? (layer.el as HTMLCanvasElement);
-            cCtx.drawImage(src as CanvasImageSource, x, y, r.width, r.height);
-          } catch {
-            /* a tainted or zero-size source is skipped, not fatal */
-          }
-        }
-
-        cCtx.globalAlpha = 1;
-        cCtx.globalCompositeOperation = "source-over";
         cCtx.drawImage(attrStrip, 0, 0, attrStrip.width, attrStrip.height,
           0, attrY, vW, VIDEO_ATTR_HEIGHT);
 
@@ -869,8 +994,7 @@ async function generateRenderedVideo(
   } catch {
     return null;
   } finally {
-    try { root.unmount(); } catch { /* already gone */ }
-    if (host.parentNode) document.body.removeChild(host);
+    mounted.dispose();
   }
 }
 
@@ -981,11 +1105,7 @@ async function generateAnimatedPreviewVideo(
     if (!cCtx) return null;
 
     const stream = composite.captureStream(30);
-    const mimeType = MediaRecorder.isTypeSupported("video/mp4")
-      ? "video/mp4"
-      : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-        ? "video/webm;codecs=vp9"
-        : "video/webm";
+    const mimeType = pickRecorderMimeType();
     const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
@@ -1169,7 +1289,26 @@ export async function generateShareFiles(work: Work): Promise<ShareOutput | null
         break;
       }
       default: {
-        // Fallback for any medium — always show the work ID and medium
+        // Any medium the cases above do not name — typeface-json, graph-json,
+        // and anything the registry gains later. Draw it with its own renderer.
+        // These used to fall through to a card bearing only the work's ID, so a
+        // twenty-six glyph specimen shared as the text "MNA-OR-0008-W-0015".
+        const rendered = await generateRenderedStill(work, colors);
+        if (rendered) {
+          const fit = Math.min(WORK_AREA_W / rendered.width, WORK_AREA_H / rendered.height);
+          const drawW = rendered.width * fit;
+          const drawH = rendered.height * fit;
+          ctx.drawImage(
+            rendered,
+            PAD + (WORK_AREA_W - drawW) / 2,
+            PAD + (WORK_AREA_H - drawH) / 2,
+            drawW,
+            drawH,
+          );
+          break;
+        }
+        // Only when the renderer painted nothing at all. Naming the work is
+        // better than an empty square, but it is a failure, not a design.
         const centerY = PAD + WORK_AREA_H / 2;
         ctx.fillStyle = colors.fg;
         ctx.globalAlpha = 0.7;
