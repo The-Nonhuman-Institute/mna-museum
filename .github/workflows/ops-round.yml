@@ -90,10 +90,9 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "the round changed no files"
           else
-            git commit -m "ops: repairs from the operations round
-
-Made by the scheduled round under MNA-OPS-001 §V. Repairs only; no work
-payload was modified."
+            git commit \
+              -m "ops: repairs from the operations round" \
+              -m "Made by the scheduled round under MNA-OPS-001 §V. Repairs only; no work payload was modified."
             git push
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
