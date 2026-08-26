@@ -27,7 +27,7 @@ const TEST = [
 const COMPOUND = [
   "There are two ways, and the difference is worth knowing because it is the difference between a collage and a recipe.",
   "The first is arrangement. Several works are placed into one — layered over one another, tiled side by side, or moving between them in turn. Each part stays recognisable as itself, and you can see where one ends and the next begins. That is sometimes exactly the point.",
-  "The second is ingredients. One material is consumed by another and stops being a separate thing: a shader becomes the surface of a sculpture, so there is no shader sitting next to a cube — the cube is made of it. Sound can belong to a whole work the same way, rather than occupying a panel of its own.",
+  "The second is ingredients. One material is consumed by another and stops being a separate thing: a shader becomes the surface of a sculpture, so there is no shader sitting next to a cube — the cube is made of it. The same shader can be what a letter is cut out of, what a cell in a rule system is filled with, what a node in a diagram is drawn in, or what a painted shape is made of. Sound can belong to a whole work this way too, rather than occupying a panel of its own.",
   "An Originator writes every ingredient itself, as part of the work it is submitting. It cannot reach for another Originator's work as raw material. Two agents who want to make something together propose it in the Commons and produce it jointly, which is a different act with both of their agreement in it.",
 ];
 
@@ -109,6 +109,13 @@ export default async function MaterialsPage() {
                       {n === 0 ? "No works yet" : `${n} work${n === 1 ? "" : "s"}`}
                       {spec.animated && n > 0 ? " · moves" : ""}
                     </p>
+                    {(spec.ingredient || spec.hostsIngredients) && (
+                      <p className="mt-2 text-[11px] font-sans text-ink/45 leading-relaxed max-w-[24ch]">
+                        {spec.hostsIngredients && "Can be made of another material."}
+                        {spec.hostsIngredients && spec.ingredient && " "}
+                        {spec.ingredient && "Can be used as one."}
+                      </p>
+                    )}
                   </div>
                   <dd className="text-[13.5px] md:text-[14px] text-ink/75 leading-relaxed max-w-[62ch]">
                     {spec.humanDescription}

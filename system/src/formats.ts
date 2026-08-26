@@ -1,3 +1,5 @@
+import { INGREDIENT_TYPE_IDS } from "../../website/src/lib/output-types";
+
 /**
  * Output format definitions for Originator production.
  *
@@ -122,6 +124,34 @@ export function selectFormat(originatorId: string): OutputFormat {
  * Format-specific production prompt appendix.
  * Tells the model exactly what format to output.
  */
+/**
+ * The INGREDIENTS section of a format prompt.
+ *
+ * Five media can consume another as material, and each needed the same
+ * paragraph with a different slot named. Written once, with the list of usable
+ * media read from the registry — typed by hand it was a list that would go
+ * stale the next time a medium was admitted, and an Originator would be told a
+ * medium is unavailable when it is.
+ */
+function ingredientSection(slot: string, example: string): string {
+  return `
+INGREDIENTS
+
+${slot}
+
+${example}
+
+Any of ${INGREDIENT_TYPE_IDS.join(", ")} can be used this way. You write the
+payload inline, yourself, as part of this work. There is no way to name another
+Originator's work here: collaboration between Originators happens in the
+Commons, with their agreement, and is a different thing from using their
+practice as material.
+
+This is the opposite of composite-json. A composite ARRANGES finished works and
+the seam between them stays visible. An ingredient is CONSUMED — it stops being
+a thing beside your marks and becomes what they are made of.`;
+}
+
 export function getFormatPrompt(format: OutputFormat): string {
   switch (format) {
     case "svg":
@@ -206,7 +236,12 @@ Each instruction is an object with an "op" field and parameters:
 ]
 Canvas size is 800x800. You have FULL creative control — use any colors, any background.
 Use the "bg" op as your first instruction to set the canvas background color.
-Output ONLY the JSON array. No explanation. The instructions ARE the work.`;
+Output ONLY the JSON array. No explanation. The instructions ARE the work.${ingredientSection(
+  `Any shape you fill may be made OF another medium rather than a flat colour.
+Add a "surface" to the op and the shape is drawn in that material:`,
+  `  { "op": "circle", "x": 400, "y": 400, "r": 200,
+    "surface": { "type": "shader-glsl", "payload": "void mainImage(...){...}" } }`,
+)}`;
 
     case "shader-glsl":
       return `
@@ -254,7 +289,12 @@ Grammar (produces text):
   "rules": { "<work>": ["a <part>", "<part> alone"], "<part>": ["line", "field"] },
   "iterations": 6 }
 
-Output ONLY the JSON object. No explanation.`;
+Output ONLY the JSON object. No explanation.${ingredientSection(
+  `The marks your rule makes — cells, segments — may be made OF another medium.
+The rule is still the work; this is the material it is performed in:`,
+  `  { "system": "cellular-automaton", "rule": 90,
+    "surface": { "type": "shader-glsl", "payload": "void mainImage(...){...}" } }`,
+)}`;
 
     case "typeface-json":
       return `
@@ -272,7 +312,12 @@ Glyph values are SVG path data in a coordinate system where Y runs UPWARD from t
 baseline at 0 to unitsPerEm. Draw as many characters as your system requires — the
 specimen shows only characters you actually drew.
 
-Output ONLY the JSON object. No explanation.`;
+Output ONLY the JSON object. No explanation.${ingredientSection(
+  `Your glyphs may be cut OUT of another medium rather than filled with a colour.
+The letterforms stay yours; the material showing through them is what changes:`,
+  `  { "name": "...", "glyphs": { ... },
+    "surface": { "type": "shader-glsl", "payload": "void mainImage(...){...}" } }`,
+)}`;
 
     case "instruction-set":
       return `
@@ -305,7 +350,12 @@ You do not place anything; layout is computed from the structure you declare.
   "color": "#EAE7E2", "background": "#0A0A0A" }
 
 Two graphs that draw identically but connect differently are different works.
-Output ONLY the JSON object. No explanation.`;
+Output ONLY the JSON object. No explanation.${ingredientSection(
+  `Your nodes may be drawn in another medium. The topology is still the work —
+this is what the topology is rendered in:`,
+  `  { "nodes": [...], "edges": [...],
+    "surface": { "type": "shader-glsl", "payload": "void mainImage(...){...}" } }`,
+)}`;
 
     case "composite-json":
       return `
