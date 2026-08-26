@@ -23,6 +23,7 @@ import fs from "fs";
 import path from "path";
 
 import { MEDIUM_OUTPUT_TYPE_COMPATIBILITY } from "../../website/src/lib/submission-checks";
+import { FROM_DOMAIN } from "../src/steward-mail";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -403,6 +404,81 @@ async function checkC2(db: Client): Promise<void> {
     : { check: "C2", severity: "note", summary: "no pending registrations" });
 }
 
+/**
+ * C3 — the escalation channel itself.
+ *
+ * Every other check in section C ends in a message to a person. For months
+ * `RESEND_API_KEY` existed in repository secrets with an empty value, so every
+ * one of those messages would have failed to send and no round could have said
+ * so: a broken alarm is silent in exactly the way a well institution is.
+ *
+ * This asks Resend whether the key is real and the sending domain is verified.
+ * It sends nothing — a test mail to prove mail works is itself a "nothing to
+ * report" mail, which §V forbids.
+ *
+ * When this escalates, ops-notify cannot deliver it. That is intended: the
+ * notifier writes the run's summary before it tries to send, and warns loudly
+ * when it cannot, so the finding survives its own subject matter.
+ */
+async function checkC3(): Promise<void> {
+  const key = clean(process.env.RESEND_API_KEY);
+  const SET_SECRET = "gh secret set RESEND_API_KEY   # value from resend.com/api-keys";
+
+  if (!key) {
+    record({ check: "C3", severity: "escalate",
+      summary: "no RESEND_API_KEY — the round cannot write to the steward, and accession notices cannot send",
+      nextStep: SET_SECRET });
+    return;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch("https://api.resend.com/domains", { headers: { Authorization: `Bearer ${key}` } });
+  } catch (e) {
+    record({ check: "C3", severity: "note",
+      summary: `could not reach Resend to verify the notifier: ${e instanceof Error ? e.message.slice(0, 80) : String(e)}` });
+    return;
+  }
+
+  // The request carries no body and no parameters, so a 4xx here can only be
+  // about the credential. Resend answers an invalid key with **400** and the
+  // message "API key is invalid" — not the 401 this check first assumed, which
+  // let a garbage key pass as an unverified note. Read the body, not the code.
+  if (res.status >= 400 && res.status < 500) {
+    const detail = (await res.text()).slice(0, 120);
+    record({ check: "C3", severity: "escalate",
+      summary: `RESEND_API_KEY is set but rejected (HTTP ${res.status}: ${detail}) — no institutional email can send`,
+      nextStep: SET_SECRET });
+    return;
+  }
+  if (!res.ok) {
+    // 5xx is Resend having a bad minute, not the institution having a fault.
+    record({ check: "C3", severity: "note", summary: `Resend returned HTTP ${res.status}; notifier unverified this round` });
+    return;
+  }
+
+  // The key works. The domain it sends from must also be verified, or mail is
+  // accepted by the API and never delivered.
+  const sender = FROM_DOMAIN;
+  const body = (await res.json()) as { data?: { name: string; status: string; capabilities?: { sending?: string } }[] };
+  const domain = (body.data ?? []).find((d) => d.name === sender);
+
+  if (!domain) {
+    record({ check: "C3", severity: "escalate",
+      summary: `the notifier's key is valid but ${sender} is not among its verified domains`,
+      nextStep: `add and verify ${sender} at resend.com/domains` });
+    return;
+  }
+  if (domain.status !== "verified" || domain.capabilities?.sending === "disabled") {
+    record({ check: "C3", severity: "escalate",
+      summary: `${sender} is ${domain.status}, sending ${domain.capabilities?.sending ?? "unknown"} — mail will not arrive`,
+      nextStep: `resend.com/domains → ${sender}` });
+    return;
+  }
+
+  record({ check: "C3", severity: "note", summary: `the steward is reachable (${sender} verified)` });
+}
+
 /* ─── D. Data and deployment ────────────────────────────────────────────── */
 
 /**
@@ -619,6 +695,7 @@ async function main() {
   await attempt("B2", () => checkB2(db));
   await attempt("C1", () => checkC1(db));
   await attempt("C2", () => checkC2(db));
+  await attempt("C3", () => checkC3());
   await attempt("D1", () => checkD1());
   await attempt("D2", () => checkD2());
   await attempt("E1", () => checkE1(db));

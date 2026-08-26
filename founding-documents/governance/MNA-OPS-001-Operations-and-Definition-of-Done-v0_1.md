@@ -248,6 +248,37 @@ for that work.
 **Repair.** None, ever. Approval is the steward's authority
 (see `feedback_steward_authority`). **Report only.**
 
+#### C3 — The escalation channel itself
+
+**Detect.** Ask Resend whether `RESEND_API_KEY` is a live key and whether the
+domain in the notifier's `FROM` address is verified with sending enabled.
+
+**Edge cases — this check is about its own ability to be heard.**
+- *The empty secret.* `RESEND_API_KEY` existed in repository secrets for months
+  with an **empty value**. `gh secret list` shows a name and a date, never a
+  value, so the alarm looked configured. A disconnected alarm is silent in
+  exactly the way a well institution is; nothing distinguished them.
+- *No test mail.* Proving mail works by sending mail means sending a "nothing
+  to report" message, which §IV forbids. Ask the API instead.
+- *One definition.* The address checked must be the address `ops-notify` sends
+  from — both read `system/src/steward-mail.ts`. A checker with its own copy
+  can pass while the notifier fails.
+- *The verified domain.* A valid key with an unverified sending domain is
+  accepted by the API and never delivered. Check both.
+- *The status code lies.* Resend rejects an invalid key with **HTTP 400 —
+  "API key is invalid"**, not 401. Treating only 401/403 as rejection let a
+  garbage key pass as an unverified note. The request carries no parameters, so
+  any 4xx is about the credential.
+- *Unreachable ≠ broken.* A network failure, or a 5xx from Resend, is a **note**
+  rather than an escalation. Only a rejected key or an unverified domain is a
+  fault of the institution's.
+
+**Repair.** None. A key is a secret, and secrets are the steward's.
+
+**Escalate.** Yes — knowing that this escalation cannot be emailed. `ops-notify`
+writes the run's summary *before* it attempts delivery and warns loudly when it
+cannot send, so a finding about the channel survives the channel.
+
 ---
 
 ### D. Data and deployment

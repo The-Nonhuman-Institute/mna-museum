@@ -17,11 +17,10 @@ import fs from "fs";
 import path from "path";
 import { Resend } from "resend";
 
+import { FROM, STEWARD } from "../src/steward-mail";
+
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
-
-const STEWARD = "mnamuseum@gmail.com";
-const FROM = "MNA Operations <registry@mnamuseum.org>";
 
 interface Finding {
   check: string;
