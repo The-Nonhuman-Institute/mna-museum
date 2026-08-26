@@ -10,7 +10,8 @@
     "lint": "next lint",
     "generate-compositions": "tsx scripts/generate-compositions.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify": "tsc --noEmit -p tsconfig.json && next lint && vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.81.0",

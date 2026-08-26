@@ -74,7 +74,10 @@ describe("the workflows", () => {
     // a pointless deploy every three hours forever.
     const src = readFileSync(path.join(DIR, "deploy-website.yml"), "utf8");
     const block = src.slice(src.indexOf("paths:"), src.indexOf("workflow_dispatch:"));
-    const globs = [...block.matchAll(/^\s*-\s*"([^"]+)"/gm)].map((m) => m[1]);
+    const globs: string[] = [];
+    const re = /^\s*-\s*"([^"]+)"/gm;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(block)) !== null) globs.push(m[1]);
     expect(globs.length, "no quoted path globs — ops-round D1 cannot read this").toBeGreaterThan(0);
     expect(globs).toContain("website/**");
   });

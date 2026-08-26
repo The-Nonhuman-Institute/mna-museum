@@ -69,6 +69,11 @@ make or what the Council decides, and it must never be used to reach either.
 6. **What it cannot do is written down.** Untested paths and known limits are
    stated plainly rather than left implied.
 
+Run as one command, `npm run verify` in `website/`, which is typecheck, lint and
+tests together. Running them separately means running some of them: this
+document's own first draft shipped a type error because the tests were run and
+the typecheck was not.
+
 ## IV. Standing prohibitions
 
 Operations is service, not judgment. Nothing in this document, and nothing done
