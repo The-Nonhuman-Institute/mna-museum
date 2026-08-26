@@ -124,6 +124,44 @@ function render(report: Report): { subject: string; html: string; text: string }
   return { subject, html, text: textLines.join("\n") };
 }
 
+/**
+ * Put the findings in the workflow run's own summary.
+ *
+ * A round's output must survive its log. Anyone opening the run sees what was
+ * found without reading a transcript, and it works whether or not email does.
+ */
+function writeStepSummary(report: Report, text: string): void {
+  const target = process.env.GITHUB_STEP_SUMMARY;
+  if (!target) return;
+  const escalations = report.findings.filter((f) => f.severity === "escalate");
+  const repairs = report.findings.filter((f) => f.severity === "repaired");
+  const lines = [
+    `## Operations round`,
+    ``,
+    `**${repairs.length}** repaired · **${escalations.length}** need a person · ${report.ran_at}`,
+    ``,
+  ];
+  if (escalations.length) {
+    lines.push(`### Needs a person`, ``);
+    for (const f of escalations) {
+      lines.push(`**\`${f.check}\`** — ${f.summary}`);
+      for (const i of f.items ?? []) lines.push(`- \`${i}\``);
+      if (f.nextStep) lines.push("", "```", f.nextStep, "```");
+      lines.push("");
+    }
+  }
+  if (repairs.length) {
+    lines.push(`### Already handled`, ``);
+    for (const f of repairs) lines.push(`- **\`${f.check}\`** ${f.summary}`);
+  }
+  try {
+    fs.appendFileSync(target, lines.join("\n") + "\n");
+  } catch {
+    // A summary we cannot write is not worth failing a round over.
+  }
+  void text;
+}
+
 async function main() {
   const file = process.argv[2];
   if (!file || !fs.existsSync(file)) {
@@ -138,14 +176,24 @@ async function main() {
     return;
   }
 
+  const { subject, html, text } = render(report);
+
+  // The findings are written to the run's own summary FIRST, always. Email is a
+  // delivery channel, not the record — if it is misconfigured the escalations
+  // must still be legible somewhere durable, or a quiet round and an
+  // undeliverable one look identical.
+  writeStepSummary(report, text);
+
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.error("RESEND_API_KEY is not set — printing instead of sending\n");
-    console.error(render(report).text);
-    process.exit(1);
+    // A GitHub warning rather than a hard failure: the run is not broken, its
+    // notification channel is. Failing here would paint every round red for a
+    // reason no round can fix.
+    console.log("::warning title=Operations cannot email the steward::RESEND_API_KEY is unset or empty in repository secrets. The findings are in this run's summary. Set the secret to restore email escalation.");
+    console.log("\n" + text);
+    return;
   }
 
-  const { subject, html, text } = render(report);
   const { data, error } = await new Resend(key).emails.send({
     from: FROM,
     to: STEWARD,

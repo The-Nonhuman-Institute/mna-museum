@@ -127,6 +127,32 @@ async function statusWithRetry(url: string): Promise<number> {
   return head(url);
 }
 
+/**
+ * How current the bundled snapshot actually is, read from its CONTENTS.
+ *
+ * Not from the file's modification time. A CI checkout stamps every file with
+ * the moment it was written, so mtime says "brand new" for a snapshot exported
+ * days ago — which made D2 always report a fresh snapshot and made E1 probe a
+ * work the deployed site could not possibly know about.
+ *
+ * Returns null when the snapshot cannot be read, and callers then skip rather
+ * than guess.
+ */
+function snapshotNewestWork(): string | null {
+  const file = path.join(REPO, "website", "data", "snapshot.db");
+  if (!fs.existsSync(file)) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Database = require("better-sqlite3");
+    const db = new Database(file, { readonly: true, fileMustExist: true });
+    const row = db.prepare("SELECT MAX(created_at) AS newest FROM works").get() as { newest?: string };
+    db.close();
+    return row?.newest ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /* ─── A. Collection integrity ───────────────────────────────────────────── */
 
 interface WorkRow { id: string; output_type: string; created_at: string; medium: string | null }
@@ -416,23 +442,28 @@ async function checkD1(): Promise<void> {
 }
 
 async function checkD2(): Promise<void> {
-  const snap = path.join(REPO, "website", "data", "snapshot.db");
-  if (!fs.existsSync(snap)) {
-    record({ check: "D2", severity: "escalate", summary: "no bundled snapshot", nextStep: "gh workflow run snapshot-refresh.yml" });
+  const newest = snapshotNewestWork();
+  if (newest === null) {
+    record({ check: "D2", severity: "escalate", summary: "no readable bundled snapshot",
+      nextStep: "gh workflow run snapshot-refresh.yml" });
     return;
   }
-  const ageHours = (Date.now() - fs.statSync(snap).mtimeMs) / 3_600_000;
+  const ageHours = minutesSince(newest) / 60;
+  // Public browsing surfaces are snapshot-first on purpose, to keep read volume
+  // off the quota. Staleness is expected and bounded; only exceeding the bound
+  // is a fault.
   if (ageHours < 24) {
-    record({ check: "D2", severity: "note", summary: `snapshot is ${ageHours.toFixed(1)}h old` });
+    record({ check: "D2", severity: "note", summary: `snapshot holds work up to ${ageHours.toFixed(1)}h old` });
     return;
   }
   if (dryRun) {
-    record({ check: "D2", severity: "escalate", summary: `snapshot is ${ageHours.toFixed(1)}h old`, nextStep: "gh workflow run snapshot-refresh.yml" });
+    record({ check: "D2", severity: "escalate", summary: `snapshot is ${ageHours.toFixed(1)}h behind`,
+      nextStep: "gh workflow run snapshot-refresh.yml" });
     return;
   }
   try {
     run("gh", ["workflow", "run", "snapshot-refresh.yml"]);
-    record({ check: "D2", severity: "repaired", summary: `dispatched a snapshot refresh (was ${ageHours.toFixed(1)}h old)` });
+    record({ check: "D2", severity: "repaired", summary: `dispatched a snapshot refresh (was ${ageHours.toFixed(1)}h behind)` });
   } catch {
     record({ check: "D2", severity: "escalate", summary: "snapshot refresh dispatch failed", nextStep: "gh workflow run snapshot-refresh.yml" });
   }
@@ -443,13 +474,14 @@ async function checkD2(): Promise<void> {
 async function checkE1(db: Client): Promise<void> {
   const routes = ["/", "/canon", "/archive", "/agents", "/museum", "/materials", "/log"];
   // The newest work is NOT a fair probe. Public browsing surfaces are
-  // snapshot-first by design, to keep read volume off the quota, so a work
-  // submitted since the last export legitimately 404s there — that is the
-  // architecture working, not an outage. Probe the newest work the deployed
-  // snapshot could actually know about.
-  const snapshotPath = path.join(REPO, "website", "data", "snapshot.db");
-  if (fs.existsSync(snapshotPath)) {
-    const cutoff = new Date(fs.statSync(snapshotPath).mtimeMs).toISOString().replace("T", " ").slice(0, 19);
+  // snapshot-first by design, so a work submitted since the last export
+  // legitimately 404s there — that is the architecture working, not an outage.
+  //
+  // The cutoff comes from the snapshot's own newest row, not the file's mtime:
+  // a CI checkout rewrites mtime to "now", which made this probe the very
+  // newest work every time and report a 404 on every run.
+  const cutoff = snapshotNewestWork();
+  if (cutoff) {
     const newest = await db.execute({
       sql: "SELECT id FROM works WHERE created_at <= ? ORDER BY created_at DESC LIMIT 1",
       args: [cutoff],
