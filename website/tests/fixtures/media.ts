@@ -11,7 +11,7 @@
  * is the smallest thing that proves the pipe is open.
  */
 
-import type { OutputTypeId } from "@/lib/output-types";
+import type { OutputTypeId } from "../../src/lib/output-types";
 
 export const FIXTURES: Record<OutputTypeId, string> = {
   text: "@bg:#0A0A0A @fg:#EAE7E2\nA line, and then another.\nThe second is shorter.",
