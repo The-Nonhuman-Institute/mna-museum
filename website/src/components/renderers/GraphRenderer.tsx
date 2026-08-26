@@ -2,6 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import {
+  makeMask,
+  paintThroughMask,
+  readSurface,
+  resolveSurface,
+} from "@/lib/ingredient-surface";
+
 /**
  * Relational structures — nodes and edges.
  *
@@ -29,6 +36,8 @@ interface GraphSpec {
   layout?: string;
   color?: string;
   background?: string;
+  /** Nodes are made OF this medium. See @/lib/ingredient-surface. */
+  surface?: { type?: string; payload?: unknown };
 }
 
 function parse(json: string): GraphSpec | null {
@@ -98,6 +107,9 @@ export default function GraphRenderer({ json }: { json: string }) {
       }
     }
 
+    let ingredient: HTMLCanvasElement | null = null;
+    let disposed = false;
+
     const render = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
@@ -130,12 +142,28 @@ export default function GraphRenderer({ json }: { json: string }) {
       }
 
       ctx.globalAlpha = 1;
-      ctx.fillStyle = fg;
       const r = Math.max(2, Math.min(w, h) * 0.006);
-      for (let i = 0; i < pts.length; i++) {
-        ctx.beginPath();
-        ctx.arc(px(pts[i]), py(pts[i]), r, 0, Math.PI * 2);
-        ctx.fill();
+
+      const drawNodes = (target: CanvasRenderingContext2D) => {
+        for (let i = 0; i < pts.length; i++) {
+          target.beginPath();
+          target.arc(px(pts[i]), py(pts[i]), r, 0, Math.PI * 2);
+          target.fill();
+        }
+      };
+
+      // A graph may declare `surface`, making its nodes out of another medium.
+      // The topology is still the work; this is what the topology is drawn in.
+      if (ingredient) {
+        const mask = makeMask(w, h);
+        if (mask.ctx) {
+          mask.ctx.fillStyle = "#fff";
+          drawNodes(mask.ctx);
+          paintThroughMask(ctx, mask.canvas, ingredient);
+        }
+      } else {
+        ctx.fillStyle = fg;
+        drawNodes(ctx);
       }
 
       // Labels only when there is room for them to be read.
@@ -152,9 +180,25 @@ export default function GraphRenderer({ json }: { json: string }) {
     };
 
     render();
+
+    // Resolved after the first paint, then re-rendered: the ingredient's own
+    // renderer must mount and paint before there is anything to sample, and
+    // the graph should be readable in the meantime.
+    const surface = readSurface(spec);
+    if (surface) {
+      void resolveSurface(surface, 512).then((c) => {
+        if (disposed || !c) return;
+        ingredient = c;
+        render();
+      });
+    }
+
     const ro = new ResizeObserver(render);
     ro.observe(canvas);
-    return () => ro.disconnect();
+    return () => {
+      disposed = true;
+      ro.disconnect();
+    };
   }, [json]);
 
   if (failed) {

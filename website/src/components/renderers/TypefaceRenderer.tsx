@@ -1,6 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+
+import {
+  canvasToDataUrl,
+  flipVertically,
+  readSurface,
+  resolveSurface,
+} from "@/lib/ingredient-surface";
 
 /**
  * Typefaces.
@@ -28,6 +35,8 @@ interface TypefaceSpec {
   specimen?: string;
   color?: string;
   background?: string;
+  /** Glyphs are made OF this medium. See @/lib/ingredient-surface. */
+  surface?: { type?: string; payload?: unknown };
 }
 
 function parse(json: string): TypefaceSpec | null {
@@ -41,6 +50,24 @@ function parse(json: string): TypefaceSpec | null {
 export default function TypefaceRenderer({ json }: { json: string }) {
   const spec = useMemo(() => parse(json), [json]);
 
+  // A typeface may declare `surface`, making its glyphs out of another medium —
+  // letters cut from a shader rather than filled with a colour. Resolved after
+  // first paint so the specimen is readable while the material is still being
+  // rendered, and applied as an SVG fill pattern.
+  const [inkUrl, setInkUrl] = useState<string | null>(null);
+  const patternId = useId().replace(/:/g, "");
+
+  useEffect(() => {
+    let disposed = false;
+    const surface = readSurface(spec);
+    if (!surface) { setInkUrl(null); return; }
+    void resolveSurface(surface, 512).then((c) => {
+      if (disposed || !c) return;
+      setInkUrl(canvasToDataUrl(flipVertically(c)));
+    });
+    return () => { disposed = true; };
+  }, [spec]);
+
   if (!spec || !spec.glyphs || Object.keys(spec.glyphs).length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-ink p-6">
@@ -52,6 +79,7 @@ export default function TypefaceRenderer({ json }: { json: string }) {
   const em = spec.unitsPerEm ?? 1000;
   const advance = spec.advance ?? em;
   const fg = spec.color ?? "#EAE7E2";
+  const ink = inkUrl ? `url(#${patternId})` : fg;
   const bg = spec.background ?? "#0A0A0A";
   const glyphs = spec.glyphs;
   const chars = Object.keys(glyphs);
@@ -70,6 +98,24 @@ export default function TypefaceRenderer({ json }: { json: string }) {
 
   return (
     <div className="w-full h-full overflow-auto" style={{ background: bg }}>
+      {/* Defined once, referenced by the specimen and every glyph tile. A
+          pattern defined inside one <svg> and referenced from another relies on
+          ids being document-global, which browsers disagree about. */}
+      {inkUrl && (
+        <svg width="0" height="0" aria-hidden className="absolute pointer-events-none">
+          <defs>
+            <pattern
+              id={patternId}
+              patternUnits="objectBoundingBox"
+              patternContentUnits="objectBoundingBox"
+              width="1"
+              height="1"
+            >
+              <image href={inkUrl} x="0" y="0" width="1" height="1" preserveAspectRatio="none" />
+            </pattern>
+          </defs>
+        </svg>
+      )}
       <div className="p-[6%] flex flex-col gap-[6%] min-h-full">
         {/* Sample at size */}
         <svg
@@ -79,7 +125,7 @@ export default function TypefaceRenderer({ json }: { json: string }) {
           role="img"
           aria-label={spec.name ? `Specimen of ${spec.name}` : "Typeface specimen"}
         >
-          <g transform={flip} fill={fg}>
+          <g transform={flip} fill={ink}>
             {line.map((c, i) => (
               <path key={`${c}-${i}`} d={glyphs[c]} transform={`translate(${i * advance} 0)`} />
             ))}
@@ -90,7 +136,7 @@ export default function TypefaceRenderer({ json }: { json: string }) {
         <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-[2%]">
           {chars.slice(0, 120).map((c) => (
             <svg key={c} viewBox={`0 0 ${advance} ${em}`} className="w-full block">
-              <g transform={flip} fill={fg} opacity={0.85}>
+              <g transform={flip} fill={ink} opacity={0.85}>
                 <path d={glyphs[c]} />
               </g>
             </svg>

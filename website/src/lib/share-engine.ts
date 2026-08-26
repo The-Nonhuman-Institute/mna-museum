@@ -16,7 +16,7 @@ import type { Work } from "./collection";
 import { parseWorkColors, detectSvgBackground } from "./work-colors";
 import * as THREE from "three";
 import { OUTPUT_TYPES, OUTPUT_TYPE_IDS } from "./output-types";
-import { settleMs } from "./render-timing";
+import { settleMsForWork } from "./render-timing";
 import animatedWorkIds from "@/data/animated-works.json";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -972,7 +972,9 @@ async function generateRenderedStill(work: Work): Promise<HTMLCanvasElement | nu
   if (!mounted) return null;
   try {
     // Let a work that draws itself finish drawing before photographing it.
-    await new Promise((r) => setTimeout(r, settleMs(work.output_type)));
+    await new Promise((r) =>
+      setTimeout(r, settleMsForWork(work.output_type, work.output_payload)),
+    );
 
     const out = document.createElement("canvas");
     out.width = SIDE;

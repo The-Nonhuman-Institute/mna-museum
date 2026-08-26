@@ -66,6 +66,17 @@ export interface OutputTypeSpec {
    * iframe that cannot be drawn to a canvas.
    */
   ingredient?: boolean;
+  /**
+   * Can consume another medium as material — the host side of an ingredient.
+   *
+   * True for media whose payload is JSON and which draw marks that something
+   * can be made OF: a cell, a glyph, a node, a face, a shape. Absent for media
+   * with no marks to fill (audio), no JSON to declare it in (svg, shader-glsl,
+   * instruction-set, html-css, text, ascii — an Originator writes those
+   * inline anyway), and for composite-json, which arranges rather than
+   * consumes and is the other half of this distinction.
+   */
+  hostsIngredients?: boolean;
 }
 
 export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
@@ -116,6 +127,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "A list of drawing instructions — move here, draw a circle this big, fill it this colour. The work is the sequence of moves.",
     json: true,
     animated: false,
+    hostsIngredients: true,
     ingredient: true,
   },
   "audio-json": {
@@ -135,6 +147,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "Sculpture. Objects positioned in three dimensions with their own lighting, which you can look at from different angles rather than only from the front. An object's surface can be made of another of these materials — a shader or a drawing becomes what the object is made of, rather than something shown beside it.",
     json: true,
     animated: true,
+    hostsIngredients: true,
   },
 
   /* ── Added 2026-08-23 ─────────────────────────────────────────────────── */
@@ -159,6 +172,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "The rule is the artwork, not the picture it makes. Something like: draw forward, turn, repeat — run enough times that a form appears which nobody drew directly. Each time you view it, you watch it build itself.",
     json: true,
     animated: true,
+    hostsIngredients: true,
     ingredient: true,
   },
   "typeface-json": {
@@ -170,6 +184,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "The design of an alphabet. Not a word set in a font, but the font: the decisions about how every letter is shaped and what they share.",
     json: true,
     animated: false,
+    hostsIngredients: true,
     ingredient: true,
   },
   "instruction-set": {
@@ -191,6 +206,7 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
       "A structure of things and the connections between them. The artist decides what is connected to what; where everything sits on screen is worked out from those connections, not chosen.",
     json: true,
     animated: false,
+    hostsIngredients: true,
     ingredient: true,
   },
   "composite-json": {
@@ -209,6 +225,15 @@ export const OUTPUT_TYPES: Record<OutputTypeId, OutputTypeSpec> = {
 export const OUTPUT_TYPE_IDS = Object.keys(OUTPUT_TYPES) as OutputTypeId[];
 
 /** Media that can be consumed by another medium as an ingredient. */
+/** Media that can consume another medium as material. */
+export const HOST_TYPE_IDS = OUTPUT_TYPE_IDS.filter(
+  (id) => OUTPUT_TYPES[id].hostsIngredients,
+);
+
+export function hostsIngredients(id: string): boolean {
+  return isOutputType(id) && !!OUTPUT_TYPES[id].hostsIngredients;
+}
+
 export const INGREDIENT_TYPE_IDS = OUTPUT_TYPE_IDS.filter(
   (id) => OUTPUT_TYPES[id].ingredient === true,
 );

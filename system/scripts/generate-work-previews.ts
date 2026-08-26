@@ -17,7 +17,7 @@ import path from "path";
 import fs from "fs";
 import puppeteer, { Browser } from "puppeteer";
 
-import { settleMs } from "../../website/src/lib/render-timing";
+import { settleMsForWork } from "../../website/src/lib/render-timing";
 
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
 
@@ -65,6 +65,7 @@ export async function renderWork(
   browser: Browser,
   workId: string,
   outputType: string,
+  payload?: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const outputPath = path.join(PREVIEW_DIR, `${workId}.png`);
   try {
@@ -91,7 +92,10 @@ export async function renderWork(
     // How long before the work looks like itself. Owned by render-timing.ts,
     // which the renderers read too — this used to be a guess made here, and it
     // photographed every finite-draw work partway through its own drawing.
-    const baseWaitMs = settleMs(outputType);
+    // A work that consumes another medium needs that material to arrive before
+    // it is photographed — the ingredient's own renderer has to mount and paint
+    // first, which the host's settle time does not account for.
+    const baseWaitMs = settleMsForWork(outputType, payload);
     await new Promise((r) => setTimeout(r, baseWaitMs));
 
     const findWorkArea = async () => {
@@ -214,26 +218,26 @@ async function main() {
   if (!fs.existsSync(PREVIEW_DIR)) fs.mkdirSync(PREVIEW_DIR, { recursive: true });
 
   // Determine which works to render
-  let works: { id: string; output_type: string }[];
+  let works: { id: string; output_type: string; output_payload?: string }[];
 
   if (singleWorkId) {
     // Single work mode
     const r = await db.execute({
-      sql: "SELECT id, output_type FROM works WHERE id = ?",
+      sql: "SELECT id, output_type, output_payload FROM works WHERE id = ?",
       args: [singleWorkId],
     });
     if (r.rows.length === 0) {
       console.error(`Work ${singleWorkId} not found`);
       process.exit(1);
     }
-    works = r.rows.map((row) => ({ id: row.id as string, output_type: row.output_type as string }));
+    works = r.rows.map((row) => ({ id: row.id as string, output_type: row.output_type as string, output_payload: row.output_payload as string }));
   } else {
     const sql = canonOnly
-      ? "SELECT w.id, w.output_type FROM works w JOIN canon_status cs ON w.id = cs.work_id WHERE cs.status = 'CANON' ORDER BY w.id"
-      : "SELECT w.id, w.output_type FROM works w ORDER BY w.id";
+      ? "SELECT w.id, w.output_type, w.output_payload FROM works w JOIN canon_status cs ON w.id = cs.work_id WHERE cs.status = 'CANON' ORDER BY w.id"
+      : "SELECT w.id, w.output_type, w.output_payload FROM works w ORDER BY w.id";
 
     const result = await db.execute(sql);
-    works = result.rows.map((r) => ({ id: r.id as string, output_type: r.output_type as string }));
+    works = result.rows.map((r) => ({ id: r.id as string, output_type: r.output_type as string, output_payload: r.output_payload as string }));
 
     if (missingOnly) {
       const existing = new Set(fs.readdirSync(PREVIEW_DIR));
@@ -256,7 +260,7 @@ async function main() {
   let failed = 0;
 
   for (const work of works) {
-    const result = await renderWork(browser, work.id, work.output_type);
+    const result = await renderWork(browser, work.id, work.output_type, work.output_payload);
     if (result.ok) {
       success++;
       console.log(`  ✓ ${work.id} (${work.output_type})`);

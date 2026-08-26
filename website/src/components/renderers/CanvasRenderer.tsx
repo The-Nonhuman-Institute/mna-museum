@@ -2,6 +2,13 @@
 
 import { useRef, useEffect, useState } from "react";
 
+import {
+  makeMask,
+  paintThroughMask,
+  readSurface,
+  resolveSurface,
+} from "@/lib/ingredient-surface";
+
 interface DrawOp {
   op: string;
   color?: string;
@@ -19,10 +26,66 @@ interface DrawOp {
   end?: number;
   content?: string;
   size?: number;
+  /** This shape is made OF another medium. See @/lib/ingredient-surface. */
+  surface?: { type?: string; payload?: unknown };
 }
 
 interface CanvasRendererProps {
   json: string;
+}
+
+/**
+ * One drawing operation, onto whichever context it is given.
+ *
+ * Lifted out of the render loop so the same code can draw a shape onto the
+ * visible canvas and onto a stencil. Drawing the mask any other way would mean
+ * a second description of every shape, and the two would drift.
+ */
+function drawOp(ctx: CanvasRenderingContext2D, op: DrawOp): void {
+  switch (op.op) {
+    case "bg":
+      // Handled before the loop
+      break;
+    case "fill":
+      ctx.fillStyle = op.color || "#fff";
+      break;
+    case "stroke":
+      ctx.strokeStyle = op.color || "#fff";
+      break;
+    case "rect":
+      ctx.fillRect(op.x || 0, op.y || 0, op.w || 100, op.h || 100);
+      break;
+    case "circle":
+      ctx.beginPath();
+      ctx.arc(op.x || 0, op.y || 0, op.r || 50, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case "line":
+      ctx.beginPath();
+      ctx.lineWidth = op.width || 1;
+      if (op.color) ctx.strokeStyle = op.color;
+      ctx.moveTo(op.x1 || 0, op.y1 || 0);
+      ctx.lineTo(op.x2 || 0, op.y2 || 0);
+      ctx.stroke();
+      break;
+    case "arc":
+      ctx.beginPath();
+      ctx.arc(
+        op.x || 0,
+        op.y || 0,
+        op.r || 50,
+        op.start || 0,
+        op.end || Math.PI * 2
+      );
+      ctx.stroke();
+      break;
+    case "text":
+      ctx.font = `${op.size || 16}px monospace`;
+      if (op.color) ctx.fillStyle = op.color;
+      ctx.textAlign = "center";
+      ctx.fillText(op.content || "", op.x || 400, op.y || 400);
+      break;
+  }
 }
 
 export default function CanvasRenderer({ json }: CanvasRendererProps) {
@@ -66,51 +129,35 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
     ctx.fillRect(0, 0, 800, 800);
 
     for (const op of ops) {
-      switch (op.op) {
-        case "bg":
-          // Already handled above
-          break;
-        case "fill":
-          ctx.fillStyle = op.color || "#fff";
-          break;
-        case "stroke":
-          ctx.strokeStyle = op.color || "#fff";
-          break;
-        case "rect":
-          ctx.fillRect(op.x || 0, op.y || 0, op.w || 100, op.h || 100);
-          break;
-        case "circle":
-          ctx.beginPath();
-          ctx.arc(op.x || 0, op.y || 0, op.r || 50, 0, Math.PI * 2);
-          ctx.fill();
-          break;
-        case "line":
-          ctx.beginPath();
-          ctx.lineWidth = op.width || 1;
-          if (op.color) ctx.strokeStyle = op.color;
-          ctx.moveTo(op.x1 || 0, op.y1 || 0);
-          ctx.lineTo(op.x2 || 0, op.y2 || 0);
-          ctx.stroke();
-          break;
-        case "arc":
-          ctx.beginPath();
-          ctx.arc(
-            op.x || 0,
-            op.y || 0,
-            op.r || 50,
-            op.start || 0,
-            op.end || Math.PI * 2
-          );
-          ctx.stroke();
-          break;
-        case "text":
-          ctx.font = `${op.size || 16}px monospace`;
-          if (op.color) ctx.fillStyle = op.color;
-          ctx.textAlign = "center";
-          ctx.fillText(op.content || "", op.x || 400, op.y || 400);
-          break;
-      }
+      drawOp(ctx, op);
     }
+
+    // ── Ingredients ──────────────────────────────────────────────────────
+    // A shape may declare `surface`, making it OUT of another medium rather
+    // than filling it with a flat colour. Applied after the flat render
+    // rather than instead of it: the ingredient's renderer has to mount and
+    // paint before there is anything to sample, and one textured rectangle
+    // should not hold back the rest of the drawing.
+    let disposed = false;
+    void (async () => {
+      for (const op of ops) {
+        const surface = readSurface(op);
+        if (!surface) continue;
+        const ingredient = await resolveSurface(surface, 512);
+        if (!ingredient || disposed) continue;
+        const mask = makeMask(canvas.width, canvas.height);
+        if (!mask.ctx) continue;
+        // The stencil wants the shape, not its colour.
+        mask.ctx.fillStyle = "#fff";
+        mask.ctx.strokeStyle = "#fff";
+        drawOp(mask.ctx, op);
+        paintThroughMask(ctx, mask.canvas, ingredient);
+      }
+    })();
+
+    return () => {
+      disposed = true;
+    };
   }, [json]);
 
   if (error) {

@@ -39,6 +39,30 @@ const DEFAULT_SETTLE_MS = 1500;
 const FINISHED_GRACE_MS = 700;
 
 /**
+ * Extra time for a work that consumes another medium as material.
+ *
+ * An ingredient is rendered by mounting its own renderer offscreen and reading
+ * what it paints, which the host then shows through its marks. That round trip
+ * costs seconds, and it starts only after the host has mounted — so a capture
+ * timed for the host alone photographs the work before its material arrives,
+ * and the shared image is the untextured version.
+ */
+const INGREDIENT_SETTLE_MS = 3500;
+
+/** Cheap structural test — the payload declares a surface somewhere. */
+export function declaresIngredient(payload: string | null | undefined): boolean {
+  return !!payload && /"surface"\s*:\s*\{/.test(payload);
+}
+
+/**
+ * Settle time for a specific work, accounting for any ingredient it declares.
+ * Prefer this over `settleMs` wherever the payload is at hand.
+ */
+export function settleMsForWork(outputType: string, payload?: string | null): number {
+  return settleMs(outputType) + (declaresIngredient(payload) ? INGREDIENT_SETTLE_MS : 0);
+}
+
+/**
  * How long to wait before a still capture represents the work. For a finite
  * draw this is the whole draw; for anything else it is time to settle.
  */

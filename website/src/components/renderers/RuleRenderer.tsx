@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FINITE_DRAW_MS } from "@/lib/render-timing";
+import {
+  makeMask,
+  paintThroughMask,
+  readSurface,
+  resolveSurface,
+} from "@/lib/ingredient-surface";
 
 /**
  * Generative rule systems: L-systems, cellular automata, and grammars.
@@ -43,6 +49,8 @@ interface RuleSpec {
   seed?: string;
   color?: string;
   background?: string;
+  /** The marks are made OF this medium. See @/lib/ingredient-surface. */
+  surface?: { type?: string; payload?: unknown };
 }
 
 function parse(json: string): RuleSpec | null {
@@ -228,6 +236,8 @@ export default function RuleRenderer({ json }: { json: string }) {
     // is the same on a 60Hz laptop and a 120Hz tablet.
     const DURATION = FINITE_DRAW_MS["rule-json"];
     let raf = 0;
+    let ingredient: HTMLCanvasElement | null = null;
+    let disposed = false;
     const started = performance.now();
 
     const frame = () => {
@@ -241,9 +251,27 @@ export default function RuleRenderer({ json }: { json: string }) {
       ctx.fillStyle = spec.background ?? "#0A0A0A";
       ctx.fillRect(0, 0, w, h);
 
+      const draw = (target: CanvasRenderingContext2D) => {
+        if (system === "cellular-automaton") drawAutomaton(target, spec, w, h, progress);
+        else drawLSystem(target, spec, w, h, progress);
+      };
+
       try {
-        if (system === "cellular-automaton") drawAutomaton(ctx, spec, w, h, progress);
-        else drawLSystem(ctx, spec, w, h, progress);
+        // A rule system may declare `surface`, making its cells or segments out
+        // of another medium. The rule is still the work — this is the material
+        // the rule is performed in. Masked rather than tinted, so the
+        // ingredient shows through the marks and nowhere else.
+        if (ingredient) {
+          const mask = makeMask(w, h);
+          if (mask.ctx) {
+            draw(mask.ctx);
+            paintThroughMask(ctx, mask.canvas, ingredient);
+          } else {
+            draw(ctx);
+          }
+        } else {
+          draw(ctx);
+        }
       } catch {
         setFailed(true);
         return;
@@ -252,7 +280,22 @@ export default function RuleRenderer({ json }: { json: string }) {
       if (progress < 1) raf = requestAnimationFrame(frame);
     };
     frame();
-    return () => { if (raf) cancelAnimationFrame(raf); };
+
+    // Resolved after the unfolding has begun, then redrawn. Holding the whole
+    // system back for one texture would make the work start late.
+    const surface = readSurface(spec);
+    if (surface) {
+      void resolveSurface(surface, 512).then((c) => {
+        if (disposed || !c) return;
+        ingredient = c;
+        frame();
+      });
+    }
+
+    return () => {
+      disposed = true;
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [spec, system, isText]);
 
   if (failed) {
