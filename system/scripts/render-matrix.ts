@@ -21,6 +21,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { execFileSync } from "child_process";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 
 import { FIXTURES, INGREDIENT_FIXTURES } from "../../website/tests/fixtures/media";
@@ -60,7 +61,19 @@ async function harness(browser: Browser): Promise<Page> {
   return page;
 }
 
-/** Draw a payload and report how much of the frame is not the background. */
+/**
+ * Draw a payload and report whether anything was actually painted.
+ *
+ * Measured by screenshotting the element, NOT by drawImage-ing the page's
+ * canvases into another canvas. That was the first approach and it reported
+ * scene-json as blank while the scene rendered perfectly: reading back from a
+ * WebGL canvas returns nothing unless the context was created with
+ * preserveDrawingBuffer, which three.js does not do by default. The metric was
+ * broken, not the renderer.
+ *
+ * A screenshot is what a visitor sees, which is the only thing worth asserting
+ * on, and it is how the preview generator has always worked.
+ */
 async function renderAndMeasure(page: Page, type: string, payload: string, waitMs: number) {
   await page.evaluate(
     (t, p) => (window as unknown as { __mnaRender: (t: string, p: string) => void }).__mnaRender(t, p),
@@ -68,65 +81,41 @@ async function renderAndMeasure(page: Page, type: string, payload: string, waitM
     payload,
   );
   await new Promise((r) => setTimeout(r, waitMs));
-  return page.evaluate(async () => {
-    const host = document.getElementById("harness-target");
-    if (!host) return { ok: false, colours: 0, reason: "no harness target" };
-    const canvases = Array.from(host.querySelectorAll("canvas")) as HTMLCanvasElement[];
-    const svgs = host.querySelectorAll("svg");
-    const iframes = host.querySelectorAll("iframe");
-    // An audio work paints a control, not an image; presence of the control is
-    // the render. Everything else must put marks on a surface.
-    const buttons = host.querySelectorAll("button");
 
-    const out = document.createElement("canvas");
-    out.width = 400;
-    out.height = 400;
-    const ctx = out.getContext("2d");
-    if (!ctx) return { ok: false, colours: 0, reason: "no 2d context" };
+  const target = await page.$("#harness-target");
+  if (!target) return { ok: false, reason: "no harness target" };
 
-    let drew = false;
-    for (const c of canvases) {
-      if (c.width > 1 && c.height > 1) {
-        try { ctx.drawImage(c, 0, 0, 400, 400); drew = true; } catch { /* tainted */ }
-      }
-    }
-    if (!drew && svgs.length > 0) {
-      const svg = svgs[0] as SVGElement;
-      const clone = svg.cloneNode(true) as SVGElement;
-      clone.setAttribute("width", "400");
-      clone.setAttribute("height", "400");
-      const src = new XMLSerializer().serializeToString(clone);
-      const img = new Image();
-      const ok = await new Promise<boolean>((res) => {
-        img.onload = () => res(true);
-        img.onerror = () => res(false);
-        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src);
-      });
-      if (ok) { ctx.drawImage(img, 0, 0, 400, 400); drew = true; }
-    }
+  // html-css renders in a sandboxed iframe. It is captured like everything
+  // else, because a screenshot sees through an iframe where a canvas cannot.
+  const shot = path.join(os.tmpdir(), `mna-matrix-${type.replace(/[^a-z0-9-]/gi, "")}-${Date.now()}.png`);
+  await target.screenshot({ path: shot as `${string}.png` });
 
-    if (!drew) {
-      // html-css renders in a sandboxed iframe that cannot be drawn to a
-      // canvas. Its presence and size is the strongest available evidence.
-      if (iframes.length > 0) {
-        const r = (iframes[0] as HTMLIFrameElement).getBoundingClientRect();
-        return { ok: r.width > 50 && r.height > 50, colours: -1, reason: `iframe ${Math.round(r.width)}x${Math.round(r.height)}` };
-      }
-      if (buttons.length > 0) return { ok: true, colours: -1, reason: "control rendered" };
-      const text = (host.textContent || "").trim();
-      if (text.length > 10) return { ok: true, colours: -1, reason: `text ${text.length} chars` };
-      return { ok: false, colours: 0, reason: "nothing painted" };
-    }
-
-    const data = ctx.getImageData(0, 0, 400, 400).data;
-    const seen = new Set<number>();
-    for (let i = 0; i < data.length; i += 4) {
-      seen.add((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]);
-      if (seen.size > 8) break;
-    }
-    return { ok: seen.size >= 2, colours: seen.size, reason: `${seen.size >= 8 ? "8+" : seen.size} colours` };
-  });
+  try {
+    const out = execFileSync("python3", ["-c", COUNT_COLOURS, shot], { encoding: "utf8" }).trim();
+    const colours = Number(out);
+    fs.unlinkSync(shot);
+    if (!Number.isFinite(colours)) return { ok: false, reason: "could not measure" };
+    // An audio work paints a control, not an image, and a text work paints
+    // glyphs — both clear this easily. A frame that never painted is one
+    // colour.
+    return { ok: colours >= 2, reason: `${colours >= 64 ? "64+" : colours} colours` };
+  } catch (e) {
+    try { fs.unlinkSync(shot); } catch { /* already gone */ }
+    return { ok: false, reason: `measure failed: ${e instanceof Error ? e.message.slice(0, 60) : String(e)}` };
+  }
 }
+
+const COUNT_COLOURS = `
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert("RGB")
+seen = set()
+for px in im.getdata():
+    seen.add(px)
+    if len(seen) >= 64:
+        break
+print(len(seen))
+`;
 
 async function main() {
   const media = OUTPUT_TYPE_IDS.filter((id) => !ONLY || ONLY.has(id));

@@ -30,6 +30,9 @@ dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const onlyArg = args.indexOf("--only") >= 0 ? args[args.indexOf("--only") + 1] : null;
+// The render/share matrix needs a browser, so it is opt-in: a local round stays
+// fast, and the scheduled round asks for it.
+const withMatrix = args.includes("--with-matrix");
 const ONLY = onlyArg ? new Set(onlyArg.split(",").map((s) => s.trim().toUpperCase())) : null;
 
 const SITE = process.env.MNA_SITE_ORIGIN || "https://www.mnamuseum.org";
@@ -464,6 +467,43 @@ async function checkE1(db: Client): Promise<void> {
     : { check: "E1", severity: "note", summary: `all ${routes.length} core routes serving` });
 }
 
+/* ─── E2/E3. Every medium still renders, and still shares. ──────────────── */
+
+/**
+ * Drives render-matrix.ts, which exercises one fixture per medium against the
+ * deployed site — including the ingredient path for every host, and the share
+ * path for every medium.
+ *
+ * This is the check that would have caught the typeface sharing as a card
+ * bearing its own ID, the audio playing silence, and every video going out as
+ * VP9. It uses fixtures rather than works, so a medium is proven before an
+ * Originator relies on it.
+ */
+async function checkE2E3(): Promise<void> {
+  if (!withMatrix) {
+    record({ check: "E2", severity: "note", summary: "render/share matrix skipped (pass --with-matrix)" });
+    return;
+  }
+  const outFile = path.join(REPO, "render-matrix.json");
+  try {
+    run("npx", ["tsx", "system/scripts/render-matrix.ts"]);
+    record({ check: "E2", severity: "note", summary: "every medium renders and shares as promised" });
+  } catch {
+    // A non-zero exit means at least one medium failed; the file names which.
+    let failed: string[] = [];
+    try {
+      const report = JSON.parse(fs.readFileSync(outFile, "utf8")) as {
+        results: { medium: string; check: string; ok: boolean; detail: string }[];
+      };
+      failed = report.results.filter((r) => !r.ok).map((r) => `${r.medium} ${r.check}: ${r.detail}`);
+    } catch { /* fall through to a bare report */ }
+    record({ check: "E2", severity: "escalate",
+      summary: failed.length ? `${failed.length} medium check(s) failed` : "the render/share matrix failed",
+      items: failed,
+      nextStep: "npx tsx system/scripts/render-matrix.ts" });
+  }
+}
+
 /* ─── the round ─────────────────────────────────────────────────────────── */
 
 async function main() {
@@ -505,6 +545,7 @@ async function main() {
   await attempt("D1", () => checkD1());
   await attempt("D2", () => checkD2());
   await attempt("E1", () => checkE1(db));
+  await attempt("E2", () => checkE2E3());
 
   await report();
 }

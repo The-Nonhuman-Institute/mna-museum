@@ -49,6 +49,7 @@ jobs:
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       OPS_ROUND_OUTPUT: ${{ github.workspace }}/ops-findings.json
+      RENDER_MATRIX_OUTPUT: ${{ github.workspace }}/render-matrix.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,7 +76,7 @@ jobs:
       - name: Run the round
         id: round
         run: |
-          npx tsx system/scripts/ops-round.ts ${{ inputs.dry_run && '--dry-run' || '' }} | tee round.log
+          npx tsx system/scripts/ops-round.ts --with-matrix ${{ inputs.dry_run && '--dry-run' || '' }} | tee round.log
           echo "escalations=$(python3 -c "import json;print(json.load(open('$OPS_ROUND_OUTPUT'))['escalations'])")" >> "$GITHUB_OUTPUT"
           echo "repaired=$(python3 -c "import json;print(json.load(open('$OPS_ROUND_OUTPUT'))['repaired'])")" >> "$GITHUB_OUTPUT"
 
@@ -112,5 +113,6 @@ payload was modified."
           name: ops-findings
           path: |
             ops-findings.json
+            render-matrix.json
             round.log
           retention-days: 30
