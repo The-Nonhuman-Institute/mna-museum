@@ -69,9 +69,9 @@ export async function produceWork(
 
   const priorWorks = db
     .prepare(
-      "SELECT id, output_payload FROM works WHERE originator_id = ? ORDER BY created_at DESC LIMIT 5"
+      "SELECT id, output_type, output_payload FROM works WHERE originator_id = ? ORDER BY created_at DESC LIMIT 5"
     )
-    .all(originatorId) as { id: string; output_payload: string }[];
+    .all(originatorId) as { id: string; output_type: string; output_payload: string }[];
 
   const workCount = db
     .prepare("SELECT COUNT(*) as n FROM works WHERE originator_id = ?")
@@ -110,14 +110,12 @@ export async function produceWork(
 
   if (priorWorks.length > 0) {
     choicePrompt += `Your recent work has been in these mediums: `;
-    const recentFormats = priorWorks.map(w => {
-      if (w.output_payload.trim().startsWith("<svg")) return "svg";
-      if (w.output_payload.trim().startsWith("<!DOCTYPE") || w.output_payload.trim().startsWith("<html")) return "html-css";
-      if (w.output_payload.includes('"voices"')) return "audio-json";
-      if (w.output_payload.includes('"objects"')) return "scene-json";
-      if (w.output_payload.trim().startsWith("[") && w.output_payload.includes('"op"')) return "canvas-json";
-      return "text/ascii";
-    });
+    // Read the recorded type rather than re-deriving it. This used to sniff the
+    // payload against six formats and answer "text/ascii" for anything else, so
+    // an Originator who had just made a typeface, a shader or a plotter path was
+    // told their recent work was text — misinforming the one decision this
+    // prompt exists to inform, and biasing it away from the newer media.
+    const recentFormats = priorWorks.map((w) => w.output_type || "text");
     choicePrompt += recentFormats.join(", ") + "\n";
     choicePrompt += `You may continue in a familiar medium or explore a new one. Your choice.\n`;
   } else {
