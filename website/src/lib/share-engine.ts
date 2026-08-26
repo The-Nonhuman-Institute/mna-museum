@@ -17,6 +17,7 @@ import { parseWorkColors, detectSvgBackground } from "./work-colors";
 import * as THREE from "three";
 import { OUTPUT_TYPES, OUTPUT_TYPE_IDS } from "./output-types";
 import { settleMsForWork } from "./render-timing";
+import { audioDuration, playableNotes } from "./audio-voices";
 import animatedWorkIds from "@/data/animated-works.json";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -533,25 +534,30 @@ export async function generateAudioFile(work: Work): Promise<File | null> {
       }
     } catch {}
   }
-  if (!data || !data.voices || !data.duration) return null;
+  if (!data || !data.voices) return null;
+
+  // Through the shared reader, which accepts a voice holding notes and a voice
+  // that IS a note. Iterating voice.notes directly THREW on MNA-OR-0002-W-0030
+  // — undefined is not iterable — so its share produced no file at all, not
+  // even a silent one.
+  const notes = playableNotes(data);
+  if (notes.length === 0) return null;
 
   // Render audio offline
   const sampleRate = 44100;
-  const length = Math.ceil(data.duration * sampleRate);
+  const length = Math.ceil(Math.max(1, audioDuration(data, notes)) * sampleRate);
   const offlineCtx = new OfflineAudioContext(1, length, sampleRate);
 
-  for (const voice of data.voices) {
-    for (const note of voice.notes) {
-      const osc = offlineCtx.createOscillator();
-      const gain = offlineCtx.createGain();
-      osc.type = voice.type;
-      osc.frequency.value = note.freq;
-      gain.gain.value = note.gain;
-      osc.connect(gain);
-      gain.connect(offlineCtx.destination);
-      osc.start(note.start);
-      osc.stop(note.start + note.duration);
-    }
+  for (const note of notes) {
+    const osc = offlineCtx.createOscillator();
+    const gain = offlineCtx.createGain();
+    osc.type = note.type;
+    osc.frequency.value = Math.max(20, Math.min(20000, note.freq));
+    gain.gain.value = Math.max(0, Math.min(1, note.gain));
+    osc.connect(gain);
+    gain.connect(offlineCtx.destination);
+    osc.start(note.start);
+    osc.stop(note.start + note.duration);
   }
 
   const buffer = await offlineCtx.startRendering();
