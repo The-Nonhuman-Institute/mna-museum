@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getWork } from "@/lib/collection";
+import { getWorkAuthoritative } from "@/lib/collection";
 import WorkDisplay from "@/components/WorkDisplay";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,11 @@ export default async function CaptureWorkPage({
 }: {
   params: { id: string };
 }) {
-  const work = await getWork(params.id);
+  // Authoritative, not the snapshot. This route exists to be photographed by
+  // the preview generator, so it must see a work the moment it is produced —
+  // reading the snapshot meant no preview could be made until the next daily
+  // export and deploy, which is why new works kept appearing as bare ID tiles.
+  const work = await getWorkAuthoritative(params.id);
   if (!work) notFound();
 
   return (

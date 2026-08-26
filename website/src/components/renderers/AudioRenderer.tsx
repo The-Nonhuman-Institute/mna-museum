@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 
+import { audioDuration, playableNotes } from "@/lib/audio-voices";
+
 interface Voice {
   type: "sine" | "square" | "sawtooth" | "triangle";
   notes: { freq: number; start: number; duration: number; gain: number }[];
@@ -110,24 +112,26 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
     masterGain.connect(ctx.destination);
     masterGainRef.current = masterGain;
 
-    for (const voice of data.voices) {
-      for (const note of voice.notes) {
-        // Clamp values to safe ranges
-        const freq = Math.max(20, Math.min(20000, note.freq || 440));
-        const noteGain = Math.max(0, Math.min(1, note.gain || 0.3));
-        const start = Math.max(0, note.start || 0);
-        const dur = Math.max(0.01, Math.min(600, note.duration || 1));
+    // Read through the shared reader, which accepts a voice holding notes and a
+    // voice that IS a note. MNA-OR-0002-W-0030 wrote seventy-five of the latter
+    // and this player found nothing to sound in any of them.
+    const notes = playableNotes(data);
+    for (const note of notes) {
+      // Clamp values to safe ranges
+      const freq = Math.max(20, Math.min(20000, note.freq || 440));
+      const noteGain = Math.max(0, Math.min(1, note.gain || 0.3));
+      const start = Math.max(0, note.start || 0);
+      const dur = Math.max(0.01, Math.min(600, note.duration || 1));
 
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = voice.type;
-        osc.frequency.value = freq;
-        gain.gain.value = noteGain;
-        osc.connect(gain);
-        gain.connect(masterGain);
-        osc.start(ctx.currentTime + start);
-        osc.stop(ctx.currentTime + start + dur);
-      }
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = note.type;
+      osc.frequency.value = freq;
+      gain.gain.value = noteGain;
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur);
     }
 
     setTimeout(() => {
@@ -135,7 +139,7 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
       try { ctx.close(); } catch {}
       ctxRef.current = null;
       masterGainRef.current = null;
-    }, data.duration * 1000 + 500);
+    }, audioDuration(data, notes) * 1000 + 500);
   };
 
   return (

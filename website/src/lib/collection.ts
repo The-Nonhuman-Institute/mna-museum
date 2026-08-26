@@ -3,7 +3,7 @@
  * single source of truth. No static JSON imports.
  */
 
-import { getDb } from "./registration-db";
+import { getDb, getWriteDb } from "./registration-db";
 
 export interface Evaluation {
   work_id: string;
@@ -192,7 +192,30 @@ export async function getCanonWorks(): Promise<Work[]> {
 }
 
 export async function getWork(id: string): Promise<Work | undefined> {
-  const db = getDb();
+  return getWorkFrom(getDb(), id);
+}
+
+/**
+ * A work read from the authoritative database rather than the snapshot.
+ *
+ * For callers whose correctness depends on the work existing NOW. The preview
+ * generator is the reason this exists: it captures /capture/work/{id}, which
+ * read the snapshot, so a preview could not be made until the work had been
+ * exported and deployed — a work produced after the daily export had no
+ * thumbnail for up to a day, and every new work showed as a bare ID tile until
+ * someone noticed. Reading authoritative removes the round trip entirely.
+ *
+ * Not for public browsing surfaces: those are snapshot-first on purpose, to
+ * keep read volume off the quota.
+ */
+export async function getWorkAuthoritative(id: string): Promise<Work | undefined> {
+  return getWorkFrom(getWriteDb(), id);
+}
+
+async function getWorkFrom(
+  db: ReturnType<typeof getDb>,
+  id: string,
+): Promise<Work | undefined> {
   const hasTitle = await hasTitleColumn();
   const result = await db.execute({
     sql: `${baseWorkQuery(hasTitle)} WHERE w.id = ?`,

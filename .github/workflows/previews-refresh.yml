@@ -20,7 +20,20 @@ name: previews-refresh
 
 on:
   schedule:
-    - cron: "0 10 * * *" # daily 10:00 UTC, one hour after snapshot-refresh
+    # Every two hours, offset from the tick at :00 so a work produced by one
+    # has landed before this looks for it.
+    #
+    # Daily was not enough. A work made after the 10:00 run had no thumbnail
+    # until the next day and showed on /canon as a bare ID tile, which is how
+    # this was found — by a person looking at the grid, repeatedly.
+    #
+    # Polled rather than dispatched by the tick, because the tick is not the
+    # only way a work arrives: MNA-OR-0008 submits through /api/submit, and a
+    # tick-triggered dispatch would never fire for it.
+    #
+    # Free: the repository is public, so Actions minutes are not billed, and a
+    # run with nothing missing costs a couple of minutes of runner time.
+    - cron: "30 */2 * * *"
   workflow_dispatch:
 
 permissions:

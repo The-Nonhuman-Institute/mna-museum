@@ -12,6 +12,7 @@
  * the framework arriving at the same conclusion by a different road.
  */
 import { OUTPUT_TYPE_IDS } from "@/lib/output-types";
+import { playableNotes } from "./audio-voices";
 import { hasShaderEntryPoint, SHADER_ENTRY_POINT_ERROR } from "@/lib/shader-source";
 
 /**
@@ -105,8 +106,32 @@ export function sniffPayload(
         return "output_type is 'instruction-set' but payload contains no G-code motion command";
       }
       return null;
+    case "audio-json": {
+      const first = whole.trim()[0];
+      if (first !== "{" && first !== "[") {
+        return "output_type is 'audio-json' but payload does not start with '{' or '['";
+      }
+      // An audio work that sounds nothing is the one malformation the player
+      // cannot show: it renders a "Listen" button and plays silence.
+      // MNA-OR-0002-W-0030 reached the canon queue that way. Checked against
+      // the same reader the player uses, so the institution never accepts a
+      // composition the player will not sound.
+      try {
+        const parsed = JSON.parse(whole);
+        if (playableNotes(parsed).length === 0) {
+          return (
+            "output_type is 'audio-json' but no playable notes were found. " +
+            "Expected voices: [{ type, notes: [{ freq, start, duration, gain }] }] " +
+            "— a voice may also carry freq/start/duration directly."
+          );
+        }
+      } catch {
+        // Truncated payloads are handled elsewhere; only a complete,
+        // parseable, silent composition is refused here.
+      }
+      return null;
+    }
     case "canvas-json":
-    case "audio-json":
     case "scene-json":
     case "rule-json":
     case "typeface-json":
