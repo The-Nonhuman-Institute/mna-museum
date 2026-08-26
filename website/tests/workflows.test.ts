@@ -66,6 +66,19 @@ describe("the workflows", () => {
     expect(wrong).toEqual([]);
   });
 
+  it("keeps the deploy path filter readable, because the round reads it", () => {
+    // ops-round's D1 decides whether the site is behind by finding the newest
+    // commit touching a deploy-relevant path, parsed out of this file. It
+    // compared against master's tip before, and reported the site as behind
+    // after every tooling commit — which in a live round would have dispatched
+    // a pointless deploy every three hours forever.
+    const src = readFileSync(path.join(DIR, "deploy-website.yml"), "utf8");
+    const block = src.slice(src.indexOf("paths:"), src.indexOf("workflow_dispatch:"));
+    const globs = [...block.matchAll(/^\s*-\s*"([^"]+)"/gm)].map((m) => m[1]);
+    expect(globs.length, "no quoted path globs — ops-round D1 cannot read this").toBeGreaterThan(0);
+    expect(globs).toContain("website/**");
+  });
+
   it("let any workflow that commits also push and deploy", () => {
     // A push made with GITHUB_TOKEN does not trigger other workflows, so a
     // workflow that commits must dispatch the deploy itself — and needs

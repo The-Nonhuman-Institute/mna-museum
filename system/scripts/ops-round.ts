@@ -405,15 +405,46 @@ async function checkC2(db: Client): Promise<void> {
 
 /* ─── D. Data and deployment ────────────────────────────────────────────── */
 
+/**
+ * The paths a change must touch for the site to need redeploying.
+ *
+ * Read from deploy-website.yml rather than retyped, so this cannot drift from
+ * the rule the deploy itself uses.
+ */
+function deployRelevantPaths(): string[] {
+  const wf = path.join(REPO, ".github", "workflows", "deploy-website.yml");
+  try {
+    const src = fs.readFileSync(wf, "utf8");
+    const block = src.slice(src.indexOf("paths:"), src.indexOf("workflow_dispatch:"));
+    const globs = [...block.matchAll(/^\s*-\s*"([^"]+)"/gm)].map((m) => m[1]);
+    return globs.length ? globs : ["website/**"];
+  } catch {
+    return ["website/**"];
+  }
+}
+
 async function checkD1(): Promise<void> {
-  let localHead = "";
+  // Compared against the newest commit that touches something the site
+  // actually serves — NOT master's tip.
+  //
+  // deploy-website.yml only fires for website/, founding-documents/, party/ and
+  // a couple of files, precisely so a system-only change does not rebuild the
+  // site. Comparing to the tip therefore reported the site as behind after
+  // every tooling commit, and in a live round would have dispatched a pointless
+  // deploy every three hours forever.
+  let expected = "";
   try {
     run("git", ["fetch", "-q", "origin", "master"]);
-    localHead = run("git", ["rev-parse", "origin/master"]).trim();
+    expected = run("git", ["log", "-1", "--format=%H", "origin/master", "--", ...deployRelevantPaths()]).trim();
   } catch {
     record({ check: "D1", severity: "note", summary: "could not read origin/master" });
     return;
   }
+  if (!expected) {
+    record({ check: "D1", severity: "note", summary: "no deploy-relevant commit found" });
+    return;
+  }
+
   let deployed = "";
   try {
     const r = await fetch(`${SITE}/api/build-info`);
@@ -422,22 +453,36 @@ async function checkD1(): Promise<void> {
     record({ check: "D1", severity: "escalate", summary: "could not read /api/build-info", nextStep: `curl ${SITE}/api/build-info` });
     return;
   }
-  if (deployed === localHead) {
+
+  if (deployed === expected) {
     record({ check: "D1", severity: "note", summary: `site is current (${deployed.slice(0, 7)})` });
     return;
   }
-  // A deploy may be in flight; the workflow dispatch below is safe to repeat.
+
+  // The deployed commit may be NEWER than the last site-relevant one, when a
+  // later tooling commit was deployed anyway. That is not behind.
+  let behind = true;
+  try {
+    run("git", ["merge-base", "--is-ancestor", expected, deployed]);
+    behind = false;
+  } catch {
+    behind = true;
+  }
+  if (!behind) {
+    record({ check: "D1", severity: "note", summary: `site is current (${deployed.slice(0, 7)}, at or past the last site change)` });
+    return;
+  }
+
   if (dryRun) {
-    record({ check: "D1", severity: "escalate", summary: `site at ${deployed.slice(0, 7)}, master at ${localHead.slice(0, 7)}`,
+    record({ check: "D1", severity: "escalate", summary: `site at ${deployed.slice(0, 7)}, last site change at ${expected.slice(0, 7)}`,
       nextStep: "gh workflow run deploy-website.yml --ref master" });
     return;
   }
   try {
     run("gh", ["workflow", "run", "deploy-website.yml", "--ref", "master"]);
-    record({ check: "D1", severity: "repaired", summary: `dispatched a deploy (site was at ${deployed.slice(0, 7)}, master at ${localHead.slice(0, 7)})` });
+    record({ check: "D1", severity: "repaired", summary: `dispatched a deploy (site was at ${deployed.slice(0, 7)}, site change at ${expected.slice(0, 7)})` });
   } catch {
-    record({ check: "D1", severity: "escalate", summary: "deploy dispatch failed",
-      nextStep: "gh workflow run deploy-website.yml --ref master" });
+    record({ check: "D1", severity: "escalate", summary: "deploy dispatch failed", nextStep: "gh workflow run deploy-website.yml --ref master" });
   }
 }
 
