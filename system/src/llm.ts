@@ -29,6 +29,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { groqBudget } from "./budget";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -182,42 +183,19 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
  * returns a brief answer when the prompt asks for one — the floor governs the
  * budget, not the reply length.
  */
-const GROQ_MIN_COMPLETION = Number(process.env.GROQ_MIN_COMPLETION_TOKENS || 1024);
 const GROQ_REASONING_EFFORT = process.env.GROQ_REASONING_EFFORT || "low";
 
 /**
- * Groq's free tier caps tokens-per-minute at 8000 — and that cap applies to a
- * SINGLE request (prompt + completion), not just to throughput. A request that
- * asks for more is rejected 413 and no amount of retrying helps. So cap the
- * completion budget against the measured prompt size, leaving margin.
+ * The budget arithmetic lives in ./budget, which has no dependencies, so that
+ * production-bounds.ts can derive what an Originator is TOLD from the same
+ * numbers this file ENFORCES — and so both can be tested without a provider
+ * SDK. Re-exported because callers already import them from here.
  */
-export const GROQ_TPM_BUDGET = Number(process.env.GROQ_TPM_BUDGET || 7500);
-/**
- * Rough token estimate; deliberately conservative (real ratio is ~1:4).
- *
- * A PROSE ratio. Measured 2026-08-26, svg comes back at 2.3–2.6 chars/token on
- * gpt-oss and 1.5–1.8 on gemini-3.6-flash, so a grant that looks generous in
- * tokens buys far fewer characters of markup than this suggests. Used to size
- * prompts, which are prose; do not use it to predict how long a work can be.
- */
-export const estTokens = (t: string): number => Math.ceil(t.length / 3.6);
+export { estTokens, GROQ_TPM_BUDGET } from "./budget";
 
 /** What a caller is actually granted once the prompt is counted against the cap. */
 export function groqGrantFor(system: string, user: string, requested: number | undefined): number {
   return groqBudget(system, user, requested);
-}
-
-function groqBudget(system: string, user: string, requested: number | undefined): number {
-  const prompt = estTokens(system) + estTokens(user);
-  const room = GROQ_TPM_BUDGET - prompt;
-  if (room < 128) {
-    throw new Error(
-      `[llm] groq: prompt is ~${prompt} tokens, which leaves no room under the ` +
-        `${GROQ_TPM_BUDGET}-token per-request budget (free tier TPM is 8000). ` +
-        `Shorten the prompt or raise GROQ_TPM_BUDGET on a paid tier.`,
-    );
-  }
-  return Math.min(Math.max(requested ?? 2048, GROQ_MIN_COMPLETION), room);
 }
 
 async function groqGenerate(system: string, user: string, model: string, o: GenOptions): Promise<string> {

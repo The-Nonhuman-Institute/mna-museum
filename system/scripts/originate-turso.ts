@@ -36,6 +36,7 @@
 import { createClient } from "@libsql/client";
 import { mediumMenu, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
 import { getFormatPrompt } from "../src/formats";
+import { boundNotice, charBudgetFor, tokensFor } from "../src/production-bounds";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -554,8 +555,15 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
     formatGuidance: getFormatPrompt(chosenFormat as never),
   });
 
+  // The room the work actually has, told to the Originator that has to fit in
+  // it. Computed after the prompt exists, because how much context this round
+  // carries is what decides how much room is left.
+  const charBudget = charBudgetFor(chosenFormat, systemPrompt, productionPrompt);
+  const boundedPrompt = productionPrompt + boundNotice(chosenFormat, charBudget);
+
   if (dryRun) {
-    console.log(`  [${agent.registry_id}] (dry-run) production prompt: ${productionPrompt.length} chars`);
+    console.log(`  [${agent.registry_id}] (dry-run) production prompt: ${boundedPrompt.length} chars`);
+    console.log(`  [${agent.registry_id}] (dry-run) room stated: ~${charBudget.toLocaleString("en-US")} chars of ${chosenFormat}`);
     const dumpTo = process.env.MNA_DUMP_PROMPT;
     if (dumpTo) {
       // Measuring a reconstruction of this prompt measures the reconstruction.
@@ -564,7 +572,7 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
         agent: agent.registry_id,
         format: chosenFormat,
         system: systemPrompt,
-        user: productionPrompt,
+        user: boundedPrompt,
       }, null, 2));
       console.log(`  [${agent.registry_id}] (dry-run) prompt written to ${dumpTo}`);
     }
@@ -573,9 +581,10 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
 
   // Prose is short; markup and structured data are not. A five-medium list here
   // gave every newer medium a quarter of svg's budget, which truncates payloads.
-  const isProse = chosenFormat === "text" || chosenFormat === "ascii";
-  const tokens = isProse ? 2048 : 8192;
-  let payload = await generate(systemPrompt, productionPrompt, { temperature: 0.9, max_tokens: tokens });
+  // The ask and the bound the Originator is told both come from
+  // production-bounds, so the room promised is the room granted.
+  const tokens = tokensFor(chosenFormat);
+  let payload = await generate(systemPrompt, boundedPrompt, { temperature: 0.9, max_tokens: tokens });
   payload = payload
     .replace(/^```(?:svg|html|json|css|javascript)?\s*\n?/gm, "")
     .replace(/\n?```\s*$/gm, "")
