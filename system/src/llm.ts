@@ -191,9 +191,21 @@ const GROQ_REASONING_EFFORT = process.env.GROQ_REASONING_EFFORT || "low";
  * asks for more is rejected 413 and no amount of retrying helps. So cap the
  * completion budget against the measured prompt size, leaving margin.
  */
-const GROQ_TPM_BUDGET = Number(process.env.GROQ_TPM_BUDGET || 7500);
-/** Rough token estimate; deliberately conservative (real ratio is ~1:4). */
-const estTokens = (t: string): number => Math.ceil(t.length / 3.6);
+export const GROQ_TPM_BUDGET = Number(process.env.GROQ_TPM_BUDGET || 7500);
+/**
+ * Rough token estimate; deliberately conservative (real ratio is ~1:4).
+ *
+ * A PROSE ratio. Measured 2026-08-26, svg comes back at 2.3–2.6 chars/token on
+ * gpt-oss and 1.5–1.8 on gemini-3.6-flash, so a grant that looks generous in
+ * tokens buys far fewer characters of markup than this suggests. Used to size
+ * prompts, which are prose; do not use it to predict how long a work can be.
+ */
+export const estTokens = (t: string): number => Math.ceil(t.length / 3.6);
+
+/** What a caller is actually granted once the prompt is counted against the cap. */
+export function groqGrantFor(system: string, user: string, requested: number | undefined): number {
+  return groqBudget(system, user, requested);
+}
 
 function groqBudget(system: string, user: string, requested: number | undefined): number {
   const prompt = estTokens(system) + estTokens(user);

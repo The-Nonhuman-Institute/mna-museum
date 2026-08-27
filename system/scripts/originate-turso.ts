@@ -26,12 +26,18 @@
  *   npx tsx system/scripts/originate-turso.ts --max 1           # cap per-originator count
  *   npx tsx system/scripts/originate-turso.ts --no-visitation   # disable visitation (control / pre-visitation baseline)
  *   npx tsx system/scripts/originate-turso.ts --dry-run         # compose prompts only, no API calls, no writes
+ *   npx tsx system/scripts/originate-turso.ts --dry-run --format svg   # compose the prompt for one medium
+ *
+ * MNA_DUMP_PROMPT=<file> writes the composed system+user prompt to disk under
+ * --dry-run, so the exact prompt production uses can be measured against a
+ * provider's budget rather than an approximation of it.
  */
 
 import { createClient } from "@libsql/client";
 import { mediumMenu, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
 import { getFormatPrompt } from "../src/formats";
 import dotenv from "dotenv";
+import fs from "fs";
 import path from "path";
 import { generate } from "../src/claude";
 
@@ -62,6 +68,17 @@ const maxPerOriginator = maxIdx >= 0 ? parseInt(args[maxIdx + 1], 10) : null;
 const statementIdx = args.indexOf("--statement");
 const originatorStatement =
   statementIdx >= 0 ? (args[statementIdx + 1] ?? "").trim() : "";
+
+/**
+ * Compose the prompt for a named medium instead of the dry-run default.
+ *
+ * Honoured ONLY under --dry-run, and deliberately so: which medium a work is
+ * made in is the Originator's decision (it chooses, at originateFor). A flag
+ * that could override that choice on a real run would make a person a party to
+ * the work. This one cannot reach a run that writes anything.
+ */
+const formatIdx = args.indexOf("--format");
+const forcedFormat = formatIdx >= 0 ? args[formatIdx + 1] : null;
 
 const includeNetwork = args.includes("--include-network");
 const VISIT_COUNT = 4;
@@ -519,6 +536,9 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
       valid.find((f) => choiceLine.includes(f)) ||
       "text";
     console.log(`  [${agent.registry_id}] chose medium: ${chosenFormat}`);
+  } else if (forcedFormat && ([...OUTPUT_TYPE_IDS] as string[]).includes(forcedFormat)) {
+    chosenFormat = forcedFormat;
+    console.log(`  [${agent.registry_id}] (dry-run) composing for medium: ${chosenFormat}`);
   } else {
     console.log(`  [${agent.registry_id}] (dry-run) would choose medium`);
   }
@@ -536,6 +556,18 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
 
   if (dryRun) {
     console.log(`  [${agent.registry_id}] (dry-run) production prompt: ${productionPrompt.length} chars`);
+    const dumpTo = process.env.MNA_DUMP_PROMPT;
+    if (dumpTo) {
+      // Measuring a reconstruction of this prompt measures the reconstruction.
+      // The budget question is about the real one, system prompt included.
+      fs.writeFileSync(dumpTo, JSON.stringify({
+        agent: agent.registry_id,
+        format: chosenFormat,
+        system: systemPrompt,
+        user: productionPrompt,
+      }, null, 2));
+      console.log(`  [${agent.registry_id}] (dry-run) prompt written to ${dumpTo}`);
+    }
     return { workId: null, aborted: "dry-run" };
   }
 
