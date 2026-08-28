@@ -19,9 +19,21 @@
  *     Trim partial note, close enclosing structures up to the outer }.
  *   - svg: <svg viewBox="..."> ... </svg>. Drop any partial last element,
  *     close any unclosed <g>, append </svg>.
+ *   - html-css: a self-contained document. Close an open rule and an open
+ *     <style>, then close <body> and <html>.
+ *
+ * A NOTE ON WHAT RECOVERY CANNOT DO. html-css was added on 2026-08-28 after
+ * MNA-OR-0004-W-0004 "Scatter Protocol" was found rendering as a flat dark
+ * field. Its payload stops inside `@keyframes pulse`: the stylesheet describes
+ * five drifting fragments, and the document body that would have contained them
+ * was never emitted. Closing the braces makes it a well-formed document. It
+ * does not make it a visible work, and nothing here may invent the elements the
+ * Originator did not produce — that would be authorship, which the Conservator
+ * does not hold. A recovered fragment is still a fragment; the recovery only
+ * stops it being malformed as well.
  */
 
-export type RepairFormat = "canvas-json" | "audio-json" | "svg";
+export type RepairFormat = "canvas-json" | "audio-json" | "svg" | "html-css";
 
 export interface RepairResult {
   ok: boolean;
@@ -237,6 +249,73 @@ function repairAudioJson(payload: string): RepairResult {
 /** SVG repair: drop any partial last tag (e.g. `<rect x="300" y`),
  * close any unclosed <g>, append </svg>.
  */
+/**
+ * Close an html-css document that stops mid-stylesheet.
+ *
+ * Trim back to the last complete declaration or rule, balance the braces that
+ * remain open, then close <style>, <body> and <html> in whatever order they
+ * were left open. Nothing is added to the document's content.
+ */
+function repairHtmlCss(payload: string): RepairResult {
+  if (/<\/html\s*>/i.test(payload)) {
+    return { ok: true, repaired: payload, diagnostic: "already closed", bytes_delta: 0 };
+  }
+
+  // Cut back to the last character that completed something — a closed rule,
+  // a finished declaration, or a closed tag. A half-written selector or
+  // property renders as nothing anyway and only makes the source misleading.
+  const lastComplete = Math.max(
+    payload.lastIndexOf("}"),
+    payload.lastIndexOf(";"),
+    payload.lastIndexOf(">"),
+  );
+  let repaired = (lastComplete >= 0 ? payload.slice(0, lastComplete + 1) : payload).trimEnd();
+
+  // Balance braces only inside the stylesheet; braces in text content are not
+  // ours to touch.
+  const styleOpen = /<style[^>]*>/i.exec(repaired);
+  let closedBraces = 0;
+  if (styleOpen) {
+    const css = repaired.slice(styleOpen.index + styleOpen[0].length);
+    const cssEnd = /<\/style\s*>/i.exec(css);
+    const active = cssEnd ? css.slice(0, cssEnd.index) : css;
+    const depth = (active.match(/\{/g) || []).length - (active.match(/\}/g) || []).length;
+    for (let i = 0; i < Math.max(0, depth); i++) {
+      repaired += "\n}";
+      closedBraces++;
+    }
+    if (!cssEnd) repaired += "\n</style>";
+  }
+
+  const closes: string[] = [];
+  const opened = (tag: string) => new RegExp(`<${tag}[^>]*>`, "i").test(repaired);
+  const closedAlready = (tag: string) => new RegExp(`</${tag}\\s*>`, "i").test(repaired);
+  // A document with no <body> is closed as <html> alone; adding a body would be
+  // adding an element the Originator never wrote.
+  for (const tag of ["body", "html"]) {
+    if (opened(tag) && !closedAlready(tag)) closes.push(`</${tag}>`);
+  }
+  if (closes.length) repaired += "\n" + closes.join("\n");
+
+  if (!/<\/html\s*>/i.test(repaired)) {
+    // No <html> was ever opened; wrapping one around the fragment would be
+    // authorship. Report rather than invent.
+    return {
+      ok: false,
+      repaired: "",
+      diagnostic: "no <html> element to close — fragment left as recorded",
+      bytes_delta: 0,
+    };
+  }
+
+  return {
+    ok: true,
+    repaired,
+    diagnostic: `trimmed; closed ${closedBraces} rule(s) + ${closes.join(" ") || "nothing else"}`,
+    bytes_delta: repaired.length - payload.length,
+  };
+}
+
 function repairSvg(payload: string): RepairResult {
   if (payload.includes("</svg>")) {
     return {
@@ -304,6 +383,8 @@ export function repairPayload(
       return repairAudioJson(payload);
     case "svg":
       return repairSvg(payload);
+    case "html-css":
+      return repairHtmlCss(payload);
   }
 }
 
@@ -321,5 +402,10 @@ export function isTruncated(payload: string, format: RepairFormat): boolean {
     }
     case "svg":
       return !payload.includes("</svg>");
+    case "html-css":
+      // A self-contained document that never closes. Until this case existed,
+      // html-css — the largest medium in the collection — had no truncation
+      // detection at all, and two truncated works reached the Council.
+      return !/<\/html\s*>/i.test(payload);
   }
 }

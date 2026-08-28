@@ -64,7 +64,7 @@ interface WorkRow {
   const all = await db.execute({
     sql: `SELECT id, output_type, output_payload, safe_render_payload
             FROM works
-           WHERE output_type IN ('canvas-json', 'audio-json', 'svg')`,
+           WHERE output_type IN ('canvas-json', 'audio-json', 'svg', 'html-css')`,
   });
 
   const targets: WorkRow[] = [];
