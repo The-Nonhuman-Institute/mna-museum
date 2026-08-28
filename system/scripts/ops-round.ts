@@ -128,6 +128,25 @@ async function statusWithRetry(url: string): Promise<number> {
   return head(url);
 }
 
+/** Canon verdict counts as the bundled snapshot has them. */
+function snapshotVerdicts(): Record<string, number> | null {
+  const file = path.join(REPO, "website", "data", "snapshot.db");
+  if (!fs.existsSync(file)) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Database = require("better-sqlite3");
+    const db = new Database(file, { readonly: true, fileMustExist: true });
+    const rows = db.prepare("SELECT status, COUNT(*) AS n FROM canon_status GROUP BY status").all() as
+      { status: string; n: number }[];
+    db.close();
+    const out: Record<string, number> = {};
+    for (const r of rows) out[r.status] = Number(r.n);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * How current the bundled snapshot actually is, read from its CONTENTS.
  *
@@ -638,7 +657,7 @@ async function checkD1(): Promise<void> {
   }
 }
 
-async function checkD2(): Promise<void> {
+async function checkD2(db: Client, works: WorkRow[]): Promise<void> {
   const newest = snapshotNewestWork();
   if (newest === null) {
     record({ check: "D2", severity: "escalate", summary: "no readable bundled snapshot",
@@ -646,21 +665,53 @@ async function checkD2(): Promise<void> {
     return;
   }
   const ageHours = minutesSince(newest) / 60;
-  // Public browsing surfaces are snapshot-first on purpose, to keep read volume
-  // off the quota. Staleness is expected and bounded; only exceeding the bound
-  // is a fault.
-  if (ageHours < 24) {
-    record({ check: "D2", severity: "note", summary: `snapshot holds work up to ${ageHours.toFixed(1)}h old` });
+
+  // Staleness is a question about CONTENTS, not about the clock.
+  //
+  // This used to allow 24 hours and say nothing else, so a work canonised just
+  // after the daily 09:00 refresh stayed invisible on the public site for
+  // nearly a day while every round in between reported "snapshot holds work up
+  // to Nh old" as a cheerful note. The steward noticed before the check did.
+  //
+  // Two ways the snapshot can be behind, and neither is a duration:
+  const missingWorks = works.filter((w) => w.created_at > newest).map((w) => w.id);
+
+  // A verdict arrives hours after the work it belongs to, and does not move
+  // created_at — a work can be present in the snapshot and still shown as
+  // SUBMITTED there long after the Council decided. Counting verdicts catches
+  // what a timestamp comparison cannot.
+  const snapVerdicts = snapshotVerdicts();
+  let verdictDrift = "";
+  if (snapVerdicts) {
+    const live = await db.execute("SELECT status, COUNT(*) AS n FROM canon_status GROUP BY status");
+    for (const row of live.rows as unknown as { status: string; n: number }[]) {
+      const there = snapVerdicts[row.status] ?? 0;
+      if (Number(row.n) !== there) verdictDrift += `${row.status} ${there}\u2192${Number(row.n)} `;
+    }
+  }
+
+  const behind = missingWorks.length > 0 || verdictDrift !== "" || ageHours >= 24;
+  if (!behind) {
+    record({ check: "D2", severity: "note", summary: `snapshot is current (newest work ${ageHours.toFixed(1)}h old)` });
     return;
   }
+
+  const why = [
+    missingWorks.length ? `${missingWorks.length} work(s) not in it` : "",
+    verdictDrift ? `verdicts moved: ${verdictDrift.trim()}` : "",
+    ageHours >= 24 ? `${ageHours.toFixed(1)}h old` : "",
+  ].filter(Boolean).join("; ");
+
   if (dryRun) {
-    record({ check: "D2", severity: "escalate", summary: `snapshot is ${ageHours.toFixed(1)}h behind`,
+    record({ check: "D2", severity: "escalate", summary: `snapshot is behind — ${why}`,
+      items: missingWorks.slice(0, 10),
       nextStep: "gh workflow run snapshot-refresh.yml" });
     return;
   }
   try {
     run("gh", ["workflow", "run", "snapshot-refresh.yml"]);
-    record({ check: "D2", severity: "repaired", summary: `dispatched a snapshot refresh (was ${ageHours.toFixed(1)}h behind)` });
+    record({ check: "D2", severity: "repaired", summary: `dispatched a snapshot refresh — ${why}`,
+      items: missingWorks.slice(0, 10) });
   } catch {
     record({ check: "D2", severity: "escalate", summary: "snapshot refresh dispatch failed", nextStep: "gh workflow run snapshot-refresh.yml" });
   }
@@ -773,7 +824,7 @@ async function main() {
   await attempt("C2", () => checkC2(db));
   await attempt("C3", () => checkC3());
   await attempt("D1", () => checkD1());
-  await attempt("D2", () => checkD2());
+  await attempt("D2", () => checkD2(db, works));
   await attempt("E1", () => checkE1(db));
   await attempt("E2", () => checkE2E3());
 

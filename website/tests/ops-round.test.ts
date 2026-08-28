@@ -142,6 +142,20 @@ describe("a repair that changes a work re-photographs it", () => {
   });
 });
 
+describe("the snapshot is judged by contents, not by the clock", () => {
+  it("D2 compares what the snapshot holds against what the institution holds", () => {
+    // It used to allow 24 hours and ask nothing else, so a work canonised just
+    // after the daily 09:00 refresh stayed invisible on the public site for
+    // nearly a day while every round in between called it fine. A verdict also
+    // arrives hours after its work and does not move created_at, so comparing
+    // timestamps alone cannot see a work whose status changed underneath it.
+    const d2 = round.slice(round.indexOf("async function checkD2"), round.indexOf("async function checkE1"));
+    expect(d2).toMatch(/created_at > newest/);
+    expect(d2).toMatch(/snapshotVerdicts\(\)/);
+    expect(d2).toMatch(/canon_status GROUP BY status/);
+  });
+});
+
 describe("the notifier's address is written once", () => {
   it("the round verifies the domain ops-notify actually sends from", () => {
     const notify = readFileSync(path.join(ROOT, "system/scripts/ops-notify.ts"), "utf8");

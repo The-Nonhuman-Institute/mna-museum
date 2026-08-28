@@ -297,12 +297,24 @@ cannot send, so a finding about the channel survives the channel.
 
 #### D2 — Stale snapshot
 
-**Detect.** The bundled snapshot older than **24 hours**, or missing works that
-exist authoritatively.
+**Detect.** Staleness is a question about **contents**, not about the clock. The
+snapshot is behind when any of these is true:
+- the institution holds works created after the snapshot's newest work;
+- the canon verdict counts differ between the two;
+- the snapshot's newest work is over **24 hours** old (a backstop, not the test).
 
-**Edge cases.** Public browsing surfaces are snapshot-first *on purpose*, to keep
-read volume off the quota. Staleness is expected and bounded; only exceeding the
-bound is a fault.
+**Edge cases.**
+- *Public browsing surfaces are snapshot-first on purpose*, to keep read volume
+  off the quota. Some staleness is expected; being behind is not the same as
+  being old.
+- *A duration is not a measure of completeness.* The check once allowed 24 hours
+  and asked nothing else, so a work canonised just after the daily 09:00 refresh
+  stayed invisible on the public site for nearly a day while every round in
+  between reported it as fine. The steward noticed before the check did.
+- *A verdict moves without its work moving.* A Council decision lands hours after
+  the work it concerns and does not change `created_at`, so a work can be present
+  in the snapshot and still shown there as SUBMITTED long after it was decided.
+  Comparing timestamps cannot see this; comparing verdict counts can.
 
 **Repair.** Dispatch `snapshot-refresh.yml`.
 
