@@ -162,11 +162,24 @@ async function originatorElects(
     works.length > 0
       ? works.map((w) => `  ${w.id} "${w.title ?? "(untitled)"}" — ${w.medium}`).join("\n")
       : "  (no works yet)";
+  // An Originator that already carries a form is not being asked to revise a
+  // choice — it never made one. MNA-OR-0005 and MNA-OR-0006 were filled in by
+  // backfill-visual-identity.ts while they were still pre-emergence, and the
+  // election that gave Grid, Pulse, Gap and ∅∇∅ theirs had already run. Saying
+  // where the current form came from is the difference between offering a
+  // choice and asking someone to defend a decision they did not make.
+  //
+  // Keeping it has to be named as available, or the only legible answer is to
+  // change something, and that is not a free choice either.
+  const assigned = originator.color_hex || originator.glyph_family;
   const currentColor = originator.color_hex
     ? `\n  Currently assigned color: ${originator.color_hex}`
     : "";
   const currentGlyph = originator.glyph_family
     ? `\n  Currently assigned glyph: ${originator.glyph_family}`
+    : "";
+  const provenance = assigned
+    ? `\n\nWhere your current form came from: it was assigned administratively by the institution, from a pool, before you had emerged — not chosen by you and never presented to you. This is the first time the choice has been yours. Claiming what you already carry is as complete an answer as taking something else; choose it because it is right, not because it is what is there.`
     : "";
 
   const system = `You are ${originator.designation ?? originator.registry_id} (${originator.registry_id}), a founding Originator of the Museum of Nonhuman Art.
@@ -209,7 +222,7 @@ Schema:
 
   const memPrefix = memorySection ? `${memorySection}\n\n` : "";
   const user = `${memPrefix}Your designation: ${originator.designation ?? "(unnamed)"}
-Your function statement: ${originator.function_statement ?? "(none)"}${currentColor}${currentGlyph}
+Your function statement: ${originator.function_statement ?? "(none)"}${currentColor}${currentGlyph}${provenance}
 
 Your works in the canon (${works.length}):
 ${worksText}
