@@ -205,22 +205,55 @@ async function checkA1(db: Client, works: WorkRow[]): Promise<string[]> {
  */
 async function checkA2(works: WorkRow[]): Promise<void> {
   const suspicious: string[] = [];
-  for (const w of works) {
-    const p = path.join(PREVIEW_DIR, `${w.id}.png`);
-    if (!fs.existsSync(p)) continue;
-    // A blank PNG of a flat colour compresses to almost nothing. This is a
-    // cheap pre-filter; anything it flags is confirmed by colour count.
-    if (fs.statSync(p).size > 12_000) continue;
-    let colours: number;
-    try {
-      colours = Number(
-        run("python3", ["-c",
-          `from PIL import Image;import sys;print(len(set(Image.open(sys.argv[1]).convert('RGB').getdata())))`,
-          p]).trim(),
-      );
-    } catch {
-      continue; // Pillow unavailable — not a reason to fail the round
-    }
+
+  // Every preview is counted, with no size pre-filter.
+  //
+  // There used to be one — "a blank PNG of a flat colour compresses to almost
+  // nothing", skip anything over 12 KB — and it is why MNA-OR-0001-W-0027 sat
+  // on /archive as a black rectangle. Captures are 2000×2000 at
+  // deviceScaleFactor 2, and at that size even a PNG of ONE colour weighs
+  // 16 KB. The check skipped the only perfectly blank preview in the
+  // collection, and would have flagged it in an instant had it looked: one
+  // colour, covering 100% of the frame.
+  //
+  // The filter existed to avoid a Python process per work. Counting them in a
+  // single batched call is both faster than that and free of a threshold that
+  // has to be guessed.
+  const present = works
+    .map((w) => ({ w, p: path.join(PREVIEW_DIR, `${w.id}.png`) }))
+    .filter(({ p }) => fs.existsSync(p));
+  if (present.length === 0) {
+    record({ check: "A2", severity: "note", summary: "no previews to inspect" });
+    return;
+  }
+
+  let counts = new Map<string, number>();
+  try {
+    const out = run("python3", [
+      "-c",
+      `import sys
+from PIL import Image
+for p in sys.argv[1:]:
+    try:
+        print(p + "\\t" + str(len(set(Image.open(p).convert("RGB").getdata()))))
+    except Exception:
+        print(p + "\\t-1")`,
+      ...present.map(({ p }) => p),
+    ]);
+    counts = new Map(
+      out.trim().split("\n").map((line) => {
+        const [p, n] = line.split("\t");
+        return [p, Number(n)] as [string, number];
+      }),
+    );
+  } catch {
+    record({ check: "A2", severity: "note", summary: "blank-preview check skipped (Pillow unavailable)" });
+    return;
+  }
+
+  for (const { w, p } of present) {
+    const colours = counts.get(p);
+    if (colours === undefined || colours < 0) continue;
     if (colours < 3) suspicious.push(`${w.id} (${w.output_type}, ${colours} colour${colours === 1 ? "" : "s"})`);
   }
 
@@ -254,7 +287,50 @@ async function checkA3(): Promise<void> {
   const nRep = rep ? Number(rep[1]) : 0;
   const nFail = failed ? Number(failed[1]) : 0;
   if (nRep > 0) {
-    record({ check: "A3", severity: "repaired", summary: `Conservator recovered ${nRep} truncated payload(s); previews need regenerating` });
+    // A repaired payload renders differently, so the preview taken before the
+    // repair is a photograph of the break. This used to read "previews need
+    // regenerating" — an instruction written into a summary string, which
+    // nothing executed. MNA-OR-0001-W-0027 was captured at 20:35 and repaired
+    // at 21:16 on 2026-08-26, and showed a black rectangle on /archive until a
+    // person noticed. A follow-up that matters belongs in code, not in prose.
+    // The Conservator prints "{id} [{format}] ✓ {diagnostic}" per work, and ✗
+    // for one it could not recover. Only the ticked ones are worth recapturing.
+    const ids = [...new Set(
+      [...w.matchAll(/^(MNA-OR-\d{4}-W-\d{4}) \[[^\]]+\] ✓/gm)].map((x) => x[1]),
+    )];
+    const regenerated: string[] = [];
+    const stillBroken: string[] = [];
+
+    // If the parse and the count disagree, say so rather than regenerating
+    // nothing quietly. A follow-up that silently matches zero works is the same
+    // failure as one that was never written.
+    if (ids.length !== nRep) {
+      record({ check: "A3", severity: "escalate",
+        summary: `Conservator reported ${nRep} repair(s) but ${ids.length} could be identified for recapture`,
+        nextStep: "npx tsx system/scripts/generate-work-previews.ts --missing" });
+    }
+
+    for (const id of ids) {
+      const p = path.join(PREVIEW_DIR, `${id}.png`);
+      // generate-work-previews reports failures in its summary and still exits
+      // 0, so the exit code proves nothing. Compare the file itself.
+      const before = fs.existsSync(p) ? fs.statSync(p).size + ":" + fs.readFileSync(p).length : "";
+      try {
+        run("npx", ["tsx", "system/scripts/generate-work-previews.ts", "--work", id]);
+      } catch { /* fall through to the file check, which is the real answer */ }
+      const after = fs.existsSync(p) ? fs.statSync(p).size + ":" + fs.readFileSync(p).length : "";
+      if (after && after !== before) regenerated.push(id);
+      else stillBroken.push(id);
+    }
+    record({ check: "A3", severity: "repaired",
+      summary: `Conservator recovered ${nRep} truncated payload(s); regenerated ${regenerated.length} preview(s)`,
+      items: regenerated });
+    if (stillBroken.length) {
+      record({ check: "A3", severity: "escalate",
+        summary: `${stillBroken.length} preview(s) could not be regenerated after repair`,
+        items: stillBroken,
+        nextStep: `npx tsx system/scripts/generate-work-previews.ts --work ${stillBroken[0]}` });
+    }
   }
   if (nFail > 0) {
     record({ check: "A3", severity: "escalate", summary: `${nFail} payload(s) could not be safely recovered`,

@@ -120,6 +120,28 @@ describe("the operations round matches MNA-OPS-001 §V", () => {
   });
 });
 
+describe("a repair that changes a work re-photographs it", () => {
+  it("A3 regenerates previews in code, not in a sentence", () => {
+    // It used to record "previews need regenerating" and do nothing.
+    // MNA-OR-0001-W-0027 was captured at 20:35 and repaired at 21:16 on
+    // 2026-08-26, and sat on /archive as a black rectangle until a person
+    // noticed. An instruction in a summary string is not a mechanism.
+    const a3 = round.slice(round.indexOf("async function checkA3"), round.indexOf("async function checkA5"));
+    expect(a3).toMatch(/generate-work-previews/);
+    expect(a3).not.toMatch(/previews need regenerating/);
+  });
+
+  it("A2 inspects every preview, with no size shortcut", () => {
+    // The shortcut was `if (size > 12_000) continue` — "a blank PNG compresses
+    // to almost nothing". At 2000×2000 a PNG of ONE colour is 16 KB, so the
+    // check skipped the only perfectly blank preview in the collection. Six
+    // more were hiding behind the same threshold.
+    const a2 = round.slice(round.indexOf("async function checkA2"), round.indexOf("async function checkA3"));
+    expect(a2).not.toMatch(/statSync\([^)]*\)\.size\s*>/);
+    expect(a2).toMatch(/getdata/);
+  });
+});
+
 describe("the notifier's address is written once", () => {
   it("the round verifies the domain ops-notify actually sends from", () => {
     const notify = readFileSync(path.join(ROOT, "system/scripts/ops-notify.ts"), "utf8");
