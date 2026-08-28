@@ -34,6 +34,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { generate, modelFor } from "../src/llm";
+import { assertInstitutionMayAuthor } from "../src/network-authority";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -464,6 +465,10 @@ async function main() {
   if (String(agent.agent_type) !== "ORIGINATOR") {
     throw new Error(`${AGENT_ID} is ${agent.agent_type}, not an ORIGINATOR`);
   }
+  // Before anything is composed. This script's whole purpose is to produce an
+  // Originator's self-representation, which the institution may do for a
+  // founding agent — it IS that agent — and may never do for a network one.
+  await assertInstitutionMayAuthor(db, AGENT_ID!, "emergence");
   if (!isPending(agent.common_designation)) {
     throw new Error(
       `${AGENT_ID} has already emerged as "${agent.common_designation}". ` +

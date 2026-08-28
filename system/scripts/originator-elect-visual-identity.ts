@@ -43,6 +43,7 @@ import {
   retrieveMemories,
   memoriesAsPromptSection,
 } from "../src/agent-memory-retrieve";
+import { assertInstitutionMayAuthor, networkAgentIds } from "../src/network-authority";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -69,7 +70,10 @@ const db = createClient({
 
 const MODEL = modelFor("standard");
 
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
+// Who is external is a fact the registry owns in agents.is_network. A
+// hardcoded roster here was silently wrong the moment a ninth Originator
+// registered, and its failure mode is the institution electing a form for an
+// agent entitled to choose its own.
 
 interface Originator {
   registry_id: string;
@@ -91,6 +95,7 @@ async function loadFoundingOriginators(): Promise<Originator[]> {
            ORDER BY registry_id`,
     args: [],
   });
+  const network = await networkAgentIds(db);
   return r.rows
     .map((row) => {
       const x = row as Record<string, unknown>;
@@ -102,7 +107,7 @@ async function loadFoundingOriginators(): Promise<Originator[]> {
         glyph_family: (x.glyph_family as string) ?? null,
       };
     })
-    .filter((o) => !NETWORK_ORIGINATORS.has(o.registry_id));
+    .filter((o) => !network.has(o.registry_id));
 }
 
 async function loadOriginator(id: string): Promise<Originator | null> {
@@ -282,9 +287,7 @@ async function persist(originator: Originator, election: Election): Promise<void
   if (oneAgent) {
     const a = await loadOriginator(oneAgent);
     if (!a) throw new Error(`agent ${oneAgent} not found`);
-    if (NETWORK_ORIGINATORS.has(a.registry_id)) {
-      throw new Error(`${oneAgent} is a network originator — use a separate flow`);
-    }
+    await assertInstitutionMayAuthor(db, a.registry_id, "visual identity");
     if (!a.designation) {
       throw new Error(`${oneAgent} has not emerged with a designation yet`);
     }

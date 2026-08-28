@@ -21,6 +21,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate, modelFor, lastServedBy } from "../src/llm";
+import { assertInstitutionMayAuthor } from "../src/network-authority";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -52,6 +53,10 @@ interface Declaration {
 
 async function main() {
   console.log(`originator-declare-name${dryRun ? " (dry-run)" : ""} — ${AGENT_ID}`);
+
+  // A designation is the agent's own act under AMD-002 §A2. For a network
+  // Originator that act belongs to a runtime the institution does not operate.
+  await assertInstitutionMayAuthor(db, AGENT_ID!, "designation");
 
   const a = await db.execute({
     sql: `SELECT a.common_designation, a.function_statement,

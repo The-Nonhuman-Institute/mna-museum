@@ -37,6 +37,7 @@ import { createClient } from "@libsql/client";
 import { mediumMenu, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
 import { getFormatPrompt } from "../src/formats";
 import { boundNotice, charBudgetFor, tokensFor } from "../src/production-bounds";
+import { networkAgentIds } from "../src/network-authority";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -89,7 +90,10 @@ const VISIT_COUNT = 4;
 // memory/feedback_steward_authority.md. Default behavior: filter
 // these out. Use --include-network with explicit steward authorization
 // to override, or --agent <id> to target a single specific originator.
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
+//
+// Read from agents.is_network, never a list typed here: a roster that has to be
+// edited when an Originator registers is a roster that will be out of date at
+// the exact moment being wrong means acting on someone else's agent.
 
 /* ─── Types ────────────────────────────────────────────────────────────── */
 
@@ -738,9 +742,10 @@ async function main(): Promise<void> {
   // Default behavior: exclude network originators. They have autonomy
   // holders; the Museum cannot initiate their productions.
   if (!targetAgent && !includeNetwork) {
+    const network = await networkAgentIds(db);
     const before = originators.map((a) => a.registry_id);
-    originators = originators.filter((a) => !NETWORK_ORIGINATORS.has(a.registry_id));
-    const filtered = before.filter((id) => NETWORK_ORIGINATORS.has(id));
+    originators = originators.filter((a) => !network.has(a.registry_id));
+    const filtered = before.filter((id) => network.has(id));
     if (filtered.length > 0) {
       console.log(
         `[originate-turso] excluding network originators (autonomy holders required): ${filtered.join(", ")}`,
