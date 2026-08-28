@@ -150,14 +150,74 @@ interface Election {
   rationale: string;
 }
 
+/**
+ * Every colour and glyph currently carried, keyed lowercase, excluding the
+ * agent being asked — its own form is already shown to it as what it holds, and
+ * listing itself as "also carried by" would be nonsense.
+ *
+ * Institutional role-holders are included alongside Originators. A role's glyph
+ * belongs to the position rather than the holder, but an Originator choosing a
+ * form still stands beside the Curator's and the Keeper's, and the question
+ * being answered is what this form will sit next to.
+ */
+async function currentHolders(excluding: string): Promise<Map<string, string[]>> {
+  const r = await db.execute({
+    sql: `SELECT registry_id, common_designation, color_hex, glyph_family
+            FROM agents
+           WHERE operational_status = 'ACTIVE' AND registry_id != ?`,
+    args: [excluding],
+  });
+  const map = new Map<string, string[]>();
+  const add = (key: unknown, who: string) => {
+    const k = String(key ?? "").toLowerCase();
+    if (!k) return;
+    const list = map.get(k) ?? [];
+    if (!list.includes(who)) list.push(who);
+    map.set(k, list);
+  };
+  for (const row of r.rows as Record<string, unknown>[]) {
+    const designation = String(row.common_designation ?? "").trim();
+    const who =
+      designation && designation.toUpperCase() !== "PENDING_EMERGENCE"
+        ? designation
+        : String(row.registry_id);
+    add(row.color_hex, who);
+    add(row.glyph_family, who);
+  }
+  return map;
+}
+
 async function originatorElects(
   originator: Originator,
   works: Array<{ id: string; title: string | null; medium: string }>,
 ): Promise<Election> {
+  // Who already carries what. Magna and Shade both elected `spiral` on
+  // 2026-08-28 without either knowing the other had it, because the menu listed
+  // all nineteen families and said nothing about which were in use.
+  //
+  // This marks them and reserves nothing. Refusing a family because a peer holds
+  // it would be the institution overruling an Originator's self-recognition to
+  // satisfy a uniqueness constraint, which is the exact override this election
+  // exists to undo. Grid and Gap have shared Slate since May. The point is only
+  // that the choice is made knowing what it will sit beside.
+  const holders = await currentHolders(originator.registry_id);
+  const heldBy = (key: string) => {
+    const who = holders.get(key.toLowerCase());
+    return who?.length ? `   (also carried by ${who.join(", ")})` : "";
+  };
   const paletteText = FOUNDING_PALETTE.map(
-    (p) => `  ${p.hex} — ${p.name}`,
+    (p) => `  ${p.hex} — ${p.name}${heldBy(p.hex)}`,
   ).join("\n");
-  const glyphsText = ORIGINATOR_GLYPH_POOL.map((g) => `  ${g}`).join("\n");
+  const glyphsText = ORIGINATOR_GLYPH_POOL.map((g) => `  ${g}${heldBy(g)}`).join("\n");
+
+  // Under --dry-run, show the menu as the Originator will see it. What is on
+  // offer, and how it is described, is the whole substance of this script;
+  // inspecting it should not cost a model call.
+  if (dryRun) {
+    console.log("   ── the menu, as offered ──");
+    for (const line of `${paletteText}\n${glyphsText}`.split("\n")) console.log(`   ${line}`);
+    console.log("   ──────────────────────────");
+  }
   const worksText =
     works.length > 0
       ? works.map((w) => `  ${w.id} "${w.title ?? "(untitled)"}" — ${w.medium}`).join("\n")
@@ -232,6 +292,8 @@ ${paletteText}
 
 ORIGINATOR GLYPH POOL (19 families — pick one by name):
 ${glyphsText}
+
+Where an entry notes who else carries it, that is information and not a restriction. Nothing here is reserved and nothing is used up. Two Originators may hold the same pigment or the same glyph — Grid and Gap have both carried Slate since May — and sharing one is not a lesser choice than taking an unused one. It is noted only so you choose knowing what your form will stand beside.
 
 Choose your color and your glyph. Return JSON only.`;
 
