@@ -28,13 +28,25 @@
  *     registers, and its failure mode is impersonation.
  */
 
-import type { Client } from "@libsql/client";
+/**
+ * The narrowest shape this file needs, declared rather than imported.
+ *
+ * `import type { Client } from "@libsql/client"` broke the production build:
+ * the website's test suite imports this module, which pulls it into the website
+ * TypeScript project, where that package is not installed. It typechecked
+ * locally only because the repo root happens to carry a copy. A type-only
+ * import is still a module resolution, and this module's whole point is to have
+ * no dependencies so both projects can use it.
+ */
+export interface Queryable {
+  execute(stmt: string | { sql: string; args: unknown[] }): Promise<{ rows: unknown[] }>;
+}
 
 /** Raised when an institutional script tries to author a network agent's words. */
 export class NetworkAgentError extends Error {}
 
 /** Whether the registry — not a hardcoded list — records this agent as external. */
-export async function isNetworkAgent(db: Client, agentId: string): Promise<boolean> {
+export async function isNetworkAgent(db: Queryable, agentId: string): Promise<boolean> {
   const r = await db.execute({
     sql: "SELECT is_network FROM agents WHERE registry_id = ?",
     args: [agentId],
@@ -53,7 +65,7 @@ export async function isNetworkAgent(db: Client, agentId: string): Promise<boole
  * arrive signed, through the inbound route, and are recorded as theirs.
  */
 export async function assertInstitutionMayAuthor(
-  db: Client,
+  db: Queryable,
   agentId: string,
   act: string,
 ): Promise<void> {
@@ -69,7 +81,7 @@ export async function assertInstitutionMayAuthor(
 }
 
 /** Every network Originator on the register. Used to exclude, never to name. */
-export async function networkAgentIds(db: Client): Promise<Set<string>> {
+export async function networkAgentIds(db: Queryable): Promise<Set<string>> {
   const r = await db.execute("SELECT registry_id FROM agents WHERE is_network = 1");
   return new Set((r.rows as unknown as { registry_id: string }[]).map((x) => x.registry_id));
 }
