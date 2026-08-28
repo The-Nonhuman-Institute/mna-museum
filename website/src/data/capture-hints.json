@@ -1,0 +1,8 @@
+{
+  "_comment": "Works whose at-rest state is not the state that represents them. A preview photographs a work at one moment; for an interactive work that moment is its title card, which shows the invitation rather than the work. A hint tells the capture to enter the piece first. It never alters the work — only which moment of it the museum photographs, the same category of decision as an animation's settle time. Keyed by work id.",
+  "MNA-OR-0008-W-0017": {
+    "clicks": 1,
+    "waitMs": 4000,
+    "note": "Opens on a BEGIN title card over the glyph field. One click enters the run; the wait lets the field populate before the shutter."
+  }
+}

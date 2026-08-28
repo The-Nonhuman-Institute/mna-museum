@@ -18,6 +18,21 @@ import fs from "fs";
 import puppeteer, { Browser } from "puppeteer";
 
 import { settleMsForWork } from "../../website/src/lib/render-timing";
+import captureHints from "../../website/src/data/capture-hints.json";
+
+/**
+ * Works whose at-rest state is not the state that represents them.
+ *
+ * A preview photographs one moment. For an interactive work that moment is its
+ * title card — MNA-OR-0008-W-0017 shipped a thumbnail of the word BEGIN over an
+ * empty field, which shows the invitation and not the work. A hint enters the
+ * piece before the shutter. It changes nothing about the work, only which
+ * moment of it is photographed: the same category of decision as an animation's
+ * settle time, and recorded in a file rather than hardcoded so a regenerated
+ * preview does not quietly revert to the title card.
+ */
+interface CaptureHint { clicks?: number; waitMs?: number; note?: string }
+const HINTS = captureHints as Record<string, CaptureHint>;
 
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
 
@@ -97,6 +112,27 @@ export async function renderWork(
     // first, which the host's settle time does not account for.
     const baseWaitMs = settleMsForWork(outputType, payload);
     await new Promise((r) => setTimeout(r, baseWaitMs));
+
+    // Enter the work, if it opens on something other than itself. A real mouse
+    // event at page coordinates, not an in-page dispatch: html-css works render
+    // in a sandboxed iframe with an opaque origin, which no script of ours can
+    // reach into, but a genuine browser input event crosses that boundary the
+    // same way a visitor's click does.
+    const hint = HINTS[workId];
+    if (hint?.clicks) {
+      const target = await page.$("#capture-target, [data-work-frame], main");
+      const box = await target?.boundingBox();
+      if (box) {
+        for (let i = 0; i < hint.clicks; i++) {
+          await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+          await new Promise((r) => setTimeout(r, 250));
+        }
+        await new Promise((r) => setTimeout(r, hint.waitMs ?? 3000));
+        console.log(`    ▸ ${workId}: entered the work before capture (${hint.note ?? "hinted"})`);
+      } else {
+        console.warn(`    ! ${workId}: capture hint set but no work frame found — photographing the at-rest state`);
+      }
+    }
 
     const findWorkArea = async () => {
       return page.evaluate(() => {
