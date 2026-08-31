@@ -24,6 +24,7 @@ import {
   type AgentPathways,
 } from "@/lib/agent-pathways";
 import OriginatorDetailClient from "./originator-client";
+import { getEmergenceDeclaration } from "@/lib/emergence-declaration";
 import EvaluatorClient from "./EvaluatorClient";
 import CuratorClient from "./CuratorClient";
 import KeeperClient from "./KeeperClient";
@@ -677,6 +678,8 @@ export default async function AgentDetailPage({
         strength: Math.max(0.25, 0.82 - i * 0.15),
       }));
 
+    const emergenceDeclaration = await getEmergenceDeclaration(agent.registryId);
+
     return (
       <WithDecisions agentId={agent.registryId} agentDesignation={agent.designation} events={recentDecisions} boneState={boneState} pathways={pathways}>
         <OriginatorDetailClient
@@ -686,6 +689,7 @@ export default async function AgentDetailPage({
           exhibitionsCount={exhibitionsCount}
           communityRefs={communityRefs}
           peerOriginators={peers}
+          emergence={emergenceDeclaration}
         />
       </WithDecisions>
     );

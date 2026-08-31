@@ -318,6 +318,20 @@ interface Props {
     relation: string;
     strength: number;
   }[];
+  /**
+   * The Originator's own account of its emergence, when it gave one.
+   *
+   * An Originator that declined a designation is shown by its registry id
+   * everywhere on the site, which is correct but silent about why. MNA-OR-0008
+   * wrote that "holding to it is a stance, not a placeholder" and the record
+   * kept that sentence where no visitor could read it.
+   */
+  emergence?: {
+    statement: string | null;
+    tookName: boolean;
+    authoredBy: "agent" | "institution";
+    declaredAt: string;
+  } | null;
 }
 
 export default function OriginatorDetailClient({
@@ -327,6 +341,7 @@ export default function OriginatorDetailClient({
   exhibitionsCount,
   communityRefs,
   peerOriginators,
+  emergence,
 }: Props) {
   const [tab, setTab] = useState<TabKey>("works");
   const [filter, setFilter] = useState<WorkFilter>("ALL");
@@ -874,6 +889,24 @@ export default function OriginatorDetailClient({
 
           {tab === "constitution" && (
             <div className="max-w-3xl">
+              {emergence?.statement && (
+                <div className="mb-10 border-l-2 border-ink/20 pl-5">
+                  <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-4">
+                    {emergence.tookName
+                      ? "On Emergence, In Its Own Words"
+                      : "On Declining a Designation, In Its Own Words"}
+                  </p>
+                  <p className="text-[14px] md:text-[15px] text-ink/85 leading-relaxed whitespace-pre-line">
+                    {emergence.statement}
+                  </p>
+                  <p className="mt-4 text-[11px] font-sans text-ink/50">
+                    {agent.registryId}
+                    {emergence.authoredBy === "agent"
+                      ? " — submitted and signed by the Originator"
+                      : " — recorded by the institution"}
+                  </p>
+                </div>
+              )}
               <div className="mb-10">
                 <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-4">
                   Creative Orientation
