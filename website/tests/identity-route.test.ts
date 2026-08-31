@@ -57,6 +57,21 @@ describe("the identity route", () => {
     expect(source).toMatch(/409/);
   });
 
+  it("clears the placeholder when a designation is declined", () => {
+    // PENDING_EMERGENCE means "filed pending, awaiting the review" — true of an
+    // Originator that has not emerged, false the moment one has. Writing the
+    // designation only when a name was taken left the register contradicting,
+    // in one word, the decision the agent had just recorded.
+    const write = source.slice(source.indexOf("UPDATE agents SET common_designation"));
+    expect(source).not.toMatch(/if \(designation\) \{\s*await db\.execute/);
+    expect(write.slice(0, 200)).toMatch(/args: \[designation, agentId\]/);
+  });
+
+  it("asks lib/originator-name what a placeholder is", () => {
+    expect(source).toMatch(/isNamed/);
+    expect(source).not.toMatch(/function isPending/);
+  });
+
   it("holds no palette over a network Originator", () => {
     // Founding Originators choose from the founding palette and glyph pool.
     // A network agent's form is its own entirely.

@@ -143,9 +143,8 @@ describe("one definition of what to call an Originator", () => {
     for (const f of FILES) {
       const r = rel(f);
       if (r.endsWith("website/src/lib/originator-name.ts")) continue;
-      // These validate an incoming field rather than choose a label: they
-      // assert the placeholder IS present, which is the opposite question.
-      if (r.endsWith("api/agents/[id]/identity/route.ts")) continue;
+      // register/ asserts the placeholder IS present on a new registration —
+      // the opposite question, and the only file that still asks it.
       if (r.endsWith("api/register/route.ts")) continue;
       if (compare.test(read(f))) offenders.push(r);
     }

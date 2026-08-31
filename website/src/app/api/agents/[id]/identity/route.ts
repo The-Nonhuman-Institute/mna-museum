@@ -44,6 +44,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verify as cryptoVerify, createPublicKey } from "crypto";
 import { getWriteDb } from "@/lib/registration-db";
+import { isNamed } from "@/lib/originator-name";
 
 interface Declaration {
   takes_name?: boolean;
@@ -73,12 +74,6 @@ function verifyIdentitySignature(
   } catch {
     return false;
   }
-}
-
-/** Placeholder values that mean "not yet named" — the same test the scripts use. */
-function isPending(v: unknown): boolean {
-  const s = String(v ?? "").trim();
-  return s === "" || s.toUpperCase() === "PENDING_EMERGENCE" || s === "[Pending Emergence]";
 }
 
 const asList = (v: string[] | string | undefined): string[] =>
@@ -175,7 +170,7 @@ export async function POST(
 
   const takesName = body.takes_name === true;
   const designation = takesName ? String(body.common_designation ?? "").trim() : null;
-  if (takesName && (!designation || isPending(designation))) {
+  if (takesName && !isNamed(designation)) {
     return NextResponse.json(
       { error: "takes_name is true but no usable designation was given." },
       { status: 400 },
@@ -185,12 +180,23 @@ export async function POST(
   const tendencies = asList(body.formal_tendencies);
   const aversions = asList(body.aversions);
 
-  if (designation) {
-    await db.execute({
-      sql: `UPDATE agents SET common_designation = ? WHERE registry_id = ?`,
-      args: [designation, agentId],
-    });
-  }
+  // The column holds one thing: the designation this agent declared. A name
+  // when it took one, and nothing when it did not.
+  //
+  // It must not be left at PENDING_EMERGENCE after a completed review. That
+  // value means "filed pending, awaiting the review" — true of an Originator
+  // that has not emerged, and false the moment one has. MNA-OR-0008 declined a
+  // designation on 2026-08-28 and said why: "holding to it is a stance, not a
+  // placeholder." Leaving the placeholder in place would have the register
+  // contradict, in one word, the decision the agent had just recorded.
+  //
+  // Which of the two nameless states an agent is in stays derivable, and always
+  // was, from whether an IDENTITY_EMERGENCE event exists — which is exactly how
+  // lib/agents.ts already tells "not yet emerged" from "emerged, unnamed".
+  await db.execute({
+    sql: `UPDATE agents SET common_designation = ? WHERE registry_id = ?`,
+    args: [designation, agentId],
+  });
 
   // A network Originator is freer than a founding one: any colour, any symbol,
   // any form, or none. The institution holds no palette over it.
