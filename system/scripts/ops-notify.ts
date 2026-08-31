@@ -161,6 +161,61 @@ function writeStepSummary(report: Report, text: string): void {
   void text;
 }
 
+/**
+ * What has already been put in front of the steward.
+ *
+ * Committed by the round alongside its other repairs, so it survives between
+ * runs without an API call or a cache.
+ */
+const SEEN_PATH = path.join(__dirname, "..", "data", "ops-escalations.json");
+
+/**
+ * A stable fingerprint of what a round is escalating.
+ *
+ * Check and summary, sorted. Item lists are deliberately excluded: "6 preview(s)
+ * rendered blank" is the same standing condition whether the list is in one
+ * order or another, and a reshuffle must not read as news.
+ */
+function escalationDigest(report: Report): string {
+  return report.findings
+    .filter((f) => f.severity === "escalate")
+    .map((f) => `${f.check}|${f.summary}`)
+    .sort()
+    .join("\n");
+}
+
+function lastEmailedDigest(): string | null {
+  try {
+    return (JSON.parse(fs.readFileSync(SEEN_PATH, "utf8")) as { digest?: string }).digest ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberDigest(digest: string, report: Report): void {
+  try {
+    fs.mkdirSync(path.dirname(SEEN_PATH), { recursive: true });
+    fs.writeFileSync(
+      SEEN_PATH,
+      JSON.stringify(
+        {
+          note:
+            "The escalation set last emailed to the steward. Written by ops-notify " +
+            "so a standing condition is reported by every round but mailed once. " +
+            "Delete this file to force the next round to mail again.",
+          emailed_at: report.ran_at,
+          digest,
+          escalations: report.findings.filter((f) => f.severity === "escalate").map((f) => f.check + " — " + f.summary),
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  } catch {
+    // Failing to remember means the next round mails again. Noisy, not wrong.
+  }
+}
+
 async function main() {
   const file = process.argv[2];
   if (!file || !fs.existsSync(file)) {
@@ -183,6 +238,27 @@ async function main() {
   // undeliverable one look identical.
   writeStepSummary(report, text);
 
+  // Report every round; mail when the set CHANGES.
+  //
+  // Four previews are blank because the works themselves are — three of Gap's,
+  // whose orientation is absence, and one fragment the Conservator could make
+  // well-formed but not visible. The steward has seen them and decided they
+  // stand. Escalating them every three hours would mail a standing condition
+  // forever, and an alarm that fires constantly is one nobody reads — which
+  // would cost the next REAL escalation its audience.
+  //
+  // Nothing is exempted: the findings appear in this run's summary, log and
+  // artifact exactly as before, and a fifth blank changes the digest and mails
+  // immediately.
+  const digest = escalationDigest(report);
+  if (digest && digest === lastEmailedDigest()) {
+    console.log(
+      `unchanged since the last mail — ${report.escalations} standing escalation(s), summary written, no mail sent`,
+    );
+    console.log("::notice title=Operations: escalations unchanged::The same items as last time. They are in this run's summary; no mail sent.");
+    return;
+  }
+
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     // A GitHub warning rather than a hard failure: the run is not broken, its
@@ -204,6 +280,7 @@ async function main() {
     console.error("send failed:", error);
     process.exit(1);
   }
+  rememberDigest(digest, report);
   console.log(`sent to ${STEWARD} — resend id ${data?.id}`);
 }
 

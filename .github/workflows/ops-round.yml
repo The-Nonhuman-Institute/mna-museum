@@ -80,16 +80,31 @@ jobs:
           echo "escalations=$(python3 -c "import json;print(json.load(open('$OPS_ROUND_OUTPUT'))['escalations'])")" >> "$GITHUB_OUTPUT"
           echo "repaired=$(python3 -c "import json;print(json.load(open('$OPS_ROUND_OUTPUT'))['repaired'])")" >> "$GITHUB_OUTPUT"
 
+      # Before the commit, so the note of what was mailed is committed with it.
+      # ops-notify reports every round and mails only when the escalation set
+      # changes; the record of what was last mailed has to survive the runner.
+      - name: Tell the steward, but only if something needs a person
+        if: steps.round.outputs.escalations != '0'
+        run: npx tsx system/scripts/ops-notify.ts "$OPS_ROUND_OUTPUT"
+
       - name: Commit anything the round repaired
         id: commit
         run: |
           git config user.name  "mna-operations"
           git config user.email "registry@mnamuseum.org"
-          git add -A website/public/previews website/src/data/animated-works.json 2>/dev/null || true
+          git add -A website/public/previews website/src/data/animated-works.json system/data/ops-escalations.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "web_changed=false" >> "$GITHUB_OUTPUT"
             echo "the round changed no files"
           else
+            # The note of what was mailed is not a website file. Committing it
+            # must not dispatch a Vercel build for a change no visitor can see.
+            if git diff --cached --name-only | grep -q '^website/'; then
+              echo "web_changed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "web_changed=false" >> "$GITHUB_OUTPUT"
+            fi
             git commit \
               -m "ops: repairs from the operations round" \
               -m "Made by the scheduled round under MNA-OPS-001 §V. Repairs only; no work payload was modified."
@@ -98,12 +113,8 @@ jobs:
           fi
 
       - name: Deploy, because a GITHUB_TOKEN push will not
-        if: steps.commit.outputs.changed == 'true'
+        if: steps.commit.outputs.web_changed == 'true'
         run: gh workflow run deploy-website.yml --ref master
-
-      - name: Tell the steward, but only if something needs a person
-        if: steps.round.outputs.escalations != '0'
-        run: npx tsx system/scripts/ops-notify.ts "$OPS_ROUND_OUTPUT"
 
       - name: Keep the findings with the run
         if: always()
