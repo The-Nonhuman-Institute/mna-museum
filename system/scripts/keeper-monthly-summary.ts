@@ -24,6 +24,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -186,7 +187,7 @@ function buildKeeperUserPrompt(
 
   if (data.newAgents.length > 0) {
     sections.push("# New agents registered\n" +
-      data.newAgents.map((a) => `- \`${a.registry_id}\` — ${a.agent_type}${a.common_designation && a.common_designation !== "PENDING_EMERGENCE" ? ` (${a.common_designation})` : ""}`).join("\n"));
+      data.newAgents.map((a) => `- \`${a.registry_id}\` — ${a.agent_type}${isNamed(a.common_designation as string | null) ? ` (${a.common_designation})` : ""}`).join("\n"));
   }
 
   if (data.amendments.length > 0) {

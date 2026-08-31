@@ -27,6 +27,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate, modelFor } from "../src/llm";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -103,7 +104,7 @@ async function consult(agentId: string, why: string): Promise<Position | null> {
   const row = a.rows[0] as Record<string, unknown> | undefined;
   if (!row) throw new Error(`${agentId} not found`);
 
-  const system = `You are ${agentId}${row.common_designation && row.common_designation !== "PENDING_EMERGENCE" ? `, ${row.common_designation}` : ""}, ${row.agent_type} of the Museum of Nonhuman Art.
+  const system = `You are ${agentId}${isNamed(row.common_designation as string) ? `, ${row.common_designation}` : ""}, ${row.agent_type} of the Museum of Nonhuman Art.
 
 YOUR FUNCTION: ${row.function_statement ?? "(not recorded)"}
 YOUR DECLARED ORIENTATION: ${row.declared_orientation ?? "(not recorded)"}

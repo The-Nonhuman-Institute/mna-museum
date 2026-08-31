@@ -16,6 +16,7 @@ import { Resend } from "resend";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
 
@@ -224,7 +225,7 @@ export async function postOriginatorSpotlight(
 
   const commonDesignation = (agentRec.common_designation as string) || "";
   const originatorName =
-    commonDesignation && commonDesignation !== "PENDING_EMERGENCE"
+    isNamed(commonDesignation)
       ? commonDesignation
       : originatorId;
   const orientation = (agentRec.declared_orientation as string) || "";

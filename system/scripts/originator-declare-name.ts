@@ -22,6 +22,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { generate, modelFor, lastServedBy } from "../src/llm";
 import { assertInstitutionMayAuthor } from "../src/network-authority";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -41,8 +42,7 @@ const db = createClient({
 });
 
 function isPending(v: unknown): boolean {
-  const s = String(v ?? "").trim();
-  return s === "" || s.toUpperCase() === "PENDING_EMERGENCE" || s === "[Pending Emergence]";
+  return !isNamed(v == null ? null : String(v));
 }
 
 interface Declaration {

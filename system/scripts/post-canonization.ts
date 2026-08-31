@@ -13,6 +13,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { postCanonization } from "../src/ambassador";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -72,7 +73,7 @@ async function main() {
   // placeholder string.
   const designation = originator.common_designation as string;
   const originatorName =
-    designation && designation !== "PENDING_EMERGENCE"
+    isNamed(designation)
       ? designation
       : (originator.registry_id as string);
 

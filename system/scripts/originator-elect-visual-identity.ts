@@ -44,6 +44,7 @@ import {
   memoriesAsPromptSection,
 } from "../src/agent-memory-retrieve";
 import { assertInstitutionMayAuthor, networkAgentIds } from "../src/network-authority";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -177,10 +178,7 @@ async function currentHolders(excluding: string): Promise<Map<string, string[]>>
   };
   for (const row of r.rows as Record<string, unknown>[]) {
     const designation = String(row.common_designation ?? "").trim();
-    const who =
-      designation && designation.toUpperCase() !== "PENDING_EMERGENCE"
-        ? designation
-        : String(row.registry_id);
+    const who = originatorName(designation, String(row.registry_id));
     add(row.color_hex, who);
     add(row.glyph_family, who);
   }

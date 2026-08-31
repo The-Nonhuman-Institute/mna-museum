@@ -35,6 +35,7 @@ import fs from "fs";
 import path from "path";
 import { generate, modelFor } from "../src/llm";
 import { assertInstitutionMayAuthor } from "../src/network-authority";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -63,8 +64,7 @@ const PRESS_PATH = path.join(__dirname, "..", "..", "website", "src", "data", "p
 
 /** Emergent-field values that mean "not yet named". */
 function isPending(v: unknown): boolean {
-  const s = String(v ?? "").trim();
-  return s === "" || s.toUpperCase() === "PENDING_EMERGENCE" || s === "[Pending Emergence]";
+  return !isNamed(v == null ? null : String(v));
 }
 
 interface WorkRow {

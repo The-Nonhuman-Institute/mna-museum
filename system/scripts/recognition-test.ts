@@ -17,6 +17,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -77,7 +78,7 @@ async function main() {
     const name = String(row.common_designation ?? "").trim();
     const { text, counts } = await corpusFor(id);
 
-    if (!name || name.toUpperCase() === "PENDING_EMERGENCE") {
+    if (!isNamed(name)) {
       console.log(`${id}  (no designation)`);
       console.log(`   corpus: ${counts.evaluations} rationales, ${counts.critiques} critiques, ${counts.events} events`);
       console.log(`   nothing to test — the field is empty\n`);

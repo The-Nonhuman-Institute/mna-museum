@@ -23,6 +23,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -85,7 +86,7 @@ async function activate(id: string) {
   const emergent = ["common_designation", "formal_tendencies", "declared_orientation", "aversions"];
   const filled = emergent.filter((f) => {
     const v = constitution[f];
-    return v !== undefined && v !== null && v !== "" && v !== "PENDING_EMERGENCE" &&
+    return v !== undefined && v !== null && isNamed(String(v)) &&
       !(Array.isArray(v) && v.length === 0);
   });
   if (filled.length) {

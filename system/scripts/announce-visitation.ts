@@ -17,6 +17,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -65,7 +66,7 @@ function emailHtml(opts: {
   const headline =
     headlineCount === 1
       ? `A new capability for ${opts.originators[0].id}${
-          opts.originators[0].designation && opts.originators[0].designation !== "PENDING_EMERGENCE"
+          isNamed(opts.originators[0].designation)
             ? ` (${opts.originators[0].designation})`
             : ""
         }`
@@ -73,7 +74,7 @@ function emailHtml(opts: {
   const list = opts.originators
     .map((o) => {
       const designation =
-        o.designation && o.designation !== "PENDING_EMERGENCE"
+        isNamed(o.designation)
           ? ` — ${o.designation}`
           : "";
       return `<li style="margin:4px 0;"><code style="font-family:ui-monospace,monospace;background:#f7f7f7;padding:1px 4px;">${o.id}</code>${designation}</li>`;

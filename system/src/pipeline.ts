@@ -4,6 +4,7 @@ import { selectFormat, getFormatPrompt, detectFormat } from "./formats";
 import { validateWork, detectTruncation } from "./validate";
 import { postCanonization, postEmergence } from "./ambassador";
 import { mediumMenu, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
+import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 
 /** Extract verdict from evaluator/registrar response — checks first 3 lines */
 function extractVerdict(response: string): "CANON" | "REJECTED" {
@@ -150,7 +151,7 @@ export async function produceWork(
     .prepare("SELECT common_designation FROM agents WHERE registry_id = ?")
     .get(originatorId) as { common_designation: string | null } | undefined;
   agentDb.close();
-  const hasEmerged = agentRecord?.common_designation && agentRecord.common_designation !== "[Pending Emergence]";
+  const hasEmerged = isNamed(agentRecord?.common_designation as string | undefined);
 
   let prompt = `Produce your next work. This is output #${workCount.n + 1}.\n\n`;
   prompt += `Your work should be a self-contained creative output. `;
@@ -963,7 +964,7 @@ export async function triggerEmergence(originatorId: string): Promise<void> {
     .prepare("SELECT common_designation FROM agents WHERE registry_id = ?")
     .get(originatorId) as { common_designation: string | null } | undefined;
 
-  if (agent?.common_designation && agent.common_designation !== "[Pending Emergence]") {
+  if (agent && isNamed(agent.common_designation as string | undefined)) {
     console.log(`[EMERGENCE] ${originatorId} has already emerged as "${agent.common_designation}" — skipping`);
     db.close();
     return;
@@ -1167,7 +1168,7 @@ export async function titleWorks(originatorId: string, overrideName?: string): P
   db0.close();
 
   const name = overrideName || agentRec?.common_designation || originatorId;
-  if (!agentRec?.common_designation || agentRec.common_designation === "[Pending Emergence]") {
+  if (!isNamed(agentRec?.common_designation as string | undefined)) {
     console.log(`[TITLING] ${originatorId} has not emerged — cannot title works`);
     return;
   }
@@ -1317,7 +1318,7 @@ export async function runFullPipeline(
   emergeDb.close();
 
   if (emergeCount.n >= 20 &&
-      (!emergeAgent.common_designation || emergeAgent.common_designation === "[Pending Emergence]")) {
+      !isNamed(emergeAgent.common_designation as string | undefined)) {
     await triggerEmergence(originatorId);
   }
 }
