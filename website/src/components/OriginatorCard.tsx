@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "@/components/WorkDisplay";
+import { originatorLabelShort, isNamed } from "@/lib/originator-name";
 
 interface OriginatorCardProps {
   agent: Agent;
@@ -23,15 +24,12 @@ export function isFounding(registryId: string): boolean {
 }
 
 function shortName(agent: Agent): string {
-  const name = (agent.designation || "").trim();
-  if (name && name !== "[Pending Emergence]") return name.toUpperCase();
-  const m = agent.registryId.match(/MNA-(OR-\d+)/);
-  return m ? m[1] : agent.registryId;
+  return originatorLabelShort(agent.designation, agent.registryId);
 }
 
 export default function OriginatorCard({ agent, works, canonWorks }: OriginatorCardProps) {
   const firstCanon = canonWorks[0];
-  const isPending = agent.designation === "[Pending Emergence]";
+  const isPending = !isNamed(agent.designation);
   const canonRate =
     works.length > 0
       ? ((canonWorks.length / works.length) * 100).toFixed(1)

@@ -4,6 +4,7 @@
  */
 
 import { getDb } from "./registration-db";
+import { isNamed } from "./originator-name";
 
 export type AgentType =
   | "KEEPER"
@@ -111,8 +112,9 @@ async function hasVisualColumns(): Promise<boolean> {
   return _hasVisualCols;
 }
 
+/** One definition, in lib/originator-name. */
 function isEmergencePending(val: string | null | undefined): boolean {
-  return !val || val === "PENDING_EMERGENCE" || val === "[Pending Emergence]";
+  return !isNamed(val);
 }
 
 function safeParse(json: string | null | undefined): string[] {

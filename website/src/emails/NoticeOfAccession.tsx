@@ -27,6 +27,7 @@ import {
   colors,
   textStyles,
 } from "./template";
+import { originatorLabel } from "@/lib/originator-name";
 
 export interface NoticeOfAccessionProps {
   workId: string;
@@ -189,14 +190,7 @@ export default function NoticeOfAccession({
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
 
 function displayOriginator(id: string, designation: string): string {
-  if (
-    !designation ||
-    designation === "[Pending Emergence]" ||
-    designation === "PENDING_EMERGENCE"
-  ) {
-    return id;
-  }
-  return designation.toUpperCase();
+  return originatorLabel(designation, id);
 }
 
 function parseFinalDetermination(verdictSummary: string): string {

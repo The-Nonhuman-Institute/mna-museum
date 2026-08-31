@@ -22,6 +22,7 @@ import WorkDisplay from "./WorkDisplay";
 import { kindFor, type IconKind } from "./MediumIcon";
 import { withNavFrom, type NavSource } from "@/lib/nav-context";
 import animatedWorks from "@/data/animated-works.json";
+import { originatorLabelShort } from "@/lib/originator-name";
 
 /**
  * Works that carry an animated WebP alongside their still preview.
@@ -76,11 +77,7 @@ function statusLabel(canon_status: string): string {
 
 /** Format originator display — prefer short designation, fall back to id tail. */
 function formatOriginator(work: Work): string {
-  const name = (work.originator_name || "").trim();
-  if (name && name !== "PENDING_EMERGENCE") return name.toUpperCase();
-  // Fallback: collapse MNA-OR-0007 → OR-0007
-  const m = work.originator_id.match(/MNA-(OR-\d+)/);
-  return m ? m[1] : work.originator_id;
+  return originatorLabelShort(work.originator_name, work.originator_id);
 }
 
 /** Miniature version of MediumIcon glyphs for the strip. 10×10 viewbox, 10px. */

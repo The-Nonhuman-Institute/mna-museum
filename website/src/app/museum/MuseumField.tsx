@@ -66,6 +66,7 @@ import {
   type ConstellationConfig,
   type ConstellationStar,
 } from "@/lib/gallery-constellations";
+import { originatorLabel as resolveOriginatorLabel } from "@/lib/originator-name";
 
 const EYE_HEIGHT = 1.7;
 const WALK_SPEED = 4.5;
@@ -2713,15 +2714,7 @@ export function KeyCap({ label }: { label: string }) {
 }
 
 function originatorLabel(w: FieldWork): string {
-  const name = (w.originator_name || "").trim();
-  if (
-    name &&
-    name.toUpperCase() !== "PENDING_EMERGENCE" &&
-    name !== "[Pending Emergence]"
-  ) {
-    return name.toUpperCase();
-  }
-  return w.originator_id;
+  return resolveOriginatorLabel(w.originator_name, w.originator_id);
 }
 
 function Reticle() {

@@ -4,6 +4,7 @@ import { getExhibition } from "@/lib/exhibitions";
 import { getWork, type Work } from "@/lib/collection";
 import { getPreviewIndex } from "@/lib/previews";
 import ExhibitionWorksClient from "./ExhibitionWorksClient";
+import { originatorLabelShort } from "@/lib/originator-name";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -59,10 +60,7 @@ function extractPullQuote(statement: string): string | null {
 }
 
 function originatorShort(w: Work): string {
-  const name = (w.originator_name || "").trim();
-  if (name && name !== "PENDING_EMERGENCE") return name.toUpperCase();
-  const m = w.originator_id.match(/MNA-(OR-\d+)/);
-  return m ? m[1] : w.originator_id;
+  return originatorLabelShort(w.originator_name, w.originator_id);
 }
 
 export default async function ExhibitionWorksPage({ params }: PageProps) {

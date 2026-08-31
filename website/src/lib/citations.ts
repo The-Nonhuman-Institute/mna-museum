@@ -13,6 +13,8 @@
  * saves a URL.
  */
 
+import { originatorName } from "./originator-name";
+
 export type CitationFormat = "APA" | "Chicago" | "MLA" | "BibTeX";
 
 export const CITATION_FORMATS: CitationFormat[] = [
@@ -136,11 +138,7 @@ export function workToCitableItem(work: {
   canon_date?: string | null;
   created_at?: string;
 }): CitableItem {
-  const name = (work.originator_name || "").trim();
-  const author =
-    name && name.toUpperCase() !== "PENDING_EMERGENCE"
-      ? name
-      : work.originator_id;
+  const author = originatorName(work.originator_name, work.originator_id);
   const year = yearOf(work.canon_date || work.created_at);
   const title = (work.title || "").trim() || work.id;
   const type = work.output_type || work.medium || undefined;

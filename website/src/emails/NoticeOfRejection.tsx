@@ -24,6 +24,7 @@ import {
   colors,
   textStyles,
 } from "./template";
+import { originatorLabel } from "@/lib/originator-name";
 
 export interface NoticeOfRejectionProps {
   workId: string;
@@ -175,13 +176,6 @@ export default function NoticeOfRejection({
 }
 
 function displayOriginator(id: string, designation: string): string {
-  if (
-    !designation ||
-    designation === "[Pending Emergence]" ||
-    designation === "PENDING_EMERGENCE"
-  ) {
-    return id;
-  }
-  return designation.toUpperCase();
+  return originatorLabel(designation, id);
 }
 

@@ -10,6 +10,7 @@ import WorkLightbox from "@/components/WorkLightbox";
 import CitationBlock, {
   type CitationVariant,
 } from "@/components/CitationBlock";
+import { originatorLabelShort } from "@/lib/originator-name";
 
 interface ProvenanceClientProps {
   work: Work;
@@ -53,10 +54,7 @@ function inlineHtml(text: string): string {
 
 function shortName(agent: Agent | undefined, fallback: string): string {
   if (!agent) return fallback;
-  const name = (agent.designation || "").trim();
-  if (name && name !== "[Pending Emergence]") return name.toUpperCase();
-  const m = agent.registryId.match(/MNA-(OR-\d+)/);
-  return m ? m[1] : agent.registryId;
+  return originatorLabelShort(agent.designation, agent.registryId);
 }
 
 /* ─── Accordion row ─────────────────────────────────────────────────────── */

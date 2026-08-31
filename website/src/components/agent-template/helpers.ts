@@ -4,6 +4,8 @@
  * Ambassador, Registrar, Steward Agent).
  */
 
+import { isNamed } from "@/lib/originator-name";
+
 export function pct(n: number): string {
   if (!isFinite(n) || n <= 0) return "0.0%";
   return `${(n * 100).toFixed(1)}%`;
@@ -20,11 +22,9 @@ export function formatDateShort(s: string): string {
   });
 }
 
-/* PENDING_EMERGENCE is the literal stored value for originators that
-   haven't crystallized identity yet; "[Pending Emergence]" is what the
-   agents lib normalizes it to. Templates need to handle both. */
+/* Which spellings count as "no name yet" is lib/originator-name's to say. */
 export function isEmergencePending(val: string | null | undefined): boolean {
-  return !val || val === "PENDING_EMERGENCE" || val === "[Pending Emergence]";
+  return !isNamed(val);
 }
 
 /* Read the version segment off a constitutionRef string like

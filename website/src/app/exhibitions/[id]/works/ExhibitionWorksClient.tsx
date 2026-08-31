@@ -11,6 +11,7 @@ import {
   relaxPlacements,
   type Placement,
 } from "@/lib/exhibition-layout";
+import { originatorLabelShort } from "@/lib/originator-name";
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 
@@ -41,10 +42,7 @@ function formatCanonDate(iso: string | null): string {
 }
 
 function originatorShort(w: Work): string {
-  const name = (w.originator_name || "").trim();
-  if (name && name !== "PENDING_EMERGENCE") return name.toUpperCase();
-  const m = w.originator_id.match(/MNA-(OR-\d+)/);
-  return m ? m[1] : w.originator_id;
+  return originatorLabelShort(w.originator_name, w.originator_id);
 }
 
 function mediumLabel(medium: string): string {

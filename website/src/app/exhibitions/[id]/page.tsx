@@ -8,6 +8,7 @@ import { getWork, getCanonWorks, type Work } from "@/lib/collection";
 import { getAllAgents, type Agent } from "@/lib/agents";
 import { getPreviewIndex } from "@/lib/previews";
 import ExhibitionAboutCarousel from "@/components/ExhibitionAboutCarousel";
+import { originatorLabelShort } from "@/lib/originator-name";
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -85,11 +86,7 @@ function previewSrc(id: string | null, haveIdx: Set<string>): string | null {
 }
 
 function originatorShort(agent: Agent | undefined, fallbackId: string): string {
-  if (agent?.designation && agent.designation !== "[Pending Emergence]") {
-    return agent.designation.toUpperCase();
-  }
-  const m = fallbackId.match(/MNA-(OR-\d+)/);
-  return m ? m[1] : fallbackId;
+  return originatorLabelShort(agent?.designation, agent?.registryId ?? fallbackId);
 }
 
 function workStatusLabel(w: Work): string {

@@ -8,7 +8,7 @@ import WorkCard from "@/components/WorkCard";
 import WorkDisplay from "@/components/WorkDisplay";
 import InstitutionalSelect from "@/components/InstitutionalSelect";
 import { formatDate } from "@/lib/format-date";
-import { originatorLabel } from "@/lib/originator-name";
+import { originatorLabel, originatorLabelShort } from "@/lib/originator-name";
 
 type PhaseFilter = "ALL" | "I" | "II" | "III" | "IV";
 
@@ -141,12 +141,10 @@ function CanonTimeline({ canon }: { canon: Work[] }) {
           {arranged.map((w, i) => {
             const isLatest = i === latestIdx;
             const dateParts = formatDateMono(w.canon_date!).split(",");
-            const originatorLabel = (() => {
-              const name = (w.originator_name || "").trim();
-              if (name && name !== "PENDING_EMERGENCE") return name.toUpperCase();
-              const m = w.originator_id.match(/MNA-(OR-\d+)/);
-              return m ? m[1] : w.originator_id;
-            })();
+            const originatorShortLabel = originatorLabelShort(
+              w.originator_name,
+              w.originator_id,
+            );
 
             if (isLatest) {
               return (
@@ -173,7 +171,7 @@ function CanonTimeline({ canon }: { canon: Work[] }) {
                     {w.title || "Untitled"}
                   </p>
                   <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 text-center truncate max-w-full">
-                    by {originatorLabel}
+                    by {originatorShortLabel}
                   </p>
                 </div>
               );
@@ -197,7 +195,7 @@ function CanonTimeline({ canon }: { canon: Work[] }) {
                   {w.title || "Untitled"}
                 </p>
                 <p className="text-[9px] font-sans uppercase tracking-[0.18em] text-ink/55 text-center truncate max-w-full">
-                  by {originatorLabel}
+                  by {originatorShortLabel}
                 </p>
               </div>
             );

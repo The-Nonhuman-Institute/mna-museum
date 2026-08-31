@@ -123,6 +123,68 @@ describe("the recorder codec is chosen in one place", () => {
   });
 });
 
+describe("one definition of what to call an Originator", () => {
+  /**
+   * The system/ scripts still carry their own copy. They ask a different
+   * question — "may this run yet" rather than "what do I print" — and they run
+   * where `@/lib` does not resolve. Written down rather than silently skipped,
+   * because an exemption nobody records is just a gap.
+   */
+  const SYSTEM_SIDE_STILL_OWN_IT = [
+    "system/scripts/activate-registration.ts",
+    "system/scripts/announce-visitation.ts",
+    "system/scripts/consult-on-coauthorship.ts",
+    "system/scripts/keeper-monthly-summary.ts",
+    "system/scripts/originator-declare-name.ts",
+    "system/scripts/originator-elect-visual-identity.ts",
+    "system/scripts/originator-emerge.ts",
+    "system/scripts/post-canonization.ts",
+    "system/scripts/recognition-test.ts",
+    "system/src/ambassador.ts",
+    "system/src/pipeline.ts",
+  ];
+
+  it("no website file writes its own placeholder-designation test", () => {
+    // Thirteen surfaces each carried this, in four spellings, with two
+    // different fallbacks. None was wrong; the arrangement was. The next
+    // surface to need it is the one that forgets, and prints PENDING_EMERGENCE
+    // at a visitor.
+    //
+    // Prose that MENTIONS the placeholder is fine — /about and /protocol explain
+    // it to registrants. Only a COMPARISON is a second copy of the rule.
+    const compare =
+      /[!=]==\s*["'`]\[?[Pp]ending[ _][Ee]mergence\]?["'`]|[!=]==\s*["'`]PENDING_EMERGENCE["'`]/;
+    const offenders: string[] = [];
+    for (const f of FILES) {
+      const r = rel(f);
+      if (!r.startsWith("website/src")) continue;
+      if (r.endsWith("website/src/lib/originator-name.ts")) continue;
+      // The API routes validate an incoming field rather than choose a label:
+      // they assert the placeholder IS present, which is the opposite question.
+      if (r.endsWith("api/agents/[id]/identity/route.ts")) continue;
+      if (r.endsWith("api/register/route.ts")) continue;
+      if (compare.test(read(f))) offenders.push(r);
+    }
+    expect(offenders, "these decide for themselves what a placeholder designation is").toEqual([]);
+  });
+
+  it("still knows which system files have not been folded in", () => {
+    const stale = SYSTEM_SIDE_STILL_OWN_IT.filter(
+      (p) => !FILES.some((f) => rel(f) === p),
+    );
+    expect(stale, "listed as owning it but no longer present").toEqual([]);
+  });
+
+  it("keeps naming and emerging as separate questions", () => {
+    // MNA-OR-0008 completed its review and declined a designation on
+    // 2026-08-28, so "has it emerged" and "does it have a name" stopped being
+    // the same question. Read raw: the deprecation notice is a comment.
+    const src = readFileSync(path.join(ROOT, "website/src/lib/originator-name.ts"), "utf8");
+    expect(src).toMatch(/export function isNamed/);
+    expect(src).toMatch(/@deprecated/);
+  });
+});
+
 describe("one definition of a runnable shader", () => {
   it("only lib/shader-source writes a pattern for the entry point", () => {
     // The renderer and the submit validator each had their own. They
