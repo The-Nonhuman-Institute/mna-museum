@@ -31,6 +31,8 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
+import { estTokens, GROQ_TPM_BUDGET } from "../src/budget";
+import { boundedWorkView, REGISTRAR_COMPLETION_TOKENS } from "../src/registrar-view";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -519,7 +521,6 @@ async function resolveDeadlock(workId: string): Promise<{
   prompt += `Work ID: ${workId}\n`;
   prompt += `Originator: ${work.originator_id}\n`;
   prompt += `Medium: ${work.medium}\n\n`;
-  prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
 
   prompt += `COUNCIL RATIONALES:\n`;
   for (const ev of evaluations) {
@@ -542,6 +543,30 @@ async function resolveDeadlock(workId: string): Promise<{
   const registrarAgent = await loadAgent("MNA-RG-0001");
   const registrarConstitution = await loadConstitution("MNA-RG-0001");
   const systemPrompt = buildSystemPrompt(registrarAgent, registrarConstitution);
+
+  // The work goes in last, sized to whatever the rest of the request left over,
+  // so the parts the Registrar cannot do without — its constitution, the four
+  // rationales it is adjudicating — are never the thing that gets squeezed.
+  const spent = estTokens(systemPrompt) + estTokens(prompt);
+  const roomForWork = GROQ_TPM_BUDGET - spent - REGISTRAR_COMPLETION_TOKENS;
+  const view = boundedWorkView(work.output_payload, Math.max(400, roomForWork));
+  const workBlock =
+    `--- THE WORK ---\n${view.text}\n--- END WORK ---\n\n` +
+    (view.excerpted
+      ? `Note: the work is ${view.totalChars.toLocaleString("en-US")} characters and you are ` +
+        `seeing ${view.shownChars.toLocaleString("en-US")} of them — its opening and its close, ` +
+        `with the middle elided. Weigh that in what you decide, and say so if it prevents you deciding.\n\n`
+      : "");
+  prompt = prompt.replace(
+    "COUNCIL RATIONALES:\n",
+    workBlock + "COUNCIL RATIONALES:\n",
+  );
+
+  if (view.excerpted) {
+    console.log(
+      `[registrar]   work excerpted for the request: ${view.shownChars} of ${view.totalChars} chars`,
+    );
+  }
 
   if (dryRun) {
     console.log(
@@ -577,7 +602,16 @@ async function resolveDeadlock(workId: string): Promise<{
     args: [
       workId,
       `Registrar resolved deadlock on ${workId} → ${decision}`,
-      JSON.stringify({ decision, rationale: response }),
+      JSON.stringify({
+        decision,
+        rationale: response,
+        // What the Registrar was actually shown. A decision taken on part of a
+        // work is still a decision, but the record should not imply it saw all
+        // of it.
+        work_shown_chars: view.shownChars,
+        work_total_chars: view.totalChars,
+        work_excerpted: view.excerpted,
+      }),
     ],
   });
 
