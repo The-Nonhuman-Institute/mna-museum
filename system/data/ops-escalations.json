@@ -1,8 +1,9 @@
 {
   "note": "The escalation set last emailed to the steward. Written by ops-notify so a standing condition is reported by every round but mailed once. Delete this file to force the next round to mail again.",
-  "emailed_at": "2026-08-31T03:02:45.942Z",
-  "digest": "A2|4 preview(s) rendered blank",
+  "emailed_at": "2026-09-02T05:09:23.517Z",
+  "digest": "A2|4 preview(s) rendered blank\nE2|31 medium check(s) failed",
   "escalations": [
-    "A2 — 4 preview(s) rendered blank"
+    "A2 — 4 preview(s) rendered blank",
+    "E2 — 31 medium check(s) failed"
   ]
 }
