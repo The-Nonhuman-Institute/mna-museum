@@ -104,3 +104,43 @@ describe("the workflows", () => {
     expect(wrong).toEqual([]);
   });
 });
+
+describe("workflows that push to master", () => {
+  /**
+   * A job that commits and pushes is racing every other job that does. ops-round
+   * runs about five minutes and previews-refresh up to thirty, while
+   * snapshot-refresh and any human push land on the same branch — so the ref a
+   * long job checked out is frequently gone by the time it pushes.
+   *
+   * On 2026-09-02 two consecutive ops-rounds failed exactly there:
+   * "! [rejected] master -> master (fetch first)". Both had already generated the
+   * missing preview for MNA-OR-0001-W-0028 and repaired the snapshot; the work was
+   * done and then thrown away, and the only visible symptom was a red run.
+   */
+  it("rebase before pushing, and retry", () => {
+    const offenders: string[] = [];
+    for (const name of FILES) {
+      const src = readFileSync(path.join(DIR, name), "utf8");
+      // A real command line, not prose. deploy-website.yml explains the
+      // GITHUB_TOKEN trap in a comment that mentions `git push` and pushes
+      // nothing itself.
+      const pushes = src
+        .split("\n")
+        .some((l) => /^\s*(if\s+)?git push\b/.test(l) && !l.trim().startsWith("#"));
+      if (!pushes) continue;
+      if (!src.includes("git pull --rebase")) offenders.push(name);
+    }
+    expect(offenders, "these push to master without rebasing first").toEqual([]);
+  });
+
+  it("fail loudly when the push cannot land", () => {
+    // Retrying in a loop that gives up silently would turn a lost repair into a
+    // green run, which is worse than the red one.
+    for (const name of FILES) {
+      const src = readFileSync(path.join(DIR, name), "utf8");
+      if (!src.includes("git pull --rebase")) continue;
+      expect(src, `${name} retries but never reports giving up`).toMatch(/::error/);
+    }
+  });
+});
+

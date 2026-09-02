@@ -81,7 +81,22 @@ jobs:
           else
             N=$(git diff --cached --name-only | wc -l | tr -d ' ')
             git commit -m "chore(previews): capture previews for $N new file(s)"
-            git push
+            # master moves under a long job. ops-round takes ~5 minutes and
+            # previews-refresh up to 30, while snapshot-refresh, previews-refresh and
+            # any human push all land on the same branch — so by push time the ref this
+            # checked out is often gone. A bare `git push` is then rejected "fetch
+            # first", the step fails, and the work the job just did is discarded.
+            pushed=false
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash origin master || true
+              if git push; then pushed=true; break; fi
+              echo "push rejected (attempt $attempt) — retrying"
+              sleep $((attempt * 5))
+            done
+            if [ "$pushed" != true ]; then
+              echo "::error title=Could not push::Three rebase-and-push attempts failed; the repairs are in this run's artifact."
+              exit 1
+            fi
             echo "CHANGED=true" >> "$GITHUB_ENV"
           fi
 
