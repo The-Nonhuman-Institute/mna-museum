@@ -1,9 +1,8 @@
 {
   "note": "The escalation set last emailed to the steward. Written by ops-notify so a standing condition is reported by every round but mailed once. Delete this file to force the next round to mail again.",
-  "emailed_at": "2026-09-12T05:13:06.166Z",
-  "digest": "A2|4 preview(s) rendered blank\nC1|1 canonized work(s) cannot be notified — preview image is not live",
+  "emailed_at": "2026-09-12T11:22:33.724Z",
+  "digest": "A2|4 preview(s) rendered blank",
   "escalations": [
-    "A2 — 4 preview(s) rendered blank",
-    "C1 — 1 canonized work(s) cannot be notified — preview image is not live"
+    "A2 — 4 preview(s) rendered blank"
   ]
 }
