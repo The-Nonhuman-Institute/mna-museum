@@ -103,6 +103,34 @@ async function assertDatabaseUsable(db: Client): Promise<void> {
 
 /* ─── helpers ───────────────────────────────────────────────────────────── */
 
+const STALE_SOCKET = /socket hang up|EPIPE|ECONNRESET/;
+
+/**
+ * Retry a request once when it dies on a connection the server already closed.
+ *
+ * A2's Pillow pass runs through execFileSync and holds the event loop for about
+ * a minute. Turso closes the idle keep-alive connection meanwhile, Node cannot
+ * notice while blocked, and the next request — A5's — is written into a dead
+ * socket. That was "A5 — check itself failed" from 2026-09-30, when the
+ * collection grew past the point where A2 outlasts the idle timeout; it
+ * reproduces locally with execFileSync("sleep", ["75"]) between two queries,
+ * and the second attempt always succeeds on a fresh connection.
+ *
+ * Safe to repeat because every statement this round sends to Turso is a read.
+ */
+function retryOnStaleSocket(db: Client): Client {
+  const execute = db.execute.bind(db) as (...a: unknown[]) => ReturnType<Client["execute"]>;
+  db.execute = (async (...args: unknown[]) => {
+    try {
+      return await execute(...args);
+    } catch (e) {
+      if (!STALE_SOCKET.test(e instanceof Error ? e.message : String(e))) throw e;
+      return execute(...args);
+    }
+  }) as Client["execute"];
+  return db;
+}
+
 const GRACE_MINUTES_NEW_WORK = 20;
 
 function minutesSince(iso: string): number {
@@ -790,10 +818,10 @@ async function main() {
   console.log(`ops-round — MNA-OPS-001 §V${dryRun ? " (dry run — detect only)" : ""}`);
   console.log(`  site: ${SITE}`);
 
-  const db = createClient({
+  const db = retryOnStaleSocket(createClient({
     url: clean(process.env.TURSO_DATABASE_URL),
     authToken: clean(process.env.TURSO_AUTH_TOKEN),
-  });
+  }));
 
   // D3 runs first and alone. A blocked database stops the round: continuing
   // burns quota the public site needs.
