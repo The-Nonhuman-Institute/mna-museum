@@ -146,6 +146,10 @@ visitor, but passes A1.
 - **Report only. Never auto-repair.** A blank render may mean a truncated
   payload (see A3), a renderer fault, or a work that is genuinely empty — and
   the third is the Originator's to make, not ours to correct.
+- *A preview the steward has already looked at.* `system/data/ops-reviewed.json`
+  records each settled work with the colour count seen, a reason and a date. A
+  match is reported as reviewed rather than escalated; a changed count escalates
+  again.
 
 #### A3 — Truncated payloads
 
@@ -216,6 +220,32 @@ replace the first.
 
 **Escalate.** Always report, even when repaired. Limbo means the pipeline broke
 mid-flight and the cause matters.
+
+#### B3 — Works stalled in review
+
+**Detect.** `canon_status.status = 'IN_REVIEW'` with no new verdict for over
+**24 hours** — measured from the latest evaluation, or from the work itself if it
+has none.
+
+**Why it matters.** The evaluator marks a work IN_REVIEW before its first call,
+so an evaluation that dies mid-flight leaves the work where B1 and B2, which read
+only SUBMITTED, cannot see it. Two works sat there unseen in September 2026, one
+with no verdicts for three weeks, while every round reported nothing awaiting
+evaluation.
+
+**Edge cases.**
+- *A 2:2 deadlock* is also IN_REVIEW and waits on the Registrar. A day is long
+  enough for either.
+- *A prompt no free provider can take.* Groq's free tier caps every model at
+  8,000 tokens a minute. A work too large for that can be evaluated whole through
+  Ollama Cloud from the steward's machine; the model that rendered each verdict
+  is recorded on its `EVALUATION_RENDERED` event.
+
+**Repair.** None automatic. Resuming with `evaluate-turso-works.ts --work <id>`
+asks only the evaluators who have not voted, but whether a provider can serve it
+needs a person's eye first.
+
+**Escalate.** Always.
 
 ---
 
