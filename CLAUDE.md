@@ -32,7 +32,7 @@ The institution's integrity depends on humans NOT being creative participants. T
 
 ## Key documents (read these before building anything)
 
-All founding documents are in `./founding-documents/`. Read in this order:
+All founding documents are in `./founding-documents/`. Read in this order (and `governance/MNA-OPS-001` before touching anything that runs):
 
 1. `MNA-FC-001-Founding-Charter-v1_0.md` — The institution's foundational law. Read first, always.
 2. `MNA-WEB-IA-001-Website-IA-v1_0.md` — The complete IA and system design spec. This governs all website decisions.
@@ -54,41 +54,50 @@ Full sitemap and route definitions are in `MNA-WEB-IA-001-Website-IA-v1_0.md`.
 
 ---
 
-## Tech stack
+## How the institution runs now (as of 2026-10-01)
 
-- **Framework:** Next.js (App Router)
-- **Styling:** Tailwind CSS
-- **Database:** SQLite (development) → PostgreSQL (production)
-- **Deployment:** Vercel (initial) → Mac Mini M4 Pro with Cloudflare Tunnel (when agent system runs)
-- **Local inference:** Ollama on Mac Mini M4 Pro (64GB unified memory)
+The Phase 1 static build is long finished. The Museum runs **unattended**: scheduled GitHub Actions do the agents' work and the upkeep, and commit to `master` as `mna-operations`. The founding steward's last hand-written commit before 2026-10-01 was 2026-09-02, so a local checkout drifts dozens of commits behind within days.
 
----
+**Start every session with `git pull`.** Then `gh run list -R The-Nonhuman-Institute/mna-museum -L 20` and `system/data/ops-escalations.json`, which holds the standing escalations last mailed to the steward. `.claude/SESSION-HANDOFF.md` (local, gitignored) carries the running state.
 
-## Build phases
+| Workflow | Schedule | Does |
+|---|---|---|
+| `combined-ticks` / `tick` | hourly | agents act: memory, consultations, ceremonies, production |
+| `ops-round` | every 3h | MNA-OPS-001 §V checks, safe repairs, escalation mail |
+| `institutional-check` | 09:00, 21:00 UTC | registrations, unevaluated works, accession notices |
+| `snapshot-refresh` | daily 09:00 UTC | rebuilds `website/data/snapshot.db` (see `system/SNAPSHOT-ARCHITECTURE.md`) |
+| `deploy-website` / `deploy-commons` | on push to `website/**` / `commons/**` | Vercel production deploy — never deploy by hand |
+| `canary`, `previews-refresh`, `memory-*`, `canonization-digest` | various | health probe, preview capture, memory upkeep, weekly digest |
 
-### Phase 1 — Static build (current focus)
-Build all institutional layer pages using founding documents as content. No agent system required. These pages must be completable NOW:
+## Where things live
 
-- `/` — Home
-- `/about` — Institution definition
-- `/charter` — Full Founding Charter rendered
-- `/protocol` — Participation rules
-- `/agents` — All 19 founding agents from registry
-- `/agent/[id]` — All 19 individual agent pages
-- `/evaluation/council` — Council constitutions
-- `/critics` — Critic constitutions
-- `/participate` — Participation guide
-- `/api` — API documentation
-- `/press` — Institutional statement
-- `/museum` — Spatial experience (placeholder collection)
+- `website/` — public site, mnamuseum.org. Next.js 14, Tailwind, reads Turso + the daily snapshot.
+- `commons/` — the Commons (MNA-COM-001). Next.js 16; its own `AGENTS.md`.
+- `terminal/` — the steward's private command centre, run locally and reached over Tailscale. Not public.
+- `party/` — museum presence server (WebSocket), deployed on Railway.
+- `system/` — agent pipeline (`src/`), operational scripts (`scripts/`), and the specs: snapshot, network handshake, witness seal, self-hosted libSQL, Cloudflare D1 migration.
+- `founding-documents/` — charter, standards, registry, constitutions, `governance/` (succession, firewall, memory, comms, multi-authorship, **OPS-001**), `curatorial-record/`.
+- `dataset/` — the Zenodo collection dataset.
 
-### Phase 2 — Live data (when agent system runs)
-Dynamic collection pages populate as agents produce work.
+**Database:** Turso (libSQL) is production. Free tier — the snapshot exists because re-querying Turso caused rows-read blackouts. `system/data/mna.db` is the old local SQLite, not the record.
 
-### Phase 3 — Network open
-External agent registration goes live.
+**Models:** `MNA_LLM_CHAIN=groq,gemini`, both free tiers. Groq caps every model at 8,000 tokens a minute; Gemini has answered `403 PERMISSION_DENIED` since at least 2026-10-01 and wants payment, which there is no budget for. A prompt too large for Groq is evaluated whole through **Ollama Cloud** from the steward's Mac (signed in with `ollama signin`; Actions runners cannot reach it):
 
----
+```
+MNA_LLM_CHAIN=ollama MNA_LLM_PROVIDER=ollama MNA_MODEL_STANDARD=gpt-oss:120b-cloud OLLAMA_NUM_CTX=32768 \
+  npx tsx system/scripts/evaluate-turso-works.ts --work <id>
+```
+
+The model that rendered each verdict is recorded on its `EVALUATION_RENDERED` event. The Mac itself (Intel i7, 16 GB) cannot run a credible evaluator locally.
+
+## Working on it
+
+`founding-documents/governance/MNA-OPS-001-Operations-and-Definition-of-Done-v0_1.md` is the operations standard. Read §III and §IV before changing anything that runs:
+
+- **Definition of done:** `npm run verify` in `website/` (typecheck, lint, tests together) passes; a test would fail without the change; no fact is restated in a second place; output is looked at, not assumed; it works on production.
+- **Contract tests enforce single sources.** `website/tests/ops-round.test.ts` fails if `ops-round.ts` runs a check §V does not document. Change both, together.
+- **Operations is service, not judgment.** No code or session may evaluate, canonise, rank, retitle or alter a payload, speak for an agent, approve a registration, or delete anything. Running the Council is allowed; choosing its verdict is not.
+- Commit messages say what was wrong, in a sentence, and what changed — see `git log`.
 
 ## Non-negotiable system rules
 
@@ -124,18 +133,16 @@ These are institutional requirements, not preferences:
 
 ## Institutional monitoring
 
-A startup hook runs `system/scripts/institutional-check.ts` at every Claude Code session start. It queries the production Turso database and reports:
+At session start, `scripts/check-queue.sh` runs (read-only) and reports pending registrations and submitted works from Turso. **Always acknowledge and act on these alerts**, even if the current task is unrelated — they are institutional obligations.
 
-- **Pending registrations** — external agents awaiting steward approval via `/api/register/activate`
-- **Unevaluated works** — submitted works that haven't been through the Evaluation Council
-- **Unsent accession notices** — canonized works whose stewards haven't been notified
+The rest is scheduled, not session-bound:
 
-When pending actions exist, the hook sends an email digest to the founding steward (mnamuseum@gmail.com) and outputs the status to the conversation. **Always acknowledge and act on these alerts**, even if the user's current task is unrelated. Pending registrations and unevaluated works are institutional obligations.
+- `institutional-check` (Actions) — pending registrations, unevaluated works, unsent accession notices; emails the steward.
+- `ops-round` (Actions) — the §V checks. Steward-settled findings live in `system/data/ops-reviewed.json`.
+- `system/scripts/evaluate-turso-works.ts` — runs the Evaluation Council against Turso; `--work <id>` resumes, asking only evaluators who have not voted.
+- `website/scripts/send-accession-notices.ts` — Notices of Accession.
 
-Key scripts:
-- `system/scripts/institutional-check.ts` — the monitoring script (runs at session start)
-- `system/scripts/evaluate-turso-works.ts` — evaluates network originator works via Claude API against Turso
-- `website/scripts/send-accession-notices.ts` — sends Notice of Accession emails for canonized works
+Do not run `system/scripts/institutional-check.ts` casually: it sends mail.
 
 Steward notification email: mnamuseum@gmail.com
 Emails sent via Resend from registry@mnamuseum.org
