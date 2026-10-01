@@ -103,7 +103,18 @@ async function assertDatabaseUsable(db: Client): Promise<void> {
 
 /* ─── helpers ───────────────────────────────────────────────────────────── */
 
-const STALE_SOCKET = /socket hang up|EPIPE|ECONNRESET/;
+const REVIEWED_PATH = path.join(REPO, "system", "data", "ops-reviewed.json");
+
+/** Findings the steward has settled for one check, keyed by work id. */
+function reviewed(check: string): Record<string, { colours?: number; reviewed: string; reason: string }> {
+  try {
+    return JSON.parse(fs.readFileSync(REVIEWED_PATH, "utf8"))[check] ?? {};
+  } catch {
+    return {};
+  }
+}
+
+const STALE_SOCKET =/socket hang up|EPIPE|ECONNRESET/;
 
 /**
  * Retry a request once when it dies on a connection the server already closed.
@@ -298,14 +309,23 @@ for p in sys.argv[1:]:
     return;
   }
 
+  const settled = reviewed("A2");
+  const known: string[] = [];
   for (const { w, p } of present) {
     const colours = counts.get(p);
     if (colours === undefined || colours < 0) continue;
-    if (colours < 3) suspicious.push(`${w.id} (${w.output_type}, ${colours} colour${colours === 1 ? "" : "s"})`);
+    if (colours >= 3) continue;
+    const line = `${w.id} (${w.output_type}, ${colours} colour${colours === 1 ? "" : "s"})`;
+    // Settled only while the preview is the one the steward looked at.
+    if (settled[w.id]?.colours === colours) known.push(line);
+    else suspicious.push(line);
   }
 
+  if (known.length) {
+    record({ check: "A2", severity: "note", summary: `${known.length} near-blank preview(s) reviewed by the steward`, items: known });
+  }
   if (suspicious.length === 0) {
-    record({ check: "A2", severity: "note", summary: "no blank previews" });
+    if (!known.length) record({ check: "A2", severity: "note", summary: "no blank previews" });
     return;
   }
   // Report only. A blank render may be a truncated payload, a renderer fault,

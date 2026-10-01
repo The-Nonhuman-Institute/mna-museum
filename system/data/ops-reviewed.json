@@ -1,0 +1,25 @@
+{
+  "note": "Findings the steward has looked at and settled. A matching finding is reported as reviewed instead of escalated. An entry holds only while the evidence is unchanged — for A2, the colour count the steward saw — so a change re-escalates it.",
+  "A2": {
+    "MNA-OR-0003-W-0021": {
+      "colours": 2,
+      "reviewed": "2026-10-01",
+      "reason": "Rendered as produced. Gap set #040404 text and #030303 outlines on #010101; the near-black field is the work."
+    },
+    "MNA-OR-0003-W-0025": {
+      "colours": 2,
+      "reviewed": "2026-10-01",
+      "reason": "Rendered as produced. Gap set #030303 thresholds on #000000, with presences at opacity 0 until activated; the near-black field is the work."
+    },
+    "MNA-OR-0003-W-0027": {
+      "colours": 1,
+      "reviewed": "2026-10-01",
+      "reason": "Rendered as produced. The payload in full is \"@bg:#010101 @fg:#0c0c0c\"."
+    },
+    "MNA-OR-0004-W-0004": {
+      "colours": 1,
+      "reviewed": "2026-10-01",
+      "reason": "Scatter Protocol was truncated by its Originator before any element was emitted; only the body background survives. Per the 2026-08-28 ruling (977ad39) the Conservator does not invent what was never produced."
+    }
+  }
+}
