@@ -31,6 +31,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
+import * as llm from "../src/llm";
 import { estTokens, GROQ_TPM_BUDGET } from "../src/budget";
 import { boundedWorkView, REGISTRAR_COMPLETION_TOKENS } from "../src/registrar-view";
 
@@ -364,7 +365,10 @@ async function evaluateWork(workId: string): Promise<{
       });
       const verdict = extractVerdict(response);
       const dt = Math.round((Date.now() - evalStart) / 1000);
-      console.log(`[evaluate]   [${evalId}] → ${verdict} (${dt}s)`);
+      // Which model judged is provenance: a verdict from a local model on an
+      // oversized work must be distinguishable from one by the usual Council.
+      const servedBy = llm.lastServedBy;
+      console.log(`[evaluate]   [${evalId}] → ${verdict} (${dt}s, ${servedBy ? `${servedBy.provider}/${servedBy.model}` : "unknown model"})`);
 
       // Write evaluation row
       await db.execute({
@@ -375,9 +379,9 @@ async function evaluateWork(workId: string): Promise<{
 
       // Log EVALUATION_RENDERED event
       await db.execute({
-        sql: `INSERT INTO events (event_type, agent_id, work_id, description)
-              VALUES ('EVALUATION_RENDERED', ?, ?, ?)`,
-        args: [evalId, workId, `${evalId} rendered ${verdict} on ${workId}`],
+        sql: `INSERT INTO events (event_type, agent_id, work_id, description, metadata)
+              VALUES ('EVALUATION_RENDERED', ?, ?, ?, ?)`,
+        args: [evalId, workId, `${evalId} rendered ${verdict} on ${workId}`, servedBy ? JSON.stringify(servedBy) : null],
       });
 
       verdicts[evalId] = verdict;
