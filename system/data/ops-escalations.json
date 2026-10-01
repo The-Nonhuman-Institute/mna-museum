@@ -1,9 +1,9 @@
 {
   "note": "The escalation set last emailed to the steward. Written by ops-notify so a standing condition is reported by every round but mailed once. Delete this file to force the next round to mail again.",
-  "emailed_at": "2026-09-30T06:05:47.652Z",
-  "digest": "A2|4 preview(s) rendered blank\nA5|check itself failed: request to https://mna-museum-tudoxukno.aws-us-east-2.turso.io/v2/pipeline failed, reason: write EPIPE",
+  "emailed_at": "2026-10-01T00:56:43.153Z",
+  "digest": "A2|4 preview(s) rendered blank\nA5|check itself failed: request to https://mna-museum-tudoxukno.aws-us-east-2.turso.io/v2/pipeline failed, reason: socket hang up",
   "escalations": [
     "A2 — 4 preview(s) rendered blank",
-    "A5 — check itself failed: request to https://mna-museum-tudoxukno.aws-us-east-2.turso.io/v2/pipeline failed, reason: write EPIPE"
+    "A5 — check itself failed: request to https://mna-museum-tudoxukno.aws-us-east-2.turso.io/v2/pipeline failed, reason: socket hang up"
   ]
 }
