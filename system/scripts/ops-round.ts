@@ -24,6 +24,13 @@ import path from "path";
 
 import { MEDIUM_OUTPUT_TYPE_COMPATIBILITY } from "../../website/src/lib/submission-checks";
 import { FROM_DOMAIN } from "../src/steward-mail";
+import {
+  classifyBlankPreviews,
+  findStalledReviews,
+  minutesSince,
+  retryOnStaleSocket,
+  reviewedFor,
+} from "../src/ops-checks";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -105,50 +112,15 @@ async function assertDatabaseUsable(db: Client): Promise<void> {
 
 const REVIEWED_PATH = path.join(REPO, "system", "data", "ops-reviewed.json");
 
-/** Findings the steward has settled for one check, keyed by work id. */
-function reviewed(check: string): Record<string, { colours?: number; reviewed: string; reason: string }> {
+function readReviewed(): unknown {
   try {
-    return JSON.parse(fs.readFileSync(REVIEWED_PATH, "utf8"))[check] ?? {};
+    return JSON.parse(fs.readFileSync(REVIEWED_PATH, "utf8"));
   } catch {
     return {};
   }
 }
 
-const STALE_SOCKET =/socket hang up|EPIPE|ECONNRESET/;
-
-/**
- * Retry a request once when it dies on a connection the server already closed.
- *
- * A2's Pillow pass runs through execFileSync and holds the event loop for about
- * a minute. Turso closes the idle keep-alive connection meanwhile, Node cannot
- * notice while blocked, and the next request — A5's — is written into a dead
- * socket. That was "A5 — check itself failed" from 2026-09-30, when the
- * collection grew past the point where A2 outlasts the idle timeout; it
- * reproduces locally with execFileSync("sleep", ["75"]) between two queries,
- * and the second attempt always succeeds on a fresh connection.
- *
- * Safe to repeat because every statement this round sends to Turso is a read.
- */
-function retryOnStaleSocket(db: Client): Client {
-  const execute = db.execute.bind(db) as (...a: unknown[]) => ReturnType<Client["execute"]>;
-  db.execute = (async (...args: unknown[]) => {
-    try {
-      return await execute(...args);
-    } catch (e) {
-      if (!STALE_SOCKET.test(e instanceof Error ? e.message : String(e))) throw e;
-      return execute(...args);
-    }
-  }) as Client["execute"];
-  return db;
-}
-
 const GRACE_MINUTES_NEW_WORK = 20;
-
-function minutesSince(iso: string): number {
-  const t = Date.parse(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z");
-  if (Number.isNaN(t)) return Number.POSITIVE_INFINITY;
-  return (Date.now() - t) / 60000;
-}
 
 async function head(url: string): Promise<number> {
   try {
@@ -262,7 +234,6 @@ async function checkA1(db: Client, works: WorkRow[]): Promise<string[]> {
  * colour. Any drawn mark, anti-aliased, produces dozens.
  */
 async function checkA2(works: WorkRow[]): Promise<void> {
-  const suspicious: string[] = [];
 
   // Every preview is counted, with no size pre-filter.
   //
@@ -309,17 +280,10 @@ for p in sys.argv[1:]:
     return;
   }
 
-  const settled = reviewed("A2");
-  const known: string[] = [];
-  for (const { w, p } of present) {
-    const colours = counts.get(p);
-    if (colours === undefined || colours < 0) continue;
-    if (colours >= 3) continue;
-    const line = `${w.id} (${w.output_type}, ${colours} colour${colours === 1 ? "" : "s"})`;
-    // Settled only while the preview is the one the steward looked at.
-    if (settled[w.id]?.colours === colours) known.push(line);
-    else suspicious.push(line);
-  }
+  const { known, suspicious } = classifyBlankPreviews(
+    present.map(({ w, p }) => ({ id: w.id, output_type: w.output_type, colours: counts.get(p) ?? -1 })),
+    reviewedFor(readReviewed(), "A2"),
+  );
 
   if (known.length) {
     record({ check: "A2", severity: "note", summary: `${known.length} near-blank preview(s) reviewed by the steward`, items: known });
@@ -483,33 +447,18 @@ async function checkB2(db: Client): Promise<void> {
 }
 
 async function checkB3(db: Client): Promise<void> {
-  // B1 and B2 look only at SUBMITTED. The evaluator marks a work IN_REVIEW
-  // before its first call, so an evaluation that dies mid-flight leaves the
-  // work here, where neither sees it. MNA-OR-0008-W-0024 sat in IN_REVIEW
-  // with no verdicts from 2026-09-10, and MNA-OR-0001-W-0032 with two of four
-  // from 2026-09-28, while every round reported nothing awaiting evaluation.
-  //
-  // Measured from the last verdict, or the work if there is none. A 2:2
-  // deadlock is also IN_REVIEW and waits on the Registrar; a day is long
-  // enough for either.
-  const r = await db.execute(`
-    SELECT cs.work_id, w.created_at, COUNT(e.id) AS verdicts, MAX(e.evaluation_date) AS last_verdict
-      FROM canon_status cs
-      JOIN works w ON w.id = cs.work_id
-      LEFT JOIN evaluations e ON e.work_id = cs.work_id
-     WHERE cs.status = 'IN_REVIEW'
-     GROUP BY cs.work_id`);
-  const rows = r.rows as unknown as { work_id: string; created_at: string; verdicts: number; last_verdict: string | null }[];
-  const stuck = rows.filter((x) => minutesSince(x.last_verdict ?? x.created_at) > 24 * 60);
+  // B1 and B2 look only at SUBMITTED; see findStalledReviews for why that
+  // missed two works in September 2026.
+  const { inReview, stalled: stuck } = await findStalledReviews(db);
 
   if (stuck.length === 0) {
-    record({ check: "B3", severity: "note", summary: `${rows.length} work(s) in review, none stalled` });
+    record({ check: "B3", severity: "note", summary: `${inReview} work(s) in review, none stalled` });
     return;
   }
   // Report only. Resuming asks only the evaluators who have not voted, but
   // whether a provider can serve it is worth a person's eye first.
   record({ check: "B3", severity: "escalate", summary: `${stuck.length} work(s) stalled in review over a day`,
-    items: stuck.map((x) => `${x.work_id} (${x.verdicts} verdict${Number(x.verdicts) === 1 ? "" : "s"})`),
+    items: stuck.map((x) => `${x.work_id} (${x.verdicts} verdict${x.verdicts === 1 ? "" : "s"})`),
     nextStep: "npx tsx system/scripts/evaluate-turso-works.ts --work <id>" });
 }
 
