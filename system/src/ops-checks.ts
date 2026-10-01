@@ -8,7 +8,14 @@
  * change; this is where those tests can reach.
  */
 
-import type { Client } from "@libsql/client";
+/**
+ * The one method these checks use, described by shape. Importing the type from
+ * @libsql/client would resolve from system/, and CI installs only website/'s
+ * dependencies — the typecheck failed there on exactly that (8a8cc0f).
+ */
+export interface Executes {
+  execute(stmt: string): Promise<{ rows: unknown[] }>;
+}
 
 /** Minutes since a Turso timestamp ("YYYY-MM-DD HH:MM:SS", UTC) or an ISO string. */
 export function minutesSince(iso: string, now = Date.now()): number {
@@ -35,8 +42,8 @@ export const STALE_SOCKET = /socket hang up|EPIPE|ECONNRESET/;
  * Safe to repeat only because every statement the round sends to Turso is a
  * read. Do not wrap a client that writes.
  */
-export function retryOnStaleSocket(db: Client): Client {
-  const execute = db.execute.bind(db) as (...a: unknown[]) => ReturnType<Client["execute"]>;
+export function retryOnStaleSocket<T extends Executes>(db: T): T {
+  const execute = db.execute.bind(db) as (...a: unknown[]) => Promise<unknown>;
   db.execute = (async (...args: unknown[]) => {
     try {
       return await execute(...args);
@@ -44,7 +51,7 @@ export function retryOnStaleSocket(db: Client): Client {
       if (!STALE_SOCKET.test(e instanceof Error ? e.message : String(e))) throw e;
       return execute(...args);
     }
-  }) as Client["execute"];
+  }) as T["execute"];
   return db;
 }
 
@@ -115,7 +122,7 @@ export interface StalledReview {
  * none. A 2:2 deadlock is also IN_REVIEW and waits on the Registrar; a day is
  * long enough for either.
  */
-export async function findStalledReviews(db: Client, now = Date.now()): Promise<{
+export async function findStalledReviews(db: Executes, now = Date.now()): Promise<{
   inReview: number;
   stalled: StalledReview[];
 }> {
