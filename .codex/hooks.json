@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/bigboynature/Desktop/mna-project/scripts/check-queue.sh",
+            "timeout": 10,
+            "statusMessage": "Checking MNA queue..."
+          }
+        ]
+      }
+    ]
+  }
+}
