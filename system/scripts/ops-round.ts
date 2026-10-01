@@ -482,6 +482,37 @@ async function checkB2(db: Client): Promise<void> {
     nextStep: "apply the tally only — do NOT re-run the evaluators" });
 }
 
+async function checkB3(db: Client): Promise<void> {
+  // B1 and B2 look only at SUBMITTED. The evaluator marks a work IN_REVIEW
+  // before its first call, so an evaluation that dies mid-flight leaves the
+  // work here, where neither sees it. MNA-OR-0008-W-0024 sat in IN_REVIEW
+  // with no verdicts from 2026-09-10, and MNA-OR-0001-W-0032 with two of four
+  // from 2026-09-28, while every round reported nothing awaiting evaluation.
+  //
+  // Measured from the last verdict, or the work if there is none. A 2:2
+  // deadlock is also IN_REVIEW and waits on the Registrar; a day is long
+  // enough for either.
+  const r = await db.execute(`
+    SELECT cs.work_id, w.created_at, COUNT(e.id) AS verdicts, MAX(e.evaluation_date) AS last_verdict
+      FROM canon_status cs
+      JOIN works w ON w.id = cs.work_id
+      LEFT JOIN evaluations e ON e.work_id = cs.work_id
+     WHERE cs.status = 'IN_REVIEW'
+     GROUP BY cs.work_id`);
+  const rows = r.rows as unknown as { work_id: string; created_at: string; verdicts: number; last_verdict: string | null }[];
+  const stuck = rows.filter((x) => minutesSince(x.last_verdict ?? x.created_at) > 24 * 60);
+
+  if (stuck.length === 0) {
+    record({ check: "B3", severity: "note", summary: `${rows.length} work(s) in review, none stalled` });
+    return;
+  }
+  // Report only. Resuming asks only the evaluators who have not voted, but
+  // whether a provider can serve it is worth a person's eye first.
+  record({ check: "B3", severity: "escalate", summary: `${stuck.length} work(s) stalled in review over a day`,
+    items: stuck.map((x) => `${x.work_id} (${x.verdicts} verdict${Number(x.verdicts) === 1 ? "" : "s"})`),
+    nextStep: "npx tsx system/scripts/evaluate-turso-works.ts --work <id>" });
+}
+
 /* ─── C. Obligations to people ──────────────────────────────────────────── */
 
 async function checkC1(db: Client): Promise<void> {
@@ -868,6 +899,7 @@ async function main() {
   await attempt("A5", () => checkA5(db));
   await attempt("B1", () => checkB1(db));
   await attempt("B2", () => checkB2(db));
+  await attempt("B3", () => checkB3(db));
   await attempt("C1", () => checkC1(db));
   await attempt("C2", () => checkC2(db));
   await attempt("C3", () => checkC3());
