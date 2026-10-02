@@ -8,6 +8,7 @@ import {
   minutesSince,
   retryOnStaleSocket,
   reviewedFor,
+  snapshotBehind,
   type Reviewed,
 } from "../../system/src/ops-checks";
 
@@ -226,5 +227,49 @@ describe("a verdict records the model that rendered it", () => {
     const llm = readFileSync(path.join(ROOT, "system/src/llm.ts"), "utf8");
     expect(llm).toMatch(/export let lastServedBy/);
     expect(llm).toMatch(/lastServedBy = \{ provider, model \};/);
+  });
+});
+
+describe("D2 asks whether the snapshot is behind, not whether the collection is quiet", () => {
+  const current = { missingWorks: [], verdictDrift: "", now: NOW };
+
+  it("leaves a quiet collection alone when the snapshot was refreshed recently", () => {
+    // 2026-10-01: newest work 74.5h old, snapshot refreshed three hours before.
+    // Measuring the newest work dispatched a full refresh every round.
+    expect(snapshotBehind({ ...current, lastRefreshAt: "2026-10-01T09:00:00Z" })).toEqual([]);
+  });
+
+  it("is behind when the daily refresh has not succeeded in over a day", () => {
+    expect(snapshotBehind({ ...current, lastRefreshAt: "2026-09-30T09:00:00Z" })).toEqual([
+      "last refreshed 27.0h ago",
+    ]);
+  });
+
+  it("allows the daily refresh its slack", () => {
+    // 25h is a late run, not a failed one.
+    expect(snapshotBehind({ ...current, lastRefreshAt: "2026-09-30T11:00:00Z" })).toEqual([]);
+  });
+
+  it("is behind when the institution holds works the snapshot lacks, however recent the refresh", () => {
+    expect(
+      snapshotBehind({ ...current, missingWorks: ["MNA-OR-0002-W-0035"], lastRefreshAt: "2026-10-01T11:00:00Z" }),
+    ).toEqual(["1 work(s) not in it"]);
+  });
+
+  it("is behind when a verdict moved without its work moving", () => {
+    expect(
+      snapshotBehind({ ...current, verdictDrift: "CANON 86\u219287 ", lastRefreshAt: "2026-10-01T11:00:00Z" }),
+    ).toEqual(["verdicts moved: CANON 86\u219287"]);
+  });
+
+  it("does not call the snapshot stale just because the refresh history could not be read", () => {
+    expect(snapshotBehind({ ...current, lastRefreshAt: null })).toEqual([]);
+  });
+
+  it("is what the round asks, with the last refresh read from run history", () => {
+    const round = readFileSync(path.join(ROOT, "system/scripts/ops-round.ts"), "utf8");
+    expect(round).toMatch(/snapshotBehind\(\{ missingWorks, verdictDrift, lastRefreshAt \}\)/);
+    expect(round).toMatch(/"run", "list", "--workflow", "snapshot-refresh\.yml", "--status", "success"/);
+    expect(round).not.toMatch(/ageHours\s*>=\s*24/);
   });
 });

@@ -147,3 +147,42 @@ export async function findStalledReviews(db: Executes, now = Date.now()): Promis
       .map((x) => ({ work_id: x.work_id, verdicts: Number(x.verdicts) })),
   };
 }
+
+/* ─── D2: is the snapshot behind? ──────────────────────────────────────── */
+
+/** The daily refresh runs at 09:00 UTC; past this, a scheduled run has failed. */
+export const SNAPSHOT_REFRESH_DUE_HOURS = 26;
+
+/**
+ * Why the snapshot is behind, or nothing if it is not.
+ *
+ * Contents first: works the snapshot lacks, and verdict counts that moved. The
+ * clock is a backstop for the rest of the snapshot — events, critiques and the
+ * other tables a content check does not compare — and it measures the right
+ * thing: when the snapshot was last checked against Turso, which is the last
+ * successful snapshot-refresh run, committed or not.
+ *
+ * It used to measure the age of the snapshot's newest WORK. That is how long
+ * since an Originator last made something, not how old the snapshot is, so in
+ * any quiet stretch every round dispatched a full refresh — each one a read of
+ * every Turso table, the quota the snapshot exists to protect. From 2026-09-28
+ * no work arrived, and refreshes ran four or five times a day.
+ *
+ * An unknown last refresh (no run history readable) is not evidence of
+ * staleness; the content checks still apply.
+ */
+export function snapshotBehind(i: {
+  missingWorks: string[];
+  verdictDrift: string;
+  lastRefreshAt: string | null;
+  now?: number;
+}): string[] {
+  const why: string[] = [];
+  if (i.missingWorks.length) why.push(`${i.missingWorks.length} work(s) not in it`);
+  if (i.verdictDrift) why.push(`verdicts moved: ${i.verdictDrift.trim()}`);
+  if (i.lastRefreshAt) {
+    const hours = minutesSince(i.lastRefreshAt, i.now) / 60;
+    if (hours >= SNAPSHOT_REFRESH_DUE_HOURS) why.push(`last refreshed ${hours.toFixed(1)}h ago`);
+  }
+  return why;
+}

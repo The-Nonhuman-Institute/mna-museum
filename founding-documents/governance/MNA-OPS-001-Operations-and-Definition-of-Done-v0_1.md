@@ -331,7 +331,9 @@ cannot send, so a finding about the channel survives the channel.
 snapshot is behind when any of these is true:
 - the institution holds works created after the snapshot's newest work;
 - the canon verdict counts differ between the two;
-- the snapshot's newest work is over **24 hours** old (a backstop, not the test).
+- the last successful `snapshot-refresh` run is over **26 hours** old — the daily
+  09:00 run has failed (a backstop for the tables the content checks do not
+  compare, not the test).
 
 **Edge cases.**
 - *Public browsing surfaces are snapshot-first on purpose*, to keep read volume
@@ -345,6 +347,12 @@ snapshot is behind when any of these is true:
   the work it concerns and does not change `created_at`, so a work can be present
   in the snapshot and still shown there as SUBMITTED long after it was decided.
   Comparing timestamps cannot see this; comparing verdict counts can.
+- *A quiet collection is not a stale snapshot.* The backstop once measured the
+  age of the snapshot's newest **work** — how long since an Originator made
+  something. With no work after 2026-09-28, every round dispatched a full
+  refresh, four or five a day, each reading every Turso table: the quota the
+  snapshot exists to protect. It measures the last refresh run, which counts
+  whether or not that run found anything to commit.
 
 **Repair.** Dispatch `snapshot-refresh.yml`.
 

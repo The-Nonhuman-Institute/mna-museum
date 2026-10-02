@@ -30,6 +30,7 @@ import {
   minutesSince,
   retryOnStaleSocket,
   reviewedFor,
+  snapshotBehind,
 } from "../src/ops-checks";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
@@ -179,6 +180,21 @@ function snapshotNewestWork(): string | null {
     const row = db.prepare("SELECT MAX(created_at) AS newest FROM works").get() as { newest?: string };
     db.close();
     return row?.newest ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * When the snapshot was last checked against Turso: the newest successful
+ * snapshot-refresh run. Not the snapshot's commit — a refresh that finds
+ * nothing changed commits nothing — and not its newest work.
+ */
+function lastSuccessfulRefresh(): string | null {
+  try {
+    const at = run("gh", ["run", "list", "--workflow", "snapshot-refresh.yml", "--status", "success",
+      "--limit", "1", "--json", "createdAt", "--jq", ".[0].createdAt"]).trim();
+    return at || null;
   } catch {
     return null;
   }
@@ -692,8 +708,6 @@ async function checkD2(db: Client, works: WorkRow[]): Promise<void> {
       nextStep: "gh workflow run snapshot-refresh.yml" });
     return;
   }
-  const ageHours = minutesSince(newest) / 60;
-
   // Staleness is a question about CONTENTS, not about the clock.
   //
   // This used to allow 24 hours and say nothing else, so a work canonised just
@@ -718,17 +732,14 @@ async function checkD2(db: Client, works: WorkRow[]): Promise<void> {
     }
   }
 
-  const behind = missingWorks.length > 0 || verdictDrift !== "" || ageHours >= 24;
-  if (!behind) {
-    record({ check: "D2", severity: "note", summary: `snapshot is current (newest work ${ageHours.toFixed(1)}h old)` });
+  const lastRefreshAt = lastSuccessfulRefresh();
+  const reasons = snapshotBehind({ missingWorks, verdictDrift, lastRefreshAt });
+  if (reasons.length === 0) {
+    const since = lastRefreshAt ? `last refreshed ${(minutesSince(lastRefreshAt) / 60).toFixed(1)}h ago` : "refresh history unreadable";
+    record({ check: "D2", severity: "note", summary: `snapshot is current (${since})` });
     return;
   }
-
-  const why = [
-    missingWorks.length ? `${missingWorks.length} work(s) not in it` : "",
-    verdictDrift ? `verdicts moved: ${verdictDrift.trim()}` : "",
-    ageHours >= 24 ? `${ageHours.toFixed(1)}h old` : "",
-  ].filter(Boolean).join("; ");
+  const why = reasons.join("; ");
 
   if (dryRun) {
     record({ check: "D2", severity: "escalate", summary: `snapshot is behind — ${why}`,
