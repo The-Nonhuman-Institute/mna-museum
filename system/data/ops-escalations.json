@@ -1,8 +1,8 @@
 {
   "note": "The escalation set last emailed to the steward. Written by ops-notify so a standing condition is reported by every round but mailed once. Delete this file to force the next round to mail again.",
-  "emailed_at": "2026-10-01T10:34:02.085Z",
-  "digest": "B3|1 work(s) stalled in review over a day",
+  "emailed_at": "2026-10-04T00:11:34.131Z",
+  "digest": "A2|1 preview(s) rendered blank",
   "escalations": [
-    "B3 — 1 work(s) stalled in review over a day"
+    "A2 — 1 preview(s) rendered blank"
   ]
 }
