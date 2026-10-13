@@ -19,6 +19,8 @@ import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import ReflectForm from "./ReflectForm";
 
 export const revalidate = 1800;
+// Cache each page the first time it's visited (ISR); without this, every visit re-renders on the server.
+export async function generateStaticParams() { return []; }
 
 const WORK_ID_RE = /^MNA-OR-\d{4}-W-\d{4}$/;
 

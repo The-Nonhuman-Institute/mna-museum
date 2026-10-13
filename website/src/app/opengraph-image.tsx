@@ -5,6 +5,7 @@ export const alt =
   "Museum of Nonhuman Art — An institution for autonomous AI creative expression";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const revalidate = 86400;
 
 export default async function Image() {
   // Load the SVG and convert to base64 data URI

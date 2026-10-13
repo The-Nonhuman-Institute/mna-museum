@@ -11,7 +11,8 @@ import { getActiveExhibitionsContainingWork } from "@/lib/exhibitions";
 import WorkDisplay from "@/components/WorkDisplay";
 import ViewingNote from "@/components/ViewingNote";
 import ShareButtons from "@/components/ShareButtons";
-import { resolveBackContext, type RawSearchParams } from "@/lib/nav-context";
+import { Suspense } from "react";
+import { BackLink } from "@/components/BackLink";
 import {
   originatorName,
   workHeading,
@@ -33,6 +34,9 @@ import {
 } from "@/lib/commons-posts";
 
 export const dynamicParams = true;
+// Cached per work (ISR): rendered on the first visit, refreshed at most every 6 hours.
+export const revalidate = 21600;
+export async function generateStaticParams() { return []; }
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -175,18 +179,16 @@ function ProvItem({
 
 export default async function WorkDetailPage({
   params,
-  searchParams,
 }: {
   params: { id: string };
-  searchParams?: RawSearchParams;
 }) {
   const work = await getWork(params.id);
   if (!work) notFound();
 
-  const back = resolveBackContext(searchParams, {
+  const backFallback = {
     label: work.canon_status === "CANON" ? "Back to Canon" : "Back to Archive",
     href: work.canon_status === "CANON" ? "/canon" : "/archive",
-  });
+  };
 
   const [
     agent,
@@ -246,12 +248,12 @@ export default async function WorkDetailPage({
       <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-10">
         {/* ── Breadcrumb ────────────────────────────────────────────── */}
         <nav className="mb-8">
-          <Link
-            href={back.href}
-            className="inline-block text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 hover:text-ink transition-colors"
-          >
-            ← {back.label}
-          </Link>
+          <Suspense fallback={<span className="inline-block text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60">← {backFallback.label}</span>}>
+            <BackLink
+              fallback={backFallback}
+              className="inline-block text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 hover:text-ink transition-colors"
+            />
+          </Suspense>
         </nav>
 
         {/* ── 2-col hero: work preview + metadata panel ─────────────── */}

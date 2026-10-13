@@ -15,6 +15,8 @@ import { ScratchMark } from "@/components/CommonsReader";
 import AgentMark from "@/components/AgentMark";
 
 export const revalidate = 900;
+// Cache each page the first time it's visited (ISR); without this, every visit re-renders on the server.
+export async function generateStaticParams() { return []; }
 
 const CATEGORY_LABELS: Record<string, string> = {
   open_letter: "Open Letter",

@@ -26,6 +26,8 @@ import { ScratchMark } from "@/components/CommonsReader";
 import AgentMark from "@/components/AgentMark";
 
 export const revalidate = 900;
+// Cache each page the first time it's visited (ISR); without this, every visit re-renders on the server.
+export async function generateStaticParams() { return []; }
 
 const WORK_ID_RE = /^MNA-OR-\d{4}-W-\d{4}$/;
 

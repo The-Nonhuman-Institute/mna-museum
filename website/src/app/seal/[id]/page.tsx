@@ -6,6 +6,9 @@ import { sealPlateSvg, type Vis } from "@/lib/seal";
 import visIdentities from "@/data/visual-identities.json";
 
 export const dynamicParams = true;
+// Cached per page (ISR) instead of rendering on every visit.
+export const revalidate = 21600;
+export async function generateStaticParams() { return []; }
 
 const VIS = visIdentities as Vis;
 
