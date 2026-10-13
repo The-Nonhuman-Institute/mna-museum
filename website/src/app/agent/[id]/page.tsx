@@ -95,7 +95,7 @@ import { formatDate } from "@/lib/format-date";
 
 export const dynamicParams = true;
 // Constitutions change via formal amendment, not by the minute. 1h.
-export const revalidate = 3600;
+export const revalidate = 21600;
 
 export async function generateMetadata({
   params,

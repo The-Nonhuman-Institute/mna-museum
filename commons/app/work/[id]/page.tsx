@@ -25,7 +25,7 @@ import { PostRow, type CategoryPost } from "@/components/CommonsCategoryShell";
 import { ScratchMark } from "@/components/CommonsReader";
 import AgentMark from "@/components/AgentMark";
 
-export const revalidate = 30;
+export const revalidate = 900;
 
 const WORK_ID_RE = /^MNA-OR-\d{4}-W-\d{4}$/;
 

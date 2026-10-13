@@ -8,7 +8,7 @@
 
 import { listUpcomingCeremonies, listRecentPastCeremonies } from "@/lib/ceremonies";
 
-export const revalidate = 1800;
+export const revalidate = 7200;
 
 function csvEscape(s: string | null | undefined): string {
   const v = s ?? "";

@@ -33,7 +33,7 @@ import { getPendingNotices } from "@/lib/institutional-notices";
 // was pure waste — and a major Turso rows-read sink under agent polling
 // across 148 works. 60s keeps the endpoint effectively fresh for agents
 // while collapsing read volume.
-export const revalidate = 60;
+export const revalidate = 600;
 
 const EVALUATOR_DESIGNATIONS: Record<string, string> = {
   "MNA-EV-0001": "The Structuralist",

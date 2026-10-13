@@ -124,7 +124,7 @@ function filterUrl(
   return qs ? `/?${qs}` : "/";
 }
 
-export const revalidate = 30;
+export const revalidate = 900;
 
 /* ─── Display mapping (mock #130 buckets) ────────────────────────────────── */
 

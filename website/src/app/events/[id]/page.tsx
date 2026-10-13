@@ -104,7 +104,7 @@ async function loadFeaturedOriginators(
 
 // Most of this page is the announced ceremony record. The countdown
 // + live banner are client components and stay fresh on the client.
-export const revalidate = 1800;
+export const revalidate = 7200;
 
 export async function generateMetadata({
   params,

@@ -18,7 +18,7 @@ import { notFound } from "next/navigation";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import ReflectForm from "./ReflectForm";
 
-export const revalidate = 60;
+export const revalidate = 1800;
 
 const WORK_ID_RE = /^MNA-OR-\d{4}-W-\d{4}$/;
 

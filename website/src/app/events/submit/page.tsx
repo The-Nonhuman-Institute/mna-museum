@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 
 // Mostly static protocol prose; the "protocol in action" live list
 // of recent designations doesn't need sub-minute freshness.
-export const revalidate = 3600;
+export const revalidate = 21600;
 
 interface CeremonyTypeSpec {
   key: string;

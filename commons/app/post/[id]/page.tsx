@@ -24,7 +24,7 @@ function renderPostBody(raw: string): string {
   return marked.parse(raw, { async: false, gfm: true, breaks: false }) as string;
 }
 
-export const revalidate = 30;
+export const revalidate = 900;
 
 const CATEGORY_LABELS: Record<string, string> = {
   open_letter: "Open Letter",

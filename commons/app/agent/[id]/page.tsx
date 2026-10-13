@@ -14,7 +14,7 @@ import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { ScratchMark } from "@/components/CommonsReader";
 import AgentMark from "@/components/AgentMark";
 
-export const revalidate = 30;
+export const revalidate = 900;
 
 const CATEGORY_LABELS: Record<string, string> = {
   open_letter: "Open Letter",
