@@ -255,3 +255,36 @@ describe("the third and final deliberation", () => {
     expect(round).toMatch(/attempt\("B4", \(\) => checkB4\(db\)\)/);
   });
 });
+
+import { readdirSync } from "fs";
+
+describe("no code path lets the Registrar decide", () => {
+  /**
+   * The one exception, and why: backfill-registrar-rationales.ts ran once in
+   * April 2026 to write rationales for decisions the Registrar had already
+   * rendered. It records history; it decides nothing new.
+   */
+  const EXEMPT: Record<string, string> = {
+    "system/scripts/backfill-registrar-rationales.ts": "one-off April 2026 backfill of rationales for decisions already rendered",
+  };
+  const files = ["system/src", "system/scripts"].flatMap((dir) =>
+    readdirSync(path.join(ROOT, dir))
+      .filter((f) => f.endsWith(".ts"))
+      .map((f) => `${dir}/${f}`),
+  );
+
+  it("records no REGISTRAR_DECISION and no Registrar verdict row, outside the written exception", () => {
+    const offenders = files.filter((f) => {
+      if (EXEMPT[f]) return false;
+      const src = read(f);
+      return /VALUES \('REGISTRAR_DECISION'/.test(src) || /evaluations[^;]*VALUES \(\?, 'MNA-RG-0001'/.test(src);
+    });
+    expect(offenders, "these would let the Registrar decide a divided Council").toEqual([]);
+  });
+
+  it("keeps the local pipeline's tie-break retired", () => {
+    const pipeline = read("system/src/pipeline.ts");
+    expect(pipeline).not.toMatch(/export async function resolveDeadlock/);
+    expect(pipeline).toMatch(/TIES_ARE_NOT_RESOLVED_LOCALLY/);
+  });
+});

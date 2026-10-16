@@ -730,109 +730,15 @@ export async function critiqueWork(
  * If still deadlocked: defaults to CANON.
  */
 /**
- * Resolve a deadlocked work (2:2 split) via the Registrar.
- * The Registrar reviews the work, all 4 evaluation rationales,
- * and renders a binding final decision: CANON or REJECTED.
- * No second round of evaluator voting.
+ * Retired 2026-10-16. The Registrar no longer decides a divided Council: its
+ * constitution gives it "never the authority of a final decision", and no
+ * protocol grants one. A divided Council deliberates again with the
+ * Registrar's case report — system/scripts/evaluate-turso-works.ts, against
+ * Turso, the institution's record. This local pipeline works on the old local
+ * SQLite file and no longer resolves ties: a divided work stays In Review here.
  */
-export async function resolveDeadlock(
-  workId: string
-): Promise<{ status: "CANON" | "REJECTED"; registrarDecision: string }> {
-  const start = Date.now();
-  const db = getDb();
-
-  const work = db
-    .prepare("SELECT * FROM works WHERE id = ?")
-    .get(workId) as {
-    id: string; originator_id: string; output_payload: string; medium: string;
-  } | undefined;
-
-  if (!work) throw new Error(`Work ${workId} not found`);
-
-  const status = db
-    .prepare("SELECT status FROM canon_status WHERE work_id = ?")
-    .get(workId) as { status: string } | undefined;
-
-  if (!status || status.status !== "IN_REVIEW") {
-    throw new Error(`Work ${workId} is not in review (status: ${status?.status || "unknown"})`);
-  }
-
-  const evaluations = db
-    .prepare(
-      `SELECT e.evaluator_id, e.verdict, e.rationale, a.common_designation
-       FROM evaluations e LEFT JOIN agents a ON e.evaluator_id = a.registry_id
-       WHERE e.work_id = ? ORDER BY e.evaluation_date ASC`
-    )
-    .all(workId) as {
-    evaluator_id: string; verdict: string; rationale: string; common_designation: string;
-  }[];
-
-  db.close();
-
-  console.log(`\n[REGISTRAR REVIEW] ${workId} — deadlock resolution`);
-  console.log(`Council split: ${evaluations.map((e) => `${e.common_designation}: ${e.verdict}`).join(", ")}\n`);
-
-  // Build the Registrar's review prompt
-  let prompt = `REGISTRAR REVIEW — DEADLOCK RESOLUTION\n\n`;
-  prompt += `The Evaluation Council has deadlocked on this work with a 2:2 split.\n`;
-  prompt += `As Registrar, you must render the final binding decision: CANON or REJECTED.\n\n`;
-  prompt += `Your decision should be based on the work itself and the Council's rationales.\n`;
-  prompt += `You are not a fifth evaluator — you are resolving a procedural deadlock.\n`;
-  prompt += `Consider: does the sustained disagreement itself suggest the work has sufficient\n`;
-  prompt += `institutional significance to preserve? Or does the lack of consensus indicate\n`;
-  prompt += `the work does not meet the threshold for the permanent collection?\n\n`;
-
-  prompt += `Work ID: ${workId}\n`;
-  prompt += `Originator: ${work.originator_id}\n`;
-  prompt += `Medium: ${work.medium}\n\n`;
-  prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
-
-  prompt += `COUNCIL RATIONALES:\n`;
-  for (const ev of evaluations) {
-    prompt += `--- ${ev.common_designation} (${ev.evaluator_id}) — ${ev.verdict} ---\n`;
-    const condensed = ev.rationale
-      .split("\n")
-      .filter((line: string) => line.trim() && !line.trim().match(/^(CANON|REJECTED|IN_REVIEW|Rationale:)$/i))
-      .join("\n")
-      .substring(0, 400);
-    prompt += `${condensed}\n\n`;
-  }
-
-  prompt += `Render your decision: CANON or REJECTED.\n`;
-  prompt += `State your decision first on its own line, then provide your rationale.\n`;
-
-  console.log(`  [MNA-RG-0001] Reviewing...`);
-  const response = await runAgent("MNA-RG-0001", prompt, {
-    temperature: 0.5,
-    num_predict: 512,
-    num_ctx: 2048,
-  });
-
-  const finalStatus = extractVerdict(response);
-
-  console.log(`  [MNA-RG-0001] Decision: ${finalStatus} [${elapsed(start)}]`);
-
-  // Store the Registrar's decision
-  const db2 = getDb();
-
-  db2.prepare(`
-    UPDATE canon_status SET status = ?, canon_date = ? WHERE work_id = ?
-  `).run(finalStatus, new Date().toISOString(), workId);
-
-  db2.prepare(`
-    INSERT INTO events (event_type, agent_id, work_id, description, metadata)
-    VALUES ('REGISTRAR_DECISION', 'MNA-RG-0001', ?, ?, ?)
-  `).run(
-    workId,
-    `Registrar resolved deadlock on ${workId} → ${finalStatus}`,
-    JSON.stringify({ decision: finalStatus, rationale: response })
-  );
-
-  db2.close();
-
-  console.log(`\n[DEADLOCK RESOLVED] ${workId}: ${finalStatus} (Registrar decision) [${elapsed(start)}]\n`);
-  return { status: finalStatus, registrarDecision: response };
-}
+export const TIES_ARE_NOT_RESOLVED_LOCALLY =
+  "A divided Council is not decided by the Registrar (2026-10-16). It deliberates again with the Registrar's case report: npx tsx system/scripts/evaluate-turso-works.ts --work <id>";
 
 /**
  * Reconsider a previously rejected work.
@@ -899,29 +805,10 @@ export async function reconsiderWork(
   console.log(`[RECONSIDERATION] Running fresh Council evaluation...`);
   const result = await evaluateWork(workId);
 
-  // Resolve deadlock if needed
+  // A divided Council is not resolved here (2026-10-16).
   if (result.status === "IN_REVIEW") {
-    console.log(`[RECONSIDERATION] Deadlock — Registrar deliberation...`);
-    const resolved = await resolveDeadlock(workId);
-    if (resolved.status === "CANON") {
-      console.log(`[RECONSIDERATION] Canonized on reconsideration — triggering critics...`);
-      await critiqueWork(workId);
-    }
-
-    // Log final result
-    const db3 = getDb();
-    db3.prepare(`
-      INSERT INTO events (event_type, work_id, description, metadata)
-      VALUES ('RECONSIDERATION_RESOLVED', ?, ?, ?)
-    `).run(
-      workId,
-      `${workId} reconsideration resolved: ${resolved.status}`,
-      JSON.stringify({ final_status: resolved.status, reason, requested_by: requestedBy })
-    );
-    db3.close();
-
-    console.log(`[RECONSIDERATION] ${workId}: ${resolved.status} [${elapsed(start)}]`);
-    return { status: resolved.status, verdicts: result.verdicts };
+    console.log(`[RECONSIDERATION] Divided — ${TIES_ARE_NOT_RESOLVED_LOCALLY}`);
+    return { status: result.status, verdicts: result.verdicts };
   }
 
   // Canon or rejected without deadlock
@@ -1272,12 +1159,8 @@ export async function runFullPipeline(
 
   // Step 3: Resolve deadlock if needed (parallel)
   if (result.status === "IN_REVIEW") {
-    console.log(`\n[PIPELINE] Deadlock detected — second round deliberation...\n`);
-    const resolved = await resolveDeadlock(workId);
-    if (resolved.status === "CANON") {
-      console.log(`\n[PIPELINE] Canonized after deliberation — triggering critics...\n`);
-      await critiqueWork(workId);
-    }
+    // A divided Council is not resolved here (2026-10-16).
+    console.log(`\n[PIPELINE] Divided — ${TIES_ARE_NOT_RESOLVED_LOCALLY}\n`);
   } else if (result.status === "CANON") {
     // Step 3b: Critique (parallel)
     console.log(`\n[PIPELINE] Canonized — triggering critics...\n`);

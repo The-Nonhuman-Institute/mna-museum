@@ -1,5 +1,5 @@
 import { isAvailable } from "./ollama";
-import { runFullPipeline, produceWork, evaluateWork, critiqueWork, resolveDeadlock, reconsiderWork, triggerEmergence, titleWorks } from "./pipeline";
+import { runFullPipeline, produceWork, evaluateWork, critiqueWork, reconsiderWork, triggerEmergence, titleWorks, TIES_ARE_NOT_RESOLVED_LOCALLY } from "./pipeline";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -74,32 +74,9 @@ async function main() {
     }
 
     case "resolve": {
-      // Resolve a deadlocked work
-      const workId = args[1];
-      if (!workId) {
-        // Find all deadlocked works
-        const Database = require("better-sqlite3");
-        const path = require("path");
-        const db = new Database(
-          path.join(__dirname, "..", "data", "mna.db")
-        );
-        const deadlocked = db.prepare(
-          "SELECT work_id FROM canon_status WHERE status = 'IN_REVIEW'"
-        ).all() as { work_id: string }[];
-        db.close();
-
-        if (deadlocked.length === 0) {
-          console.log("No deadlocked works to resolve.");
-          break;
-        }
-
-        console.log(`Found ${deadlocked.length} deadlocked works. Resolving...\n`);
-        for (const { work_id } of deadlocked) {
-          await resolveDeadlock(work_id);
-        }
-        break;
-      }
-      await resolveDeadlock(workId);
+      // Retired 2026-10-16: the Registrar does not decide ties.
+      console.error(TIES_ARE_NOT_RESOLVED_LOCALLY);
+      process.exitCode = 1;
       break;
     }
 
