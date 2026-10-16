@@ -58,7 +58,12 @@ export const FIXTURES: Record<OutputTypeId, string> = {
     ],
   }),
 
-  "shader-glsl": `void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  // Declares its own precision and iTime, as MNA-OR-0002-W-0035's shaders did
+  // and many GLSL shaders do. The bare form, declaring neither, is the
+  // composite-json fixture's shader part, so both are exercised.
+  "shader-glsl": `precision mediump float;
+uniform float iTime;
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
   float v = 0.5 + 0.5 * sin(uv.x * 10.0 + iTime);
   fragColor = vec4(v, uv.y, 1.0 - v, 1.0);

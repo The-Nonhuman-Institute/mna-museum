@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SHADER_MAIN_RE, SHADER_MAIN_IMAGE_RE } from "@/lib/shader-source";
+import { buildFragmentSource } from "@/lib/shader-source";
 
 /**
  * GLSL fragment shaders.
@@ -30,40 +30,6 @@ import { SHADER_MAIN_RE, SHADER_MAIN_IMAGE_RE } from "@/lib/shader-source";
 const VERTEX_SRC = `attribute vec2 a_position;
 void main() { gl_Position = vec4(a_position, 0.0, 1.0); }`;
 
-/** Uniform declarations prepended to every shader, under both conventions. */
-const PREAMBLE = `precision highp float;
-uniform float u_time;
-uniform vec2 u_resolution;
-#define iTime u_time
-#define iResolution vec3(u_resolution, 1.0)
-`;
-
-/** Shadertoy entry points get a main() that calls them. */
-const SHADERTOY_TAIL = `
-void main() {
-  vec4 c = vec4(0.0, 0.0, 0.0, 1.0);
-  mainImage(c, gl_FragCoord.xy);
-  gl_FragColor = c;
-}
-`;
-
-function buildFragmentSource(payload: string): string {
-  const src = payload.trim();
-  // A shader that already declares precision keeps its own; ours would collide.
-  const preamble = /precision\s+(low|medium|high)p\s+float/.test(src)
-    ? PREAMBLE.replace("precision highp float;\n", "")
-    : PREAMBLE;
-
-  // From lib/shader-source, which the submission sniff also imports. One fact.
-  const hasMain = SHADER_MAIN_RE.test(src);
-  const hasMainImage = SHADER_MAIN_IMAGE_RE.test(src);
-
-  if (hasMain) return preamble + src;
-  if (hasMainImage) return preamble + src + SHADERTOY_TAIL;
-  // Neither entry point. Compile it anyway so the error surfaces honestly
-  // rather than being masked by a wrapper that guesses wrong.
-  return preamble + src;
-}
 
 function compile(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | string {
   const shader = gl.createShader(type);
@@ -167,7 +133,9 @@ export default function ShaderRenderer({ payload }: { payload: string }) {
 
   if (error) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-ink p-6">
+      // data-render-error lets the render matrix (E2) tell an error message
+      // from a painting: both have plenty of colours.
+      <div data-render-error={error} className="w-full h-full flex items-center justify-center bg-ink p-6">
         <p className="text-[11px] font-mono text-mna-white/50 text-center leading-relaxed max-w-[40ch] break-words">
           {error}
         </p>
