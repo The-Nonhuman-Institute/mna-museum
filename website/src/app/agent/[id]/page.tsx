@@ -172,6 +172,8 @@ function humanizeEventLabel(eventType: string, description: string): string {
     REGISTRY_CORRECTION: "Registry correction",
     CLASSIFICATION_CORRECTED: "Classification corrected",
     REGISTRAR_DECISION: "Registrar decision",
+    REGISTRAR_CASE_REPORT: "Registrar case report",
+    COUNCIL_REDELIBERATION: "Deliberated again",
     DOCUMENT_RATIFIED: "Document ratified",
     SPOTLIGHT_POSTED: "Originator spotlight posted",
     COMMONS_LAUNCHED: "Commons platform launched",

@@ -83,15 +83,18 @@ describe("the evaluator is told what the images are", () => {
 });
 
 describe("a work that does not render is held, never judged blind", () => {
+  const evaluateWork = evaluator.slice(evaluator.indexOf("async function evaluateWork("), evaluator.indexOf("async function eventsOf("));
+
   it("is photographed before anything is recorded", () => {
-    const capture = evaluator.indexOf("captureFrames(await harness()");
-    const inReview = evaluator.indexOf("SET status = 'IN_REVIEW'");
+    const capture = evaluateWork.indexOf("await see(work)");
+    const inReview = evaluateWork.indexOf("SET status = 'IN_REVIEW'");
     expect(capture).toBeGreaterThan(0);
     expect(capture).toBeLessThan(inReview);
   });
 
   it("returns HELD on a render error, and the run exits with the held code", () => {
-    expect(evaluator).toMatch(/if \("error" in shot\) \{[\s\S]{0,200}return \{ status: "HELD", verdicts: \{\} \};/);
+    expect(evaluator).toMatch(/if \("error" in shot\) return \{ held: shot\.error \};/);
+    expect(evaluateWork).toMatch(/if \("held" in seen\) \{[\s\S]{0,200}return \{ status: "HELD", verdicts: \{\} \};/);
     expect(evaluator).toMatch(/process\.exitCode = HELD_EXIT_CODE;/);
   });
 

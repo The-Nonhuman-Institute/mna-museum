@@ -319,3 +319,199 @@ export function extractVerdict(response: string): "CANON" | "REJECTED" {
   // Per the original pipeline convention: default to REJECTED when verdict unclear
   return "REJECTED";
 }
+
+/* ─── a divided Council deliberates again ───────────────────────────────── */
+
+/**
+ * A 2:2 Council is not decided by the Registrar (founding steward,
+ * 2026-10-16). Its constitution says it "investigates, documents, and
+ * escalates" and that "cases requiring canon decisions go to the Evaluation
+ * Council with a full Registrar report"; it holds "never the authority of a
+ * final decision". Until that date the code had it render the binding verdict
+ * on every tie — twenty times — and the provenance pages credited MNA-PP-001
+ * with the authority, which that protocol does not grant.
+ *
+ * Now the Registrar writes a case report and the four evaluators deliberate
+ * once more, each seeing all four first rationales and the report. Three or more
+ * one way decides. Still 2:2, the work stays In Review: "an active status with
+ * documented reasons", in the Council's own words, not a stall.
+ */
+
+export interface FirstVerdict {
+  evaluator_id: string;
+  name: string;
+  verdict: string;
+  rationale: string;
+}
+
+export type Outcome = "CANON" | "REJECTED" | "DIVIDED";
+
+/** The Council's rule: three or more of four one way decides; otherwise it is divided. */
+export function tally(verdicts: string[]): Outcome {
+  const canon = verdicts.filter((v) => v === "CANON").length;
+  const rejected = verdicts.filter((v) => v === "REJECTED").length;
+  if (canon >= 3) return "CANON";
+  if (rejected >= 3) return "REJECTED";
+  return "DIVIDED";
+}
+
+function rationaleBlock(first: FirstVerdict[]): string {
+  return first
+    .map((f) => `--- ${f.name} (${f.evaluator_id}) — ${f.verdict} ---\n${f.rationale.trim()}\n`)
+    .join("\n");
+}
+
+/** A divided Council's case, named by its work: one work, one case. */
+export function caseReference(workId: string): string {
+  return `RG-CASE-${workId}`;
+}
+
+/** What the Registrar is asked for: a case report, never a verdict. */
+export function buildCaseReportPrompt(work: WorkRow, first: FirstVerdict[], workText: string, sight?: Sight): string {
+  let p = `REGISTRAR CASE — A DIVIDED COUNCIL\n\n`;
+  p += `The Evaluation Council has divided two to two on this work. You do not decide it. `;
+  p += `The Council will deliberate once more with your report in front of it.\n\n`;
+  // Given, so it is not invented: a rehearsal's report made up "MNA-RG-2024-0032".
+  p += `Case reference: ${caseReference(work.id)} (use this; do not make up another)\n`;
+  p += `Work ID: ${work.id}\nOriginator: ${work.originator_id}\nMedium: ${work.medium}\n\n`;
+  p += `--- THE WORK ---\n${workText}\n--- END WORK ---\n\n`;
+  if (sight) p += sightNote(work, sight);
+  p += `THE COUNCIL'S FIRST VERDICTS:\n\n${rationaleBlock(first)}\n`;
+  p += `Write the case report. Set out, specifically and fairly:\n`;
+  p += `- what the evaluators actually disagree about, in this work;\n`;
+  p += `- what in the work itself bears on that disagreement, as you see it;\n`;
+  p += `- what remains unresolved, and what each side would need to answer.\n\n`;
+  p += `Do not render a verdict, recommend one, or say which side is right. `;
+  p += `Your authority is the thoroughness and honesty of the record.\n`;
+  return p;
+}
+
+/** The evaluator's own prompt, with the divided first round and the case report after it. */
+export function buildRedeliberationPrompt(
+  basePrompt: string,
+  evaluatorId: string,
+  first: FirstVerdict[],
+  caseReport: string,
+): string {
+  const own = first.find((f) => f.evaluator_id === evaluatorId);
+  let p = basePrompt;
+  p += `\n--- SECOND DELIBERATION ---\n`;
+  p += `The Council divided two to two on this work. You voted ${own ? own.verdict : "(no verdict recorded)"}. `;
+  p += `Below are all four first verdicts, yours among them, and the Registrar's case report.\n\n`;
+  p += `${rationaleBlock(first)}\n`;
+  p += `--- REGISTRAR'S CASE REPORT (MNA-RG-0001) ---\n${caseReport.trim()}\n--- END REPORT ---\n\n`;
+  p += `Deliberate again by your own constitution. You may hold your verdict or change it; `;
+  p += `neither is expected of you. If you change it, say what moved you. `;
+  p += `State your verdict first on its own line, CANON or REJECTED, then your rationale.\n`;
+  return p;
+}
+
+/* ─── a case reopened on new grounds, and a contested work ─────────────── */
+
+/**
+ * In Review is "extended deliberation" with "specific unresolved questions and
+ * a timeline for resolution" — the evaluators' own definition — so a Council
+ * still divided after its second deliberation is not left there for good
+ * (founding steward, 2026-10-16). The Registrar's case report holds the
+ * questions; the case reopens on new grounds: the Originator has made further
+ * works since (the Historicist's own question — a development or a retreat?),
+ * or ninety days have passed. The Council then deliberates a third time with
+ * what is new. Divided again, the work is contested: it stays In Review,
+ * marked so, and is not reopened — a standing the Registrar's constitution
+ * names ("works of contested standing").
+ *
+ * The Critics are not a ground. Their constitutions give them canonized works
+ * only, and their responses "do not constitute evaluation for canon purposes".
+ */
+export const REOPEN_AFTER_WORKS = 3;
+export const REOPEN_AFTER_DAYS = 90;
+
+/** Why a divided case should reopen now, or nothing if it should not yet. */
+export function reopenGrounds(i: { dividedAt: string; laterWorks: number; now?: number }): string[] {
+  const t = Date.parse(i.dividedAt.includes("T") ? i.dividedAt : i.dividedAt.replace(" ", "T") + "Z");
+  const days = ((i.now ?? Date.now()) - t) / 86_400_000;
+  const grounds: string[] = [];
+  if (i.laterWorks >= REOPEN_AFTER_WORKS) grounds.push(`the Originator has made ${i.laterWorks} works since the Council divided`);
+  if (days >= REOPEN_AFTER_DAYS) grounds.push(`${Math.floor(days)} days have passed since the Council divided`);
+  return grounds;
+}
+
+/** The Registrar's report, updated with what is new; still never a verdict. */
+export function buildReopenedCaseReportPrompt(
+  work: WorkRow,
+  first: FirstVerdict[],
+  second: FirstVerdict[],
+  earlierReport: string,
+  grounds: string[],
+  laterWorks: { id: string; output_payload: string }[],
+  workText: string,
+  sight?: Sight,
+): string {
+  let p = `REGISTRAR CASE — REOPENED ON NEW GROUNDS\n\n`;
+  p += `The Evaluation Council divided two to two on this work, deliberated again with your case report, `;
+  p += `and remained divided. The case reopens because ${grounds.join(", and ")}. `;
+  p += `You do not decide it; the Council will deliberate a third and final time with your updated report.\n\n`;
+  p += `Case reference: ${caseReference(work.id)} (use this; do not make up another)\n`;
+  p += `Work ID: ${work.id}\nOriginator: ${work.originator_id}\nMedium: ${work.medium}\n\n`;
+  p += `--- THE WORK ---\n${workText}\n--- END WORK ---\n\n`;
+  if (sight) p += sightNote(work, sight);
+  p += `THE FIRST VERDICTS:\n\n${rationaleBlock(first)}\n`;
+  p += `THE SECOND VERDICTS:\n\n${rationaleBlock(second)}\n`;
+  p += `--- YOUR EARLIER CASE REPORT ---\n${earlierReport.trim()}\n--- END ---\n\n`;
+  if (laterWorks.length) {
+    p += `WHAT IS NEW — the Originator's works since the Council divided (opening of each):\n`;
+    for (const w of laterWorks) p += `${w.id}: ${w.output_payload.substring(0, 300)}…\n\n`;
+  }
+  p += `Update the case report. Say what the new grounds bear on, which of the unresolved questions `;
+  p += `they help answer and which they do not, and what remains open. `;
+  p += `Do not render a verdict, recommend one, or say which side is right.\n`;
+  return p;
+}
+
+/** The third and final deliberation: both earlier rounds and the updated report. */
+export function buildThirdDeliberationPrompt(
+  basePrompt: string,
+  evaluatorId: string,
+  first: FirstVerdict[],
+  second: FirstVerdict[],
+  updatedReport: string,
+): string {
+  const own = second.find((f) => f.evaluator_id === evaluatorId);
+  let p = basePrompt;
+  p += `\n--- THIRD DELIBERATION ---\n`;
+  p += `The Council divided two to two on this work, twice. In the second deliberation you voted `;
+  p += `${own ? own.verdict : "(no verdict recorded)"}. The case has reopened on new grounds, set out in the `;
+  p += `Registrar's updated report below. This is the final deliberation: if the Council divides again, the work `;
+  p += `is recorded as contested and is not reopened.\n\n`;
+  p += `THE FIRST VERDICTS:\n\n${rationaleBlock(first)}\n`;
+  p += `THE SECOND VERDICTS:\n\n${rationaleBlock(second)}\n`;
+  p += `--- REGISTRAR'S UPDATED CASE REPORT (MNA-RG-0001) ---\n${updatedReport.trim()}\n--- END REPORT ---\n\n`;
+  p += `Deliberate by your own constitution. You may hold your verdict or change it; `;
+  p += `neither is expected of you, and a contested outcome is an honest one. If you change it, say what moved you. `;
+  p += `State your verdict first on its own line, CANON or REJECTED, then your rationale.\n`;
+  return p;
+}
+
+/** Divided cases whose grounds for reopening have arrived, and what they are. */
+export async function findReopenDue(db: Db, now = Date.now()): Promise<{
+  divided: number;
+  due: { work_id: string; grounds: string[] }[];
+}> {
+  const r = await db.execute(`
+    SELECT cs.work_id, ev.created_at AS divided_at,
+           (SELECT COUNT(*) FROM works later
+             WHERE later.originator_id = w.originator_id AND later.created_at > ev.created_at) AS later_works
+      FROM canon_status cs
+      JOIN works w ON w.id = cs.work_id
+      JOIN events ev ON ev.work_id = cs.work_id AND ev.event_type = 'COUNCIL_DIVIDED'
+     WHERE cs.status = 'IN_REVIEW'
+       AND NOT EXISTS (SELECT 1 FROM events c WHERE c.work_id = cs.work_id AND c.event_type = 'COUNCIL_CONTESTED')
+     ORDER BY cs.work_id`);
+  const rows = r.rows as unknown as { work_id: string; divided_at: string; later_works: number }[];
+  return {
+    divided: rows.length,
+    due: rows
+      .map((x) => ({ work_id: x.work_id, grounds: reopenGrounds({ dividedAt: x.divided_at, laterWorks: Number(x.later_works), now }) }))
+      .filter((x) => x.grounds.length > 0),
+  };
+}

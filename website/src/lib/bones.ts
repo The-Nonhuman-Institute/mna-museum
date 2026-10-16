@@ -339,7 +339,9 @@ const EVALUATOR_REACTIVE: ReadonlyArray<ReactiveBoneSpec> = [
       "Within 2 days of any work submission, the Council convenes and a verdict is rendered for that work.",
     windowDays: 2,
     triggerEventTypes: ["WORK_SUBMITTED"],
-    responseEventTypes: ["CANON_DECISION", "REGISTRAR_DECISION"],
+    // COUNCIL_DIVIDED: a Council that deliberated twice and stayed divided
+    // has convened and recorded its outcome.
+    responseEventTypes: ["CANON_DECISION", "REGISTRAR_DECISION", "COUNCIL_DIVIDED"],
     scope: "per-trigger",
     whenOverdue: "Evaluate the submission(s) awaiting Council action.",
   },

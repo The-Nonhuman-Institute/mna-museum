@@ -119,8 +119,10 @@ export interface StalledReview {
  * The evaluator marks a work IN_REVIEW before its first call, so an evaluation
  * that dies mid-flight leaves it where B1 and B2, which read only SUBMITTED,
  * cannot see it. Measured from the latest verdict, or from the work if it has
- * none. A 2:2 deadlock is also IN_REVIEW and waits on the Registrar; a day is
- * long enough for either.
+ * none. A divided Council deliberates a second time with the Registrar's case
+ * report; a day is long enough for that too. A work still divided after it
+ * (a COUNCIL_DIVIDED event) stays In Review by the Council's own rule, and is
+ * not counted here.
  */
 export async function findStalledReviews(db: Executes, now = Date.now()): Promise<{
   inReview: number;
@@ -132,6 +134,9 @@ export async function findStalledReviews(db: Executes, now = Date.now()): Promis
       JOIN works w ON w.id = cs.work_id
       LEFT JOIN evaluations e ON e.work_id = cs.work_id
      WHERE cs.status = 'IN_REVIEW'
+       -- Divided after deliberating twice is a recorded outcome, not a stall.
+       AND NOT EXISTS (SELECT 1 FROM events ev
+                        WHERE ev.work_id = cs.work_id AND ev.event_type = 'COUNCIL_DIVIDED')
      GROUP BY cs.work_id
      ORDER BY cs.work_id`);
   const rows = r.rows as unknown as {

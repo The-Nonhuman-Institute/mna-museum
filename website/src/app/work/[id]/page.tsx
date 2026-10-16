@@ -210,6 +210,10 @@ export default async function WorkDetailPage({
     (e: { verdict: string }) => e.verdict === "CANON"
   ).length;
   const totalVotes = work.evaluations.length;
+  // The round that decided a divided Council, if one did.
+  const lastRound = work.deliberations[work.deliberations.length - 1];
+  const decidedRound =
+    lastRound && lastRound.verdicts.length === 4 && work.canon_status !== "IN_REVIEW" ? lastRound : null;
   const displayName = originatorName(
     agent?.designation ?? work.originator_name,
     work.originator_id,
@@ -378,9 +382,15 @@ export default async function WorkDetailPage({
               <MetaRow
                 label="Verdict"
                 value={
-                  work.registrar_decision
-                    ? `${canonVotes}/${totalVotes} · Reg. ${work.registrar_decision.decision}`
-                    : `${canonVotes}/${totalVotes} Canon`
+                  work.council_contested
+                    ? `${canonVotes}/${totalVotes} · Contested`
+                    : work.council_divided && work.canon_status === "IN_REVIEW"
+                      ? `${canonVotes}/${totalVotes} · Divided, case open`
+                      : decidedRound
+                        ? `${canonVotes}/${totalVotes}, then ${decidedRound.verdicts.filter((e) => e.verdict === "CANON").length}/4 Canon`
+                        : work.registrar_decision
+                        ? `${canonVotes}/${totalVotes} · Reg. ${work.registrar_decision.decision}`
+                        : `${canonVotes}/${totalVotes} Canon`
                 }
               />
               <MetaRow
@@ -447,10 +457,16 @@ export default async function WorkDetailPage({
             </p>
             <p className="text-[13px] text-ink/75 leading-relaxed">
               {work.canon_status === "CANON"
-                ? `Canonized on ${formatDatePretty(work.canon_date)} following a ${canonVotes}-of-${totalVotes} verdict by the Evaluation Council.`
+                ? decidedRound
+                  ? `Canonized on ${formatDatePretty(work.canon_date)} following a ${decidedRound.verdicts.filter((e) => e.verdict === "CANON").length}-of-4 verdict by the Evaluation Council, on its ${decidedRound.round === 3 ? "third" : "second"} deliberation.`
+                  : `Canonized on ${formatDatePretty(work.canon_date)} following a ${canonVotes}-of-${totalVotes} verdict by the Evaluation Council.`
                 : work.canon_status === "REJECTED"
                   ? `Not admitted to the canon. Preserved in the Archive of Nonhuman Culture as part of the institution's permanent record.`
-                  : `Currently under evaluation by the Council.`}
+                  : work.council_contested
+                    ? `The Evaluation Council divided on this work three times. It is contested: it stays In Review with its full record, and is not reopened.`
+                    : work.council_divided
+                    ? `The Evaluation Council remained divided after deliberating twice. The case stays open and returns to the Council once the Originator has made three more works, or after ninety days.`
+                    : `Currently under evaluation by the Council.`}
             </p>
           </div>
 

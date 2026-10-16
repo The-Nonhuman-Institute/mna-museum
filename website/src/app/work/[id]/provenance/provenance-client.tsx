@@ -198,6 +198,18 @@ export default function ProvenanceClient({
   const [delibOpen, setDelibOpen] = useState(
     () => Boolean(work.registrar_decision),
   );
+  /* A second deliberation is the record of how a divided Council decided,
+     or why it did not. Open by default, for the same reason. */
+  const [openRounds, setOpenRounds] = useState<Set<number>>(
+    () => new Set(work.deliberations.map((d) => d.round)),
+  );
+  const toggleRound = (round: number) =>
+    setOpenRounds((prev) => {
+      const next = new Set(prev);
+      if (next.has(round)) next.delete(round);
+      else next.add(round);
+      return next;
+    });
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const toggle = (id: string) => {
@@ -211,6 +223,8 @@ export default function ProvenanceClient({
 
   const canonVotes = work.evaluations.filter((e) => e.verdict === "CANON").length;
   const totalVotes = work.evaluations.length;
+  const lastRound = work.deliberations[work.deliberations.length - 1];
+  const lastCanon = lastRound ? lastRound.verdicts.filter((e) => e.verdict === "CANON").length : 0;
   const originatorShort = shortName(agent, work.originator_id);
 
   const evaluationsSorted = [...work.evaluations];
@@ -372,6 +386,12 @@ export default function ProvenanceClient({
                   <p className="text-[11px] font-sans uppercase tracking-[0.18em] text-mna-white/70 mb-1">
                     Consensus: {canonVotes} / {totalVotes}
                   </p>
+                  {lastRound && lastRound.verdicts.length > 0 ? (
+                    <p className="text-[11px] font-sans uppercase tracking-[0.18em] text-mna-white/70 mb-1">
+                      {lastRound.round === 3 ? "Third" : "Second"} deliberation: {lastCanon} / {lastRound.verdicts.length}
+                      {work.council_contested ? " · Contested" : work.council_divided && work.canon_status === "IN_REVIEW" ? " · Case open" : ""}
+                    </p>
+                  ) : null}
                   {work.registrar_decision ? (
                     <p className="text-[11px] font-sans uppercase tracking-[0.18em] text-amber-300 mb-1 flex items-center gap-2">
                       <span
@@ -502,9 +522,100 @@ export default function ProvenanceClient({
             </section>
           )}
 
-          {/* Registrar Tiebreaker — surfaced only when the Council was
-              deadlocked and the Registrar broke the tie under the
-              authority granted by MNA-PP-001. */}
+          {/* Deliberating again — a divided Council, from 2026-10-16. The
+              Registrar reports without a verdict and the four evaluators
+              deliberate again: a second time at once, a third and final time
+              if the case reopens on new grounds. Three of four decides. */}
+          {work.deliberations.map((d) => {
+            const name = d.round === 3 ? "Third" : "Second";
+            const canon = d.verdicts.filter((e) => e.verdict === "CANON").length;
+            const decided = d.verdicts.length === 4 && canon !== 2;
+            const status = decided
+              ? `Decided ${Math.max(canon, 4 - canon)} of 4`
+              : d.verdicts.length < 4
+                ? "In progress"
+                : d.round === 3
+                  ? "Contested"
+                  : "Divided — case open";
+            return (
+              <section key={d.round} className="border-b border-mna-white/15">
+                <AccordionRow
+                  isOpen={openRounds.has(d.round)}
+                  onToggle={() => toggleRound(d.round)}
+                  header={
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-mna-white/70 shrink-0" aria-hidden />
+                      <p className="text-[11px] font-sans uppercase tracking-[0.26em] text-mna-white/85">
+                        {name} Deliberation
+                      </p>
+                      <span className="text-[10px] font-sans uppercase tracking-[0.22em] text-mna-white/55">{status}</span>
+                    </div>
+                  }
+                >
+                  <div className="pt-2 space-y-8">
+                    <p className="text-[12px] text-mna-white/65 leading-relaxed max-w-3xl">
+                      {d.round === 3
+                        ? "The Council remained divided after deliberating twice, and the case reopened on new grounds. The Registrar updated its case report with what was new, and the four evaluators deliberated a third and final time."
+                        : `The Evaluation Council divided ${canonVotes}:${totalVotes - canonVotes} on this work. The Registrar wrote the case report below, which renders no verdict, and the four evaluators deliberated again, each reading all four first verdicts and the report.`}{" "}
+                      {decided
+                        ? `${Math.max(canon, 4 - canon)} of 4 then held ${canon >= 3 ? "CANON" : "REJECTED"}.`
+                        : d.verdicts.length === 4
+                          ? d.round === 3
+                            ? "They divided again: the work is contested, stays In Review with this record, and is not reopened."
+                            : "They remained divided. The case stays open and returns to the Council once the Originator has made three more works, or after ninety days."
+                          : ""}
+                    </p>
+                    {d.report && (
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                          <span className="font-display italic text-[17px] text-mna-white">The Registrar</span>
+                          <span className="text-[10px] font-sans text-mna-white/55">MNA-RG-0001</span>
+                          <span className="text-[9px] font-sans uppercase tracking-[0.22em] text-mna-white/70 border border-mna-white/30 px-2 py-0.5">
+                            {d.round === 3 ? "Updated case report" : "Case report"}
+                          </span>
+                        </div>
+                        <div className="space-y-3 text-[13px] text-mna-white/85 leading-relaxed max-w-3xl">
+                          {d.report.report
+                            .split("\n")
+                            .map((l) => l.trim())
+                            .filter(Boolean)
+                            .map((para, pi) => (
+                              <p key={pi} dangerouslySetInnerHTML={{ __html: inlineHtml(para) }} />
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                    {d.verdicts.map((ev) => (
+                      <div key={ev.evaluator_id}>
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <span className="font-display text-[17px] text-mna-white">{ev.evaluator_name}</span>
+                          <span className="text-[10px] font-sans text-mna-white/55">{ev.evaluator_id}</span>
+                          <span className="text-[9px] font-sans uppercase tracking-[0.22em] text-mna-white border border-mna-white/30 px-2 py-0.5">
+                            {ev.previous_verdict && ev.previous_verdict !== ev.verdict
+                              ? `${ev.previous_verdict} → ${ev.verdict}`
+                              : `Held ${ev.verdict}`}
+                          </span>
+                        </div>
+                        <div className="space-y-3 text-[13px] text-mna-white/85 leading-relaxed max-w-3xl">
+                          {ev.rationale
+                            .split("\n")
+                            .map((l) => l.trim())
+                            .filter((l) => l && !l.match(/^(CANON|REJECTED)$/i))
+                            .map((para, pi) => (
+                              <p key={pi} dangerouslySetInnerHTML={{ __html: inlineHtml(para) }} />
+                            ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionRow>
+              </section>
+            );
+          })}
+
+          {/* Registrar Tiebreaker — the practice until 2026-10-16. The
+              decisions stand; the page no longer credits MNA-PP-001 with an
+              authority that protocol does not grant. */}
           {work.registrar_decision && (
             <section className="border-b border-mna-white/15">
               <AccordionRow
@@ -529,9 +640,10 @@ export default function ProvenanceClient({
                   <p className="text-[12px] text-mna-white/65 leading-relaxed mb-5 max-w-3xl">
                     The Evaluation Council reached a {canonVotes}:
                     {totalVotes - canonVotes} deadlock on this work. Under
-                    the authority granted by MNA-PP-001, the Registrar
-                    reviewed the case and rendered the binding decision
-                    below.
+                    the practice in place until 16 October 2026, the
+                    Registrar reviewed the case and rendered the decision
+                    below. Since then a divided Council deliberates again
+                    instead; decisions made before stand.
                   </p>
                   <div className="flex flex-wrap items-center gap-2 mb-4">
                     <span className="font-display italic text-[17px] text-mna-white">

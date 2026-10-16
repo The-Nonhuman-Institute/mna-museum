@@ -39,6 +39,33 @@ export interface Work {
   title: string | null;
   evaluations: Evaluation[];
   registrar_decision: { decision: string; rationale: string } | null;
+  /**
+   * A divided Council deliberates again (from 2026-10-16), with the Registrar's
+   * case report, which renders no verdict: a second time at once, a third and
+   * final time if the case reopens on new grounds. council_divided: the second
+   * split 2:2 too, and the work stays In Review with a timeline.
+   * council_contested: the third did as well, and the work stays In Review,
+   * contested, not to be reopened.
+   */
+  deliberations: Deliberation[];
+  council_divided: boolean;
+  council_contested: boolean;
+}
+
+export interface Deliberation {
+  round: number;
+  report: { report: string; date: string } | null;
+  verdicts: RoundVerdict[];
+}
+
+export interface RoundVerdict {
+  evaluator_id: string;
+  evaluator_name: string;
+  verdict: string;
+  /** The same evaluator's verdict in the round before. */
+  previous_verdict: string | null;
+  rationale: string;
+  date: string;
 }
 
 export interface CriticalResponse {
@@ -96,6 +123,53 @@ async function buildWork(row: Record<string, unknown>): Promise<Work> {
     args: [workId],
   });
 
+  const deliberation = await db.execute({
+    sql: `SELECT ev.event_type, ev.agent_id, ev.metadata, ev.created_at,
+                 COALESCE(a.common_designation, ev.agent_id) AS agent_name
+            FROM events ev
+            LEFT JOIN agents a ON a.registry_id = ev.agent_id
+           WHERE ev.work_id = ?
+             AND ev.event_type IN ('REGISTRAR_CASE_REPORT', 'COUNCIL_REDELIBERATION', 'COUNCIL_DIVIDED', 'COUNCIL_CONTESTED')
+           ORDER BY ev.id`,
+    args: [workId],
+  });
+  const meta = (r: Record<string, unknown>) => {
+    try {
+      return JSON.parse((r.metadata as string) || "{}") as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  };
+  // A report or re-vote names its round; one that does not is the second.
+  const roundOf = (r: Record<string, unknown>) => Number(meta(r).deliberation) || 2;
+  const rounds = Array.from(
+    new Set(
+      deliberation.rows
+        .filter((r) => r.event_type === "REGISTRAR_CASE_REPORT" || r.event_type === "COUNCIL_REDELIBERATION")
+        .map(roundOf),
+    ),
+  ).sort((a, b) => a - b);
+  const deliberations: Deliberation[] = rounds.map((round) => {
+    const report = deliberation.rows.find((r) => r.event_type === "REGISTRAR_CASE_REPORT" && roundOf(r) === round);
+    return {
+      round,
+      report: report ? { report: String(meta(report).report ?? ""), date: (report.created_at as string) || "" } : null,
+      verdicts: deliberation.rows
+        .filter((r) => r.event_type === "COUNCIL_REDELIBERATION" && roundOf(r) === round)
+        .map((r) => {
+          const m = meta(r);
+          return {
+            evaluator_id: r.agent_id as string,
+            evaluator_name: (r.agent_name as string) || (r.agent_id as string),
+            verdict: String(m.verdict ?? ""),
+            previous_verdict: ((m.first_verdict ?? m.previous_verdict) as string) ?? null,
+            rationale: String(m.rationale ?? ""),
+            date: (r.created_at as string) || "",
+          };
+        }),
+    };
+  });
+
   // Check for registrar decision (evaluator_id = MNA-RG-0001)
   const registrarEval = evalsResult.rows.find(
     (e) => (e.evaluator_id as string) === "MNA-RG-0001"
@@ -141,6 +215,9 @@ async function buildWork(row: Record<string, unknown>): Promise<Work> {
           rationale: registrarEval.rationale as string,
         }
       : null,
+    deliberations,
+    council_divided: deliberation.rows.some((r) => r.event_type === "COUNCIL_DIVIDED"),
+    council_contested: deliberation.rows.some((r) => r.event_type === "COUNCIL_CONTESTED"),
   };
 }
 

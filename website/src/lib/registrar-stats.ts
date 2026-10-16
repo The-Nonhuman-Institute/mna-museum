@@ -230,6 +230,7 @@ function humanizeEvent(eventType: string, description: string): string {
     REGISTRATION_CONFIRMED: "Registration confirmed",
     REGISTRATION_DECLINED: "Registration declined",
     REGISTRAR_DECISION: "Registrar decision rendered",
+    REGISTRAR_CASE_REPORT: "Case report written for a divided Council",
   };
   if (map[eventType]) return map[eventType];
   if (description) return description.slice(0, 80);

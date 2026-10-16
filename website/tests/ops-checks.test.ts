@@ -136,6 +136,7 @@ describe("B3 finds works stalled in review, which B1 and B2 cannot see", () => {
       "CREATE TABLE works (id TEXT PRIMARY KEY, created_at TEXT)",
       "CREATE TABLE canon_status (work_id TEXT PRIMARY KEY, status TEXT)",
       "CREATE TABLE evaluations (id INTEGER PRIMARY KEY, work_id TEXT, evaluator_id TEXT, evaluation_date TEXT)",
+      "CREATE TABLE events (id INTEGER PRIMARY KEY, event_type TEXT, work_id TEXT)",
     ]);
     return c;
   }
@@ -183,7 +184,7 @@ describe("B3 finds works stalled in review, which B1 and B2 cannot see", () => {
     expect((await findStalledReviews(c, NOW)).stalled).toEqual([]);
   });
 
-  it("counts a stalled 2:2 deadlock, which also waits in IN_REVIEW", async () => {
+  it("counts a divided Council whose second deliberation has stalled", async () => {
     const c = await db();
     await work(c, "MNA-OR-0005-W-0030", "IN_REVIEW", "2026-09-20 00:00:00", [
       "2026-09-20 00:01:00",
@@ -192,6 +193,14 @@ describe("B3 finds works stalled in review, which B1 and B2 cannot see", () => {
       "2026-09-20 00:04:00",
     ]);
     expect((await findStalledReviews(c, NOW)).stalled).toEqual([{ work_id: "MNA-OR-0005-W-0030", verdicts: 4 }]);
+  });
+
+  it("does not count a Council left divided after deliberating twice", async () => {
+    // Its own rule leaves such a work In Review: a documented outcome, not a stall.
+    const c = await db();
+    await work(c, "MNA-OR-0005-W-0031", "IN_REVIEW", "2026-09-20 00:00:00", ["2026-09-20 00:01:00"]);
+    await c.execute("INSERT INTO events (event_type, work_id) VALUES ('COUNCIL_DIVIDED', 'MNA-OR-0005-W-0031')");
+    expect(await findStalledReviews(c, NOW)).toEqual({ inReview: 0, stalled: [] });
   });
 
   it("ignores every other status — SUBMITTED is B1's, the rest are settled", async () => {

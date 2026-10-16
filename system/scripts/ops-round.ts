@@ -24,7 +24,7 @@ import path from "path";
 
 import { MEDIUM_OUTPUT_TYPE_COMPATIBILITY } from "../../website/src/lib/submission-checks";
 import { FROM_DOMAIN } from "../src/steward-mail";
-import { HELD_EXIT_CODE } from "../src/council";
+import { HELD_EXIT_CODE, findReopenDue } from "../src/council";
 import {
   classifyBlankPreviews,
   findStalledReviews,
@@ -490,6 +490,37 @@ async function checkB3(db: Client): Promise<void> {
     nextStep: "npx tsx system/scripts/evaluate-turso-works.ts --work <id>" });
 }
 
+async function checkB4(db: Client): Promise<void> {
+  // A Council still divided after deliberating twice keeps the case open with
+  // a timeline, as the evaluators define In Review: it reopens once the
+  // Originator has made further works or ninety days have passed, and the
+  // Council deliberates a third and final time. See council.ts.
+  const { divided, due } = await findReopenDue(db);
+  if (due.length === 0) {
+    record({ check: "B4", severity: "note", summary: `${divided} divided case(s), none due to reopen` });
+    return;
+  }
+  const items = due.map((d) => `${d.work_id}: ${d.grounds.join("; ")}`);
+  if (dryRun) {
+    record({ check: "B4", severity: "escalate", summary: `${due.length} divided case(s) due a third deliberation`, items,
+      nextStep: "npx tsx system/scripts/evaluate-turso-works.ts --reopen" });
+    return;
+  }
+  try {
+    run("npx", ["tsx", "system/scripts/evaluate-turso-works.ts", "--reopen"]);
+    record({ check: "B4", severity: "repaired", summary: `reopened ${due.length} divided case(s) for a third deliberation`, items });
+  } catch (e) {
+    const err = e as { status?: number; stdout?: string };
+    const held = err.status === HELD_EXIT_CODE ? heldWorks(String(err.stdout ?? "")) : [];
+    record({ check: "B4", severity: "escalate",
+      summary: held.length
+        ? `${held.length} reopened case(s) held — they did not render, and the Council does not judge blind`
+        : `the third deliberation did not complete for ${due.length} case(s)`,
+      items: held.length ? held.map((h) => `${h.id}: ${h.reason}`) : items,
+      nextStep: "npx tsx system/scripts/evaluate-turso-works.ts --reopen" });
+  }
+}
+
 /* ─── C. Obligations to people ──────────────────────────────────────────── */
 
 async function checkC1(db: Client): Promise<void> {
@@ -872,6 +903,7 @@ async function main() {
   await attempt("B1", () => checkB1(db));
   await attempt("B2", () => checkB2(db));
   await attempt("B3", () => checkB3(db));
+  await attempt("B4", () => checkB4(db));
   await attempt("C1", () => checkC1(db));
   await attempt("C2", () => checkC2(db));
   await attempt("C3", () => checkC3());

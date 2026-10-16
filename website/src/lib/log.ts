@@ -37,6 +37,11 @@ export const EVENT_TYPE_TO_CATEGORY: Record<string, EventCategory> = {
   REGISTRAR_DECISION: "evaluation",
   REGISTRAR_DECISION_BACKFILL: "evaluation",
   DEADLOCK_ESCALATION: "evaluation",
+  REGISTRAR_CASE_REPORT: "evaluation",
+  COUNCIL_REDELIBERATION: "evaluation",
+  COUNCIL_DIVIDED: "evaluation",
+  COUNCIL_CONTESTED: "evaluation",
+  COUNCIL_PROCEDURE_CHANGED: "evaluation",
   SUBMISSION_REJECTED: "evaluation",
 
   // Critique
@@ -144,6 +149,11 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   REGISTRAR_DECISION: "Registrar Decision",
   REGISTRAR_DECISION_BACKFILL: "Registrar Decision",
   DEADLOCK_ESCALATION: "Deadlock Escalation",
+  REGISTRAR_CASE_REPORT: "Registrar Case Report",
+  COUNCIL_REDELIBERATION: "Second Deliberation",
+  COUNCIL_DIVIDED: "Council Divided",
+  COUNCIL_CONTESTED: "Contested",
+  COUNCIL_PROCEDURE_CHANGED: "Council Procedure Changed",
   SUBMISSION_REJECTED: "Submission Rejected",
   CRITICAL_RESPONSE: "Critical Response",
   CRITIQUE_RENDERED: "Critique Rendered",

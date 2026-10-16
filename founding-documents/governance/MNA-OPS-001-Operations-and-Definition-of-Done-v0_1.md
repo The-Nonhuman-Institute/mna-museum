@@ -242,8 +242,13 @@ with no verdicts for three weeks, while every round reported nothing awaiting
 evaluation.
 
 **Edge cases.**
-- *A 2:2 deadlock* is also IN_REVIEW and waits on the Registrar. A day is long
-  enough for either.
+- *A divided Council* is also IN_REVIEW while it deliberates again: the Registrar
+  writes a case report, renders no verdict, and the four evaluators vote once
+  more (founding steward, 2026-10-16; until then the Registrar broke ties, which
+  its constitution does not allow). A day is long enough for that too.
+- *A Council still divided after deliberating twice* stays In Review by its own
+  rule, recorded as a COUNCIL_DIVIDED event. That is an outcome, not a stall,
+  and B3 does not count it.
 - *A prompt no free provider can take.* Groq's free tier caps every model at
   8,000 tokens a minute. A work too large for that can be evaluated whole through
   Ollama Cloud from the steward's machine; the model that rendered each verdict
@@ -254,6 +259,30 @@ asks only the evaluators who have not voted, but whether a provider can serve it
 needs a person's eye first.
 
 **Escalate.** Always.
+
+#### B4 — Divided cases due a third deliberation
+
+**Detect.** A work still IN_REVIEW after the Council divided 2:2 twice (a
+COUNCIL_DIVIDED event, no COUNCIL_CONTESTED) whose grounds for reopening have
+arrived: the Originator has made **3** works since it divided, or **90 days**
+have passed.
+
+**Why it matters.** The evaluators define In Review as extended deliberation
+with "specific unresolved questions and a timeline for resolution". The
+Registrar's case report holds the questions; this is the timeline (founding
+steward, 2026-10-16). Without it a divided work would wait forever.
+
+**Edge cases.**
+- *The Critics are not a ground.* Their constitutions give them canonized works
+  only, and their responses do not count for canon purposes.
+- *Divided a third time,* the work is contested: a COUNCIL_CONTESTED event, still
+  In Review, marked so, and never reopened.
+- *A work that does not render* is held, as in B1.
+
+**Repair.** `evaluate-turso-works.ts --reopen`: the Registrar updates its case
+report with what is new, and the Council deliberates a third and final time.
+
+**Escalate.** When it is held, or does not complete.
 
 ---
 
