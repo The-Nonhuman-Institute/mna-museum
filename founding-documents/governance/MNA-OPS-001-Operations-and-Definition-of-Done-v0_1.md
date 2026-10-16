@@ -383,6 +383,21 @@ the real renderer and assert the frame is not blank.
 card and the audio playing silence. It exercises media that have no works yet,
 so a medium is proven before an Originator relies on it.
 
+**Edge cases.**
+- *An error message is not a render.* A renderer that shows its compile error
+  paints text, and text has plenty of colours. A renderer's error state carries
+  `data-render-error`, and a frame showing one fails.
+- *A host that paints is not proof its material does.* Each host medium is also
+  drawn with a `surface`, and again without it for the same time; the surface
+  must bring at least 32 colours the bare host never shows. Asked only "is the
+  frame blank", E2 passed every host from 2026-10-03 while every self-declaring
+  shader surface drew nothing — MNA-OR-0002-W-0035 showed a flat field on the
+  site — because a background and a rectangle are two colours with or without
+  their material.
+- *The fixtures must include the hard case.* The canonical shader declares its
+  own `precision` and `uniform float iTime`, as many shaders do; the bare form
+  is the composite fixture's shader part.
+
 **Repair.** None. **Report** — a renderer fault needs a person.
 
 #### E3 — Every medium still shares

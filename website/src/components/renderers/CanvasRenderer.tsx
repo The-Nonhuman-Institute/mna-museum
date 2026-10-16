@@ -202,7 +202,7 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
 
   if (error) {
     return (
-      <div className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
+      <div data-render-error="Invalid canvas data" className="w-full h-full bg-[#0e0c0a] flex items-center justify-center">
         <p className="text-[#4a4540] text-xs">Invalid canvas data</p>
       </div>
     );

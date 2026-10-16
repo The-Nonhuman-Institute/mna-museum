@@ -74,7 +74,12 @@ async function harness(browser: Browser): Promise<Page> {
  * A screenshot is what a visitor sees, which is the only thing worth asserting
  * on, and it is how the preview generator has always worked.
  */
-async function renderAndMeasure(page: Page, type: string, payload: string, waitMs: number) {
+async function capture(
+  page: Page,
+  type: string,
+  payload: string,
+  waitMs: number,
+): Promise<{ shot: string } | { error: string }> {
   await page.evaluate(
     (t, p) => (window as unknown as { __mnaRender: (t: string, p: string) => void }).__mnaRender(t, p),
     type,
@@ -83,26 +88,86 @@ async function renderAndMeasure(page: Page, type: string, payload: string, waitM
   await new Promise((r) => setTimeout(r, waitMs));
 
   const target = await page.$("#harness-target");
-  if (!target) return { ok: false, reason: "no harness target" };
+  if (!target) return { error: "no harness target" };
+
+  // A renderer's error message is text, and text has plenty of colours. Asked
+  // only "did anything paint", E2 passed a shader that failed to compile.
+  const rendererError = await page.$eval("#harness-target", (el) =>
+    el.querySelector("[data-render-error]")?.getAttribute("data-render-error") ?? null,
+  );
+  if (rendererError) return { error: `renderer error: ${rendererError.slice(0, 70)}` };
 
   // html-css renders in a sandboxed iframe. It is captured like everything
   // else, because a screenshot sees through an iframe where a canvas cannot.
   const shot = path.join(os.tmpdir(), `mna-matrix-${type.replace(/[^a-z0-9-]/gi, "")}-${Date.now()}.png`);
   await target.screenshot({ path: shot as `${string}.png` });
+  return { shot };
+}
 
+/** Run a Pillow script over screenshots, removing them afterwards. */
+function measure(script: string, shots: string[]): number | string {
   try {
-    const out = execFileSync("python3", ["-c", COUNT_COLOURS, shot], { encoding: "utf8" }).trim();
-    const colours = Number(out);
-    fs.unlinkSync(shot);
-    if (!Number.isFinite(colours)) return { ok: false, reason: "could not measure" };
-    // An audio work paints a control, not an image, and a text work paints
-    // glyphs — both clear this easily. A frame that never painted is one
-    // colour.
-    return { ok: colours >= 2, reason: `${colours >= 64 ? "64+" : colours} colours` };
+    const n = Number(execFileSync("python3", ["-c", script, ...shots], { encoding: "utf8" }).trim());
+    return Number.isFinite(n) ? n : "could not measure";
   } catch (e) {
-    try { fs.unlinkSync(shot); } catch { /* already gone */ }
-    return { ok: false, reason: `measure failed: ${e instanceof Error ? e.message.slice(0, 60) : String(e)}` };
+    return `measure failed: ${e instanceof Error ? e.message.slice(0, 60) : String(e)}`;
+  } finally {
+    for (const s of shots) try { fs.unlinkSync(s); } catch { /* already gone */ }
   }
+}
+
+async function renderAndMeasure(page: Page, type: string, payload: string, waitMs: number) {
+  const c = await capture(page, type, payload, waitMs);
+  if ("error" in c) return { ok: false, reason: c.error };
+  const colours = measure(COUNT_COLOURS, [c.shot]);
+  if (typeof colours === "string") return { ok: false, reason: colours };
+  // An audio work paints a control, not an image, and a text work paints
+  // glyphs — both clear this easily. A frame that never painted is one
+  // colour.
+  return { ok: colours >= 2, reason: `${colours >= 64 ? "64+" : colours} colours` };
+}
+
+/**
+ * Whether a host's surface actually shows, judged against the same host without it.
+ *
+ * "Did anything paint" cannot answer this: the host paints whether or not its
+ * material does. The canvas fixture is a background and one rectangle, so with
+ * its shader surface missing it is two colours, and E2 passed it — through
+ * every round from 2026-10-03, while MNA-OR-0002-W-0035's five shader surfaces
+ * drew nothing on the site.
+ *
+ * So the host is drawn twice, with and without its surface, for the same time
+ * (a rule system unfolds, and a later capture gains colours for that reason
+ * alone), and the surface must bring colours the bare host never shows.
+ * Counting new colours rather than comparing totals is what lets a graph pass:
+ * its nodes are a few pixels each, so its material adds dozens of colours, not
+ * thousands, where a canvas rectangle adds thousands.
+ */
+const NEW_COLOURS_FROM_SURFACE = 32;
+
+async function ingredientShows(page: Page, host: string, payload: string) {
+  const withSurface = await capture(page, host, payload, 12000);
+  if ("error" in withSurface) return { ok: false, reason: withSurface.error };
+  const bare = await capture(page, host, JSON.stringify(stripSurfaces(JSON.parse(payload))), 12000);
+  if ("error" in bare) {
+    try { fs.unlinkSync(withSurface.shot); } catch { /* already gone */ }
+    return { ok: false, reason: `bare host: ${bare.error}` };
+  }
+  const added = measure(NEW_COLOURS, [withSurface.shot, bare.shot]);
+  if (typeof added === "string") return { ok: false, reason: added };
+  return {
+    ok: added >= NEW_COLOURS_FROM_SURFACE,
+    reason: `${added >= 4096 ? "4096+" : added} colours the bare host does not have`,
+  };
+}
+
+/** The same spec with every `surface` removed, at any depth. */
+function stripSurfaces(spec: unknown): unknown {
+  if (Array.isArray(spec)) return spec.map(stripSurfaces);
+  if (!spec || typeof spec !== "object") return spec;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(spec)) if (k !== "surface") out[k] = stripSurfaces(v);
+  return out;
 }
 
 const COUNT_COLOURS = `
@@ -115,6 +180,20 @@ for px in im.getdata():
     if len(seen) >= 64:
         break
 print(len(seen))
+`;
+
+/** Colours in the first screenshot that never appear in the second, to 4096. */
+const NEW_COLOURS = `
+import sys
+from PIL import Image
+bare = set(Image.open(sys.argv[2]).convert("RGB").getdata())
+added = set()
+for px in Image.open(sys.argv[1]).convert("RGB").getdata():
+    if px not in bare:
+        added.add(px)
+        if len(added) >= 4096:
+            break
+print(len(added))
 `;
 
 async function main() {
@@ -146,7 +225,7 @@ async function main() {
       try {
         // The ingredient mounts its own renderer offscreen first, so this is
         // slower than the plain path by design.
-        const r = await renderAndMeasure(page, id, INGREDIENT_FIXTURES[id], 12000);
+        const r = await ingredientShows(page, id, INGREDIENT_FIXTURES[id]);
         note({ medium: id, check: "ingredient", ok: r.ok, detail: r.reason });
       } catch (e) {
         note({ medium: id, check: "ingredient", ok: false, detail: e instanceof Error ? e.message.slice(0, 90) : String(e) });
