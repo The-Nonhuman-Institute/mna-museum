@@ -220,7 +220,7 @@ describe("a verdict records the model that rendered it", () => {
     const insert = evaluator.slice(evaluator.indexOf("VALUES ('EVALUATION_RENDERED'"));
     expect(evaluator).toMatch(/const servedBy = llm\.lastServedBy;/);
     expect(evaluator).toMatch(/INSERT INTO events \(event_type, agent_id, work_id, description, metadata\)\s+VALUES \('EVALUATION_RENDERED'/);
-    expect(insert.slice(0, 300)).toMatch(/JSON\.stringify\(servedBy\)/);
+    expect(insert.slice(0, 300)).toMatch(/JSON\.stringify\(\{ \.\.\.servedBy, saw: sight \? sight\.shownAt : null \}\)/);
   });
 
   it("is read from the module that sets it", () => {

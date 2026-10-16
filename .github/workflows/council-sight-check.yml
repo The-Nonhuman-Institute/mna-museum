@@ -1,0 +1,46 @@
+# council-sight-check — can the Council see?
+#
+# Since 2026-10-16 the Evaluation Council is shown each work, photographed
+# through the site's renderers, before it judges (founding steward's decision).
+# If the seeing model or its key stops working, evaluations fail and works wait.
+# This photographs one work and puts it before one evaluator exactly as an
+# evaluation would, and prints what came back.
+#
+# Reads only: no verdict, event or status is written. Run it from the Actions
+# tab — on a phone too — after changing the key, or when works are held.
+#
+# Required repo secrets: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, OLLAMA_API_KEY
+
+name: council-sight-check
+
+on:
+  workflow_dispatch:
+    inputs:
+      work:
+        description: "Work to photograph and judge (nothing is recorded)"
+        default: "MNA-OR-0008-W-0024"
+
+permissions:
+  contents: read
+
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      OLLAMA_HOST: https://ollama.com
+      OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+      - name: Photograph a work and ask the Council to look
+        run: npx tsx system/scripts/council-sight-check.ts --work "${{ inputs.work }}"

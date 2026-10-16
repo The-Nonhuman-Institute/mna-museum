@@ -186,3 +186,23 @@ export function snapshotBehind(i: {
   }
   return why;
 }
+
+/* ─── B1: works the Council held because they would not render ─────────── */
+
+/**
+ * The works an evaluator run held, read from its output.
+ *
+ * The Council does not judge a work it cannot see (founding steward,
+ * 2026-10-16), so a work that does not render stays SUBMITTED. Retrying it
+ * every round, as an outage is retried, would leave it there silently; the
+ * fault may be the museum's own, as MNA-OR-0002-W-0035's was. Held works are
+ * escalated with the reason each one gave.
+ */
+export function heldWorks(output: string): { id: string; reason: string }[] {
+  const held: { id: string; reason: string }[] = [];
+  // exec, not matchAll: the website's tsconfig target predates iterating it.
+  const re = /HELD (MNA-[A-Z]{2}-\d{4}-W-\d{4}): did not render — (.+)$/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(output)) !== null) held.push({ id: m[1], reason: m[2].trim() });
+  return held;
+}

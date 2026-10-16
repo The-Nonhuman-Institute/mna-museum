@@ -19,13 +19,12 @@
  */
 
 import fs from "fs";
-import os from "os";
-import path from "path";
 import { execFileSync } from "child_process";
-import puppeteer, { type Browser, type Page } from "puppeteer";
+import puppeteer, { type Page } from "puppeteer";
 
 import { FIXTURES, INGREDIENT_FIXTURES } from "../../website/tests/fixtures/media";
 import { HOST_TYPE_IDS, OUTPUT_TYPES, OUTPUT_TYPE_IDS } from "../../website/src/lib/output-types";
+import { capture, openHarness } from "../src/harness-capture";
 
 const args = process.argv.slice(2);
 const renderOnly = args.includes("--render-only");
@@ -45,64 +44,6 @@ const note = (r: Result) => {
   results.push(r);
   console.log(`  ${r.ok ? "✓" : "✗"} ${r.medium.padEnd(16)} ${r.check.padEnd(11)} ${r.detail}`);
 };
-
-/**
- * A page carrying the site's own bundle, so renderers are the real ones.
- *
- * The harness route renders whatever payload it is handed. It exists only in
- * development and in this check; it never appears in navigation and records
- * nothing.
- */
-async function harness(browser: Browser): Promise<Page> {
-  const page = await browser.newPage();
-  await page.setViewport({ width: 900, height: 900, deviceScaleFactor: 1 });
-  page.on("pageerror", (e) => console.log(`     [pageerror] ${String(e).slice(0, 120)}`));
-  await page.goto(`${SITE}/harness`, { waitUntil: "networkidle2", timeout: 90000 });
-  return page;
-}
-
-/**
- * Draw a payload and report whether anything was actually painted.
- *
- * Measured by screenshotting the element, NOT by drawImage-ing the page's
- * canvases into another canvas. That was the first approach and it reported
- * scene-json as blank while the scene rendered perfectly: reading back from a
- * WebGL canvas returns nothing unless the context was created with
- * preserveDrawingBuffer, which three.js does not do by default. The metric was
- * broken, not the renderer.
- *
- * A screenshot is what a visitor sees, which is the only thing worth asserting
- * on, and it is how the preview generator has always worked.
- */
-async function capture(
-  page: Page,
-  type: string,
-  payload: string,
-  waitMs: number,
-): Promise<{ shot: string } | { error: string }> {
-  await page.evaluate(
-    (t, p) => (window as unknown as { __mnaRender: (t: string, p: string) => void }).__mnaRender(t, p),
-    type,
-    payload,
-  );
-  await new Promise((r) => setTimeout(r, waitMs));
-
-  const target = await page.$("#harness-target");
-  if (!target) return { error: "no harness target" };
-
-  // A renderer's error message is text, and text has plenty of colours. Asked
-  // only "did anything paint", E2 passed a shader that failed to compile.
-  const rendererError = await page.$eval("#harness-target", (el) =>
-    el.querySelector("[data-render-error]")?.getAttribute("data-render-error") ?? null,
-  );
-  if (rendererError) return { error: `renderer error: ${rendererError.slice(0, 70)}` };
-
-  // html-css renders in a sandboxed iframe. It is captured like everything
-  // else, because a screenshot sees through an iframe where a canvas cannot.
-  const shot = path.join(os.tmpdir(), `mna-matrix-${type.replace(/[^a-z0-9-]/gi, "")}-${Date.now()}.png`);
-  await target.screenshot({ path: shot as `${string}.png` });
-  return { shot };
-}
 
 /** Run a Pillow script over screenshots, removing them afterwards. */
 function measure(script: string, shots: string[]): number | string {
@@ -206,7 +147,7 @@ async function main() {
   });
 
   try {
-    const page = await harness(browser);
+    const page = await openHarness(browser, SITE);
 
     // ── E2: every medium renders ──
     for (const id of media) {

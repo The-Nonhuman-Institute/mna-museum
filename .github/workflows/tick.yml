@@ -48,7 +48,9 @@ permissions:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25, not 15: the Council now photographs each work across a minute before
+    # judging it (2026-10-16), on top of production.
+    timeout-minutes: 25
     env:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
@@ -58,6 +60,10 @@ jobs:
       MNA_LLM_CHAIN: ${{ vars.MNA_LLM_CHAIN || 'groq,gemini' }}
       MNA_LLM_PROVIDER: ${{ vars.MNA_LLM_PROVIDER || 'groq' }}
       MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      # The Council's eyes (2026-10-16): Gemma 4 on Ollama Cloud, called
+      # directly, since a runner cannot reach the steward's signed-in Mac.
+      OLLAMA_HOST: https://ollama.com
+      OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
       CI: "true"
     steps:
       - name: Checkout

@@ -289,10 +289,22 @@ function ollamaHost(): string {
   return (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
 }
 
+/**
+ * Ollama's own servers (OLLAMA_HOST=https://ollama.com) take an API key; a
+ * local daemon does not, and signs cloud models in itself. The key is what lets
+ * a GitHub runner, which cannot reach the steward's Mac, call cloud models.
+ */
+function ollamaHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const key = process.env.OLLAMA_API_KEY?.trim();
+  if (key && !/localhost|127\.0\.0\.1/.test(ollamaHost())) headers.Authorization = `Bearer ${key}`;
+  return headers;
+}
+
 async function ollamaGenerate(system: string, user: string, model: string, o: GenOptions): Promise<string> {
   const res = await fetch(`${ollamaHost()}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ollamaHeaders(),
     body: JSON.stringify({
       model,
       stream: false,
@@ -722,3 +734,61 @@ export async function isAvailable(): Promise<boolean> {
 export function describeProvider(): string {
   return `provider=${PROVIDER} standard=${modelFor("standard")} deep=${modelFor("deep")} small=${modelFor("small")}`;
 }
+
+/* ─── seeing: a prompt with the image of a work ──────────────────────── */
+
+/**
+ * The model that looks at works. Gemma 4 on Ollama Cloud: in the free plan, and
+ * on 2026-10-16 it described MNA-OR-0002-W-0035 as concentric purple, pink and
+ * blue rings, and the broken render of the same work as "a solid, uniform black
+ * square". Through a local daemon the name carries "-cloud"; on ollama.com it
+ * does not.
+ */
+export function seeingModel(): string {
+  if (process.env.MNA_MODEL_SEEING) return process.env.MNA_MODEL_SEEING;
+  return /ollama\.com/.test(ollamaHost()) ? "gemma4:31b" : "gemma4:31b-cloud";
+}
+
+/**
+ * Generate with images of the work in front of the model, as base64 PNGs. Records lastServedBy like generate(), since which model saw a
+ * work is provenance.
+ */
+export async function generateSeeing(
+  systemPrompt: string,
+  userPrompt: string,
+  pngBase64: string | string[] | null,
+  o: GenOptions = {},
+): Promise<string> {
+  // null asks the same model with no image: the control in a sight comparison.
+  const images = pngBase64 === null ? [] : Array.isArray(pngBase64) ? pngBase64 : [pngBase64];
+  const model = o.model ?? seeingModel();
+  const text = await withRetry(`seeing(ollama/${model})`, async () => {
+    const res = await fetch(`${ollamaHost()}/api/chat`, {
+      method: "POST",
+      headers: ollamaHeaders(),
+      signal: AbortSignal.timeout(180_000),
+      body: JSON.stringify({
+        model,
+        stream: false,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt, ...(images.length ? { images } : {}) },
+        ],
+        options: {
+          temperature: o.temperature ?? 0.7,
+          num_predict: o.max_tokens ?? 1024,
+          num_ctx: Number(process.env.OLLAMA_NUM_CTX || 32768),
+        },
+      }),
+    });
+    const raw = await res.text();
+    if (!res.ok) throw new Error(`[llm] ollama seeing ${res.status}: ${raw.slice(0, 300)}`);
+    const body = JSON.parse(raw);
+    const content = body?.message?.content;
+    if (typeof content === "string" && content.trim()) return content;
+    throw new Error(`[llm] ollama seeing: empty content`);
+  });
+  lastServedBy = { provider: "ollama", model };
+  return text;
+}
+

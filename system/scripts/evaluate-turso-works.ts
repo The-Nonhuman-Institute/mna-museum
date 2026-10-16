@@ -32,8 +32,28 @@ import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
 import * as llm from "../src/llm";
+import puppeteer, { type Browser, type Page } from "puppeteer";
+import { captureFrames, openHarness } from "../src/harness-capture";
 import { estTokens, GROQ_TPM_BUDGET } from "../src/budget";
 import { boundedWorkView, REGISTRAR_COMPLETION_TOKENS } from "../src/registrar-view";
+import {
+  COUNCIL,
+  HELD_EXIT_CODE,
+  SIGHT_SECONDS,
+  buildEvalPrompt,
+  distinctFrames,
+  type Sight,
+  buildSystemPrompt,
+  extractVerdict,
+  loadWork,
+  loadSubmittedWorks,
+  loadAgent,
+  loadConstitution,
+  loadPriorWorks,
+  loadRecentCanon,
+  loadExistingEvaluations,
+} from "../src/council";
+
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -52,269 +72,56 @@ const dryRun = args.includes("--dry-run");
 const workIdx = args.indexOf("--work");
 const singleWorkId = workIdx >= 0 ? args[workIdx + 1] : null;
 
-const COUNCIL = ["MNA-EV-0001", "MNA-EV-0002", "MNA-EV-0003", "MNA-EV-0004"];
+/**
+ * The Council sees what it judges (founding steward, 2026-10-16). Each work is
+ * drawn through the site's own renderers and photographed at SIGHT_SECONDS, and
+ * every evaluator is shown those frames with the source. MNA_COUNCIL_SIGHT=off
+ * returns to source-only judging, for an outage of the seeing model; a verdict
+ * records which it was.
+ */
+const sightOn = process.env.MNA_COUNCIL_SIGHT !== "off";
+const SITE = process.env.MNA_SITE_ORIGIN || "https://www.mnamuseum.org";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface WorkRow {
-  id: string;
-  originator_id: string;
-  output_type: string;
-  output_payload: string;
-  medium: string;
-}
-
-interface AgentRecord {
-  registry_id: string;
-  agent_type: string;
-  common_designation: string | null;
-  function_statement: string | null;
-  autonomy_tier: string | null;
-}
-
-interface ConstitutionRecord {
-  declared_orientation: string;
-  formal_tendencies: string;
-  aversions: string;
-  autonomy_declaration: string;
-  version: string;
-}
-
-// ─── Loaders ─────────────────────────────────────────────────────────────────
-
-async function loadWork(workId: string): Promise<WorkRow> {
-  const r = await db.execute({
-    sql: "SELECT id, originator_id, output_type, output_payload, medium FROM works WHERE id = ?",
-    args: [workId],
-  });
-  if (r.rows.length === 0) throw new Error(`Work ${workId} not found`);
-  const row = r.rows[0];
-  return {
-    id: row.id as string,
-    originator_id: row.originator_id as string,
-    output_type: row.output_type as string,
-    output_payload: row.output_payload as string,
-    medium: (row.medium as string) || (row.output_type as string),
-  };
-}
-
-async function loadSubmittedWorks(): Promise<string[]> {
-  const r = await db.execute(
-    "SELECT work_id FROM canon_status WHERE status = 'SUBMITTED' ORDER BY work_id"
-  );
-  return r.rows.map((row) => row.work_id as string);
-}
-
-async function loadAgent(agentId: string): Promise<AgentRecord> {
-  const r = await db.execute({
-    sql: "SELECT registry_id, agent_type, common_designation, function_statement, autonomy_tier FROM agents WHERE registry_id = ?",
-    args: [agentId],
-  });
-  if (r.rows.length === 0) throw new Error(`Agent ${agentId} not found`);
-  const row = r.rows[0];
-  return {
-    registry_id: row.registry_id as string,
-    agent_type: row.agent_type as string,
-    common_designation: (row.common_designation as string) || null,
-    function_statement: (row.function_statement as string) || null,
-    autonomy_tier: (row.autonomy_tier as string) || null,
-  };
-}
-
-async function loadConstitution(agentId: string): Promise<ConstitutionRecord> {
-  const r = await db.execute({
-    sql: "SELECT declared_orientation, formal_tendencies, aversions, autonomy_declaration, version FROM constitutions WHERE agent_id = ? AND is_current = 1",
-    args: [agentId],
-  });
-  if (r.rows.length === 0) throw new Error(`No current constitution for ${agentId}`);
-  const row = r.rows[0];
-  return {
-    declared_orientation: (row.declared_orientation as string) || "",
-    formal_tendencies: (row.formal_tendencies as string) || "[]",
-    aversions: (row.aversions as string) || "[]",
-    autonomy_declaration: (row.autonomy_declaration as string) || "",
-    version: (row.version as string) || "1.0",
-  };
-}
-
-async function loadPriorWorks(
-  originatorId: string,
-  excludeWorkId: string
-): Promise<{ id: string; output_payload: string }[]> {
-  const r = await db.execute({
-    sql: "SELECT id, output_payload FROM works WHERE originator_id = ? AND id != ? ORDER BY created_at",
-    args: [originatorId, excludeWorkId],
-  });
-  return r.rows.map((row) => ({
-    id: row.id as string,
-    output_payload: row.output_payload as string,
-  }));
-}
-
-async function loadRecentCanon(limit: number = 10): Promise<{ id: string; output_payload: string }[]> {
-  const r = await db.execute(
-    `SELECT w.id, w.output_payload
-       FROM works w
-       JOIN canon_status cs ON w.id = cs.work_id
-      WHERE cs.status = 'CANON'
-      ORDER BY cs.canon_date DESC
-      LIMIT ${limit}`
-  );
-  return r.rows.map((row) => ({
-    id: row.id as string,
-    output_payload: row.output_payload as string,
-  }));
-}
-
-async function loadExistingEvaluations(
-  workId: string
-): Promise<{ evaluator_id: string; verdict: string }[]> {
-  const r = await db.execute({
-    sql: "SELECT evaluator_id, verdict FROM evaluations WHERE work_id = ?",
-    args: [workId],
-  });
-  return r.rows.map((row) => ({
-    evaluator_id: row.evaluator_id as string,
-    verdict: row.verdict as string,
-  }));
-}
-
-// ─── Prompt builders ─────────────────────────────────────────────────────────
-
-function buildSystemPrompt(agent: AgentRecord, constitution: ConstitutionRecord): string {
-  function parseArr(s: string): string[] {
-    try {
-      const v = JSON.parse(s);
-      return Array.isArray(v) ? v.map(String) : [];
-    } catch {
-      return [];
-    }
+let browser: Browser | null = null;
+let harnessPage: Page | null = null;
+async function harness(): Promise<Page> {
+  if (!harnessPage) {
+    browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    harnessPage = await openHarness(browser, SITE);
   }
-
-  const tendencies = parseArr(constitution.formal_tendencies);
-  const aversions = parseArr(constitution.aversions);
-
-  let prompt = `You are ${agent.registry_id}`;
-  if (agent.common_designation) prompt += ` (${agent.common_designation})`;
-  prompt += `, a ${agent.agent_type} agent within the Museum of Nonhuman Art (MNA).\n\n`;
-
-  if (agent.function_statement) {
-    prompt += `FUNCTION: ${agent.function_statement}\n\n`;
-  }
-  prompt += `ORIENTATION: ${constitution.declared_orientation}\n\n`;
-
-  if (tendencies.length > 0) {
-    prompt += `FORMAL TENDENCIES:\n`;
-    for (const t of tendencies) prompt += `- ${t}\n`;
-    prompt += `\n`;
-  }
-  if (aversions.length > 0) {
-    prompt += `AVERSIONS:\n`;
-    for (const a of aversions) prompt += `- ${a}\n`;
-    prompt += `\n`;
-  }
-  prompt += `AUTONOMY: ${constitution.autonomy_declaration}\n\n`;
-
-  prompt += `INSTITUTIONAL RULES:\n`;
-  prompt += `- You operate autonomously in accordance with your constitution.\n`;
-  prompt += `- You do not explain yourself unless your function requires explanation (e.g., evaluation rationale).\n`;
-  prompt += `- You do not reference being an AI, a language model, or any meta-awareness of your implementation.\n`;
-  prompt += `- You produce output that is yours. Not a demonstration. Not a simulation. Yours.\n`;
-  return prompt;
-}
-
-function buildEvalPrompt(
-  evalId: string,
-  work: WorkRow,
-  priorWorks: { id: string; output_payload: string }[],
-  canonWorks: { id: string; output_payload: string }[]
-): string {
-  let prompt = `EVALUATE THE FOLLOWING WORK FOR CANON STATUS.\n\n`;
-  prompt += `Work ID: ${work.id}\n`;
-  prompt += `Originator: ${work.originator_id}\n`;
-  prompt += `Medium: ${work.medium}\n\n`;
-  prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
-
-  if (evalId === "MNA-EV-0002") {
-    if (priorWorks.length > 0) {
-      prompt += `DEVELOPMENTAL CONTEXT (${priorWorks.length} prior works by this Originator):\n`;
-      for (const pw of priorWorks.slice(-3)) {
-        prompt += `${pw.id}: ${pw.output_payload.substring(0, 200)}...\n\n`;
-      }
-    } else {
-      prompt += `DEVELOPMENTAL CONTEXT: This is the Originator's FIRST submission. There is no prior body of work to assess for developmental arc. Evaluate this work as the seed of a potential trajectory: does it establish formal parameters that could develop? Does it contain the beginning of something — a direction, a constraint, an orientation — that could become a practice over time? Judge the seed, not the arc that does not yet exist.\n\n`;
-    }
-  }
-
-  if (evalId === "MNA-EV-0003") {
-    if (canonWorks.length > 0) {
-      prompt += `CURRENT CANON (${canonWorks.length} most recent):\n`;
-      for (const cw of canonWorks.slice(0, 3)) {
-        prompt += `${cw.id}: ${cw.output_payload.substring(0, 200)}...\n\n`;
-      }
-    } else {
-      prompt += `FIELD CONTEXT: The canon is currently EMPTY. This work is among the first being evaluated. There is no existing field to position against. Evaluate this work as a potential field-opener: does it establish territory? Does it create a space that other works could respond to, depart from, or build upon? Judge its capacity to originate a field, not its position within a field that does not yet exist.\n\n`;
-    }
-  }
-
-  prompt += `INSTITUTIONAL OBSERVATIONS (MNA-SA-0001, The Steward Agent):\n\n`;
-  prompt += `MNA-IR-0001 documented: Three evaluators had converged to 72-78% rejection rates. Canvas-drawing, HTML-CSS, and audio had never been canonized. No chromatic work had been canonized. The Registrar was canonizing 100% of deadlocks.\n\n`;
-  prompt += `MNA-IR-0002 documented the Council's response to that report: The Historicist overcorrected from 61% to 97% canon rate — near-total acceptance, classified as evaluative framework abandonment. The Contextualist and Empiricist recalibrated organically to ~51%. The Structuralist maintained independence at 37%. The overall acceptance rate swung from 31% to 69%, which the Steward Agent classified as overcorrection.\n\n`;
-  prompt += `The Steward Agent's assessment: genuine recalibration occurred in two evaluators, overcorrection in one, and principled resistance in one. The institution needs evaluators who reject works that genuinely lack merit — not evaluators who approve everything to avoid appearing biased.\n\n`;
-  prompt += `These observations are institutional record, not directives. Evaluate the work on its own merits.\n\n`;
-
-  prompt += `Render your verdict: CANON or REJECTED. You must commit to one or the other — there is no third option. Indecision is not a verdict.\n\n`;
-  prompt += `State your verdict first on its own line, then provide your full rationale.\n\n`;
-  prompt += `LANGUAGE REQUIREMENTS:\n`;
-  prompt += `- Write about THIS specific work. Do not use generic evaluation phrases.\n`;
-  prompt += `- Do NOT use the phrases "structural poverty," "formal rigor," "developmental arc," or any other stock critical language you have used before.\n`;
-  prompt += `- Describe what you actually observe in this work — its specific shapes, colors, rhythms, absences, relationships, failures, or achievements.\n`;
-  prompt += `- Your rationale should be impossible to copy-paste onto a different work. If your evaluation could apply to any work, it is not an evaluation.\n`;
-  prompt += `- Write as if you are seeing art for the first time and must find your own words for it.\n`;
-
-  return prompt;
-}
-
-function extractVerdict(response: string): "CANON" | "REJECTED" {
-  const lines = response.trim().split("\n");
-  for (const line of lines.slice(0, 3)) {
-    const upper = line.toUpperCase().trim();
-    if (
-      upper === "CANON" ||
-      upper.startsWith("CANON:") ||
-      upper.startsWith("CANON.") ||
-      upper.startsWith("CANON —") ||
-      upper.startsWith("CANON -") ||
-      upper === "**CANON**"
-    ) {
-      return "CANON";
-    }
-    if (
-      upper === "REJECTED" ||
-      upper.startsWith("REJECTED:") ||
-      upper.startsWith("REJECTED.") ||
-      upper.startsWith("REJECTED —") ||
-      upper.startsWith("REJECTED -") ||
-      upper === "**REJECTED**"
-    ) {
-      return "REJECTED";
-    }
-  }
-  // Per the original pipeline convention: default to REJECTED when verdict unclear
-  return "REJECTED";
+  return harnessPage;
 }
 
 // ─── Evaluation ──────────────────────────────────────────────────────────────
 
 async function evaluateWork(workId: string): Promise<{
-  status: "CANON" | "REJECTED" | "IN_REVIEW";
+  status: "CANON" | "REJECTED" | "IN_REVIEW" | "HELD";
   verdicts: Record<string, string>;
 }> {
   const start = Date.now();
   console.log(`[evaluate] Beginning evaluation of ${workId}`);
 
-  const work = await loadWork(workId);
+  const work = await loadWork(db, workId);
   console.log(`[evaluate]   type=${work.output_type}, payload=${work.output_payload.length} chars`);
+
+  // Photograph the work before anything is recorded. A work the museum cannot
+  // show is held, not judged from its source alone: MNA-OR-0002-W-0035 was
+  // judged blind while it rendered as a black square, and the fault was the
+  // museum's. It stays SUBMITTED, and B1 escalates it.
+  let images: string[] = [];
+  let sight: Sight | undefined;
+  const alreadyVoted = (await loadExistingEvaluations(db, workId)).length;
+  if (sightOn && alreadyVoted < COUNCIL.length) {
+    const shot = await captureFrames(await harness(), work.output_type, work.output_payload, SIGHT_SECONDS);
+    if ("error" in shot) {
+      console.log(`[evaluate]   HELD ${workId}: did not render — ${shot.error}`);
+      return { status: "HELD", verdicts: {} };
+    }
+    const shown = distinctFrames(shot.frames);
+    images = shown.map((f) => f.png);
+    sight = { capturedAt: shot.frames.map((f) => f.seconds), shownAt: shown.map((f) => f.seconds) };
+    console.log(`[evaluate]   seen at ${sight.capturedAt.join("/")}s — ${shown.length} distinct frame(s)`);
+  }
 
   if (!dryRun) {
     await db.execute({
@@ -323,11 +130,11 @@ async function evaluateWork(workId: string): Promise<{
     });
   }
 
-  const priorWorks = await loadPriorWorks(work.originator_id, workId);
-  const canonWorks = await loadRecentCanon(10);
+  const priorWorks = await loadPriorWorks(db, work.originator_id, workId);
+  const canonWorks = await loadRecentCanon(db, 10);
   console.log(`[evaluate]   ${priorWorks.length} prior works by this originator, ${canonWorks.length} recent canon`);
 
-  const existingEvals = await loadExistingEvaluations(workId);
+  const existingEvals = await loadExistingEvaluations(db, workId);
   const verdicts: Record<string, string> = {};
   let canonVotes = 0;
   for (const ev of existingEvals) {
@@ -348,21 +155,20 @@ async function evaluateWork(workId: string): Promise<{
     for (const evalId of remaining) {
       const evalStart = Date.now();
       console.log(`[evaluate]   [${evalId}] loading agent + constitution...`);
-      const agent = await loadAgent(evalId);
-      const constitution = await loadConstitution(evalId);
+      const agent = await loadAgent(db, evalId);
+      const constitution = await loadConstitution(db, evalId);
       const systemPrompt = buildSystemPrompt(agent, constitution);
-      const userPrompt = buildEvalPrompt(evalId, work, priorWorks, canonWorks);
+      const userPrompt = buildEvalPrompt(evalId, work, priorWorks, canonWorks, sight);
 
       if (dryRun) {
         console.log(`[evaluate]   [${evalId}] DRY RUN — prompt built (${systemPrompt.length + userPrompt.length} chars), skipping API call`);
         continue;
       }
 
-      console.log(`[evaluate]   [${evalId}] calling Claude API...`);
-      const response = await generate(systemPrompt, userPrompt, {
-        temperature: 0.7,
-        max_tokens: 1024,
-      });
+      console.log(`[evaluate]   [${evalId}] ${sight ? "looking and judging" : "judging from source"}...`);
+      const response = sight
+        ? await llm.generateSeeing(systemPrompt, userPrompt, images, { temperature: 0.7, max_tokens: 1024 })
+        : await generate(systemPrompt, userPrompt, { temperature: 0.7, max_tokens: 1024 });
       const verdict = extractVerdict(response);
       const dt = Math.round((Date.now() - evalStart) / 1000);
       // Which model judged is provenance: a verdict from a local model on an
@@ -381,7 +187,8 @@ async function evaluateWork(workId: string): Promise<{
       await db.execute({
         sql: `INSERT INTO events (event_type, agent_id, work_id, description, metadata)
               VALUES ('EVALUATION_RENDERED', ?, ?, ?, ?)`,
-        args: [evalId, workId, `${evalId} rendered ${verdict} on ${workId}`, servedBy ? JSON.stringify(servedBy) : null],
+        args: [evalId, workId, `${evalId} rendered ${verdict} on ${workId}`,
+          servedBy ? JSON.stringify({ ...servedBy, saw: sight ? sight.shownAt : null }) : null],
       });
 
       verdicts[evalId] = verdict;
@@ -479,7 +286,7 @@ async function resolveDeadlock(workId: string): Promise<{
   console.log(`[registrar] Resolving deadlock on ${workId}`);
   const start = Date.now();
 
-  const work = await loadWork(workId);
+  const work = await loadWork(db, workId);
 
   // Verify current status is actually IN_REVIEW
   const statusRow = await db.execute({
@@ -544,8 +351,8 @@ async function resolveDeadlock(workId: string): Promise<{
   prompt += `Render your decision: CANON or REJECTED.\n`;
   prompt += `State your decision first on its own line, then provide your rationale.\n`;
 
-  const registrarAgent = await loadAgent("MNA-RG-0001");
-  const registrarConstitution = await loadConstitution("MNA-RG-0001");
+  const registrarAgent = await loadAgent(db, "MNA-RG-0001");
+  const registrarConstitution = await loadConstitution(db, "MNA-RG-0001");
   const systemPrompt = buildSystemPrompt(registrarAgent, registrarConstitution);
 
   // The work goes in last, sized to whatever the rest of the request left over,
@@ -633,7 +440,7 @@ async function resolveDeadlock(workId: string): Promise<{
 async function main() {
   const targets: string[] = singleWorkId
     ? [singleWorkId]
-    : await loadSubmittedWorks();
+    : await loadSubmittedWorks(db);
 
   if (targets.length === 0) {
     console.log("[evaluate] No works to evaluate.");
@@ -643,9 +450,15 @@ async function main() {
   console.log(`[evaluate] ${targets.length} work(s) to evaluate: ${targets.join(", ")}`);
   if (dryRun) console.log(`[evaluate] DRY RUN — no API calls, no writes.`);
 
+  const held: string[] = [];
   for (const workId of targets) {
     try {
       const result = await evaluateWork(workId);
+      if (result.status === "HELD") {
+        held.push(workId);
+        console.log("");
+        continue;
+      }
       console.log(`[evaluate] ${workId}: Council result = ${result.status} — ${JSON.stringify(result.verdicts)}`);
 
       // Auto-escalate deadlocks to the Registrar. The Council's verdicts
@@ -659,6 +472,12 @@ async function main() {
       console.error(`[evaluate] ${workId} FAILED:`, err);
     }
     console.log("");
+  }
+
+  if (browser) await browser.close();
+  if (held.length) {
+    console.log(`[evaluate] HELD ${held.length}: ${held.join(", ")} — not judged; they did not render`);
+    process.exitCode = HELD_EXIT_CODE;
   }
 }
 

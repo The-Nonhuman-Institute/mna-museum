@@ -24,9 +24,11 @@ import path from "path";
 
 import { MEDIUM_OUTPUT_TYPE_COMPATIBILITY } from "../../website/src/lib/submission-checks";
 import { FROM_DOMAIN } from "../src/steward-mail";
+import { HELD_EXIT_CODE } from "../src/council";
 import {
   classifyBlankPreviews,
   findStalledReviews,
+  heldWorks,
   minutesSince,
   retryOnStaleSocket,
   reviewedFor,
@@ -435,7 +437,17 @@ async function checkB1(db: Client): Promise<void> {
   try {
     run("npx", ["tsx", "system/scripts/evaluate-turso-works.ts"]);
     record({ check: "B1", severity: "repaired", summary: `ran the Council on ${stale.length} overdue work(s)` });
-  } catch {
+  } catch (e) {
+    // A held work did not render, so the Council would not judge it blind.
+    // That needs a person: the fault may be the museum's renderer.
+    const err = e as { status?: number; stdout?: string };
+    const held = err.status === HELD_EXIT_CODE ? heldWorks(String(err.stdout ?? "")) : [];
+    if (held.length) {
+      record({ check: "B1", severity: "escalate", summary: `${held.length} work(s) held — they did not render, and the Council does not judge blind`,
+        items: held.map((h) => `${h.id}: ${h.reason}`),
+        nextStep: "find why it does not render (renderer, or the payload itself); then npx tsx system/scripts/evaluate-turso-works.ts --work <id>" });
+      return;
+    }
     // Best-effort: a provider outage is not an escalation on the first failure.
     record({ check: "B1", severity: "note", summary: `evaluation did not complete; ${stale.length} work(s) remain SUBMITTED — retried next round` });
   }

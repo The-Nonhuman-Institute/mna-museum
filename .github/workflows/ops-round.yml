@@ -47,6 +47,10 @@ jobs:
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      # The Council's eyes (2026-10-16): Gemma 4 on Ollama Cloud, called
+      # directly, since a runner cannot reach the steward's signed-in Mac.
+      OLLAMA_HOST: https://ollama.com
+      OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       OPS_ROUND_OUTPUT: ${{ github.workspace }}/ops-findings.json
       RENDER_MATRIX_OUTPUT: ${{ github.workspace }}/render-matrix.json

@@ -204,6 +204,14 @@ and correcting it would be speaking for them.
   retried next round; do not escalate on the first failure.
 - *Never* substitute a verdict. If the Council cannot be reached, the work stays
   SUBMITTED and that is the honest state.
+- *A work that does not render is held.* The Council sees what it judges
+  (founding steward, 2026-10-16): each work is photographed through the site's
+  renderers at 3, 20 and 60 seconds and shown to every evaluator with its source.
+  A work that will not render is not judged from its source alone — it stays
+  SUBMITTED, the evaluator exits with the held code, and B1 **escalates** it with
+  the reason, at once. The fault may be the museum's: MNA-OR-0002-W-0035 was
+  judged blind while it rendered as a black square. `council-sight-check.yml`
+  shows whether the Council can see at all.
 
 **Repair.** `evaluate-turso-works.ts`.
 
