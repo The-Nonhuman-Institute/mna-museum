@@ -1,8 +1,10 @@
 # MNA-OPS-001 — Institutional Operations Handbook
 
-**Status:** DRAFT — awaiting steward ratification
-**Version:** 0.1
+**Status:** RATIFIED — by the founding steward, 2026-10-16
+**Version:** 1.0
 **Drafted:** 2026-08-26
+**Ratified:** 2026-10-16 (PROTOCOL_RATIFIED, Keeper's record). The file keeps its
+draft-era name, which the contract tests read; the version above is the version.
 **Scope:** the running of the institution — never the making or judging of works
 
 ---

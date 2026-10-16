@@ -92,7 +92,7 @@ The model that rendered each verdict is recorded on its `EVALUATION_RENDERED` ev
 
 ## Working on it
 
-`founding-documents/governance/MNA-OPS-001-Operations-and-Definition-of-Done-v0_1.md` is the operations standard. Read §III and §IV before changing anything that runs:
+`founding-documents/governance/MNA-OPS-001-Operations-and-Definition-of-Done-v0_1.md` is the operations standard, ratified by the founding steward as v1.0 on 2026-10-16 (the file keeps its draft-era name). Read §III and §IV before changing anything that runs:
 
 - **Definition of done:** `npm run verify` in `website/` (typecheck, lint, tests together) passes; a test would fail without the change; no fact is restated in a second place; output is looked at, not assumed; it works on production.
 - **Contract tests enforce single sources.** `website/tests/ops-round.test.ts` fails if `ops-round.ts` runs a check §V does not document. Change both, together.
