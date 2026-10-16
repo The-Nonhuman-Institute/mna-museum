@@ -8,6 +8,7 @@ import {
   readSurface,
   resolveSurface,
 } from "@/lib/ingredient-surface";
+import { SURFACE_SIZE } from "@/lib/surface-size";
 
 /**
  * Typefaces.
@@ -61,7 +62,7 @@ export default function TypefaceRenderer({ json }: { json: string }) {
     let disposed = false;
     const surface = readSurface(spec);
     if (!surface) { setInkUrl(null); return; }
-    void resolveSurface(surface, 512).then((c) => {
+    void resolveSurface(surface, SURFACE_SIZE).then((c) => {
       if (disposed || !c) return;
       setInkUrl(canvasToDataUrl(flipVertically(c)));
     });

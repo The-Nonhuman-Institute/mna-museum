@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FINITE_DRAW_MS } from "@/lib/render-timing";
+import { renderPixelRatio } from "@/lib/surface-size";
 
 /**
  * Instructions for a machine — plotter paths and G-code.
@@ -87,7 +88,7 @@ export default function InstructionRenderer({ payload }: { payload: string }) {
     let raf = 0;
 
     const frame = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderPixelRatio(window.devicePixelRatio);
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }

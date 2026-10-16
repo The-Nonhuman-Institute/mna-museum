@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { buildFragmentSource } from "@/lib/shader-source";
+import { renderPixelRatio } from "@/lib/surface-size";
 
 /**
  * GLSL fragment shaders.
@@ -100,7 +101,7 @@ export default function ShaderRenderer({ payload }: { payload: string }) {
     const started = performance.now();
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderPixelRatio(window.devicePixelRatio);
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
       if (canvas.width !== w || canvas.height !== h) {

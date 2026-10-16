@@ -1,6 +1,7 @@
 "use client";
 
 import { INGREDIENT_TYPE_IDS } from "./output-types";
+import { cssSizeForPixels } from "./surface-size";
 
 /**
  * Render one medium to a canvas so another medium can consume it.
@@ -54,8 +55,11 @@ export async function renderPartToCanvas(
   // Offscreen but laid out and painting. display:none stops requestAnimationFrame,
   // which would leave every animated ingredient frozen on frame zero.
   const host = document.createElement("div");
+  // Laid out so the renderer paints exactly `size` device pixels on any screen:
+  // a material's coordinates must not depend on who is looking at it.
+  const css = cssSizeForPixels(size, window.devicePixelRatio);
   host.style.cssText =
-    `position:fixed;left:-99999px;top:0;width:${size}px;height:${size}px;overflow:hidden;pointer-events:none;`;
+    `position:fixed;left:-99999px;top:0;width:${css}px;height:${css}px;overflow:hidden;pointer-events:none;`;
   document.body.appendChild(host);
   const root = createRoot(host);
 

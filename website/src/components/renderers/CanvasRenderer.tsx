@@ -9,6 +9,7 @@ import {
   readSurface,
   resolveSurface,
 } from "@/lib/ingredient-surface";
+import { CANVAS_SIZE } from "@/lib/surface-size";
 
 interface DrawOp {
   op: string;
@@ -159,14 +160,14 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = 800;
-    canvas.height = 800;
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
 
     // Check if first op sets background, otherwise use default
     const firstOp = ops[0];
     const bgColor = firstOp?.op === "bg" ? (firstOp.color || "#0e0c0a") : "#0e0c0a";
     ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, 800, 800);
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     for (const op of ops) {
       drawOp(ctx, op);
@@ -183,7 +184,11 @@ export default function CanvasRenderer({ json }: CanvasRendererProps) {
       for (const op of ops) {
         const surface = readSurface(op);
         if (!surface) continue;
-        const ingredient = await resolveSurface(surface, 512);
+        // Drawn on the canvas's own grid, so a shader's fragCoord is measured in
+        // the same units as the op's x and y (y running upward, as GLSL's does).
+        // At 512 and stretched, MNA-OR-0002-W-0035's rings — each centred on
+        // (400, 400) with the radius of its circle — sat off-centre in them.
+        const ingredient = await resolveSurface(surface, CANVAS_SIZE);
         if (!ingredient || disposed) continue;
         const mask = makeMask(canvas.width, canvas.height);
         if (!mask.ctx) continue;

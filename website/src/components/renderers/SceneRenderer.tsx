@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import * as THREE from "three";
+import { renderPixelRatio, SURFACE_SIZE } from "@/lib/surface-size";
 
 interface SceneLight {
   type: "ambient" | "directional" | "point";
@@ -145,7 +146,7 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
       alpha: transparent || !scene.bg,
     });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(renderPixelRatio(window.devicePixelRatio));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
@@ -215,7 +216,7 @@ export default function SceneRenderer({ json, transparent = false }: { json: str
               : JSON.stringify(surface.payload);
           void (async () => {
             const { renderPartToCanvas } = await import("@/lib/render-part-to-canvas");
-            const canvas = await renderPartToCanvas(String(surface.type), payloadStr, 512);
+            const canvas = await renderPartToCanvas(String(surface.type), payloadStr, SURFACE_SIZE);
             if (!canvas || disposed) return;
             const tex = new THREE.CanvasTexture(canvas);
             tex.colorSpace = THREE.SRGBColorSpace;

@@ -1,5 +1,6 @@
 import { INGREDIENT_TYPE_IDS } from "../../website/src/lib/output-types";
 import { hasShaderEntryPoint } from "../../website/src/lib/shader-source";
+import { CANVAS_SIZE, SURFACE_SIZE } from "../../website/src/lib/surface-size";
 
 /**
  * Output format definitions for Originator production.
@@ -142,6 +143,10 @@ ${slot}
 
 ${example}
 
+Unless the host says otherwise above, a surface is drawn on a ${SURFACE_SIZE}x${SURFACE_SIZE}
+square and fitted to the marks it fills; a shader reads that size from
+iResolution.
+
 Any of ${INGREDIENT_TYPE_IDS.join(", ")} can be used this way. You write the
 payload inline, yourself, as part of this work. There is no way to name another
 Originator's work here: collaboration between Originators happens in the
@@ -235,11 +240,14 @@ Each instruction is an object with an "op" field and parameters:
   { "op": "arc", "x": 400, "y": 400, "r": 100, "start": 0, "end": 3.14 },
   { "op": "text", "content": "...", "x": 400, "y": 400, "size": 24, "color": "#fff" }
 ]
-Canvas size is 800x800. You have FULL creative control — use any colors, any background.
+Canvas size is ${CANVAS_SIZE}x${CANVAS_SIZE}. You have FULL creative control — use any colors, any background.
 Use the "bg" op as your first instruction to set the canvas background color.
 Output ONLY the JSON array. No explanation. The instructions ARE the work.${ingredientSection(
   `Any shape you fill may be made OF another medium rather than a flat colour.
-Add a "surface" to the op and the shape is drawn in that material:`,
+Add a "surface" to the op and the shape is drawn in that material. A surface is
+drawn on the canvas's own ${CANVAS_SIZE}x${CANVAS_SIZE} grid, so a shader's fragCoord is measured in
+the same units as the op's x and y — except that fragCoord's y runs upward from
+the bottom, as it does in all GLSL:`,
   `  { "op": "circle", "x": 400, "y": 400, "r": 200,
     "surface": { "type": "shader-glsl", "payload": "void mainImage(...){...}" } }`,
 )}`;

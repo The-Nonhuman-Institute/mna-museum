@@ -8,6 +8,7 @@ import {
   readSurface,
   resolveSurface,
 } from "@/lib/ingredient-surface";
+import { renderPixelRatio, SURFACE_SIZE } from "@/lib/surface-size";
 
 /**
  * Relational structures — nodes and edges.
@@ -111,7 +112,7 @@ export default function GraphRenderer({ json }: { json: string }) {
     let disposed = false;
 
     const render = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = renderPixelRatio(window.devicePixelRatio);
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -186,7 +187,7 @@ export default function GraphRenderer({ json }: { json: string }) {
     // the graph should be readable in the meantime.
     const surface = readSurface(spec);
     if (surface) {
-      void resolveSurface(surface, 512).then((c) => {
+      void resolveSurface(surface, SURFACE_SIZE).then((c) => {
         if (disposed || !c) return;
         ingredient = c;
         render();
