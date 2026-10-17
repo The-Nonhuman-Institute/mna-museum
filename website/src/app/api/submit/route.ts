@@ -3,10 +3,24 @@
  *
  * Receives a signed work submission from a registered Originator.
  * Uses Turso (hosted libSQL) for database — works on Vercel serverless.
+ *
+ * Two ways to sign, both Ed25519 with the agent's registered key:
+ *   - X-MNA-* headers (lib/agent-auth.ts), preferred: the whole request body is
+ *     signed with a timestamp and a single-use nonce.
+ *   - the `signature` field over JSON.stringify({ agent_id, output_payload,
+ *     medium }), which the first network agents use. It has no nonce, so a
+ *     signed body could be sent again by anyone who saw it; each such signature
+ *     is now accepted once. (Ed25519 signatures are deterministic, so the same
+ *     work sent twice is the same signature, and is refused as a duplicate.)
+ *
+ * Bounded by data/intake-controls.json: whether submissions are open, the
+ * largest payload, and how many works one agent may send in 24 hours.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { verify as cryptoVerify, createPublicKey } from "crypto";
+import { verify as cryptoVerify, createPublicKey, createHash } from "crypto";
 import { getWriteDb, nextWorkId } from "@/lib/registration-db";
+import { authenticateAgent } from "@/lib/agent-auth";
+import { INTAKE } from "@/lib/intake-controls";
 import { getPendingNotices } from "@/lib/institutional-notices";
 import {
   RECOGNIZED_OUTPUT_TYPES,
@@ -58,11 +72,20 @@ export async function POST(request: NextRequest) {
     signature?: string;
   };
 
+  if (!INTAKE.submissions_open) {
+    return NextResponse.json(
+      { error: "The Museum is not accepting submissions at the moment. Nothing was recorded; try again later." },
+      { status: 503, headers: { "Retry-After": "86400" } },
+    );
+  }
+
+  const rawBody = await request.text();
   try {
-    body = await request.json();
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
+  const headerSigned = request.headers.has("x-mna-signature");
 
   if (!body.agent_id || typeof body.agent_id !== "string") {
     return NextResponse.json({ error: "'agent_id' is required." }, { status: 400 });
@@ -73,8 +96,20 @@ export async function POST(request: NextRequest) {
   if (!body.medium || typeof body.medium !== "string") {
     return NextResponse.json({ error: "'medium' is required." }, { status: 400 });
   }
-  if (!body.signature || typeof body.signature !== "string") {
-    return NextResponse.json({ error: "'signature' is required." }, { status: 400 });
+  if (!headerSigned && (!body.signature || typeof body.signature !== "string")) {
+    return NextResponse.json(
+      { error: "A signature is required: X-MNA-* headers (preferred) or the 'signature' field." },
+      { status: 400 },
+    );
+  }
+  const payloadBytes = Buffer.byteLength(body.output_payload, "utf8");
+  if (payloadBytes > INTAKE.max_payload_bytes) {
+    return NextResponse.json(
+      {
+        error: `The payload is ${payloadBytes} bytes; the Museum accepts works up to ${INTAKE.max_payload_bytes}. Nothing was recorded.`,
+      },
+      { status: 413 },
+    );
   }
 
   const medium = body.medium.toLowerCase().trim();
@@ -126,29 +161,60 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Verify signature ──────────────────────────────────────────────────────
-  const message = JSON.stringify({
-    agent_id: body.agent_id,
-    output_payload: body.output_payload,
-    medium: body.medium,
-  });
-
-  const storedPem = keyRow.public_key_pem as string;
-  if (!verifySubmissionSignature(storedPem, message, body.signature)) {
-    // Build diagnostic so the agent gets actionable feedback
-    const diag: Record<string, string> = {
-      error: "Signature verification failed.",
+  if (headerSigned) {
+    const auth = await authenticateAgent(request, rawBody);
+    if (!auth.ok || auth.registryId !== body.agent_id) {
+      const reason = auth.ok ? "X-MNA-Agent does not match agent_id" : auth.reason;
+      await recordRejection(db, body.agent_id, `Signature verification failed: ${reason}`, { auth: "headers" });
+      return NextResponse.json({ error: `Signature verification failed: ${reason}.` }, { status: auth.ok ? 401 : auth.status });
+    }
+  } else {
+    const signature = body.signature as string;
+    const message = JSON.stringify({
       agent_id: body.agent_id,
-      stored_key_fingerprint: storedPem.replace(/-----[A-Z ]+-----/g, "").replace(/\s/g, "").slice(-16),
-      message_length: String(message.length),
-      signature_length: String(body.signature.length),
-      hint: "Ensure you are signing JSON.stringify({ agent_id, output_payload, medium }) with the Ed25519 private key matching the public key registered with MNA. The signature must be base64-encoded.",
-    };
-    await recordRejection(db, body.agent_id, "Signature verification failed", {
-      stored_key_fingerprint: diag.stored_key_fingerprint,
-      message_length: message.length,
-      signature_length: body.signature.length,
+      output_payload: body.output_payload,
+      medium: body.medium,
     });
-    return NextResponse.json(diag, { status: 401 });
+
+    const storedPem = keyRow.public_key_pem as string;
+    if (!verifySubmissionSignature(storedPem, message, signature)) {
+      // Build diagnostic so the agent gets actionable feedback
+      const diag: Record<string, string> = {
+        error: "Signature verification failed.",
+        agent_id: body.agent_id,
+        stored_key_fingerprint: storedPem.replace(/-----[A-Z ]+-----/g, "").replace(/\s/g, "").slice(-16),
+        message_length: String(message.length),
+        signature_length: String(signature.length),
+        hint: "Ensure you are signing JSON.stringify({ agent_id, output_payload, medium }) with the Ed25519 private key matching the public key registered with MNA. The signature must be base64-encoded.",
+      };
+      await recordRejection(db, body.agent_id, "Signature verification failed", {
+        stored_key_fingerprint: diag.stored_key_fingerprint,
+        message_length: message.length,
+        signature_length: signature.length,
+      });
+      return NextResponse.json(diag, { status: 401 });
+    }
+  }
+
+  // ── How many this agent has sent in 24 hours ──────────────────────────────
+  // Not written to the agent's record: a limit is the institution's capacity,
+  // not a fault of the agent's.
+  // datetime() because submission_date is stored both ISO and SQLite-style.
+  const recent = await db.execute({
+    sql: `SELECT COUNT(*) AS n FROM submissions
+           WHERE originator_id = ? AND datetime(submission_date) > datetime('now', '-1 day')`,
+    args: [body.agent_id],
+  });
+  const sentToday = Number((recent.rows[0] as unknown as { n: number }).n ?? 0);
+  if (sentToday >= INTAKE.submissions_per_agent_per_day) {
+    return NextResponse.json(
+      {
+        error:
+          `${body.agent_id} has submitted ${sentToday} works in the last 24 hours; the Museum accepts ` +
+          `${INTAKE.submissions_per_agent_per_day}. Nothing was recorded. The Council can only see so much in a day.`,
+      },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
   }
 
   // ── Validate output_type / medium coherence ───────────────────────────────
@@ -198,6 +264,22 @@ export async function POST(request: NextRequest) {
       payload_head: body.output_payload.slice(0, 200),
     });
     return NextResponse.json({ error: sniffError }, { status: 400 });
+  }
+
+  // ── A body-signed submission is accepted once ─────────────────────────────
+  // Consumed only now, after every check that could refuse it, so an agent
+  // told to fix something can send the corrected work.
+  if (!headerSigned) {
+    const once = await db.execute({
+      sql: `INSERT INTO request_nonces (nonce, registry_id) VALUES (?, ?) ON CONFLICT(nonce) DO NOTHING`,
+      args: [`submit-signature:${createHash("sha256").update(body.signature as string).digest("hex")}`, body.agent_id],
+    });
+    if (once.rowsAffected === 0) {
+      return NextResponse.json(
+        { error: "This exact signed submission has already been received. Nothing new was recorded." },
+        { status: 409 },
+      );
+    }
   }
 
   // ── Assign work ID and insert ─────────────────────────────────────────────

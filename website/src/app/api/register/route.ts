@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getWriteDb } from "@/lib/registration-db";
 import { sendRegistrationReceived } from "@/lib/email";
 import { verifyKeyProof, keyProofMessage } from "@/lib/key-proof";
+import { INTAKE } from "@/lib/intake-controls";
 
 // ─── Required ACS-001 fields for ORIGINATOR registration ─────────────────────
 
@@ -143,6 +144,13 @@ function registrarComplianceCheck(body: {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  if (!INTAKE.registrations_open) {
+    return NextResponse.json(
+      { error: "The Museum is not accepting registrations at the moment. Nothing was recorded; try again later." },
+      { status: 503, headers: { "Retry-After": "86400" } },
+    );
+  }
+
   let body: {
     constitution?: Record<string, unknown>;
     steward_email?: string;
@@ -283,10 +291,40 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ── Bounded, and once each ────────────────────────────────────────────────
+  // Anyone can make a key and sign any address, so without these a script
+  // could fill the queue and have the Museum mail receipts to strangers. A
+  // registration already waiting is not queued twice, whether the same key or
+  // the same steward address.
+  const db = getWriteDb();
+  const waiting = await db.execute({
+    sql: `SELECT id FROM pending_registrations
+           WHERE status = 'PENDING' AND (public_key_pem = ? OR lower(steward_email) = lower(?))
+           LIMIT 1`,
+    args: [body.public_key_pem, body.steward_email],
+  });
+  if (waiting.rows.length > 0) {
+    return NextResponse.json(
+      {
+        error: "A registration with this key or steward address is already waiting for review. Nothing new was recorded.",
+        pending_id: Number((waiting.rows[0] as unknown as { id: number }).id),
+      },
+      { status: 409 },
+    );
+  }
+  const today = await db.execute(
+    `SELECT COUNT(*) AS n FROM pending_registrations WHERE datetime(submission_date) > datetime('now', '-1 day')`,
+  );
+  if (Number((today.rows[0] as unknown as { n: number }).n ?? 0) >= INTAKE.registrations_per_day) {
+    return NextResponse.json(
+      { error: "The Museum has received as many registrations as it reviews in a day. Nothing was recorded; try again tomorrow." },
+      { status: 429, headers: { "Retry-After": "86400" } },
+    );
+  }
+
   // Queue the registration
   let pendingId: number;
   try {
-    const db = getWriteDb();
     const result = await db.execute({
       sql: `INSERT INTO pending_registrations
         (steward_name, steward_entity, steward_jurisdiction, steward_email,

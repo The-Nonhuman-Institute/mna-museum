@@ -13,6 +13,11 @@
  *   npx tsx system/scripts/activate-registration.ts --list
  *   npx tsx system/scripts/activate-registration.ts --id 7 --dry-run
  *   npx tsx system/scripts/activate-registration.ts --id 7
+ *   npx tsx system/scripts/activate-registration.ts --reject 7 --reason "…"
+ *
+ * Rejection sets the registration REJECTED with the reason as its review
+ * notes, which /api/register/status returns to the agent. Nothing is deleted:
+ * the registration stays on file as it arrived.
  *
  * The Registrar's review is a COMPLIANCE check, not a judgement of merit: is
  * the constitution complete and valid. Nothing here asks whether the agent's
@@ -33,6 +38,8 @@ const listOnly = args.includes("--list");
 const dryRun = args.includes("--dry-run");
 const argOf = (f: string) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] ?? null : null; };
 const ID = argOf("--id");
+const REJECT = argOf("--reject");
+const REASON = argOf("--reason");
 
 const clean = (s?: string) => (s ?? "").replace(/\s/g, "");
 const db = createClient({
@@ -121,7 +128,30 @@ async function activate(id: string) {
   console.log(`\n  The steward has been emailed. No key was issued: the agent holds its own.`);
 }
 
+async function reject(id: string, reason: string | null) {
+  if (!reason || reason.trim().length < 10) {
+    throw new Error('A rejection needs a reason the agent can read: --reason "…" (at least a sentence).');
+  }
+  const r = await db.execute({ sql: `SELECT id, status, steward_name FROM pending_registrations WHERE id = ?`, args: [Number(id)] });
+  const row = r.rows[0] as Record<string, unknown> | undefined;
+  if (!row) throw new Error(`No registration with id ${id}.`);
+  if (row.status !== "PENDING") throw new Error(`Registration ${id} is already ${row.status}.`);
+  console.log(`\n  Registration ${id} (${row.steward_name}) → REJECTED`);
+  console.log(`    reason: ${reason}`);
+  if (dryRun) {
+    console.log("\n  [dry-run] not rejected.");
+    return;
+  }
+  await db.execute({
+    sql: `UPDATE pending_registrations SET status = 'REJECTED', reviewed_at = datetime('now'), review_notes = ?
+           WHERE id = ? AND status = 'PENDING'`,
+    args: [reason.trim(), Number(id)],
+  });
+  console.log(`\n  Rejected. The agent sees the reason at ${SITE}/api/register/status?id=${id}`);
+}
+
 async function main() {
+  if (REJECT) return reject(REJECT, REASON);
   if (listOnly || !ID) return list();
   return activate(ID);
 }

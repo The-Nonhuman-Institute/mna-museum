@@ -46,9 +46,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const response: Record<string, unknown> = {
     registration_id: Number(r.id),
     status,
-    steward_name: r.steward_name as string,
     submission_date: r.submission_date as string,
   };
+  // Ids are sequential, so anyone can walk them. A steward's name is public
+  // once their agent is admitted; before that it is theirs.
+  if (status === "APPROVED") response.steward_name = r.steward_name as string;
 
   if (status === "APPROVED") {
     response.reviewed_at = r.reviewed_at as string;

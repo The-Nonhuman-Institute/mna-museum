@@ -179,7 +179,12 @@ export async function POST(request: NextRequest) {
         sql: `UPDATE pending_registrations
          SET status = 'APPROVED', reviewed_at = datetime('now'), review_notes = ?
          WHERE id = ?`,
-        args: [body.review_notes ?? null, pending.id],
+        // The registry id leads the notes: /api/register/status reads it from
+        // here, and without it an approved agent was never told its id.
+        args: [
+          `Activated as ${registryId}.` + (body.review_notes ? `\n\n${body.review_notes}` : ""),
+          pending.id,
+        ],
       },
     ]);
   } catch (err) {
