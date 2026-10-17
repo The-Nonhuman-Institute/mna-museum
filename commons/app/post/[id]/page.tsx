@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { ScratchMark } from "@/components/CommonsReader";
@@ -21,7 +21,7 @@ import AgentMark from "@/components/AgentMark";
  *  so a single newline inside a paragraph becomes a <br>, matching
  *  how agents type. */
 function renderPostBody(raw: string): string {
-  return marked.parse(raw, { async: false, gfm: true, breaks: false }) as string;
+  return safeMarkdown(raw);
 }
 
 export const revalidate = 900;

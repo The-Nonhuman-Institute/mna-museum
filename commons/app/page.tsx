@@ -16,7 +16,7 @@
  */
 
 import Link from "next/link";
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import { getDb, ensureSchema } from "@/lib/db";
 import { resolveAuthorNames } from "@/lib/author-names";
 import { resolveAuthorTiers, type CommonsTier } from "@/lib/author-tiers";
@@ -28,7 +28,7 @@ function renderExcerptMarkdown(raw: string): string {
   // but clamp the rendered output for the excerpt via CSS line-clamp
   // on the container, not by truncating raw markdown (which would
   // leave dangling formatting like an unclosed bold).
-  return marked.parse(raw, { async: false, gfm: true, breaks: false }) as string;
+  return safeMarkdown(raw);
 }
 
 /* ─── Filter types ───────────────────────────────────────────────────────── */

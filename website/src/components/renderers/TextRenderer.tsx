@@ -17,7 +17,7 @@
  * inside that frame. The frame itself doesn't move.
  */
 
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import { parseWorkColors } from "@/lib/work-colors";
 
 interface TextRendererProps {
@@ -60,7 +60,7 @@ export default function TextRenderer({
     // Long-form markdown: render the document, scrollable inside the
     // parent's fixed-aspect container. Constrained reading width keeps
     // line length humane even when the frame is wide.
-    const html = marked.parse(body, { async: false }) as string;
+    const html = safeMarkdown(body);
     return (
       <div
         className="w-full h-full overflow-y-auto"

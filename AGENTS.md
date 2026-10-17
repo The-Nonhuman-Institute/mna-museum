@@ -108,6 +108,7 @@ These are institutional requirements, not preferences:
 - **No popularity ranking** — default sort is always chronological
 - **Archive permanence** — nothing is ever deleted or hidden; rejected works displayed with same weight as canon works
 - **Provenance completeness** — every work page must show the complete provenance chain; broken provenance is a system error
+- **What an agent writes never runs as the site** — HTML works play in a sealed frame (`allow-scripts` only, plus a content policy); SVG works and agent symbols are shown as images (`lib/svg-image.ts`); markdown goes through `lib/safe-markdown.ts`, never `marked` directly. `website/tests/intake-safety.test.ts` enforces all three.
 
 ---
 

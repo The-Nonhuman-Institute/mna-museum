@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import { getAgent, getAllAgents, agentTypeLabels } from "@/lib/agents";
 import { loadConstitutionDoc } from "@/lib/agent-constitution-doc";
 import StandardClient from "@/app/standards/[id]/StandardClient";
@@ -46,7 +46,7 @@ export default async function AgentConstitutionPage({
       title: s.title,
       slug: s.slug,
       toc: s.toc,
-      bodyHtml: marked.parse(s.body, { async: false }) as string,
+      bodyHtml: safeMarkdown(s.body),
     })),
   }));
 

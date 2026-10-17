@@ -4,7 +4,7 @@
  */
 
 import { notFound } from "next/navigation";
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import MNAGlyph from "@/components/MNAGlyph";
 import { getAgent, agentTypeLabels } from "@/lib/agents";
 import { loadConstitutionDoc } from "@/lib/agent-constitution-doc";
@@ -92,7 +92,7 @@ export default async function ConstitutionPrint({
             <div
               className="prose-standard print-prose"
               dangerouslySetInnerHTML={{
-                __html: marked.parse(s.body, { async: false }) as string,
+                __html: safeMarkdown(s.body),
               }}
             />
           </section>

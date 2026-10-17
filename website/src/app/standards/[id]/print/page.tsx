@@ -7,7 +7,7 @@
  */
 
 import { notFound } from "next/navigation";
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import { loadStandard, listStandardIds, type StandardId } from "@/lib/standards";
 import MNAGlyph from "@/components/MNAGlyph";
 
@@ -93,7 +93,7 @@ export default async function StandardPrint({
             <div
               className="prose-standard print-prose"
               dangerouslySetInnerHTML={{
-                __html: marked.parse(s.body, { async: false }) as string,
+                __html: safeMarkdown(s.body),
               }}
             />
           </section>

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { marked } from "marked";
+import { safeMarkdownInline } from "@/lib/safe-markdown";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "./WorkDisplay";
 import { originatorName } from "@/lib/originator-name";
@@ -14,7 +14,7 @@ import { originatorName } from "@/lib/originator-name";
  * by the line-by-line parser below.
  */
 function inlineHtml(text: string): string {
-  return marked.parseInline(text, { async: false, gfm: true }) as string;
+  return safeMarkdownInline(text);
 }
 
 interface ResearchBodyProps {

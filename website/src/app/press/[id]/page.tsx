@@ -18,7 +18,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { marked } from "marked";
+import { safeMarkdownInline } from "@/lib/safe-markdown";
 import {
   pressDocuments,
   getPressDocument,
@@ -75,7 +75,7 @@ function readMinutes(body: string): number {
 }
 
 function inlineHtml(text: string): string {
-  return marked.parseInline(text, { async: false, gfm: true }) as string;
+  return safeMarkdownInline(text);
 }
 
 export default function PressDocumentPage({

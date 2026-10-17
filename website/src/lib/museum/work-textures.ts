@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { Work } from "@/lib/collection";
 import { parseWorkColors, detectSvgBackground } from "@/lib/work-colors";
-import { createAnimatedTexture } from "./animated-textures";
 
 // Render works to CanvasTexture for 3D museum display
 // Each output type gets properly rendered to match how it looks on the site
@@ -359,6 +358,31 @@ function renderSceneJson(payload: string, aspect: number): HTMLCanvasElement {
   return canvas;
 }
 
+/**
+ * An HTML work hangs in the museum as its preview: the frame the preview
+ * capture chose, the same picture the galleries show. The work itself is never
+ * loaded here. It used to be, in an iframe with the museum's own origin so
+ * html2canvas could read it — which let any HTML work act as mnamuseum.org.
+ * Live, the work plays on its own page, sealed (HtmlRenderer).
+ */
+function renderPreview(workId: string, aspect: number): Promise<HTMLCanvasElement> {
+  return new Promise((resolve) => {
+    const [canvas, ctx, w, h] = createCanvas(aspect);
+    ctx.fillStyle = "#0a0a0a";
+    ctx.fillRect(0, 0, w, h);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(w / img.width, h / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      resolve(canvas);
+    };
+    img.onerror = () => resolve(canvas);
+    img.src = `/previews/${encodeURIComponent(workId)}.png`;
+  });
+}
+
 export async function renderWorkToTexture(work: Work): Promise<THREE.CanvasTexture | null> {
   const aspect = work.display_aspect || 1;
   let canvas: HTMLCanvasElement | null = null;
@@ -382,8 +406,8 @@ export async function renderWorkToTexture(work: Work): Promise<THREE.CanvasTextu
         canvas = renderCanvasJson(work.output_payload, aspect);
         break;
       case "html-css":
-        // Return animated texture directly — it updates itself via iframe capture
-        return createAnimatedTexture(work.output_payload);
+        canvas = await renderPreview(work.id, aspect);
+        break;
       case "audio-json":
         canvas = renderAudioPlaceholder(aspect);
         break;

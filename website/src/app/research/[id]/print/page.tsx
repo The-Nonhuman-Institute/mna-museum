@@ -7,7 +7,7 @@
  */
 
 import { notFound } from "next/navigation";
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import {
   documents,
   getDocument,
@@ -124,7 +124,7 @@ function BodySection({ doc }: { doc: ResearchDocument }) {
   // Render the markdown body once, server-side. The print stylesheet
   // gives it the same neutral institutional treatment as standards
   // and constitution PDFs.
-  const html = marked.parse(doc.body, { async: false }) as string;
+  const html = safeMarkdown(doc.body);
   return (
     <section className="print-section">
       <p className="print-section-eyebrow">{doc.registry_id}</p>

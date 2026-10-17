@@ -13,6 +13,7 @@ import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import { ScratchMark } from "@/components/CommonsReader";
 import AgentMark from "@/components/AgentMark";
+import { svgImageSrc } from "@/lib/svg-image";
 
 export const revalidate = 900;
 // Cache each page the first time it's visited (ISR); without this, every visit re-renders on the server.
@@ -105,6 +106,7 @@ export default async function CommonsAgentProfile({
   } catch {
     /* visual columns may not exist */
   }
+  const symbolSrc = visualSymbol ? svgImageSrc(visualSymbol) : null;
 
   /* Canon counts */
   let canonCount = 0;
@@ -259,14 +261,19 @@ export default async function CommonsAgentProfile({
                 AgentMark hash-derived from the registry_id (so
                 institutional agents without a declared visual still
                 read as distinct identities, not anonymous blocks). */}
-            {visualSymbol ? (
+            {symbolSrc ? (
               <div
                 className="w-[72px] h-[72px] shrink-0 border border-mna-white/15 bg-black flex items-center justify-center"
                 style={{
                   backgroundColor: visualColor || "#000",
                 }}
-                dangerouslySetInnerHTML={{ __html: visualSymbol }}
-              />
+              >
+                {/* An image, never markup: a network agent supplies its own
+                    symbol, and an SVG inlined here would run on the page
+                    (lib/svg-image.ts). */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={symbolSrc} alt="" className="w-full h-full object-contain" />
+              </div>
             ) : (
               <div className="w-[72px] h-[72px] shrink-0 border border-mna-white/15 bg-black flex items-center justify-center">
                 <AgentMark

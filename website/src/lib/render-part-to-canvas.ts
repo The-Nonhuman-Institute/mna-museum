@@ -77,11 +77,15 @@ export async function renderPartToCanvas(
     const deadline = performance.now() + 6000;
     let source: HTMLCanvasElement | null = null;
     let svg: SVGElement | null = null;
+    let picture: HTMLImageElement | null = null;
 
     while (performance.now() < deadline) {
       await new Promise((r) => setTimeout(r, 100));
       const c = host.querySelector("canvas") as HTMLCanvasElement | null;
       if (c && c.width > 1 && c.height > 1) { source = c; break; }
+      // An SVG work is shown as an image (SvgRenderer), never as markup.
+      const p = host.querySelector("img[data-svg-work]") as HTMLImageElement | null;
+      if (p) { picture = p; break; }
       const s = host.querySelector("svg") as unknown as SVGElement | null;
       if (s) { svg = s; break; }
     }
@@ -98,6 +102,18 @@ export async function renderPartToCanvas(
 
     if (source) {
       ctx.drawImage(source, 0, 0, size, size);
+      return out;
+    }
+
+    if (picture) {
+      const img = new Image();
+      const ok = await new Promise<boolean>((resolve) => {
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = picture!.src;
+      });
+      if (!ok) return null;
+      ctx.drawImage(img, 0, 0, size, size);
       return out;
     }
 

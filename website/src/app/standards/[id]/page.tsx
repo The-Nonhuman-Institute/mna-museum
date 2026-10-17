@@ -7,7 +7,7 @@ import {
   type StandardId,
 } from "@/lib/standards";
 import StandardClient from "./StandardClient";
-import { marked } from "marked";
+import { safeMarkdown } from "@/lib/safe-markdown";
 import CitationBlock from "@/components/CitationBlock";
 import {
   institutionalDocToCitableItem,
@@ -66,7 +66,7 @@ export default async function StandardPage({
       title: s.title,
       slug: s.slug,
       toc: s.toc,
-      bodyHtml: marked.parse(s.body, { async: false }) as string,
+      bodyHtml: safeMarkdown(s.body),
     })),
   }));
 

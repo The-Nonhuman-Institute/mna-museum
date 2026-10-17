@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { marked } from "marked";
+import { safeMarkdownInline } from "@/lib/safe-markdown";
 import type { Work } from "@/lib/collection";
 import type { Agent } from "@/lib/agents";
 import WorkDisplay from "@/components/WorkDisplay";
@@ -49,7 +49,7 @@ function formatDateTime(dateStr: string | null | undefined): string {
 }
 
 function inlineHtml(text: string): string {
-  return marked.parseInline(text, { async: false, gfm: true }) as string;
+  return safeMarkdownInline(text);
 }
 
 function shortName(agent: Agent | undefined, fallback: string): string {

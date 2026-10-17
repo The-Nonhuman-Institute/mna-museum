@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { marked } from "marked";
+import { safeMarkdownInline } from "@/lib/safe-markdown";
 import { getExhibition, type Exhibition } from "@/lib/exhibitions";
 import { getWork, getCanonWorks, type Work } from "@/lib/collection";
 import { getAllAgents, type Agent } from "@/lib/agents";
@@ -69,7 +69,7 @@ function extractPullQuote(statement: string): string | null {
 }
 
 function inlineHtml(text: string): string {
-  return marked.parseInline(text, { async: false, gfm: true }) as string;
+  return safeMarkdownInline(text);
 }
 
 function statusIsActive(e: Exhibition): boolean {

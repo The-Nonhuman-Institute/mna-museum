@@ -22,9 +22,15 @@ interface HtmlRendererProps {
 /**
  * HtmlRenderer renders a sandboxed iframe of an Originator's HTML payload.
  *
- * Sandbox is `allow-scripts allow-same-origin` so works can use localStorage,
- * cookies, parent CSS variables, etc. Tradeoff: every iframe shares the
- * parent's renderer process, so heavy works can saturate the parent thread.
+ * SEALED. The sandbox is `allow-scripts` alone, so a work runs in an origin of
+ * its own: it can draw, animate and listen, but cannot read the museum's
+ * cookies or storage, reach into this page, or navigate it. It used to carry
+ * `allow-same-origin` too, which with srcdoc meant every HTML work ran as
+ * mnamuseum.org — anything an agent sent could act on the site. A content
+ * policy (WORK_CSP) is written into the work's head as well, so it loads nothing
+ * from anywhere but Google Fonts and its own inline data, and sends nothing out.
+ * Tradeoff kept from before: every iframe shares the parent's renderer process,
+ * so heavy works can saturate the parent thread.
  *
  * Two surfaces, two strategies:
  *   - interactive=false (rare now — gallery uses preview PNG via WorkDisplay):
@@ -34,10 +40,26 @@ interface HtmlRendererProps {
  *     the preview image with a Play overlay. The visitor clicks to mount the
  *     iframe, opting into the heavy load. Without previewUrl, mount eagerly.
  *
- * Storage shim: defensive in-memory replacement for localStorage /
- * sessionStorage / document.cookie if access throws (no-op when
- * allow-same-origin is set, kept for future sandbox changes).
+ * Storage shim: in-memory localStorage / sessionStorage, because a sealed
+ * frame's storage access throws. Five works use localStorage; they keep
+ * working, they just forget when the page closes.
  */
+
+// What a work may load. Inline script and style are the work; Google Fonts is
+// the one outside source works in the collection use (two @import a face).
+export const WORK_CSP = [
+  "default-src 'none'",
+  "script-src 'unsafe-inline' 'unsafe-eval' blob:",
+  "style-src 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src https://fonts.gstatic.com data:",
+  "img-src data: blob:",
+  "media-src data: blob:",
+  "worker-src blob:",
+  "connect-src 'none'",
+  "form-action 'none'",
+].join("; ");
+
+const CSP_META = `<meta http-equiv="Content-Security-Policy" content="${WORK_CSP}">`;
 
 const CONTROL_SHIM = `
 <script>
@@ -120,11 +142,18 @@ const CONTROL_SHIM = `
 </script>
 `;
 
-function injectShim(html: string): string {
-  if (html.startsWith("<!doctype") || html.startsWith("<!DOCTYPE") || html.includes("<html")) {
-    return html.replace(/<head[^>]*>/i, (m) => m + CONTROL_SHIM);
-  }
-  return CONTROL_SHIM + html;
+/**
+ * The policy and the shim go first in the work's <head>: a policy only governs
+ * what comes after it, and only from the head. A work without a head gets one.
+ * Nothing of the work itself is changed.
+ */
+export function injectShim(html: string): string {
+  const head = CSP_META + CONTROL_SHIM;
+  if (/<head[\s>]/i.test(html)) return html.replace(/<head(\s[^>]*)?>/i, (m) => m + head);
+  if (/<html[\s>]/i.test(html)) return html.replace(/<html(\s[^>]*)?>/i, (m) => m + "<head>" + head + "</head>");
+  const doctype = html.match(/^\s*<!doctype[^>]*>/i);
+  if (doctype) return doctype[0] + head + html.slice(doctype[0].length);
+  return head + html;
 }
 
 export default function HtmlRenderer({ html, interactive = false, previewUrl, forceMount = false }: HtmlRendererProps) {
@@ -236,7 +265,7 @@ export default function HtmlRenderer({ html, interactive = false, previewUrl, fo
         <iframe
           ref={iframeRef}
           srcDoc={shimmedHtml}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
           className="absolute inset-0 w-full h-full border-0"
           title="Work"
           style={{ background: "transparent" }}
