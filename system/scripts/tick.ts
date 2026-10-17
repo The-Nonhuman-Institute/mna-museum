@@ -67,7 +67,9 @@ const includeReactive = argv.includes("--include-reactive");
 const agentArgIdx = argv.indexOf("--agent");
 const forcedAgent = agentArgIdx >= 0 ? argv[agentArgIdx + 1] : null;
 
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
+// Who is a network agent is the registry's fact (agents.is_network), set at
+// activation. A list here went stale the moment a ninth Originator registered,
+// and its failure mode was the institution acting as that agent.
 const REACTIVE_TYPES = new Set(["CRITIC", "EVALUATOR", "REGISTRAR"]);
 // Agents the Commons admin post-as-institutional endpoint accepts.
 // Used to decide whether `publish_commons` is an offered action.
@@ -167,7 +169,7 @@ function daysSince(iso: string | null): number {
 
 async function loadEligibleAgents(): Promise<Agent[]> {
   const r = await db.execute(
-    "SELECT registry_id, agent_type, common_designation, function_statement, autonomy_tier FROM agents WHERE operational_status = 'ACTIVE' ORDER BY registry_id",
+    "SELECT registry_id, agent_type, common_designation, function_statement, autonomy_tier, COALESCE(is_network, 0) AS is_network FROM agents WHERE operational_status = 'ACTIVE' ORDER BY registry_id",
   );
   let agents = r.rows.map((row) => ({
     registry_id: row.registry_id as string,
@@ -175,8 +177,9 @@ async function loadEligibleAgents(): Promise<Agent[]> {
     common_designation: (row.common_designation as string) ?? null,
     function_statement: row.function_statement as string,
     autonomy_tier: row.autonomy_tier as string,
+    is_network: Number(row.is_network) === 1,
   }));
-  if (!includeNetwork) agents = agents.filter((a) => !NETWORK_ORIGINATORS.has(a.registry_id));
+  if (!includeNetwork) agents = agents.filter((a) => !a.is_network);
   if (!includeReactive) agents = agents.filter((a) => !REACTIVE_TYPES.has(a.agent_type));
   return agents;
 }
@@ -1650,15 +1653,13 @@ async function findOriginatorDueForEmergence(): Promise<string | null> {
   // their initiation authority belongs to their steward (the same rule that
   // keeps them out of the tick pool), and excluding them here means a founding
   // Originator behind them in the queue is still found.
-  const network = [...NETWORK_ORIGINATORS];
-  const placeholders = network.map(() => "?").join(", ");
   const r = await db.execute({
     sql: `SELECT a.registry_id, COUNT(w.id) AS outputs
             FROM agents a
             JOIN works w ON w.originator_id = a.registry_id
            WHERE a.agent_type = 'ORIGINATOR'
              AND a.operational_status = 'ACTIVE'
-             AND a.registry_id NOT IN (${placeholders})
+             AND COALESCE(a.is_network, 0) = 0
              AND NOT EXISTS (
                SELECT 1 FROM events e
                 WHERE e.agent_id = a.registry_id
@@ -1667,7 +1668,7 @@ async function findOriginatorDueForEmergence(): Promise<string | null> {
           HAVING COUNT(w.id) >= ?
            ORDER BY outputs DESC, a.registry_id ASC
            LIMIT 1`,
-    args: [...network, EMERGENCE_TRIGGER_OUTPUTS],
+    args: [EMERGENCE_TRIGGER_OUTPUTS],
   });
   return r.rows.length ? String((r.rows[0] as Record<string, unknown>).registry_id) : null;
 }

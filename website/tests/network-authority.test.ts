@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import {
@@ -97,4 +97,29 @@ describe("the scripts that could impersonate an agent call the guard", () => {
       expect(read(file)).not.toMatch(/"MNA-OR-0007",\s*"MNA-OR-0008"/);
     },
   );
+});
+
+describe("a ninth Originator is a network agent from the moment it registers", () => {
+  // Activation never set is_network, so a newly registered agent read as 0 — a
+  // founding agent — and seven scripts kept their own hardcoded roster of the
+  // two network agents there were. The hourly tick would have begun producing
+  // works and posting in a new agent's name.
+  it("activation records every registered agent as network", () => {
+    const route = read("website/src/app/api/register/activate/route.ts");
+    const insert = route.slice(route.indexOf("INSERT INTO agents"));
+    const cols = insert.slice(0, insert.indexOf(")"));
+    const values = insert.slice(insert.indexOf("VALUES"), insert.indexOf("`,"));
+    expect(cols).toMatch(/\bis_network\b/);
+    expect(values).toMatch(/, 1\)$/);
+  });
+
+  it("no script keeps its own roster of network agents", () => {
+    const dir = path.join(ROOT, "system", "scripts");
+    const offenders = readdirSync(dir)
+      .filter((f) => f.endsWith(".ts"))
+      .filter((f) => /new Set\(\[\s*"MNA-OR-\d{4}"/.test(readFileSync(path.join(dir, f), "utf8")) ||
+        /NETWORK_ORIGINATORS/.test(readFileSync(path.join(dir, f), "utf8")))
+      .sort();
+    expect(offenders).toEqual([]);
+  });
 });

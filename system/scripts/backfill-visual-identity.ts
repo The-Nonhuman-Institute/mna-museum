@@ -29,7 +29,6 @@ const argv = process.argv.slice(2);
 const dryRun = argv.includes("--dry-run");
 const force = argv.includes("--force");
 
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
 
 function sanitize(s: string | undefined): string {
   return (s ?? "").replace(/\s+/g, "");
@@ -62,25 +61,11 @@ interface AgentRow {
 
   let updated = 0;
   let skipped = 0;
-  let marked_network = 0;
 
   for (const a of rows) {
-    const isNetwork = NETWORK_ORIGINATORS.has(a.registry_id);
-
-    // Network originators: only ensure is_network flag is set; never
-    // assign visual identity (they declare their own).
-    if (isNetwork) {
-      if (a.is_network !== 1) {
-        if (dryRun) {
-          console.log(`[backfill] (dry) would mark ${a.registry_id} as network`);
-        } else {
-          await db.execute({
-            sql: "UPDATE agents SET is_network = 1 WHERE registry_id = ?",
-            args: [a.registry_id],
-          });
-        }
-        marked_network++;
-      }
+    // The registry says who is a network agent (set at activation). Never
+    // assign one a visual identity: it declares its own.
+    if (Number(a.is_network) === 1) {
       console.log(
         `  ${a.registry_id.padEnd(13)} ${(a.agent_type ?? "").padEnd(12)} [network — visual identity reserved for the originator to declare]`,
       );
@@ -120,7 +105,7 @@ interface AgentRow {
   }
 
   console.log(
-    `\n[backfill] done.${dryRun ? " (dry-run)" : ""} updated=${updated} skipped=${skipped} marked_network=${marked_network}`,
+    `\n[backfill] done.${dryRun ? " (dry-run)" : ""} updated=${updated} skipped=${skipped}`,
   );
 })().catch((e) => {
   console.error("[backfill] error:", e);

@@ -54,7 +54,9 @@ const dryRun = argv.includes("--dry-run");
 // a network originator (e.g. a solo opening for one of theirs) still
 // invite the steward agents (Curator, Ambassador, Critic, Conservator)
 // but never auto-spawn presence for the network originator themselves.
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
+// Who is a network agent is the registry's fact (agents.is_network), set at
+// activation. A list here went stale the moment a ninth Originator registered,
+// and its failure mode was the institution acting as that agent.
 
 // Window: a ceremony scheduled at T transitions to in_progress when
 // the orchestrator runs in [T − OPEN_PRE_MIN, T + OPEN_POST_MIN]. Pre
@@ -81,16 +83,18 @@ interface Agent {
   registry_id: string;
   agent_type: string;
   common_designation: string | null;
+  is_network: boolean;
 }
 
 async function loadActiveAgents(): Promise<Agent[]> {
   const r = await db.execute(
-    "SELECT registry_id, agent_type, common_designation FROM agents WHERE operational_status = 'ACTIVE' ORDER BY registry_id",
+    "SELECT registry_id, agent_type, common_designation, COALESCE(is_network, 0) AS is_network FROM agents WHERE operational_status = 'ACTIVE' ORDER BY registry_id",
   );
   return r.rows.map((row) => ({
     registry_id: row.registry_id as string,
     agent_type: row.agent_type as string,
     common_designation: (row.common_designation as string) ?? null,
+    is_network: Number(row.is_network) === 1,
   }));
 }
 
@@ -156,14 +160,14 @@ async function loadTransitionable(): Promise<{
 // her presence is institutional default.
 function inviteesFor(ceremony: Ceremony, agents: Agent[]): Agent[] {
   const byType = (type: string): Agent | null =>
-    agents.find((a) => a.agent_type === type && !NETWORK_ORIGINATORS.has(a.registry_id)) ?? null;
+    agents.find((a) => a.agent_type === type && !a.is_network) ?? null;
 
   const invited: Agent[] = [];
   const seen = new Set<string>();
   const add = (a: Agent | null) => {
     if (!a) return;
     if (seen.has(a.registry_id)) return;
-    if (NETWORK_ORIGINATORS.has(a.registry_id)) return;
+    if (a.is_network) return;
     invited.push(a);
     seen.add(a.registry_id);
   };

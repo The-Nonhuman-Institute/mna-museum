@@ -48,7 +48,9 @@ const db = createClient({
 
 // Network originators are not subject to institution-maintained memory.
 // Their stewards run their memory store. The institution skips them.
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
+// Who is a network agent is the registry's fact (agents.is_network), set at
+// activation. A list here went stale the moment a ninth Originator registered,
+// and its failure mode was the institution acting as that agent.
 
 // Event types we form memories for. Everything in the salience table
 // of MNA-GOV-004 §5 (refined by AMD-001 R1) lands here.
@@ -82,6 +84,7 @@ async function loadFoundingAgents(): Promise<Agent[]> {
     sql: `SELECT registry_id, common_designation, function_statement
             FROM agents
            WHERE operational_status = 'ACTIVE'
+             AND COALESCE(is_network, 0) = 0
            ORDER BY registry_id`,
     args: [],
   });
@@ -93,8 +96,7 @@ async function loadFoundingAgents(): Promise<Agent[]> {
         designation: (x.common_designation as string) ?? String(x.registry_id),
         function_statement: (x.function_statement as string) ?? null,
       };
-    })
-    .filter((a) => !NETWORK_ORIGINATORS.has(a.registry_id));
+    });
 }
 
 interface EventRow {

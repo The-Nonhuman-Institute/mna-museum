@@ -93,13 +93,15 @@ interface OriginatorWithWorks {
   works: { id: string; title: string | null; medium: string }[];
 }
 
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
+// Who is a network agent is the registry's fact (agents.is_network), set at
+// activation. A list here went stale the moment a ninth Originator registered,
+// and its failure mode was the institution acting as that agent.
 
 async function loadOriginators(ids: string[], workIds: string[]): Promise<OriginatorWithWorks[]> {
   if (ids.length === 0) return [];
   const placeholders = ids.map(() => "?").join(",");
   const aR = await db.execute({
-    sql: `SELECT registry_id, common_designation FROM agents
+    sql: `SELECT registry_id, common_designation, COALESCE(is_network, 0) AS is_network FROM agents
            WHERE registry_id IN (${placeholders})`,
     args: ids,
   });
@@ -109,7 +111,7 @@ async function loadOriginators(ids: string[], workIds: string[]): Promise<Origin
     byId.set(id, {
       registry_id: id,
       designation: ((row as Record<string, unknown>).common_designation as string) ?? null,
-      is_network: NETWORK_ORIGINATORS.has(id),
+      is_network: Number((row as Record<string, unknown>).is_network) === 1,
       works: [],
     });
   }

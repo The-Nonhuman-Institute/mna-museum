@@ -38,7 +38,9 @@ const db = createClient({
 });
 const MODEL = modelFor("standard");
 
-const NETWORK_ORIGINATORS = new Set(["MNA-OR-0007", "MNA-OR-0008"]);
+// Who is a network agent is the registry's fact (agents.is_network), set at
+// activation. A list here went stale the moment a ninth Originator registered,
+// and its failure mode was the institution acting as that agent.
 
 interface FoundingAgent {
   registry_id: string;
@@ -55,6 +57,7 @@ async function loadFoundingAgents(): Promise<FoundingAgent[]> {
                  function_statement, color_hex, glyph_family
             FROM agents
            WHERE operational_status = 'ACTIVE'
+             AND COALESCE(is_network, 0) = 0
              AND common_designation IS NOT NULL
              AND common_designation != ''
            ORDER BY registry_id`,
@@ -71,8 +74,7 @@ async function loadFoundingAgents(): Promise<FoundingAgent[]> {
         color_hex: (x.color_hex as string) ?? null,
         glyph_family: (x.glyph_family as string) ?? null,
       };
-    })
-    .filter((a) => !NETWORK_ORIGINATORS.has(a.registry_id));
+    });
 }
 
 async function hasSemanticMemories(agentId: string): Promise<boolean> {

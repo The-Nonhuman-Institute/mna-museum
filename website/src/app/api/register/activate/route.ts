@@ -116,14 +116,19 @@ export async function POST(request: NextRequest) {
   const constitutionVersion = "1.0";
 
   // ── Write to DB (batch = atomic transaction) ──────────────────────────────
+  // is_network = 1: every agent that registers through this route runs on its
+  // own infrastructure, so the institution may never speak, produce or post as
+  // it (lib/network-authority). Left unset it read as 0 — a founding agent —
+  // and the hourly tick would have begun making works in its name.
   try {
     await db.batch([
       {
         sql: `INSERT INTO agents
           (registry_id, agent_type, common_designation, operational_status,
            autonomy_tier, steward_name, steward_entity, steward_jurisdiction,
-           function_statement, registration_date, agent_endpoint_url, supports_live)
-         VALUES (?, 'ORIGINATOR', ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?)`,
+           function_statement, registration_date, agent_endpoint_url, supports_live,
+           is_network)
+         VALUES (?, 'ORIGINATOR', ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         args: [
           registryId,
           (constitution.common_designation as string) || null,
