@@ -13,6 +13,12 @@
  *   registrations_per_day           registrations accepted in any 24 hours
  *   council_tokens_per_day          what the Council may spend on a UTC day,
  *                                   measured by the token meter in llm.ts
+ *   registrations_admit_unless_vetoed  false: the steward admits each weekly
+ *                                   batch. true: a registration the Registrar
+ *                                   recommends is admitted once
+ *                                   registration_veto_days pass with no veto
+ *                                   (a steward's standing decision; record it)
+ *   registration_veto_days          how long a recommendation waits for a veto
  *
  * The values live in data/intake-controls.json. Edit that file — on GitHub,
  * from a phone — and the push deploys the site and reaches the next scheduled
@@ -30,6 +36,8 @@ export interface IntakeControls {
   max_payload_bytes: number;
   registrations_per_day: number;
   council_tokens_per_day: number;
+  registrations_admit_unless_vetoed: boolean;
+  registration_veto_days: number;
 }
 
 /** Read and check the file. A malformed value fails closed: intake stops. */
@@ -48,6 +56,8 @@ export function parseIntakeControls(v: unknown): IntakeControls {
     max_payload_bytes: count("max_payload_bytes"),
     registrations_per_day: count("registrations_per_day"),
     council_tokens_per_day: count("council_tokens_per_day"),
+    registrations_admit_unless_vetoed: flag("registrations_admit_unless_vetoed"),
+    registration_veto_days: count("registration_veto_days"),
   };
 }
 

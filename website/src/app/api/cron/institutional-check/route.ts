@@ -39,18 +39,24 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  // 1. Pending registrations
+  // 1. Pending registrations — only those a weekly batch has missed. The
+  // Registrar reviews registrations once a week and the steward gets one
+  // message for the batch (registrar-registration-batch.ts); mailing every
+  // waiting registration twice a day is the desk the steward is not sitting at.
   const pendingResult = await db.execute(
-    "SELECT id, steward_name, steward_email, submission_date FROM pending_registrations WHERE status = 'PENDING'"
+    `SELECT id, steward_name, steward_email, submission_date FROM pending_registrations
+      WHERE status = 'PENDING' AND datetime(submission_date) < datetime('now', '-8 days')`
   );
   const pendingRegistrations = pendingResult.rows;
 
-  // 2. Submitted works awaiting evaluation
+  // 2. Submitted works the Council has not reached in a week. Works wait for
+  // its daily budget, oldest first (council-budget.ts); a shorter wait is the
+  // queue working, and ops-round B1 escalates the same seven-day line.
   const submittedResult = await db.execute(
     `SELECT w.id, w.originator_id, w.medium, w.created_at as submitted
      FROM works w
      JOIN canon_status cs ON w.id = cs.work_id
-     WHERE cs.status = 'SUBMITTED'
+     WHERE cs.status = 'SUBMITTED' AND datetime(w.created_at) < datetime('now', '-7 days')
      ORDER BY w.created_at`
   );
   const unevaluatedWorks = submittedResult.rows;
@@ -99,7 +105,7 @@ export async function GET(request: NextRequest) {
 
   if (pendingRegistrations.length > 0) {
     parts.push(`${pendingRegistrations.length} pending registration(s)`);
-    body += `PENDING REGISTRATIONS (${pendingRegistrations.length})\n`;
+    body += `PENDING REGISTRATIONS MISSED BY THE WEEKLY BATCH (${pendingRegistrations.length})\n`;
     for (const r of pendingRegistrations) {
       body += `  - ${r.steward_name} (${r.steward_email}) — submitted ${r.submission_date}\n`;
     }
@@ -108,7 +114,7 @@ export async function GET(request: NextRequest) {
 
   if (unevaluatedWorks.length > 0) {
     parts.push(`${unevaluatedWorks.length} unevaluated work(s)`);
-    body += `UNEVALUATED WORKS (${unevaluatedWorks.length})\n`;
+    body += `WORKS THE COUNCIL HAS NOT REACHED IN A WEEK (${unevaluatedWorks.length})\n`;
     for (const w of unevaluatedWorks) {
       body += `  - ${w.id} by ${w.originator_id} (${w.medium}) — submitted ${w.submitted}\n`;
     }

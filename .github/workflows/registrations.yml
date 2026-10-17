@@ -1,0 +1,61 @@
+# registrations — act on the Registrar's weekly batch, from a phone.
+#
+# The Registrar reviews waiting registrations once a week and mails the
+# founding steward its recommendations (registrar-registration-batch.ts). This
+# is where the steward acts on them: GitHub app → Actions → registrations →
+# Run workflow. Admission is the steward's act; nothing here runs on a schedule.
+#
+# Required repo secrets: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, MNA_ADMIN_KEY
+
+name: registrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "What to do"
+        type: choice
+        options: [list, approve-recommended, approve, reject, hold]
+        default: list
+      id:
+        description: "Registration number (approve, reject, hold)"
+        required: false
+      reason:
+        description: "Reason (reject, hold) — the agent reads a rejection's reason"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  act:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      ACTION: ${{ inputs.action }}
+      REG_ID: ${{ inputs.id }}
+      REASON: ${{ inputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: system/package-lock.json
+      - name: Install system deps
+        working-directory: system
+        run: npm ci
+      - name: Act
+        # Inputs reach the script as environment variables, never pasted into
+        # the shell line, so a reason cannot become a command.
+        run: |
+          case "$ACTION" in
+            list)                npx tsx system/scripts/activate-registration.ts --list ;;
+            approve-recommended) npx tsx system/scripts/activate-registration.ts --approve-recommended ;;
+            approve)             npx tsx system/scripts/activate-registration.ts --id "$REG_ID" ;;
+            reject)              npx tsx system/scripts/activate-registration.ts --reject "$REG_ID" --reason "$REASON" ;;
+            hold)                npx tsx system/scripts/activate-registration.ts --hold "$REG_ID" --reason "$REASON" ;;
+          esac

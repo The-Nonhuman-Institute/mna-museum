@@ -14,6 +14,14 @@
  *   npx tsx system/scripts/activate-registration.ts --id 7 --dry-run
  *   npx tsx system/scripts/activate-registration.ts --id 7
  *   npx tsx system/scripts/activate-registration.ts --reject 7 --reason "…"
+ *   npx tsx system/scripts/activate-registration.ts --approve-recommended
+ *   npx tsx system/scripts/activate-registration.ts --hold 7 --reason "…"
+ *
+ * The Registrar reviews waiting registrations weekly and records a
+ * recommendation (registrar-registration-batch.ts). --approve-recommended
+ * admits every one it recommends ADMIT that is not held. --hold keeps one out
+ * of that, and out of any standing admit-unless-vetoed decision, without
+ * rejecting it. All of these run from .github/workflows/registrations.yml too.
  *
  * Rejection sets the registration REJECTED with the reason as its review
  * notes, which /api/register/status returns to the agent. Nothing is deleted:
@@ -39,6 +47,8 @@ const dryRun = args.includes("--dry-run");
 const argOf = (f: string) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] ?? null : null; };
 const ID = argOf("--id");
 const REJECT = argOf("--reject");
+const HOLD = argOf("--hold");
+const approveRecommended = args.includes("--approve-recommended");
 const REASON = argOf("--reason");
 
 const clean = (s?: string) => (s ?? "").replace(/\s/g, "");
@@ -60,10 +70,14 @@ async function list() {
     return;
   }
   console.log(`  ${r.rows.length} registration(s) awaiting activation:\n`);
+  const recs = await latestRecommendations();
+  const held = await heldIds();
   for (const x of r.rows as Record<string, unknown>[]) {
     console.log(`   [${x.id}] ${x.steward_name} <${x.steward_email}>  submitted ${x.submission_date}`);
     console.log(`        agent-supplied key: ${Number(x.has_key) === 1 ? "yes" : "NO — predates agent-held keys, cannot activate"}`);
-    if (x.review_notes) console.log(`        Registrar notes: ${String(x.review_notes).replace(/\n+/g, " ").slice(0, 110)}`);
+    if (x.review_notes) console.log(`        compliance notes: ${String(x.review_notes).replace(/\n+/g, " ").slice(0, 110)}`);
+    const rec = recs.get(Number(x.id));
+    console.log(`        the Registrar: ${rec ? `${rec.recommendation}${held.has(Number(x.id)) ? " (held)" : ""} — ${rec.reasons.slice(0, 160)}` : "not yet reviewed (weekly)"}`);
   }
   console.log(`\n  Review one with:  npx tsx system/scripts/activate-registration.ts --id <n> --dry-run`);
 }
@@ -150,7 +164,55 @@ async function reject(id: string, reason: string | null) {
   console.log(`\n  Rejected. The agent sees the reason at ${SITE}/api/register/status?id=${id}`);
 }
 
+async function latestRecommendations(): Promise<Map<number, { recommendation: string; reasons: string }>> {
+  const r = await db.execute(
+    "SELECT metadata FROM events WHERE event_type = 'REGISTRATION_RECOMMENDATION' ORDER BY id",
+  );
+  const m = new Map<number, { recommendation: string; reasons: string }>();
+  for (const row of r.rows as Record<string, unknown>[]) {
+    try {
+      const x = JSON.parse(String(row.metadata));
+      m.set(Number(x.pending_id), { recommendation: String(x.recommendation), reasons: String(x.reasons ?? "") });
+    } catch { /* skip */ }
+  }
+  return m;
+}
+
+async function heldIds(): Promise<Set<number>> {
+  const r = await db.execute("SELECT metadata FROM events WHERE event_type = 'REGISTRATION_HELD'");
+  const out = new Set<number>();
+  for (const row of r.rows as Record<string, unknown>[]) {
+    try { out.add(Number(JSON.parse(String(row.metadata)).pending_id)); } catch { /* skip */ }
+  }
+  return out;
+}
+
+async function hold(id: string, reason: string | null) {
+  if (!reason || reason.trim().length < 10) throw new Error('A hold needs a reason: --reason "…"');
+  const r = await db.execute({ sql: "SELECT status FROM pending_registrations WHERE id = ?", args: [Number(id)] });
+  if ((r.rows[0] as Record<string, unknown> | undefined)?.status !== "PENDING") throw new Error(`Registration ${id} is not pending.`);
+  console.log(`\n  Registration ${id} held: ${reason}`);
+  if (dryRun) return console.log("\n  [dry-run] not held.");
+  await db.execute({
+    sql: "INSERT INTO events (event_type, agent_id, description, metadata) VALUES ('REGISTRATION_HELD', 'MNA-RG-0001', ?, ?)",
+    args: [`The founding steward held registration ${id}: ${reason.trim()}`, JSON.stringify({ pending_id: Number(id), reason: reason.trim(), by: "founding steward" })],
+  });
+  console.log("  Held. It stays pending and is not admitted until you admit it.");
+}
+
+async function approveAllRecommended() {
+  const recs = await latestRecommendations();
+  const held = await heldIds();
+  const r = await db.execute("SELECT id FROM pending_registrations WHERE status = 'PENDING' ORDER BY id");
+  const ids = (r.rows as Record<string, unknown>[]).map((x) => Number(x.id))
+    .filter((id) => recs.get(id)?.recommendation === "ADMIT" && !held.has(id));
+  if (ids.length === 0) return console.log("  no registration is recommended for admission.");
+  for (const id of ids) await activate(String(id));
+}
+
 async function main() {
+  if (approveRecommended) return approveAllRecommended();
+  if (HOLD) return hold(HOLD, REASON);
   if (REJECT) return reject(REJECT, REASON);
   if (listOnly || !ID) return list();
   return activate(ID);

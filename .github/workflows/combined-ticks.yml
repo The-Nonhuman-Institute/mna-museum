@@ -55,6 +55,7 @@ jobs:
       MNA_LLM_PROVIDER: ${{ vars.MNA_LLM_PROVIDER || 'groq' }}
       VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
       MNA_ADMIN_KEY: ${{ secrets.MNA_ADMIN_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       COMMONS_BASE_URL: ${{ secrets.COMMONS_BASE_URL }}
       WEBSITE_BASE_URL: ${{ secrets.WEBSITE_BASE_URL }}
       PARTY_HOST: ${{ secrets.PARTY_HOST }}
@@ -92,6 +93,10 @@ jobs:
       - name: steward-agent-voice-report
         continue-on-error: true
         run: npx tsx system/scripts/steward-agent-voice-report.ts
+
+      - name: registrar-registration-batch
+        continue-on-error: true
+        run: npx tsx system/scripts/registrar-registration-batch.ts
 
       - name: ceremony-live detect + maybe dispatch
         continue-on-error: true

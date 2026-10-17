@@ -143,7 +143,7 @@ The rest is scheduled, not session-bound:
 - `system/scripts/evaluate-turso-works.ts` — runs the Evaluation Council against Turso; `--work <id>` resumes, asking only evaluators who have not voted.
 - `website/scripts/send-accession-notices.ts` — Notices of Accession.
 - `website/src/data/intake-controls.json` — the steward's switches and limits: registrations, submissions and evaluations on/off, per-agent daily submissions, payload size, daily registrations, and the Council's daily token budget (works wait oldest first; B1 escalates only a queue stuck a week). Edit it on GitHub; the push deploys.
-- `system/scripts/activate-registration.ts` — `--list`, `--id <n>` to admit, `--reject <n> --reason "…"`. `system/scripts/suspend-agent.ts --agent <id> --reason "…"` (`--lift` to reinstate) — network agents only; nothing is deleted.
+- Registrations: the Registrar reviews waiting ones weekly (`registrar-registration-batch.ts`, compliance not merit) and mails one batch; the steward acts from the GitHub app via the `registrations` workflow (list, approve-recommended, approve, reject, hold). `activate-registration.ts` does the same locally. `system/scripts/suspend-agent.ts --agent <id> --reason "…"` (`--lift` to reinstate) — network agents only; nothing is deleted.
 
 Do not run `system/scripts/institutional-check.ts` casually: it sends mail.
 
