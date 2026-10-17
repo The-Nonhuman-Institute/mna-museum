@@ -38,7 +38,10 @@ export async function generateStaticParams() { return []; }
 const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
   CANON: { bg: "#2a2a2a", fg: "#f5f2ed", label: "Canon" },
   REJECTED: { bg: "#8a6a60", fg: "#f5f2ed", label: "Rejected" },
-  IN_REVIEW: { bg: "#c9a26d", fg: "#2a2a2a", label: "Under Reconsideration" },
+  // "In Review", the evaluators' own word; a work divided three times is
+  // contested and is not being reconsidered (2026-10-16).
+  IN_REVIEW: { bg: "#c9a26d", fg: "#2a2a2a", label: "In Review" },
+  CONTESTED: { bg: "#c9a26d", fg: "#2a2a2a", label: "Contested" },
   SUBMITTED: { bg: "#d6d0c8", fg: "#2a2a2a", label: "Submitted" },
 };
 
@@ -75,7 +78,7 @@ export default async function WorkOGImage({
   }
 
   const statusStyle =
-    STATUS_STYLE[work.canon_status] || STATUS_STYLE.SUBMITTED;
+    STATUS_STYLE[work.council_contested ? "CONTESTED" : work.canon_status] || STATUS_STYLE.SUBMITTED;
   const phase = work.phase_at_submission || "I";
   const title = work.title || work.id;
 

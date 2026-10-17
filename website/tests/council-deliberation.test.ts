@@ -288,3 +288,50 @@ describe("no code path lets the Registrar decide", () => {
     expect(pipeline).toMatch(/TIES_ARE_NOT_RESOLVED_LOCALLY/);
   });
 });
+
+import { statSync } from "fs";
+
+describe("nothing deletes from the permanent record", () => {
+  // Archive permanence (the charter; MNA-OPS-001 §IV: operations may not
+  // "delete anything"). The local reconsideration deleted a work's earlier
+  // evaluations before re-running the Council; it was retired 2026-10-16.
+  const RECORD = /DELETE FROM (evaluations|events|works|canon_status|critical_responses)\b/;
+  function walk(dir: string): string[] {
+    return readdirSync(dir).flatMap((f) => {
+      if (f === "node_modules" || f === ".next" || f.startsWith(".")) return [];
+      const p = path.join(dir, f);
+      return statSync(p).isDirectory() ? walk(p) : /\.(ts|tsx|js|mjs)$/.test(f) ? [p] : [];
+    });
+  }
+
+  /** Each exemption is a claim that the delete is correct, and says why. */
+  const MAY_DELETE: Record<string, string> = {
+    "system/scripts/seed-turso.ts":
+      "pre-launch seeding: clears MNA-OR-0001's rows only while that Originator has no works, which has not been true since April 2026",
+    "website/scripts/verify-handshake-rsvp.ts":
+      "test harness: removes only the TEST-RSVP-9999 agent and the ceremony rows it created itself",
+    "website/scripts/verify-handshake-statement.ts":
+      "test harness: removes only the TEST-STMT-9999 agent and the ceremony rows it created itself",
+  };
+
+  it("has no code that deletes a work, a verdict, an event, a status or a critical response", () => {
+    const roots = ["system/src", "system/scripts", "website/src", "website/scripts", "commons", "terminal"]
+      .map((d) => path.join(ROOT, d))
+      .filter((d) => { try { return statSync(d).isDirectory(); } catch { return false; } });
+    const offenders = roots
+      .flatMap(walk)
+      .filter((f) => RECORD.test(readFileSync(f, "utf8")))
+      .map((f) => path.relative(ROOT, f))
+      .filter((f) => !MAY_DELETE[f]);
+    expect(offenders, "these delete from the permanent record").toEqual([]);
+  });
+
+  it("has an exemption only where there is still a delete to excuse", () => {
+    const stale = Object.keys(MAY_DELETE).filter((f) => !RECORD.test(read(f)));
+    expect(stale).toEqual([]);
+  });
+
+  it("keeps the local reconsideration retired", () => {
+    expect(read("system/src/pipeline.ts")).not.toMatch(/export async function reconsiderWork/);
+  });
+});

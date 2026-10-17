@@ -59,7 +59,9 @@ export async function generateMetadata({
       ? "Canon"
       : work.canon_status === "REJECTED"
         ? "Rejected"
-        : "Under Reconsideration";
+        : work.council_contested
+          ? "Contested"
+          : "In Review";
   // Highwire Press meta tags — Google Scholar / Zotero / EndNote etc.
   // automatically read these when a researcher saves the URL, so MNA
   // works become citable without manual metadata entry on their end.

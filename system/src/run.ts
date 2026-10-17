@@ -1,5 +1,5 @@
 import { isAvailable } from "./ollama";
-import { runFullPipeline, produceWork, evaluateWork, critiqueWork, reconsiderWork, triggerEmergence, titleWorks, TIES_ARE_NOT_RESOLVED_LOCALLY } from "./pipeline";
+import { runFullPipeline, produceWork, evaluateWork, critiqueWork, triggerEmergence, titleWorks, TIES_ARE_NOT_RESOLVED_LOCALLY, RECONSIDERATION_RETIRED } from "./pipeline";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -102,15 +102,9 @@ async function main() {
     }
 
     case "reconsider": {
-      // Reconsider a previously rejected work
-      const workId = args[1];
-      const requestedBy = args[2] || "MNA-SA-0001";
-      const reason = args[3] || "Institutional reconsideration — pattern review";
-      if (!workId) {
-        console.error("Usage: run reconsider <work-id> [requested-by] [reason]");
-        process.exit(1);
-      }
-      await reconsiderWork(workId, reason, requestedBy);
+      // Retired 2026-10-16: it deleted a work's earlier evaluations.
+      console.error(RECONSIDERATION_RETIRED);
+      process.exitCode = 1;
       break;
     }
 

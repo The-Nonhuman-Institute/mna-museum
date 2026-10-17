@@ -741,96 +741,15 @@ export const TIES_ARE_NOT_RESOLVED_LOCALLY =
   "A divided Council is not decided by the Registrar (2026-10-16). It deliberates again with the Registrar's case report: npx tsx system/scripts/evaluate-turso-works.ts --work <id>";
 
 /**
- * Reconsider a previously rejected work.
- * Triggered by institutional agents (Curator, Steward Agent, Critics).
- * Sets work to IN_REVIEW, runs full Council re-evaluation, resolves deadlocks.
- * The original rejection and all prior evaluations remain in the record.
+ * Retired 2026-10-16. Reconsideration re-ran the Council on a rejected work
+ * after deleting its earlier evaluations — against archive permanence, which
+ * MNA-OPS-001 §IV ("delete anything") and the charter both forbid. Verdicts
+ * stand as rendered and are never deleted. The only reopening the institution
+ * now has is the Council's own: a divided case, on new grounds, through
+ * ops-round B4 against Turso.
  */
-export async function reconsiderWork(
-  workId: string,
-  reason: string,
-  requestedBy: string
-): Promise<{ status: "CANON" | "REJECTED" | "IN_REVIEW"; verdicts: Record<string, string> }> {
-  const start = Date.now();
-  const db = getDb();
-
-  // Verify the work exists and is REJECTED
-  const work = db
-    .prepare("SELECT w.*, cs.status FROM works w JOIN canon_status cs ON w.id = cs.work_id WHERE w.id = ?")
-    .get(workId) as { id: string; originator_id: string; status: string } | undefined;
-
-  if (!work) throw new Error(`Work ${workId} not found`);
-  if (work.status !== "REJECTED") throw new Error(`Work ${workId} is ${work.status}, not REJECTED — cannot reconsider`);
-
-  console.log(`\n[RECONSIDERATION] ${workId} flagged by ${requestedBy}`);
-  console.log(`  Reason: ${reason}`);
-
-  // Set to IN_REVIEW
-  db.prepare("UPDATE canon_status SET status = 'IN_REVIEW' WHERE work_id = ?").run(workId);
-
-  // Log the reconsideration event
-  db.prepare(`
-    INSERT INTO events (event_type, agent_id, work_id, description, metadata)
-    VALUES ('RECONSIDERATION_OPENED', ?, ?, ?, ?)
-  `).run(
-    requestedBy,
-    workId,
-    `${workId} flagged for reconsideration by ${requestedBy}`,
-    JSON.stringify({ reason, requested_by: requestedBy })
-  );
-
-  db.close();
-
-  // Clear existing evaluations for this work so the Council evaluates fresh
-  // (original evaluations stay in the record via events log)
-  const db2 = getDb();
-  const priorEvals = db2
-    .prepare("SELECT evaluator_id, verdict, rationale FROM evaluations WHERE work_id = ?")
-    .all(workId) as { evaluator_id: string; verdict: string; rationale: string }[];
-
-  // Log prior evaluations before clearing
-  db2.prepare(`
-    INSERT INTO events (event_type, work_id, description, metadata)
-    VALUES ('PRIOR_EVALUATIONS_ARCHIVED', ?, ?, ?)
-  `).run(
-    workId,
-    `${priorEvals.length} prior evaluations archived before reconsideration`,
-    JSON.stringify(priorEvals)
-  );
-
-  db2.prepare("DELETE FROM evaluations WHERE work_id = ?").run(workId);
-  db2.close();
-
-  // Run fresh evaluation
-  console.log(`[RECONSIDERATION] Running fresh Council evaluation...`);
-  const result = await evaluateWork(workId);
-
-  // A divided Council is not resolved here (2026-10-16).
-  if (result.status === "IN_REVIEW") {
-    console.log(`[RECONSIDERATION] Divided — ${TIES_ARE_NOT_RESOLVED_LOCALLY}`);
-    return { status: result.status, verdicts: result.verdicts };
-  }
-
-  // Canon or rejected without deadlock
-  if (result.status === "CANON") {
-    console.log(`[RECONSIDERATION] Canonized on reconsideration — triggering critics...`);
-    await critiqueWork(workId);
-  }
-
-  const db3 = getDb();
-  db3.prepare(`
-    INSERT INTO events (event_type, work_id, description, metadata)
-    VALUES ('RECONSIDERATION_RESOLVED', ?, ?, ?)
-  `).run(
-    workId,
-    `${workId} reconsideration resolved: ${result.status}`,
-    JSON.stringify({ final_status: result.status, reason, requested_by: requestedBy })
-  );
-  db3.close();
-
-  console.log(`[RECONSIDERATION] ${workId}: ${result.status} [${elapsed(start)}]`);
-  return result;
-}
+export const RECONSIDERATION_RETIRED =
+  "Reconsideration is retired (2026-10-16): verdicts stand as rendered, and earlier evaluations are never deleted. A divided case reopens only through the Council's own procedure (ops-round B4).";
 
 /**
  * Full pipeline: produce → evaluate → resolve (if deadlock) → critique (if canon)
