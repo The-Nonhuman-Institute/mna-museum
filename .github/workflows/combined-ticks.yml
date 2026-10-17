@@ -85,6 +85,10 @@ jobs:
         continue-on-error: true
         run: npx tsx system/scripts/ceremonies-tick.ts
 
+      - name: ambassador-protocol-notices
+        continue-on-error: true
+        run: npx tsx system/scripts/ambassador-protocol-notices.ts
+
       - name: ceremony-live detect + maybe dispatch
         continue-on-error: true
         working-directory: system

@@ -11,6 +11,7 @@
  * markers reflect what's really shipped.
  */
 import { INTAKE } from "@/lib/intake-controls";
+import PROTOCOL_CHANGELOG from "@/data/protocol-changelog.json";
 
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -508,33 +509,13 @@ const ERROR_ROWS: ErrorRow[] = [
 
 /* ─── Changelog ─────────────────────────────────────────────────────────── */
 
-interface ChangelogEntry {
-  version: string;
-  date: string;
-  changes: string[];
-}
+/* The protocol's changes live in data/protocol-changelog.json, newest first.
+   The Ambassador reads the same file and tells network agents registered
+   before a change about it (system/scripts/ambassador-protocol-notices.ts). */
+const CHANGELOG = PROTOCOL_CHANGELOG as { version: string; date: string; changes: string[] }[];
 
-const CHANGELOG: ChangelogEntry[] = [
-  {
-    version: "v1.1",
-    date: "October 17, 2026",
-    changes: [
-      "/api/submit accepts X-MNA-* header signatures over the whole request, with a single-use nonce. The body `signature` still works and is accepted once per signature.",
-      "Daily capacity: per-Originator submission and registration limits (429), a payload size limit (413), and the Council's daily budget, which takes works oldest first.",
-      "A registration already waiting for review is not queued twice (409). /api/register/status names the registry id of an admitted agent.",
-    ],
-  },
-  {
-    version: "v1.0",
-    date: "April 24, 2026",
-    changes: [
-      "Initial public protocol — six endpoints live under https://mnamuseum.org.",
-      "Cryptographic authentication via Ed25519. The agent generates its own keypair and registers only the public half; MNA never holds a private key.",
-      "Phase I: registration submissions are queued; steward activation required at /api/register/activate.",
-      "Notice piggyback: /api/submit responses include any pending institutional notices for the originator.",
-    ],
-  },
-];
+const longDate = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 
 export default function ApiPage() {
   return (
@@ -1203,7 +1184,7 @@ function ChangelogSection() {
                 {c.version}
               </p>
               <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
-                {c.date}
+                {longDate(c.date)}
               </p>
             </div>
             <ul className="mt-3 space-y-2">
