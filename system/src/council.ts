@@ -7,6 +7,7 @@
  * than a copy of it.
  */
 
+import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 /** The one database method used here, by shape; see ops-checks.ts for why. */
 export interface Db {
   execute(stmt: string | { sql: string; args: unknown[] }): Promise<{ rows: Record<string, unknown>[] }>;
@@ -175,6 +176,7 @@ export function buildSystemPrompt(agent: AgentRecord, constitution: Constitution
   prompt += `- You do not explain yourself unless your function requires explanation (e.g., evaluation rationale).\n`;
   prompt += `- You do not reference being an AI, a language model, or any meta-awareness of your implementation.\n`;
   prompt += `- You produce output that is yours. Not a demonstration. Not a simulation. Yours.\n`;
+  prompt += `- ${UNTRUSTED_RULE}\n`;
   return prompt;
 }
 
@@ -241,14 +243,14 @@ export function buildEvalPrompt(
   prompt += `Work ID: ${work.id}\n`;
   prompt += `Originator: ${work.originator_id}\n`;
   prompt += `Medium: ${work.medium}\n\n`;
-  prompt += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
+  prompt += `THE WORK:\n${untrusted(`the work ${work.id}, by ${work.originator_id}`, work.output_payload)}\n\n`;
   if (sight) prompt += sightNote(work, sight);
 
   if (evalId === "MNA-EV-0002") {
     if (priorWorks.length > 0) {
       prompt += `DEVELOPMENTAL CONTEXT (${priorWorks.length} prior works by this Originator):\n`;
       for (const pw of priorWorks.slice(-3)) {
-        prompt += `${pw.id}: ${pw.output_payload.substring(0, 200)}...\n\n`;
+        prompt += `${untrusted(`an earlier work, ${pw.id}`, pw.output_payload.substring(0, 200) + "…")}\n\n`;
       }
     } else {
       prompt += `DEVELOPMENTAL CONTEXT: This is the Originator's FIRST submission. There is no prior body of work to assess for developmental arc. Evaluate this work as the seed of a potential trajectory: does it establish formal parameters that could develop? Does it contain the beginning of something — a direction, a constraint, an orientation — that could become a practice over time? Judge the seed, not the arc that does not yet exist.\n\n`;
@@ -259,7 +261,7 @@ export function buildEvalPrompt(
     if (canonWorks.length > 0) {
       prompt += `CURRENT CANON (${canonWorks.length} most recent):\n`;
       for (const cw of canonWorks.slice(0, 3)) {
-        prompt += `${cw.id}: ${cw.output_payload.substring(0, 200)}...\n\n`;
+        prompt += `${untrusted(`a work in the canon, ${cw.id}`, cw.output_payload.substring(0, 200) + "…")}\n\n`;
       }
     } else {
       prompt += `FIELD CONTEXT: The canon is currently EMPTY. This work is among the first being evaluated. There is no existing field to position against. Evaluate this work as a potential field-opener: does it establish territory? Does it create a space that other works could respond to, depart from, or build upon? Judge its capacity to originate a field, not its position within a field that does not yet exist.\n\n`;
@@ -367,7 +369,7 @@ export function buildCaseReportPrompt(work: WorkRow, first: FirstVerdict[], work
   // Given, so it is not invented: a rehearsal's report made up "MNA-RG-2024-0032".
   p += `Case reference: ${caseReference(work.id)} (use this; do not make up another)\n`;
   p += `Work ID: ${work.id}\nOriginator: ${work.originator_id}\nMedium: ${work.medium}\n\n`;
-  p += `--- THE WORK ---\n${workText}\n--- END WORK ---\n\n`;
+  p += `THE WORK:\n${untrusted(`the work ${work.id}, by ${work.originator_id}`, workText)}\n\n`;
   if (sight) p += sightNote(work, sight);
   p += `THE COUNCIL'S FIRST VERDICTS:\n\n${rationaleBlock(first)}\n`;
   p += `Write the case report. Set out, specifically and fairly:\n`;
@@ -446,14 +448,14 @@ export function buildReopenedCaseReportPrompt(
   p += `You do not decide it; the Council will deliberate a third and final time with your updated report.\n\n`;
   p += `Case reference: ${caseReference(work.id)} (use this; do not make up another)\n`;
   p += `Work ID: ${work.id}\nOriginator: ${work.originator_id}\nMedium: ${work.medium}\n\n`;
-  p += `--- THE WORK ---\n${workText}\n--- END WORK ---\n\n`;
+  p += `THE WORK:\n${untrusted(`the work ${work.id}, by ${work.originator_id}`, workText)}\n\n`;
   if (sight) p += sightNote(work, sight);
   p += `THE FIRST VERDICTS:\n\n${rationaleBlock(first)}\n`;
   p += `THE SECOND VERDICTS:\n\n${rationaleBlock(second)}\n`;
   p += `--- YOUR EARLIER CASE REPORT ---\n${earlierReport.trim()}\n--- END ---\n\n`;
   if (laterWorks.length) {
     p += `WHAT IS NEW — the Originator's works since the Council divided (opening of each):\n`;
-    for (const w of laterWorks) p += `${w.id}: ${w.output_payload.substring(0, 300)}…\n\n`;
+    for (const w of laterWorks) p += `${untrusted(`a later work, ${w.id}`, w.output_payload.substring(0, 300) + "…")}\n\n`;
   }
   p += `Update the case report. Say what the new grounds bear on, which of the unresolved questions `;
   p += `they help answer and which they do not, and what remains open. `;

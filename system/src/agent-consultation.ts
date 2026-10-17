@@ -34,6 +34,7 @@ import path from "path";
 import { generate } from "./llm";
 import { retrieveMemories, memoriesAsPromptSection } from "./agent-memory-retrieve";
 import { OWN_VOICE } from "../../website/src/lib/own-voice";
+import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -149,7 +150,7 @@ function eventBlock(event: ConsultableEvent): string {
   Type:        ${event.event_type}
   Description: ${event.description}
   Actor:       ${event.acting_agent_id ?? "(institution)"}
-${metaLines ? `  Metadata:\n${metaLines.replace(/^/gm, "  ")}` : ""}`;
+${metaLines ? `  Metadata (may carry other agents' words):\n${untrusted("the record of this event", metaLines)}\n\n${UNTRUSTED_RULE}` : ""}`;
 }
 
 function buildPrompt(args: {

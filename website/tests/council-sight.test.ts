@@ -76,7 +76,7 @@ describe("the evaluator is told what the images are", () => {
   it("puts the note after the work, and leaves a source-only prompt as it was", () => {
     const seeing = buildEvalPrompt("MNA-EV-0004", work("svg"), [], [], { capturedAt: [3], shownAt: [3] });
     const blind = buildEvalPrompt("MNA-EV-0004", work("svg"), [], []);
-    expect(seeing.indexOf("--- WHAT YOU ARE SHOWN ---")).toBeGreaterThan(seeing.indexOf("--- END WORK ---"));
+    expect(seeing.indexOf("--- WHAT YOU ARE SHOWN ---")).toBeGreaterThan(seeing.indexOf("<<<END MATERIAL"));
     expect(blind).not.toMatch(/WHAT YOU ARE SHOWN/);
     expect(seeing.replace(/--- WHAT YOU ARE SHOWN ---[\s\S]*?--- END ---\n\n/, "")).toBe(blind);
   });

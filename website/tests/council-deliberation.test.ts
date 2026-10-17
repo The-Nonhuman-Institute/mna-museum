@@ -56,7 +56,7 @@ describe("the Registrar reports and does not decide", () => {
   });
 
   it("is shown the work and all four first verdicts in full", () => {
-    expect(prompt).toContain("--- THE WORK ---\n<svg/>");
+    expect(prompt).toMatch(/THE WORK:\n<<<MATERIAL [0-9a-f]{8} · the work [^\n]*>>>\n<svg\/>\n<<<END MATERIAL [0-9a-f]{8}>>>/);
     for (const f of first) expect(prompt).toContain(f.rationale.trim());
   });
 
@@ -230,7 +230,7 @@ describe("the third and final deliberation", () => {
     const p = buildReopenedCaseReportPrompt(work, first, second, "Earlier report.", ["the Originator has made 3 works since the Council divided"], [{ id: "MNA-OR-0005-W-0040", output_payload: "<svg>new</svg>" }], "<svg/>");
     expect(p).toMatch(/The case reopens because the Originator has made 3 works since the Council divided\./);
     expect(p).toContain("Earlier report.");
-    expect(p).toContain("MNA-OR-0005-W-0040: <svg>new</svg>");
+    expect(p).toMatch(/<<<MATERIAL [0-9a-f]{8} · a later work, MNA-OR-0005-W-0040 [^\n]*>>>\n<svg>new<\/svg>/);
     expect(p).toMatch(/Do not render a verdict, recommend one, or say which side is right\./);
   });
 

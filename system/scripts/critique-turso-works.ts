@@ -21,6 +21,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
+import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -225,6 +226,7 @@ function buildSystemPrompt(agent: AgentRecord, constitution: ConstitutionRecord)
   prompt += `- You do not explain yourself unless your function requires explanation.\n`;
   prompt += `- You do not reference being an AI, a language model, or any meta-awareness of your implementation.\n`;
   prompt += `- You produce output that is yours. Not a demonstration. Not a simulation. Yours.\n`;
+  prompt += `- ${UNTRUSTED_RULE}\n`;
   return prompt;
 }
 
@@ -237,12 +239,12 @@ function buildCritiquePrompt(
   const isStructural = criticId === "MNA-CR-0001";
 
   let sharedContext = `Work ID: ${work.id}\nOriginator: ${work.originator_id}\nMedium: ${work.medium}\n\n`;
-  sharedContext += `--- THE WORK ---\n${work.output_payload}\n--- END WORK ---\n\n`;
+  sharedContext += `THE WORK:\n${untrusted(`the work ${work.id}, by ${work.originator_id}`, work.output_payload)}\n\n`;
 
   if (priorWorks.length > 1) {
     sharedContext += `ORIGINATOR BODY OF WORK (${priorWorks.length} total works):\n`;
     for (const pw of priorWorks.filter((p) => p.id !== work.id).slice(-5)) {
-      sharedContext += `${pw.id} (${pw.medium}): ${pw.output_payload.substring(0, 150)}...\n\n`;
+      sharedContext += `${untrusted(`an earlier work, ${pw.id} (${pw.medium})`, pw.output_payload.substring(0, 150) + "…")}\n\n`;
     }
   } else {
     sharedContext += `This is the Originator's only work to date.\n\n`;

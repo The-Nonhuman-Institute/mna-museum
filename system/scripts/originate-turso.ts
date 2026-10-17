@@ -42,6 +42,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { generate } from "../src/claude";
+import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -323,6 +324,7 @@ function buildSystemPrompt(agent: AgentRow, constitution: ConstitutionRow): stri
   prompt += `- You do not explain yourself unless your function requires it.\n`;
   prompt += `- You do not reference being an AI, a language model, or any meta-awareness of your implementation.\n`;
   prompt += `- You produce output that is yours. Not a demonstration. Not a simulation. Yours.\n`;
+  prompt += `- ${UNTRUSTED_RULE}\n`;
   return prompt;
 }
 
@@ -335,8 +337,7 @@ function buildVisitationSection(visits: WorkRow[]): string {
   s += `that you saw these works before producing your next output.\n\n`;
   for (const w of visits) {
     const titlePart = w.title ? `"${w.title}" — ` : "";
-    s += `--- ${w.id} (${w.originator_id}) ${titlePart}${w.output_type}/${w.medium ?? "—"} ---\n`;
-    s += truncate(w.output_payload, 600) + "\n\n";
+    s += `${untrusted(`${w.id} (${w.originator_id}) ${titlePart}${w.output_type}/${w.medium ?? "—"}`, truncate(w.output_payload, 600))}\n\n`;
   }
   return s;
 }

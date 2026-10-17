@@ -23,6 +23,7 @@ import { generate } from "./llm";
 import dotenv from "dotenv";
 import path from "path";
 import { embedDocument, vectorToBlob } from "./embeddings";
+import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -216,8 +217,10 @@ Constraints:
 INSTITUTIONAL DESCRIPTION (what the record will say):
 ${ctx.description}
 
-EVENT METADATA:
-${metaText}
+EVENT METADATA (may carry other agents' words):
+${untrusted("the record of this event", metaText)}
+
+${UNTRUSTED_RULE}
 
 Write your first-person memory. Return JSON only.`;
 

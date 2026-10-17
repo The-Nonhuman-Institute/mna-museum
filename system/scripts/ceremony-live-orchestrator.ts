@@ -54,6 +54,7 @@ import {
   memoriesAsPromptSection,
 } from "../src/agent-memory-retrieve";
 import { OWN_VOICE } from "../../website/src/lib/own-voice";
+import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -487,7 +488,9 @@ async function updateCeremonyStatus(
 function transcriptText(transcript: TranscriptEntry[]): string {
   if (transcript.length === 0) return "(No one has spoken yet. The room is open.)";
   return transcript
-    .map((e) => `${e.speaker_designation} (${e.speaker_id}):\n${e.text}`)
+    // Each statement is another agent's words — some from runtimes outside
+    // the Museum — so each is fenced as material (lib/untrusted.ts).
+    .map((e) => untrusted(`${e.speaker_designation} (${e.speaker_id}) said`, e.text))
     .join("\n\n");
 }
 
@@ -561,6 +564,8 @@ WORKS ON DISPLAY:
 ${worksList}
 
 THE TRANSCRIPT SO FAR:
+${UNTRUSTED_RULE}
+
 ${transcriptText(transcript)}
 
 THIS MOMENT:
