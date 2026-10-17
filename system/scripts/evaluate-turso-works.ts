@@ -54,13 +54,14 @@ import {
   type FirstVerdict,
   type WorkRow,
   loadWork,
-  loadSubmittedWorks,
   loadAgent,
   loadConstitution,
   loadPriorWorks,
   loadRecentCanon,
   loadExistingEvaluations,
 } from "../src/council";
+import { estimateWork, fitsBudget, spentToday, submittedOldestFirst } from "../src/council-budget";
+import { INTAKE } from "../../website/src/lib/intake-controls";
 
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
@@ -569,6 +570,12 @@ async function deliberateThird(workId: string, grounds: string[]): Promise<{ sta
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // The steward's switch (website/src/data/intake-controls.json). A named work
+  // is the steward asking for it, so --work still runs.
+  if (!INTAKE.evaluations_running && !singleWorkId) {
+    console.log("[evaluate] Evaluations are paused (intake-controls: evaluations_running). Works wait.");
+    return;
+  }
   if (reopenMode) {
     const { divided, due } = await findReopenDue(db);
     console.log(`[evaluate] ${divided} divided case(s), ${due.length} due to reopen`);
@@ -587,9 +594,27 @@ async function main() {
     return;
   }
 
-  const targets: string[] = singleWorkId
-    ? [singleWorkId]
-    : await loadSubmittedWorks(db);
+  // Oldest first, within today's budget (council-budget.ts). A named work is
+  // the steward's call and is not budgeted.
+  let targets: string[];
+  if (singleWorkId) {
+    targets = [singleWorkId];
+  } else {
+    const queue = await submittedOldestFirst(db);
+    let spent = await spentToday(db);
+    const spentBefore = spent;
+    const budget = INTAKE.council_tokens_per_day;
+    targets = [];
+    for (const w of queue) {
+      const est = estimateWork(w.chars);
+      if (!fitsBudget(spent, est, budget)) break; // strictly oldest first: no work is passed over
+      targets.push(w.work_id);
+      spent += est;
+    }
+    const waiting = queue.slice(targets.length).map((w) => w.work_id);
+    console.log(`[evaluate] budget: ${spentBefore} of ${budget} tokens spent today; ${queue.length} submitted, ${targets.length} taken`);
+    if (waiting.length) console.log(`[evaluate] QUEUED ${waiting.length}: ${waiting.join(", ")} — they wait for tomorrow's budget`);
+  }
 
   if (targets.length === 0) {
     console.log("[evaluate] No works to evaluate.");

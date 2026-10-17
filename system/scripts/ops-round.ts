@@ -30,6 +30,9 @@ import {
   findStalledReviews,
   heldWorks,
   minutesSince,
+  queueNeedsPerson,
+  queuedWorks,
+  QUEUE_ESCALATE_DAYS,
   retryOnStaleSocket,
   reviewedFor,
   snapshotBehind,
@@ -435,7 +438,34 @@ async function checkB1(db: Client): Promise<void> {
     return;
   }
   try {
-    run("npx", ["tsx", "system/scripts/evaluate-turso-works.ts"]);
+    const out = run("npx", ["tsx", "system/scripts/evaluate-turso-works.ts"]);
+    // The Council keeps a daily budget and the steward can pause it
+    // (intake-controls.json). Works waiting for either are queued, not overdue;
+    // a queue that has not moved in a week needs a person.
+    const queued = queuedWorks(out);
+    const paused = /Evaluations are paused/.test(out);
+    if (paused || queued.length) {
+      const waiting = paused ? stale.map((s) => s.work_id) : queued;
+      const oldest = stale
+        .filter((s) => waiting.includes(s.work_id))
+        .map((s) => s.created_at)
+        .sort()[0] ?? null;
+      const stuck = queueNeedsPerson(oldest);
+      record({
+        check: "B1",
+        severity: stuck ? "escalate" : "note",
+        summary: paused
+          ? `evaluations are paused by the steward; ${waiting.length} work(s) wait`
+          : `${waiting.length} work(s) queued for the Council's next daily budget`,
+        ...(stuck
+          ? {
+              items: waiting,
+              nextStep: `the oldest has waited over ${QUEUE_ESCALATE_DAYS} days: raise council_tokens_per_day or lower submissions_per_agent_per_day in website/src/data/intake-controls.json${paused ? ", or resume evaluations" : ""}`,
+            }
+          : {}),
+      });
+      return;
+    }
     record({ check: "B1", severity: "repaired", summary: `ran the Council on ${stale.length} overdue work(s)` });
   } catch (e) {
     // A held work did not render, so the Council would not judge it blind.

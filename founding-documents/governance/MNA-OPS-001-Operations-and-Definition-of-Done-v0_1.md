@@ -215,9 +215,20 @@ and correcting it would be speaking for them.
   judged blind while it rendered as a black square. `council-sight-check.yml`
   shows whether the Council can see at all.
 
+- *A work waiting for the Council's budget is queued, not overdue.* The
+  Council spends at most `council_tokens_per_day` (in
+  `website/src/data/intake-controls.json`) on a UTC day, measured from the
+  tokens recorded on its own verdicts, and takes works oldest first
+  (`system/src/council-budget.ts`). A work that does not fit waits SUBMITTED for
+  the next day; none is passed over for a smaller one. If the steward has set
+  `evaluations_running` to false, every work waits. Either is a **note**.
+
 **Repair.** `evaluate-turso-works.ts`.
 
-**Escalate.** A work still SUBMITTED after three rounds.
+**Escalate.** A work still SUBMITTED after three rounds, unless it is queued or
+paused; a queued or paused work when the oldest has waited more than **7 days**,
+because more is arriving than the Council can look at and only the steward can
+change the budget or the limits.
 
 #### B2 — Evaluation limbo
 

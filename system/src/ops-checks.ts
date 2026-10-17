@@ -211,3 +211,25 @@ export function heldWorks(output: string): { id: string; reason: string }[] {
   while ((m = re.exec(output)) !== null) held.push({ id: m[1], reason: m[2].trim() });
   return held;
 }
+
+/**
+ * B1 — works the Council left for tomorrow's budget.
+ *
+ * Since the Council keeps a daily budget (council-budget.ts), a work can sit
+ * SUBMITTED for a day or more with nothing wrong: it is in the queue. That is
+ * not overdue. A queue that does not drain is — more arriving each day than the
+ * budget can look at — and only a person can change the budget or the limits.
+ */
+export const QUEUE_ESCALATE_DAYS = 7;
+
+/** The work ids the evaluator printed as waiting for tomorrow's budget. */
+export function queuedWorks(output: string): string[] {
+  const m = /QUEUED \d+: ([^—\n]+) —/.exec(output);
+  return m ? m[1].split(",").map((s) => s.trim()).filter(Boolean) : [];
+}
+
+/** Whether the oldest waiting work has waited long enough to need a person. */
+export function queueNeedsPerson(oldestCreatedAt: string | null, now: number = Date.now()): boolean {
+  if (!oldestCreatedAt) return false;
+  return minutesSince(oldestCreatedAt, now) > QUEUE_ESCALATE_DAYS * 24 * 60;
+}

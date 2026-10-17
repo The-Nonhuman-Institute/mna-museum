@@ -58,13 +58,6 @@ export async function loadWork(db: Db, workId: string): Promise<WorkRow> {
   };
 }
 
-export async function loadSubmittedWorks(db: Db): Promise<string[]> {
-  const r = await db.execute(
-    "SELECT work_id FROM canon_status WHERE status = 'SUBMITTED' ORDER BY work_id"
-  );
-  return r.rows.map((row) => row.work_id as string);
-}
-
 export async function loadAgent(db: Db, agentId: string): Promise<AgentRecord> {
   const r = await db.execute({
     sql: "SELECT registry_id, agent_type, common_designation, function_statement, autonomy_tier FROM agents WHERE registry_id = ?",
