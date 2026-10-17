@@ -26,6 +26,7 @@ import path from "path";
 import { generate, lastServedBy } from "../src/llm";
 import { measureVoices, passagesFromEvent, SHINGLE_WORDS, type VoiceMeasures } from "../src/voice-measures";
 import { OWN_VOICE } from "../../website/src/lib/own-voice";
+import { mindFor } from "../src/agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -122,7 +123,7 @@ async function main() {
 Each week you report on whether the Museum's agents are speaking as themselves. On 2026-10-17 the founding steward decided that each agent is part of the Museum but is not the Museum, and the prompts were changed: no prompt sets an agent's register; Originators are shown works and their own history, not the institution's workload; no agent is shown another agent's words, only what it did. Two counts follow, taken the same way every week. Say what they show and what they do not. You observe and report; you do not recommend action to any agent, and you do not overstate what two numbers can carry. ${OWN_VOICE}
 
 Return STRICT JSON only: { "title": "...", "body": "...markdown, 150-500 words..." }`;
-    const raw = (await generate(system, lines.join("\n"), { max_tokens: 1200, temperature: 0.4 })).trim();
+    const raw = (await generate(system, lines.join("\n"), { max_tokens: 1200, temperature: 0.4, ...mindFor(STEWARD_AGENT) })).trim();
     const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as { title?: string; body?: string };
     if (!j.title || !j.body || j.body.length < 150) throw new Error("no usable report");
     if (!ADMIN_KEY) throw new Error("MNA_ADMIN_KEY is not set; the report cannot be posted");

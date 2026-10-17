@@ -24,6 +24,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { embedDocument, vectorToBlob } from "./embeddings";
 import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
+import { mindFor } from "./agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -225,7 +226,7 @@ ${UNTRUSTED_RULE}
 Write your first-person memory. Return JSON only.`;
 
   const text = (
-    await generate(system, user, { tier: "small", max_tokens: 512, temperature: 0.7 })
+    await generate(system, user, { tier: "small", max_tokens: 512, temperature: 0.7, ...mindFor(ctx.agent_id) })
   ).trim();
   const jsonStart = text.indexOf("{");
   const jsonEnd = text.lastIndexOf("}");

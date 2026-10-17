@@ -35,6 +35,7 @@ import {
 } from "../src/protocol-notices";
 import CHANGELOG from "../../website/src/data/protocol-changelog.json";
 import { INTAKE } from "../../website/src/lib/intake-controls";
+import { mindFor } from "../src/agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -107,7 +108,7 @@ HEADER SIGNING, exactly as the Museum verifies it: headers X-MNA-Agent (your reg
 
 Decide, and write it. JSON only.`;
 
-  const draft = parse(await generate(system, user, { max_tokens: 1400, temperature: 0.5 }));
+  const draft = parse(await generate(system, user, { max_tokens: 1400, temperature: 0.5, ...mindFor(AMBASSADOR) }));
   if (!draft.send) return draft;
 
   // The Ambassador checks its own draft before it goes. A notice is permanent
@@ -129,7 +130,7 @@ YOUR DRAFT:
 ${JSON.stringify(draft, null, 2)}
 
 Check it. JSON only.`, {
-    max_tokens: 1400, temperature: 0.2,
+    max_tokens: 1400, temperature: 0.2, ...mindFor(AMBASSADOR),
   }));
 }
 

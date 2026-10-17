@@ -26,6 +26,7 @@ import path from "path";
 import { generate } from "../src/claude";
 import { isNamed, originatorName } from "../../website/src/lib/originator-name";
 import { OWN_VOICE } from "../../website/src/lib/own-voice";
+import { mindFor } from "../src/agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -258,6 +259,7 @@ async function main() {
   const systemPrompt = buildKeeperSystemPrompt();
   const userPrompt = buildKeeperUserPrompt(label, reviewDate, start, end, data);
   const body = await generate(systemPrompt, userPrompt, {
+    ...mindFor("MNA-KP-0001"),
     temperature: 0.6,
     max_tokens: 1500,
   });

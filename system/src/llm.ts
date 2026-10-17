@@ -100,6 +100,12 @@ export interface GenOptions {
   tier?: Tier;
   /** Escape hatch: force an exact model ID, bypassing the tier map. */
   model?: string;
+  /**
+   * Try this provider first (with `model`), then the configured chain. How an
+   * agent speaks through its own model (agent-minds.ts) and still speaks, on
+   * the default, if its own is out for the day — lastServedBy says which.
+   */
+  provider?: Provider;
 }
 
 /* ─── shared retry ────────────────────────────────────────────────────── */
@@ -373,8 +379,10 @@ export function providerChain(): Provider[] {
     .split(",")
     .map((p) => p.trim().toLowerCase())
     .filter(Boolean) as Provider[];
-  // In CI, localhost is not reachable; keep it out rather than burn a retry.
-  return process.env.CI ? chain.filter((p) => p !== "ollama") : chain;
+  // In CI, localhost is not reachable; keep it out rather than burn a retry —
+  // unless Ollama is the hosted service (ollama.com), which CI can reach.
+  const remoteOllama = /^https?:\/\/(?!localhost|127\.)/.test(process.env.OLLAMA_HOST ?? "");
+  return process.env.CI && !remoteOllama ? chain.filter((p) => p !== "ollama") : chain;
 }
 
 /**
@@ -497,7 +505,8 @@ export async function generate(
 ): Promise<string> {
   lastTokens = null;
   const o = options ?? {};
-  const chain = providerChain();
+  const base = providerChain();
+  const chain = o.provider ? [o.provider, ...base.filter((p) => p !== o.provider)] : base;
   const skipped: string[] = [];
   let lastQuotaError: string | null = null;
 

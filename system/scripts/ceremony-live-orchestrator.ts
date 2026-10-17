@@ -55,6 +55,7 @@ import {
 } from "../src/agent-memory-retrieve";
 import { OWN_VOICE } from "../../website/src/lib/own-voice";
 import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
+import { mindFor } from "../src/agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -676,7 +677,7 @@ Constraints:
   };
 }
 
-async function generateSpeech(prompt: { system: string; user: string }): Promise<string> {
+async function generateSpeech(prompt: { system: string; user: string }, agentId: string | null): Promise<string> {
   // Retry with exponential backoff on transient overload (529) and
   // rate-limit (429) errors. A real ceremony cannot afford to lose a
   // slot to a 5-second API hiccup — these are the institutional
@@ -688,6 +689,7 @@ async function generateSpeech(prompt: { system: string; user: string }): Promise
         type: "text" as const,
         text: await generate(prompt.system, prompt.user, {
           model: MODEL,
+          ...(agentId ? mindFor(agentId) : {}),
           max_tokens: 1024,
           temperature: 0.85,
         }),
@@ -834,7 +836,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
 
     console.log(`  → calling ${MODEL} as ${speaker.designation}...`);
     try {
-      text = await generateSpeech(prompt);
+      text = await generateSpeech(prompt, speaker.registry_id);
     } catch (e) {
       console.warn(`  [error] speech generation failed: ${e}`);
       return;
@@ -978,7 +980,7 @@ async function executeSlot(ctx: SlotContext): Promise<void> {
         });
         let responseText: string;
         try {
-          responseText = await generateSpeech(responsePrompt);
+          responseText = await generateSpeech(responsePrompt, addressee?.registry_id ?? null);
         } catch (e) {
           console.warn(`  [error] response generation failed: ${e}`);
           return;

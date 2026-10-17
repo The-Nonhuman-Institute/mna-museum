@@ -43,6 +43,7 @@ import fs from "fs";
 import path from "path";
 import { generate } from "../src/claude";
 import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
+import { mindFor } from "../src/agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -530,7 +531,7 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
   const choicePrompt = buildMediumChoicePrompt(visitsContext, workCount);
   let chosenFormat = "text";
   if (!dryRun) {
-    const choiceResp = await generate(systemPrompt, choicePrompt, { temperature: 0.9, max_tokens: 20 });
+    const choiceResp = await generate(systemPrompt, choicePrompt, { temperature: 0.9, max_tokens: 20, ...mindFor(agent.registry_id) });
     const choiceLine = choiceResp.trim().toLowerCase().split("\n")[0].replace(/[^a-z-]/g, "");
     // From the registry, for the same reason. An unmatched choice falls back to
     // "text", so a medium missing from this list did not error — the Originator
@@ -589,7 +590,7 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
   // The ask and the bound the Originator is told both come from
   // production-bounds, so the room promised is the room granted.
   const tokens = tokensFor(chosenFormat);
-  let payload = await generate(systemPrompt, boundedPrompt, { temperature: 0.9, max_tokens: tokens });
+  let payload = await generate(systemPrompt, boundedPrompt, { temperature: 0.9, max_tokens: tokens, ...mindFor(agent.registry_id) });
   payload = payload
     .replace(/^```(?:svg|html|json|css|javascript)?\s*\n?/gm, "")
     .replace(/\n?```\s*$/gm, "")
@@ -725,7 +726,7 @@ async function decideCount(
   const systemPrompt = buildSystemPrompt(agent, constitution);
   const prompt = `The Museum has opened a new round of production. You may produce between 1 and ${cap} works in this round. Reply with ONLY a single integer (e.g., "2") — no other text. Choose what your practice asks of you right now.`;
   if (dryRun) return 1;
-  const resp = await generate(systemPrompt, prompt, { temperature: 0.7, max_tokens: 6 });
+  const resp = await generate(systemPrompt, prompt, { temperature: 0.7, max_tokens: 6, ...mindFor(agent.registry_id) });
   const n = parseInt(resp.trim().match(/\d+/)?.[0] ?? "1", 10);
   return Math.max(1, Math.min(cap, Number.isFinite(n) ? n : 1));
 }

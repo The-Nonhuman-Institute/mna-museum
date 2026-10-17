@@ -22,6 +22,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
 import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
+import { mindFor } from "../src/agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -329,6 +330,7 @@ async function critiqueWork(workId: string): Promise<void> {
     const start = Date.now();
     console.log(`[critique]   [${criticId}] calling Claude API...`);
     const response = await generate(systemPrompt, userPrompt, {
+      ...mindFor(criticId),
       temperature: 0.7,
       max_tokens: 1536,
     });

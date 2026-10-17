@@ -35,6 +35,7 @@ import { generate } from "./llm";
 import { retrieveMemories, memoriesAsPromptSection } from "./agent-memory-retrieve";
 import { OWN_VOICE } from "../../website/src/lib/own-voice";
 import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
+import { mindFor } from "./agent-minds";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -264,6 +265,7 @@ export async function consultAgent(args: ConsultArgs): Promise<AgentDecision> {
     try {
       const text = (
         await generate(prompt.system, prompt.user, {
+          ...mindFor(agent.registry_id),
           tier: "standard",
           max_tokens: 2048,
           temperature: 0.6,

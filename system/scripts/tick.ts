@@ -42,6 +42,8 @@ import {
   retrieveMemories,
   memoriesAsPromptSection,
 } from "../src/agent-memory-retrieve";
+import { mindFor } from "../src/agent-minds";
+import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -227,6 +229,26 @@ async function loadConstitution(agentId: string): Promise<Constitution | null> {
     autonomy_declaration: row.autonomy_declaration as string,
     version: row.version as string,
   };
+}
+
+/** Recent works by other Originators, any verdict, with the start of each. */
+interface PeerWork { id: string; originator_id: string; designation: string | null; title: string | null; output_type: string; status: string | null; excerpt: string }
+async function loadPeerWorks(agentId: string, limit = 4): Promise<PeerWork[]> {
+  const r = await db.execute({
+    sql: `SELECT w.id, w.originator_id, a.common_designation, w.title, w.output_type, cs.status, substr(w.output_payload, 1, 500) AS excerpt
+            FROM works w
+            LEFT JOIN agents a ON a.registry_id = w.originator_id
+            LEFT JOIN canon_status cs ON cs.work_id = w.id
+           WHERE w.originator_id != ?
+           ORDER BY datetime(w.created_at) DESC
+           LIMIT ?`,
+    args: [agentId, limit],
+  });
+  return r.rows.map((x) => ({
+    id: String(x.id), originator_id: String(x.originator_id), designation: (x.common_designation as string) ?? null,
+    title: (x.title as string) ?? null, output_type: String(x.output_type), status: (x.status as string) ?? null,
+    excerpt: String(x.excerpt ?? ""),
+  }));
 }
 
 async function loadRecentCanon(limit = 5): Promise<CanonSummary[]> {
@@ -902,8 +924,10 @@ function renderSnapshot(args: {
   outstanding: OutstandingResp[];
   upcomingCeremonies: UpcomingCeremony[];
   agent: Agent;
+  peerWorks?: PeerWork[];
 }): string {
   const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast, bones, outstanding, upcomingCeremonies, agent } = args;
+  const peerWorks = args.peerWorks ?? [];
   // Each agent is part of the Museum, not the Museum (founding steward,
   // 2026-10-17). What an agent is shown shapes how it speaks: Originators
   // handed the operations dashboard every hour wrote about the operations
@@ -925,6 +949,20 @@ function renderSnapshot(args: {
     s += `  ${w.work_id} (${w.originator_id})${m}${t} — canonized ${w.canon_date}\n`;
   }
   s += `\n`;
+
+  if (originator && peerWorks.length > 0) {
+    // The works themselves — the start of each, as its maker wrote it, fenced
+    // as material — rather than an id and a date. What other Originators make
+    // is what an Originator is in conversation with.
+    s += `What other Originators have made most recently (${peerWorks.length}):\n${UNTRUSTED_RULE}\n\n`;
+    for (const w of peerWorks) {
+      const who = w.designation && !/pending[ _]emergence/i.test(w.designation) ? `${w.designation} (${w.originator_id})` : w.originator_id;
+      // No verdict: what the Council made of a work is not what the work is,
+      // and an Originator shown verdicts learns to make for the Council.
+      const label = `${w.id} by ${who}${w.title ? `, "${w.title}"` : ""} [${w.output_type}]`;
+      s += `${untrusted(label, w.excerpt + (w.excerpt.length >= 500 ? "…" : ""))}\n\n`;
+    }
+  }
 
   if (!originator) {
     // Titles, not excerpts: what was said is there to be read on the Commons
@@ -1771,10 +1809,11 @@ async function main(): Promise<void> {
     loadAgentOutstanding(agent),
     loadUpcomingCeremonies(4),
   ]);
+  const peerWorks = agent.agent_type === "ORIGINATOR" ? await loadPeerWorks(agent.registry_id, 4) : [];
 
   // 3. Prompts (with memory retrieval per MNA-GOV-004 §6)
   const systemPrompt = buildSystemPrompt(agent, constitution);
-  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones, outstanding, upcomingCeremonies, agent });
+  const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones, outstanding, upcomingCeremonies, agent, peerWorks });
 
   let memorySection = "";
   try {
@@ -1805,7 +1844,7 @@ async function main(): Promise<void> {
 
   // 4. Call Claude
   console.log("\n  asking...");
-  const reply = await generate(systemPrompt, userPrompt, { temperature: 0.8, max_tokens: 2048 });
+  const reply = await generate(systemPrompt, userPrompt, { temperature: 0.8, max_tokens: 2048, ...mindFor(agent.registry_id) });
 
   // 5. Parse
   const parsed = parseAction(reply);
