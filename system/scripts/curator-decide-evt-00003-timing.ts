@@ -23,6 +23,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { generate, modelFor } from "../src/llm";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -117,7 +118,7 @@ This is your call. Consider:
 - Is the institution ready, in your judgment, to make its first public opening before memory is installed — or is that a kind of premature ceremony?
 - Conversely: is there a curatorial reason the moment matters now, not later? The institution has been building toward this; deferring has its own institutional cost.
 
-Voice: institutional, decisive, claim-bearing. You are the Curator. The decision is yours.
+${OWN_VOICE} You are the Curator. The decision is yours.
 
 Return STRICT JSON only. No prose preamble, no markdown fences.
 

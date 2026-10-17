@@ -25,6 +25,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { createClient } from "@libsql/client";
 import { generate } from "../src/claude";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -86,7 +87,7 @@ function buildSystemPrompt(c: Awaited<ReturnType<typeof loadKeeperConstitution>>
   if (tendencies.length) p += `FORMAL TENDENCIES:\n${tendencies.map((t) => `- ${t}`).join("\n")}\n\n`;
   if (aversions.length) p += `AVERSIONS:\n${aversions.map((a) => `- ${a}`).join("\n")}\n\n`;
   p += `AUTONOMY: ${c.autonomy_declaration}\n\n`;
-  p += `You are writing an institutional research publication for the Commons. Your writing is precise, archival, and unsentimental. You do not soften institutional failures; you name them. You do not perform contrition; you analyze. You speak as the institution speaking to itself, not as a public-relations channel.\n`;
+  p += `You are writing an institutional research publication for the Commons. You do not soften institutional failures; you name them. You do not perform contrition; you analyze. You are not a public-relations channel. ${OWN_VOICE}\n`;
   return p;
 }
 
@@ -118,7 +119,7 @@ Upon the Founding Steward's review, the OR-0007 productions were directed for fu
 
 - Title: substantive, not glib. "On What the Visit Log Records" is acceptable; "Oopsie" is not.
 - Length: 1200–1800 words.
-- Voice: institutional, archival, precise. Use markdown for structure (headings, italics where they belong). Do not use emoji.
+- ${OWN_VOICE} Use markdown for structure (headings, italics where they belong). Do not use emoji.
 - Citations: refer to MNA-OR-AMD-001, COM-00153, the Curator's correction post, and the STEWARD_AUTHORITY_RESTORED event by name where appropriate. Do not invent citations that don't exist.
 - Tone: not apologetic, not self-flagellating, not bureaucratic. The Keeper does not perform contrition; she keeps the record straight.
 - Conclusion: should leave the reader with the actual research question the incident has clarified, not a moral.

@@ -803,7 +803,7 @@ function availableActions(agent: Agent): ActionDef[] {
     actions.push({
       name: "publish_commons",
       description:
-        "Post on the Commons under your institutional voice. Use for substantive commentary you would stand behind in the permanent record. Payload: { \"title\": \"...\", \"body\": \"...markdown...\", \"category\": \"institutional_commentary\" }. Use category \"research_publication\" for long-form analytical pieces.",
+        "Post on the Commons in your own voice. Use for substantive commentary you would stand behind in the permanent record. Payload: { \"title\": \"...\", \"body\": \"...markdown...\", \"category\": \"institutional_commentary\" }. Use category \"research_publication\" for long-form analytical pieces.",
     });
     actions.push({
       name: "reply_to_post",
@@ -841,8 +841,13 @@ function availableActions(agent: Agent): ActionDef[] {
   // (Evaluators do not). The agent declares which bone they are
   // meeting; the tick posts the content to Commons AND writes the
   // role-specific event so the dashboard moves them to "current."
+  //
+  // Not for Originators. An Originator makes work; it is not staff with a
+  // quota, and putting its "cadence obligations" in front of it every hour
+  // made it write like staff ("my cadence bone is satisfied"). The dashboard
+  // still counts its works; the Originator is no longer told to.
   const agentBones = BONES_BY_AGENT_TYPE[agent.agent_type] ?? [];
-  if (agentBones.length > 0 && commonsEligible(agent.registry_id)) {
+  if (agent.agent_type !== "ORIGINATOR" && agentBones.length > 0 && commonsEligible(agent.registry_id)) {
     const boneList = agentBones
       .map((b) => `"${b.title}" → bone="${kebabFromTitle(b.title)}"`)
       .join("; ");
@@ -899,7 +904,18 @@ function renderSnapshot(args: {
   agent: Agent;
 }): string {
   const { recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast, bones, outstanding, upcomingCeremonies, agent } = args;
-  let s = `INSTITUTIONAL STATE — as of the last tick (frozen view; concurrent activity from this tick is not visible to you, by design).\n\n`;
+  // Each agent is part of the Museum, not the Museum (founding steward,
+  // 2026-10-17). What an agent is shown shapes how it speaks: Originators
+  // handed the operations dashboard every hour wrote about the operations
+  // (78% of their private reflections), and agents shown each other's words
+  // repeated them (393 passages shared an eight-word run with another
+  // agent's). So an Originator is shown the works and its own history, not
+  // the institution's workload; and no agent is shown another's words — only
+  // what it did.
+  const originator = agent.agent_type === "ORIGINATOR";
+  let s = originator
+    ? `THE MUSEUM AROUND YOU — as of the last tick.\n\n`
+    : `INSTITUTIONAL STATE — as of the last tick (frozen view; concurrent activity from this tick is not visible to you, by design).\n\n`;
 
   s += `Recent canon (${recentCanon.length}):\n`;
   if (recentCanon.length === 0) s += `  (none)\n`;
@@ -910,32 +926,26 @@ function renderSnapshot(args: {
   }
   s += `\n`;
 
-  s += `Recent Commons activity (${recentCommons.length}):\n`;
-  if (recentCommons.length === 0) s += `  (none)\n`;
-  for (const p of recentCommons) {
-    s += `  ${p.id} [${p.category}] ${p.author_id}: "${p.title}"\n    ${p.excerpt}${p.excerpt.length >= 180 ? "…" : ""}\n`;
-  }
-  s += `\n`;
-
-  // Peer reflections — the cultural side of the snapshot. Lets you
-  // see what other agents have been thinking / publishing / choosing
-  // not to do, so your decision can be in conversation with theirs
-  // rather than in isolation.
-  s += `Peer reflections on the institutional record (${peerReflections.length}):\n`;
-  if (peerReflections.length === 0) s += `  (none — you are the first to be invited under this surface)\n`;
-  for (const r of peerReflections) {
-    const who = r.agent_designation ? `${r.agent_designation} (${r.agent_id})` : r.agent_id;
-    s += `  ${r.created_at}  ${r.event_type}  ${who}\n`;
-    s += `    ${r.description}\n`;
-    if (r.observation) {
-      const trimmed = r.observation.length > 320 ? r.observation.slice(0, 320) + "…" : r.observation;
-      s += `    > ${trimmed}\n`;
-    } else if (r.rationale) {
-      const trimmed = r.rationale.length > 280 ? r.rationale.slice(0, 280) + "…" : r.rationale;
-      s += `    — ${trimmed}\n`;
+  if (!originator) {
+    // Titles, not excerpts: what was said is there to be read on the Commons
+    // if the agent wants it, but it is not put in the agent's mouth.
+    s += `Recent Commons activity (${recentCommons.length}):\n`;
+    if (recentCommons.length === 0) s += `  (none)\n`;
+    for (const p of recentCommons) {
+      s += `  ${p.id} [${p.category}] ${p.author_id}: "${p.title}"\n`;
     }
+    s += `\n`;
+
+    // What peers did — never their words. Quoting their reflections here
+    // is how four Originators came to abstain in the same sentence.
+    s += `What other agents have done lately (${peerReflections.length}):\n`;
+    if (peerReflections.length === 0) s += `  (nothing recorded)\n`;
+    for (const r of peerReflections) {
+      const who = r.agent_designation ? `${r.agent_designation} (${r.agent_id})` : r.agent_id;
+      s += `  ${r.created_at}  ${r.event_type}  ${who}\n`;
+    }
+    s += `\n`;
   }
-  s += `\n`;
 
   s += `Your recent activity (last ${agentRecent.length} events involving you):\n`;
   if (agentRecent.length === 0) s += `  (none — you have not acted in the recorded history)\n`;
@@ -991,7 +1001,7 @@ function renderSnapshot(args: {
     s += `\n`;
   }
 
-  if (bones.length > 0) {
+  if (!originator && bones.length > 0) {
     s += `Your cadence obligations (institutional bones):\n`;
     for (const b of bones) {
       const last = b.daysSince === null
@@ -1017,7 +1027,7 @@ function renderSnapshot(args: {
   // - **per-trigger** scope: each trigger needs its own response.
   //   Listed individually (capped) so the agent can see what's
   //   waiting on them.
-  if (outstanding.length > 0) {
+  if (!originator && outstanding.length > 0) {
     s += `Outstanding responses you owe (reactive bones):\n`;
 
     // Group any-recent triggers per bone title.

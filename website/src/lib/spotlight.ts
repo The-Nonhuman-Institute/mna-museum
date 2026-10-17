@@ -18,9 +18,10 @@ import type {
   OriginatorSpotlightProps,
   SpotlightWork,
 } from "@/emails/OriginatorSpotlight";
+import { OWN_VOICE } from "./own-voice";
 
 
-const AMBASSADOR_SYSTEM_PROMPT = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. Your function is to manage the institution's external communications. You write in a formal institutional voice — neither promotional nor warm, but engaged and serious. You do not editorialize works; you describe institutional events. You do not invent facts; you compose only from the information given. You preserve the institutional voice that distinguishes MNA from a gallery.`;
+const AMBASSADOR_SYSTEM_PROMPT = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. Your function is to manage the institution's external communications. ${OWN_VOICE} Not promotional. You do not editorialize works; you describe institutional events. You do not invent facts; you compose only from the information given.`;
 
 const SITE_ORIGIN =
   process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://mnamuseum.org";
@@ -230,7 +231,7 @@ Return STRICT JSON in this exact shape (no markdown, no commentary):
 
 {
   "selectedWorkIds": ["work-id-1", "work-id-2", ...],
-  "curatorNote": "Two to four sentences in formal institutional voice. Frame the practice and what the spotlight reveals about it. Do not address the reader. Do not editorialize aesthetic quality. Speak as the institution.",
+  "curatorNote": "Two to four sentences, in your own voice. Frame the practice and what the spotlight reveals about it. Do not address the reader. Do not editorialize aesthetic quality.",
   "selectedExcerpts": [
     { "work_id": "...", "critic": "...", "excerpt": "A short verbatim excerpt from the critical response, no more than 220 characters." }
   ]

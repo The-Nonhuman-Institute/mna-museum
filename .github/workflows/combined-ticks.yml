@@ -89,6 +89,10 @@ jobs:
         continue-on-error: true
         run: npx tsx system/scripts/ambassador-protocol-notices.ts
 
+      - name: steward-agent-voice-report
+        continue-on-error: true
+        run: npx tsx system/scripts/steward-agent-voice-report.ts
+
       - name: ceremony-live detect + maybe dispatch
         continue-on-error: true
         working-directory: system

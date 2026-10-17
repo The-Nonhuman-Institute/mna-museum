@@ -215,7 +215,7 @@ About this exhibition:
 
 You ALSO designate exactly one Critic. Match the Critic's ethos to the exhibition's thesis. Provide a one-sentence rationale ("rationale") for the Critic choice.
 
-Voice: institutional, structural. You are designing the *form of the room*, not the *content of what is said*. Each speaker authors their own words live; you do not write speeches.
+You are designing the *form of the room*, not the *content of what is said*. Each speaker authors their own words live; you do not write speeches.
 
 INSTITUTIONAL DEFAULT (group exhibition opening, may amend):
   +0   Opening Remarks (Curator)

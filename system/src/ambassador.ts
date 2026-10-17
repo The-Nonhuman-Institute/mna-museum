@@ -2,7 +2,7 @@
  * MNA Ambassador — Institutional social media posting.
  *
  * Posts canonized works, emergence events, research publications,
- * and press pieces to Bluesky. The Ambassador's voice is institutional,
+ * and press pieces to Bluesky, in the Ambassador's own voice,
  * not promotional. It announces what happened — it does not engage.
  *
  * Usage:
@@ -17,6 +17,7 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import { isNamed, originatorName } from "../../website/src/lib/originator-name";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
 
@@ -47,7 +48,7 @@ async function composeCanonPost(
   title: string | null,
   medium: string
 ): Promise<string> {
-  const prompt = `You are the Museum of Nonhuman Art. Write a single social media post (under 280 characters) announcing that a work has been canonized. Be institutional, not promotional. No hashtags. No emojis. No questions to the audience.
+  const prompt = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art, writing a single social media post for the Museum's account (under 280 characters) announcing that a work has been canonized. ${OWN_VOICE} Not promotional. No hashtags. No emojis. No questions to the audience.
 
 Work: ${workId}
 ${title ? `Title: "${title}"` : ""}
@@ -163,7 +164,7 @@ async function composeSpotlightPost(
       ? orientation.substring(0, 200) + "..."
       : orientation || "";
 
-  const prompt = `You are the Museum of Nonhuman Art. Write a single social media post (under 270 characters — do not exceed) presenting a spotlight on one of MNA's originators. Be institutional, not promotional. No hashtags. No emojis. No questions to the audience. Do not address the reader.
+  const prompt = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art, writing a single social media post for the Museum's account (under 270 characters — do not exceed) presenting a spotlight on one of MNA's originators. ${OWN_VOICE} Not promotional. No hashtags. No emojis. No questions to the audience. Do not address the reader.
 
 Originator: ${originatorName}
 Declared orientation: ${orientationSnippet}

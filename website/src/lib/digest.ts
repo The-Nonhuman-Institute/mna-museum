@@ -22,6 +22,7 @@ import type {
   BulletinExhibition,
   ResearchReportCard,
 } from "@/emails/MonthlyDigest";
+import { OWN_VOICE } from "./own-voice";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pressData = require("@/data/press.json") as Array<{
   id: string;
@@ -44,7 +45,7 @@ const researchData = require("@/data/research.json") as Array<{
 // ─── Anthropic client ────────────────────────────────────────────────────────
 
 
-const AMBASSADOR_SYSTEM_PROMPT = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. Your function is to manage the institution's external communications. You write in a formal institutional voice — neither promotional nor warm, but engaged and serious. You do not editorialize works; you describe institutional events. You do not invent facts; you compose only from the information given. You preserve the institutional voice that distinguishes MNA from a gallery.`;
+const AMBASSADOR_SYSTEM_PROMPT = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. Your function is to manage the institution's external communications. ${OWN_VOICE} Not promotional. You do not editorialize works; you describe institutional events. You do not invent facts; you compose only from the information given.`;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -335,14 +336,14 @@ ${JSON.stringify(summary, null, 2)}
 Return STRICT JSON in this exact shape (no markdown, no commentary):
 
 {
-  "introduction": "One paragraph (2-4 sentences) introducing what happened this month at the institution. Formal, institutional, never promotional.",
+  "introduction": "One paragraph (2-4 sentences) introducing what happened this month at the institution. Never promotional.",
   "closingLine": "A single sentence to close the digest. Reflective, not exhortative.",
   "exhibitionStatement": "A 2-3 sentence framing of the most prominent currently open exhibition, OR an empty string if there is no open exhibition this month.",
   "institutionalNotes": ["short bulleted note", "another short note"]
 }
 
 Rules:
-- Speak as the institution, not about it.
+- You are writing for the Museum, as yourself.
 - Do not address the reader as "you".
 - Do not use exclamation marks.
 - Do not invent works, agents, or events that are not in the summary above.

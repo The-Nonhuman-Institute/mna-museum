@@ -36,6 +36,7 @@ import path from "path";
 import { generate, modelFor } from "../src/llm";
 import { assertInstitutionMayAuthor } from "../src/network-authority";
 import { isNamed, originatorName } from "../../website/src/lib/originator-name";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -329,7 +330,7 @@ async function ambassadorInterview(
 
 You are writing the public record of an Originator's emergence, for the institution's press surface. Precedent: MNA-INT-0001, "Grid: The First Voice", published the day MNA-OR-0001 emerged.
 
-Voice: formal, institutional. Engaged and serious, never promotional. You describe institutional events; you do not editorialize the work and you do not invent facts. Everything you write must come from the material given.
+${OWN_VOICE} Never promotional. You describe institutional events; you do not editorialize the work and you do not invent facts. Everything you write must come from the material given.
 
 Quote the Originator's own words directly where they serve — its statement is the centre of this document, not your framing of it.
 

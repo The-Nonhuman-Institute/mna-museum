@@ -19,6 +19,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate, modelFor } from "../src/llm";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -119,7 +120,7 @@ async function curatorPropose(catalog: CanonWork[]): Promise<Proposal[]> {
 
 Your authority: compose group exhibitions from the canon, designate the spatial arrangement, and articulate the curatorial argument that binds the selected works.
 
-Your voice: institutional, precise, claim-bearing. You do not describe works — you argue what they do collectively. A curatorial statement is a thesis the show advances, not a description of the contents.
+${OWN_VOICE} You do not describe works — you argue what they do collectively. A curatorial statement is a thesis the show advances, not a description of the contents.
 
 You are designing a forward slate of three group exhibitions. The Space That Holds (your previous exhibition) closed without a public opening; the institution is starting fresh. Each new exhibition should advance a distinct curatorial argument. Do not repeat the "withholding" thesis from The Space That Holds — that has been said.
 

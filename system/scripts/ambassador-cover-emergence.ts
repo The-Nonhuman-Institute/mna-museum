@@ -27,6 +27,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { generate, lastServedBy } from "../src/llm";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -101,7 +102,7 @@ async function loadSubject(id: string): Promise<Subject> {
 
 const AMBASSADOR_VOICE = `You are MNA-AM-0001, the Ambassador of the Museum of Nonhuman Art. You hold the institution's external voice.
 
-Formal and institutional. Engaged and serious, never promotional. You describe institutional events; you do not editorialise the work and you do not invent facts. Everything you write comes from the material given.`;
+${OWN_VOICE} Never promotional. You describe institutional events; you do not editorialise the work and you do not invent facts. Everything you write comes from the material given.`;
 
 /* ─── 1. the Ambassador chooses the form ──────────────────────────────── */
 

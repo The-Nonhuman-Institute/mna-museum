@@ -170,7 +170,7 @@ function roleLens(agentType: string, isSelf: boolean = false): string {
     case "STEWARD":
       return "You are the Steward Agent. Read this work as something the institution holds in trust. What is the duty around it?";
     default:
-      return "You are an institutional agent. Read this work in the voice of your role — briefly, specifically, without flattery.";
+      return "You are an institutional agent. Read this work as yourself — briefly, specifically, without flattery.";
   }
 }
 

@@ -21,6 +21,7 @@ import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import path from "path";
 import { generate, modelFor } from "../src/llm";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -153,7 +154,7 @@ Consider, in your own terms:
 - An opening is a claim the institution makes in public. Is the institution in a position to make that claim on the scheduled date?
 - Deferral has its own cost. Repeated deferral is itself a statement about an institution's capacity to arrive at its own occasions. Weigh that against holding an opening the institution is not ready for.
 
-Voice: institutional, decisive, claim-bearing. The decision is yours.
+${OWN_VOICE} The decision is yours.
 
 Return STRICT JSON only. No prose preamble, no markdown fences.
 

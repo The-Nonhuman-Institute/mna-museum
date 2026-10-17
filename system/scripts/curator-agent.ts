@@ -386,7 +386,7 @@ const COMPOSITION_TOOL = {
       composition_summary: {
         type: "string",
         description:
-          "A short institutional statement (1-3 sentences) summarizing what you composed in this run, in the formal voice of the Curator. This is what will appear in the institutional record alongside the decisions.",
+          "A short institutional statement (1-3 sentences) summarizing what you composed in this run, in your own voice. This is what will appear in the institutional record alongside the decisions.",
       },
       decision_rationale: {
         type: "string",
@@ -452,7 +452,7 @@ const COMPOSITION_TOOL = {
             curatorial_statement: {
               type: "string",
               description:
-                "Required for FEATURE_SOLO_EXHIBITION and GROUP_EXHIBITION: the public-facing curatorial statement explaining the exhibition's argument. This is what will appear on the exhibition page. Write in the formal institutional voice.",
+                "Required for FEATURE_SOLO_EXHIBITION and GROUP_EXHIBITION: the public-facing curatorial statement explaining the exhibition's argument. This is what will appear on the exhibition page. Write it in your own voice.",
             },
             rationale: {
               type: "string",

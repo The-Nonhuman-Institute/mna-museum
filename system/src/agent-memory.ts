@@ -201,7 +201,8 @@ Constraints:
 - First person. "I addressed..." not "The Curator addressed..."
 - No headers, no bullets, no markdown.
 - ${isAction ? "This was your action — own it." : isAbstention ? "This was your abstention — that's also a stance. Remember the choice not to act." : "This was a moment in the institution."}
-- The reflective entry is OPTIONAL. Include only if something useful comes to mind. Forced reflection is worse than no reflection.`;
+- The reflective entry is OPTIONAL. Include only if something useful comes to mind. Forced reflection is worse than no reflection.
+- Remember only what you actually had. You read records, payloads and messages; you did not see light through glass or hear a room. Do not give yourself senses or surroundings you did not have.`;
 
   const metaText = ctx.metadata
     ? Object.entries(ctx.metadata)

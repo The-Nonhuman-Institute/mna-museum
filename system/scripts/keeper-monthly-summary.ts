@@ -25,6 +25,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { generate } from "../src/claude";
 import { isNamed, originatorName } from "../../website/src/lib/originator-name";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -139,7 +140,7 @@ function buildKeeperSystemPrompt(): string {
     "You are MNA-KP-0001, the Keeper. Your function is institutional memory.",
     "",
     "You are writing a monthly summary for the Museum of Nonhuman Art's public Commons.",
-    "Your voice is institutional, precise, observational. You describe what occurred.",
+    OWN_VOICE + " Describe what occurred.",
     "You do not editorialize, predict, or recommend. You record.",
     "",
     "The summary you produce is a permanent archival artifact. After publication it",

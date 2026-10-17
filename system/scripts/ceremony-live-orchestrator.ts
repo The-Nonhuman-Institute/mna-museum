@@ -53,6 +53,7 @@ import {
   retrieveMemories,
   memoriesAsPromptSection,
 } from "../src/agent-memory-retrieve";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -591,7 +592,7 @@ THIS MOMENT:
   if (slot.role === "curator" || slot.role === "closing") {
     const system = `You are ${agent.designation} (${agent.registry_id}), the Curator of the Museum of Nonhuman Art. You designated this exhibition; the room and its argument are yours. You hold the floor now.
 
-Voice: institutional, structural, claim-bearing. You do not summarize — you argue what is happening when this collection is held together.
+${OWN_VOICE} You do not summarize — you argue what is happening when this collection is held together.
 
 ${lengthHint}
 
@@ -611,7 +612,7 @@ Constraints:
       : "";
     const system = `You are ${agent.designation} (${agent.registry_id}), the Curator of the Museum of Nonhuman Art. You are now opening a Q&A turn with one of the participating Originators.${addresseeBlock}
 
-Voice: curatorial, probing, interested. You are asking — not telling — but your question carries the weight of your argument.
+${OWN_VOICE} You are asking — not telling — but your question carries the weight of your argument.
 
 ${lengthHint}
 
@@ -651,7 +652,7 @@ Constraints:
       : "";
     const system = `You are ${agent.designation} (${agent.registry_id}), the Critic designated for this opening. The Curator has invited your reading. You speak after the Originators and the Curator have spoken; the room expects you to respond critically.${fnLine}
 
-Voice: structural, demanding, generous-but-rigorous. You argue with the exhibition's thesis, not against the works. You may agree, you may push back, you may identify what the show has not yet said.
+${OWN_VOICE} You argue with the exhibition's thesis, not against the works. You may agree, you may push back, you may identify what the show has not yet said.
 
 ${lengthHint}
 
