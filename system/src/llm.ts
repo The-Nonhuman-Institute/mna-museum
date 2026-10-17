@@ -227,6 +227,7 @@ async function groqGenerate(system: string, user: string, model: string, o: GenO
     throw new Error(`[llm] groq: unparseable response: ${raw.slice(0, 300)}`);
   }
 
+  lastTokens = tokens(body?.usage?.prompt_tokens, body?.usage?.completion_tokens);
   const msg = body?.choices?.[0]?.message;
   // gpt-oss models may place chain-of-thought in `reasoning` and the answer
   // in `content`. Only `content` is the institutional record.
@@ -333,6 +334,7 @@ async function ollamaGenerate(system: string, user: string, model: string, o: Ge
     throw new Error(`[llm] ollama: unparseable response: ${raw.slice(0, 300)}`);
   }
 
+  lastTokens = tokens(body?.prompt_eval_count, body?.eval_count);
   const text = body?.message?.content;
   if (typeof text === "string" && text.trim()) return text;
   throw new Error(`[llm] ollama: empty content: ${raw.slice(0, 300)}`);
@@ -451,7 +453,23 @@ function onCooldown(p: Provider): number {
 }
 
 /** Which provider actually served the last call. Record it where it matters. */
-export let lastServedBy: { provider: Provider; model: string } | null = null;
+export let lastServedBy: { provider: Provider; model: string; tokens?: Tokens } | null = null;
+
+/** Tokens a call spent, as its provider reported them. */
+export interface Tokens {
+  in: number;
+  out: number;
+}
+
+/**
+ * Set by each provider call from its own response, read by generate() into
+ * lastServedBy. The free tiers are budgets (Groq: 200K tokens a day per model;
+ * Ollama Cloud: unpublished), so what the Council spends has to be counted, not
+ * guessed. Null when a provider reports nothing.
+ */
+let lastTokens: Tokens | null = null;
+const tokens = (i: unknown, o: unknown): Tokens | null =>
+  Number.isFinite(Number(i)) && Number.isFinite(Number(o)) ? { in: Number(i), out: Number(o) } : null;
 
 /* ─── public API ──────────────────────────────────────────────────────── */
 
@@ -477,6 +495,7 @@ export async function generate(
   userPrompt: string,
   options?: GenOptions,
 ): Promise<string> {
+  lastTokens = null;
   const o = options ?? {};
   const chain = providerChain();
   const skipped: string[] = [];
@@ -512,7 +531,7 @@ export async function generate(
               };
         return callProvider(provider, systemPrompt, userPrompt, model, opts);
       });
-      lastServedBy = { provider, model };
+      lastServedBy = { provider, model, ...(lastTokens ? { tokens: lastTokens } : {}) };
       return text;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -759,6 +778,7 @@ export async function generateSeeing(
   pngBase64: string | string[] | null,
   o: GenOptions = {},
 ): Promise<string> {
+  lastTokens = null;
   // null asks the same model with no image: the control in a sight comparison.
   const images = pngBase64 === null ? [] : Array.isArray(pngBase64) ? pngBase64 : [pngBase64];
   const model = o.model ?? seeingModel();
@@ -784,11 +804,12 @@ export async function generateSeeing(
     const raw = await res.text();
     if (!res.ok) throw new Error(`[llm] ollama seeing ${res.status}: ${raw.slice(0, 300)}`);
     const body = JSON.parse(raw);
+    lastTokens = tokens(body?.prompt_eval_count, body?.eval_count);
     const content = body?.message?.content;
     if (typeof content === "string" && content.trim()) return content;
     throw new Error(`[llm] ollama seeing: empty content`);
   });
-  lastServedBy = { provider: "ollama", model };
+  lastServedBy = { provider: "ollama", model, ...(lastTokens ? { tokens: lastTokens } : {}) };
   return text;
 }
 

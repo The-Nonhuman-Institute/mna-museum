@@ -30,6 +30,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { generate, lastServedBy } from "../src/llm";
+import { isNamed } from "../../website/src/lib/originator-name";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env"), quiet: true });
 
@@ -91,7 +92,6 @@ interface Position {
   what_matters_most?: string;
 }
 
-const isNamed = (n: string | null) => !!n && n !== "PENDING_EMERGENCE";
 
 async function consult(agentId: string, why: string): Promise<Position> {
   const r = await db.execute({

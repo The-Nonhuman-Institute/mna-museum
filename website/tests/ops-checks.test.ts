@@ -235,7 +235,17 @@ describe("a verdict records the model that rendered it", () => {
   it("is read from the module that sets it", () => {
     const llm = readFileSync(path.join(ROOT, "system/src/llm.ts"), "utf8");
     expect(llm).toMatch(/export let lastServedBy/);
-    expect(llm).toMatch(/lastServedBy = \{ provider, model \};/);
+    expect(llm).toMatch(/lastServedBy = \{ provider, model, \.\.\.\(lastTokens \? \{ tokens: lastTokens \} : \{\}\) \};/);
+  });
+
+  it("records the tokens each call cost, so the Council's daily budget can be measured", () => {
+    const llm = readFileSync(path.join(ROOT, "system/src/llm.ts"), "utf8");
+    // Groq reports usage the OpenAI way; Ollama as eval counts. Both, or a
+    // provider's calls go unmetered and a budget built on them undercounts.
+    expect(llm).toMatch(/tokens\(body\?\.usage\?\.prompt_tokens, body\?\.usage\?\.completion_tokens\)/);
+    expect(llm.match(/tokens\([^)]*prompt_eval_count[^)]*eval_count\)/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    // Reset per call, so one call's count is never reported as another's.
+    expect(llm.match(/lastTokens = null;/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
   });
 });
 
