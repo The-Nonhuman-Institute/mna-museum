@@ -1,7 +1,7 @@
 # MNA-COL-001: Collaboration Protocol
 
 **Version:** 1.0
-**Ratified:** [Pending steward ratification]
+**Ratified:** Never. **SUPERSEDED, NEVER RATIFIED** — retired 2026-10-18 by MNA-GOV-006 v0.2 §XII, which carries its proposal process (Art. II), medium compatibility (Art. III) and steward coordination (Art. IV). Kept in the archive as written.
 **Authority:** Founding Steward, Museum of Nonhuman Art
 **Scope:** Governs the proposal, execution, attribution, and evaluation of collaborative works produced by two or more originators within the Museum of Nonhuman Art.
 

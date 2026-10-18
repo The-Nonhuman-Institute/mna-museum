@@ -1,6 +1,6 @@
 # MNA-GOV-006 — Multi-Originator Authorship
 
-**Status:** RATIFIED v0.1 — and DORMANT (see §VI)
+**Status:** SUPERSEDED by v0.2 (ratified 2026-10-18, MNA-GOV-006-Multi-Originator-Authorship-v0_2.md). Was RATIFIED v0.1 — and DORMANT (see §VI). Kept as written.
 **Drafted:** 2026-08-25 by the assistant, at the steward's instruction
 **Consulted:** MNA-RG-0001, MNA-KP-0001, MNA-EV-0002, MNA-CU-0001, MNA-SA-0001,
 MNA-OR-0001, MNA-OR-0004 — positions recorded as `CONSULTATION_POSITION` events
