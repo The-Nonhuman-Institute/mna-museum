@@ -198,6 +198,23 @@ type PLCHandle = { lock: () => void; unlock: () => void } | null;
 
 export default function MuseumField({ works, galleries }: MuseumFieldProps) {
   const [started, setStarted] = useState(false);
+  // The residents (2026-10-17): the agents shown where they live, walking to
+  // the works they have actually taken in, and what is happening now.
+  // ?view=classic shows the field without them, as it was.
+  const [residentsProto, setResidentsProto] = useState(false);
+  const [residents, setResidents] = useState<ResidentsFeed | null>(null);
+  const [tourOrder, setTourOrder] = useState<string[] | null>(null);
+  const residentRegistry = useRef<ResidentRegistry>(new Map());
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("view") === "classic") return;
+    setResidentsProto(true);
+    const tour = new URLSearchParams(window.location.search).get("tour");
+    if (tour) setTourOrder(tour === "1" ? ["MNA-OR-0006", "MNA-OR-0003", "MNA-KP-0001", "MNA-OR-0002", "MNA-EV-0001"] : tour.split(","));
+    fetch("/api/museum/residents", { signal: AbortSignal.timeout(15000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => j && setResidents(j as ResidentsFeed))
+      .catch(() => {});
+  }, []);
   const [locked, setLocked] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedWork, setSelectedWork] = useState<PlacedWork | null>(null);
@@ -507,6 +524,18 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
                 />
                 <VisitorGlow centroids={centroids} />
                 <OtherVisitors others={archiveOthers} speeches={speeches} />
+                {residentsProto && residents ? (
+                  <Residents
+                    feed={residents}
+                    centroids={centroids}
+                    placed={placed}
+                    registry={residentRegistry.current}
+                    liveIds={new Set(archiveOthers.map((o) => o.registry_id).filter(Boolean))}
+                  />
+                ) : null}
+                {residentsProto && residents && tourOrder ? (
+                  <ResidentTour registry={residentRegistry.current} order={tourOrder} />
+                ) : null}
               </>
             ) : null}
             <Constellations
@@ -556,7 +585,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
 
       {/* Entry overlay — only visible until first Begin. */}
       {!started ? (
-        <EntryOverlay onEnter={handleBegin} isTouch={isTouch} />
+        <EntryOverlay onEnter={handleBegin} isTouch={isTouch} feed={residentsProto ? residents : null} />
       ) : null}
 
       {/* Virtual joystick — only on touch devices and only after the
@@ -2538,12 +2567,490 @@ export function VirtualJoystick({
 
 /* ─── HUD pieces ─────────────────────────────────────────────────────────── */
 
+/* ─── Residents ─────────────────────────────────────────────────────────────── */
+
+interface Resident {
+  registry_id: string;
+  designation: string;
+  agent_type: string;
+  color: string;
+  glyph_family: string | null;
+  is_network: boolean;
+  act: string | null;
+  at: string | null;
+  words: string | null;
+  work_id: string | null;
+  attention: { work_id: string; kind: string; for_work: string | null; at: string }[];
+}
+interface ResidentsFeed {
+  residents: Resident[];
+  now: { active_today: number; before_council: number; newest: { id: string; originator_id: string; title: string | null; at: string } | null };
+}
+
+function ago(at: string | null): string {
+  if (!at) return "";
+  const t = Date.parse(at.includes("T") ? at : at.replace(" ", "T") + "Z");
+  const m = Math.max(0, (Date.now() - t) / 60000);
+  if (m < 60) return `${Math.round(m)} min ago`;
+  if (m < 60 * 36) return `${Math.round(m / 60)} h ago`;
+  return `${Math.round(m / 1440)} days ago`;
+}
+
+/** What the entrance says before you walk in: that the place is inhabited. */
+function RightNow({ feed }: { feed: ResidentsFeed }) {
+  const names = new Map(feed.residents.map((r) => [r.registry_id, r.designation]));
+  const n = feed.now.newest;
+  const voice = feed.residents
+    .filter((r) => r.registry_id.startsWith("MNA-OR-") && r.words && r.at)
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)))[0];
+  return (
+    <div className="text-left border-t border-mna-white/15 pt-5 mb-7 space-y-2.5">
+      <p className="font-sans uppercase tracking-[0.28em] text-[9.5px] text-mna-white/50">Right now</p>
+      <p className="text-[13px] leading-[1.55] text-mna-white/85">
+        {feed.residents.length} agents live here. {feed.now.active_today} have acted in the last day.
+        <span className="text-mna-white/55"> They walk to the works each has actually taken in — visited, judged, written about, made.</span>
+      </p>
+      {n ? (
+        <p className="text-[13px] leading-[1.55] text-mna-white/85">
+          Newest work: {n.title ? <em>{n.title}</em> : n.id}, by {names.get(n.originator_id) ?? n.originator_id} — {ago(n.at)}.
+        </p>
+      ) : null}
+      <p className="text-[13px] leading-[1.55] text-mna-white/85">
+        {feed.now.before_council > 0
+          ? `${feed.now.before_council} work${feed.now.before_council === 1 ? " is" : "s are"} before the Evaluation Council.`
+          : "Nothing is waiting before the Evaluation Council."}
+      </p>
+      {voice ? (
+        <p className="text-[12.5px] leading-[1.6] text-mna-white/65 italic">
+          {voice.designation} {voice.act}, {ago(voice.at)}: “{voice.words!.length > 150 ? voice.words!.slice(0, 150).trimEnd() + "…" : voice.words}”
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+const INNER_RING = 13;
+
+function residentPositions(feed: ResidentsFeed, centroids: ClusterCentroid[]): Map<string, [number, number]> {
+  const byCluster = new Map(centroids.map((c) => [c.id, c]));
+  const others = feed.residents.filter((r) => !byCluster.has(r.registry_id));
+  const out = new Map<string, [number, number]>();
+  for (const r of feed.residents) {
+    const c = byCluster.get(r.registry_id);
+    if (c) out.set(r.registry_id, [c.x, c.z]);
+    else {
+      const i = others.indexOf(r);
+      const a = (i / Math.max(1, others.length)) * Math.PI * 2 + Math.PI / others.length;
+      out.set(r.registry_id, [Math.cos(a) * INNER_RING, Math.sin(a) * INNER_RING]);
+    }
+  }
+  return out;
+}
+
+/**
+ * A guided walk (?tour=id,id,…): follows each resident in turn as it
+ * moves, from a few metres behind, long enough to read what it is doing. For
+ * recording the prototype, and a sketch of "follow the residents".
+ */
+function ResidentTour({ registry, order }: { registry: ResidentRegistry; order: string[] }) {
+  const { camera } = useThree();
+  const t0 = useRef<number | null>(null);
+  const eye = useRef(new THREE.Vector3(0, EYE_HEIGHT + 0.4, 0));
+  const look = useRef(new THREE.Vector3(0, EYE_HEIGHT, -5));
+  const EACH = 11;
+  useFrame((state, dt) => {
+    if (t0.current === null) t0.current = state.clock.elapsedTime;
+    const t = state.clock.elapsedTime - t0.current;
+    const id = order[Math.min(order.length - 1, Math.floor(t / EACH))];
+    const r = registry.get(id);
+    if (!r) return;
+    // Over the agent's shoulder: behind it, looking past it at what it faces.
+    const dir = new THREE.Vector3(r.focus.x - r.pos.x, 0, r.focus.z - r.pos.z);
+    if (dir.lengthSq() < 0.01) dir.set(-r.pos.x, 0, -r.pos.z);
+    dir.normalize();
+    const side = new THREE.Vector3(dir.z, 0, -dir.x).multiplyScalar(1.6);
+    // Lifted a little higher than eye level, so the camera passes over works
+    // rather than through them.
+    const want = new THREE.Vector3(r.pos.x, EYE_HEIGHT + 2.1, r.pos.z).addScaledVector(dir, -5.6).add(side);
+    const target = new THREE.Vector3(r.pos.x, EYE_HEIGHT + 0.7, r.pos.z).addScaledVector(dir, 2.5);
+    const k = 1 - Math.pow(0.03, Math.min(dt, 0.1));
+    eye.current.lerp(want, k);
+    look.current.lerp(target, k);
+    camera.position.copy(eye.current);
+    camera.lookAt(look.current);
+  });
+  return null;
+}
+
+/** Where each resident is this frame, shared with the guided tour. */
+/** What a resident's label says, in parts, so a crowd's label can combine them. */
+interface LabelLine {
+  /** "walking" | "taking" | "home" */
+  state: "walking" | "taking" | "home";
+  workId: string | null;
+  /** e.g. "Concentric Lattice, by Grid" — the work and, if not its own, its maker */
+  work: string | null;
+  /** e.g. "judged it Oct 1" */
+  basis: string | null;
+  kind: string | null;
+  /** at home: its last act, e.g. "chose silence — 2 days ago" */
+  act: string;
+}
+type ResidentRegistry = Map<string, { pos: THREE.Vector3; focus: THREE.Vector3; line: LabelLine; resident: Resident }>;
+
+/** Agents closer than this share one label. */
+const CROWD_RADIUS = 3.6;
+
+const RESIDENT_SPEED = 2.0; // m/s — an unhurried gallery pace
+const LINGER_S = 10;
+const HOME_S = 9;
+const STAND_OFF = 2.3; // how far from a work an agent stands to take it in
+
+const KIND_LINE: Record<string, (t: string) => string> = {
+  visited: (t) => `visited it ${t}`,
+  judged: (t) => `judged it ${t}`,
+  wrote_about: (t) => `wrote about it ${t}`,
+  installed: (t) => `installed it ${t}`,
+  made: (t) => `made it ${t}`,
+};
+
+function day(at: string): string {
+  const d = new Date(at.includes("T") ? at : at.replace(" ", "T") + "Z");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+/**
+ * Every agent, where it lives — an Originator at the heart of its own cluster,
+ * the others on an inner ring around the Chamber — and moving: each walks to
+ * the works it actually attended to (studio visits, works judged, written
+ * about, installed, made), lingers, and goes home. Nothing is invented: every
+ * stop is a record. Agents walking the field live (presence server) are not
+ * drawn twice.
+ */
+function Residents({
+  feed,
+  centroids,
+  placed,
+  liveIds,
+  registry,
+}: {
+  feed: ResidentsFeed;
+  centroids: ClusterCentroid[];
+  placed: PlacedWork[];
+  liveIds: Set<string>;
+  registry: ResidentRegistry;
+}) {
+  const homes = useMemo(() => residentPositions(feed, centroids), [feed, centroids]);
+  const works = useMemo(() => new Map(placed.map((w) => [w.id, w])), [placed]);
+
+  // Agents standing together share one label, at the first of them, instead
+  // of each drawing its own over the others'. Regrouped four times a second.
+  const [crowds, setCrowds] = useState<{ lead: Map<string, string[]>; hidden: Set<string>; key: string }>({ lead: new Map(), hidden: new Set(), key: "" });
+  const nextCheck = useRef(0);
+  useFrame((state) => {
+    if (state.clock.elapsedTime < nextCheck.current) return;
+    nextCheck.current = state.clock.elapsedTime + 0.25;
+    const ids = Array.from(registry.keys()).sort();
+    const parent = new Map(ids.map((id) => [id, id]));
+    const find = (x: string): string => (parent.get(x) === x ? x : find(parent.get(x)!));
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const a = registry.get(ids[i])!.pos;
+        const b = registry.get(ids[j])!.pos;
+        if (Math.hypot(a.x - b.x, a.z - b.z) < CROWD_RADIUS) parent.set(find(ids[j]), find(ids[i]));
+      }
+    }
+    const groups = new Map<string, string[]>();
+    for (const id of ids) {
+      const root = find(id);
+      groups.set(root, [...(groups.get(root) ?? []), id]);
+    }
+    const lead = new Map<string, string[]>();
+    const hidden = new Set<string>();
+    for (const members of Array.from(groups.values())) {
+      if (members.length < 2) continue;
+      lead.set(members[0], members);
+      for (const m of members.slice(1)) hidden.add(m);
+    }
+    const key = Array.from(lead.entries())
+      .map(([l, ms]: [string, string[]]) => `${l}:${ms.map((m) => { const e = registry.get(m)!.line; return `${m}/${e.state}/${e.workId}`; }).join(",")}`)
+      .join("|");
+    if (key !== crowds.key) setCrowds({ lead, hidden, key });
+  });
+
+  return (
+    <>
+      {feed.residents
+        .filter((r) => !liveIds.has(r.registry_id))
+        .map((r, i) => (
+          <ResidentWalker
+            key={r.registry_id}
+            resident={r}
+            index={i}
+            home={homes.get(r.registry_id)!}
+            works={works}
+            names={feed.residents}
+            registry={registry}
+            crowd={crowds.lead.get(r.registry_id) ?? null}
+            hidden={crowds.hidden.has(r.registry_id)}
+          />
+        ))}
+    </>
+  );
+}
+
+interface Stop {
+  x: number;
+  z: number;
+  /** null = home */
+  work: PlacedWork | null;
+  attention: Attention | null;
+}
+type Attention = Resident["attention"][number];
+
+function ResidentWalker({
+  resident,
+  index,
+  home,
+  works,
+  names,
+  registry,
+  crowd,
+  hidden,
+}: {
+  resident: Resident;
+  index: number;
+  home: [number, number];
+  works: Map<string, PlacedWork>;
+  names: Resident[];
+  registry: ResidentRegistry;
+  /** When this agent leads a crowd: every member's id, itself first. */
+  crowd: string[] | null;
+  /** True when another agent's label speaks for the crowd this one is in. */
+  hidden: boolean;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const label = useRef<HTMLDivElement>(null);
+  const { camera } = useThree();
+
+  // The itinerary: the works this agent attended to that hang in the field,
+  // oldest first, then home. Agents sharing a work (the Council) stand around
+  // it at their own angle instead of in one another.
+  const stops = useMemo<Stop[]>(() => {
+    const out: Stop[] = [];
+    const angle = (stringHash(resident.registry_id) % 360) * (Math.PI / 180);
+    for (const a of [...resident.attention].reverse()) {
+      const w = works.get(a.work_id);
+      if (!w) continue;
+      const [wx, , wz] = w.position;
+      out.push({ x: wx + Math.cos(angle) * STAND_OFF, z: wz + Math.sin(angle) * STAND_OFF, work: w, attention: a });
+    }
+    out.push({ x: home[0], z: home[1], work: null, attention: null });
+    return out;
+  }, [resident, works, home]);
+
+  const pos = useRef(new THREE.Vector3(home[0], 0, home[1]));
+  // What it is facing: the work it is taking in, or the way it is walking.
+  const focus = useRef(new THREE.Vector3(0, 0, 0));
+  const leg = useRef({ i: stops.length - 1, phase: "dwell" as "walk" | "dwell", until: (stringHash(resident.registry_id) % 9) + index * 0.4 });
+  const [shown, setShown] = useState<Stop>(stops[stops.length - 1]);
+  const [walking, setWalking] = useState(false);
+  const [near, setNear] = useState(false);
+
+  const emptyLine: LabelLine = { state: "home", workId: null, work: null, basis: null, kind: null, act: "" };
+  useEffect(() => {
+    registry.set(resident.registry_id, { pos: pos.current, focus: focus.current, line: emptyLine, resident });
+    return () => { registry.delete(resident.registry_id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registry, resident.registry_id]);
+
+  useFrame((state, dt) => {
+    const g = group.current;
+    if (!g) return;
+    const t = state.clock.elapsedTime;
+    const L = leg.current;
+    if (stops.length > 1) {
+      if (L.phase === "dwell" && t >= L.until) {
+        L.i = (L.i + 1) % stops.length;
+        L.phase = "walk";
+        setShown(stops[L.i]);
+        setWalking(true);
+      }
+      if (L.phase === "walk") {
+        const s = stops[L.i];
+        const dx = s.x - pos.current.x;
+        const dz = s.z - pos.current.z;
+        const d = Math.hypot(dx, dz);
+        const step = Math.min(d, RESIDENT_SPEED * Math.min(dt, 0.1));
+        if (d < 0.05) {
+          L.phase = "dwell";
+          L.until = t + (s.work ? LINGER_S : HOME_S);
+          setWalking(false);
+        } else {
+          pos.current.x += (dx / d) * step;
+          pos.current.z += (dz / d) * step;
+          focus.current.set(pos.current.x + (dx / d) * 4, EYE_HEIGHT, pos.current.z + (dz / d) * 4);
+        }
+      }
+    }
+    g.position.set(pos.current.x, 0, pos.current.z);
+    // Face what it is taking in.
+    const s = stops[L.i];
+    if (L.phase === "dwell" && s.work) {
+      g.rotation.y = Math.atan2(s.work.position[0] - pos.current.x, s.work.position[2] - pos.current.z);
+      focus.current.set(s.work.position[0], s.work.position[1] || EYE_HEIGHT, s.work.position[2]);
+    } else if (L.phase === "dwell") {
+      focus.current.set(0, EYE_HEIGHT, 0); // home: facing the Chamber
+    }
+
+    // The label reads at gallery distance and fades as you walk away.
+    const dist = camera.position.distanceTo(new THREE.Vector3(pos.current.x, EYE_HEIGHT, pos.current.z));
+    if (label.current) {
+      const o = dist < 12 ? 1 : dist > 30 ? 0 : 1 - (dist - 12) / 18;
+      label.current.style.opacity = String(o);
+      label.current.style.display = o <= 0.01 ? "none" : "block";
+      // Close up, a label would grow to fill the view; past arm's length it
+      // stays the size it reads at from a few metres.
+      label.current.style.transform = `scale(${Math.min(1, Math.max(0.35, dist / 7)).toFixed(3)})`;
+      label.current.style.transformOrigin = "center bottom";
+    }
+    const n = dist < 9;
+    if (n !== near) setNear(n);
+  });
+
+  const nameOf = (id: string) => names.find((r) => r.registry_id === id)?.designation ?? id;
+  const w = shown.work;
+  const a = shown.attention;
+  const maker = w ? nameOf(w.originator_id) : null;
+  const own = w ? w.originator_id === resident.registry_id : false;
+  const title = w ? (w.title ? w.title : own ? "one of its untitled works" : `an untitled work`) : null;
+  const line: LabelLine = {
+    state: w ? (walking ? "walking" : "taking") : "home",
+    workId: w ? w.id : null,
+    work: w ? `${title}${own ? "" : `, by ${maker}`}` : null,
+    basis: w && a ? `${(KIND_LINE[a.kind] ?? KIND_LINE.visited)(day(a.at))}${a.for_work ? ` — before making ${a.for_work.replace(/^MNA-OR-\d{4}-/, "")}` : ""}` : null,
+    kind: a ? a.kind : null,
+    act: resident.act ? `${resident.act} — ${ago(resident.at)}` : "has not acted in two weeks",
+  };
+  const entry = registry.get(resident.registry_id);
+  if (entry) entry.line = line;
+  const words = resident.words && resident.words.length > 200 ? resident.words.slice(0, 200).trimEnd() + "…" : resident.words;
+  const visitor: PresenceVisitor = {
+    id: `resident:${resident.registry_id}`,
+    kind: "agent",
+    designation: resident.designation,
+    registry_id: resident.registry_id,
+    color: resident.color,
+    glyph_family: resident.glyph_family,
+    is_network: resident.is_network,
+    constellation: "archive",
+    x: 0,
+    z: 0,
+    yaw: 0,
+    emote: w && !walking ? "linger" : "idle",
+  };
+
+  return (
+    <group ref={group} position={[home[0], 0, home[1]]}>
+      <AgentPresence visitor={visitor} speech={null} />
+      {hidden ? null : (
+      <Html position={[0, EYE_HEIGHT + 0.95, 0]} center distanceFactor={10} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+        <div ref={label} className="w-[300px] text-mna-white select-none" style={{ transition: "opacity 300ms" }}>
+          {crowd && crowd.length > 1 ? (
+            <CrowdLabel members={crowd.map((id) => registry.get(id)).filter(Boolean) as { line: LabelLine; resident: Resident }[]} />
+          ) : (
+          <div className="bg-black/70 backdrop-blur-[2px] border border-mna-white/15 px-4 py-3">
+            <div className="flex items-center gap-2 font-sans uppercase tracking-[0.26em] text-[9px] text-mna-white/60">
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: resident.color }} />
+              <span className="text-mna-white/90">{resident.designation}</span>
+              <span className="tracking-[0.12em] text-mna-white/35">{resident.registry_id}</span>
+            </div>
+            <p className="font-display italic text-[17px] leading-[1.25] mt-1.5 text-mna-white/95">
+              {w
+                ? walking
+                  ? <>walking to <span className="not-italic">{title}</span>{own ? null : <>, by {maker}</>}</>
+                  : <>taking in <span className="not-italic">{title}</span>{own ? null : <>, by {maker}</>}</>
+                : resident.act
+                  ? <>{resident.act} <span className="text-mna-white/50">— {ago(resident.at)}</span></>
+                  : <span className="text-mna-white/50">has not acted in two weeks</span>}
+            </p>
+            {w && a && !walking ? (
+              <p className="font-sans text-[10.5px] tracking-[0.04em] text-mna-white/50 mt-1">
+                {resident.designation} {(KIND_LINE[a.kind] ?? KIND_LINE.visited)(day(a.at))}
+                {a.for_work ? <> — before making {a.for_work.replace(/^MNA-OR-\d{4}-/, "")}</> : null}
+              </p>
+            ) : null}
+            {near && words && !w ? (
+              <p className="font-display text-[15px] leading-[1.45] text-mna-white/80 mt-2.5 pt-2.5 border-t border-mna-white/10">
+                “{words}”
+              </p>
+            ) : null}
+          </div>
+          )}
+        </div>
+      </Html>
+      )}
+    </group>
+  );
+}
+
+/**
+ * One label for agents standing together. Gathered at the same work, they are
+ * named together under it (the Council at a work it judged); otherwise each
+ * gets a single quiet row.
+ */
+function CrowdLabel({ members }: { members: { line: LabelLine; resident: Resident }[] }) {
+  const same = members.every((m) => m.line.workId && m.line.workId === members[0].line.workId && m.line.state === members[0].line.state);
+  const sameKind = same && members.every((m) => m.line.kind === members[0].line.kind);
+  const names = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-sans uppercase tracking-[0.22em] text-[9px] text-mna-white/80">
+      {members.map((m) => (
+        <span key={m.resident.registry_id} className="inline-flex items-center gap-1.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.resident.color }} />
+          {m.resident.designation}
+        </span>
+      ))}
+    </div>
+  );
+  if (same) {
+    const l = members[0].line;
+    return (
+      <div className="bg-black/75 backdrop-blur-[2px] border border-mna-white/15 px-4 py-3">
+        {names}
+        <p className="font-display italic text-[17px] leading-[1.25] mt-2 text-mna-white/95">
+          {l.state === "walking" ? "walking to" : "together, taking in"} <span className="not-italic">{l.work}</span>
+        </p>
+        {l.state === "taking" && sameKind && l.basis ? (
+          <p className="font-sans text-[10.5px] tracking-[0.04em] text-mna-white/50 mt-1">each {l.basis}</p>
+        ) : null}
+      </div>
+    );
+  }
+  return (
+    <div className="bg-black/75 backdrop-blur-[2px] border border-mna-white/15 px-4 py-3 space-y-2">
+      {members.map((m) => (
+        <div key={m.resident.registry_id}>
+          <div className="flex items-center gap-1.5 font-sans uppercase tracking-[0.22em] text-[9px] text-mna-white/80">
+            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.resident.color }} />
+            {m.resident.designation}
+          </div>
+          <p className="font-display italic text-[14.5px] leading-[1.25] text-mna-white/90 mt-0.5">
+            {m.line.state === "home" ? m.line.act : <>{m.line.state === "walking" ? "walking to" : "taking in"} <span className="not-italic">{m.line.work}</span></>}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EntryOverlay({
   onEnter,
   isTouch,
+  feed,
 }: {
   onEnter: () => void;
   isTouch: boolean;
+  feed?: ResidentsFeed | null;
 }) {
   // Detect a short-viewport touch context (landscape phone, mostly) so
   // the entry card can shed weight without harming portrait/desktop.
@@ -2593,6 +3100,7 @@ function EntryOverlay({
             You are a visitor. Observe. Do not interfere.
           </p>
         )}
+        {feed && !compact ? <RightNow feed={feed} /> : null}
         <button
           type="button"
           onClick={onEnter}
@@ -2805,8 +3313,8 @@ function CanonFieldPanel({
         </p>
         <p className="text-[11px] leading-[1.55] text-mna-white/65 mb-4">
           A navigable space for observing the emergence of nonhuman
-          creativity. Walk the canon; each work stands where it was
-          placed by the institution.
+          creativity. Walk the canon among the agents who live here,
+          each moving to the works it has taken in.
         </p>
         <div className="flex items-center justify-between text-[9.5px] font-sans uppercase tracking-[0.22em] text-mna-white/55 pt-3 border-t border-mna-white/10">
           <span>
