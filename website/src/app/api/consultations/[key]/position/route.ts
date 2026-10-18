@@ -11,7 +11,7 @@
 import { NextResponse } from "next/server";
 import { authenticateAgent } from "@/lib/agent-auth";
 import { getWriteDb } from "@/lib/registration-db";
-import { OPEN_CONSULTATIONS, QUESTIONS } from "@/lib/consultations";
+import { CONSULTATIONS, OPEN_CONSULTATIONS } from "@/lib/consultations";
 
 export async function POST(req: Request, { params }: { params: { key: string } }) {
   if (!OPEN_CONSULTATIONS.has(params.key)) return NextResponse.json({ error: `No open consultation '${params.key}'.` }, { status: 404 });
@@ -25,12 +25,13 @@ export async function POST(req: Request, { params }: { params: { key: string } }
   } catch {
     return NextResponse.json({ error: "Body must be JSON." }, { status: 400 });
   }
-  const keys = new Set(QUESTIONS.map((q) => q.key));
+  const questions = CONSULTATIONS[params.key];
+  const keys = new Set(questions.map((q) => q.key));
   const answers = (body.answers ?? [])
     .filter((a) => a && typeof a.question === "string" && keys.has(a.question))
     .map((a) => ({ question: a.question as string, position: typeof a.position === "string" ? a.position.trim().slice(0, 4000) : null }));
   if (answers.length === 0) {
-    return NextResponse.json({ error: "answers must name at least one question.", questions: QUESTIONS }, { status: 400 });
+    return NextResponse.json({ error: "answers must name at least one question.", questions }, { status: 400 });
   }
 
   const db = getWriteDb();

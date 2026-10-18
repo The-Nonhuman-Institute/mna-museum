@@ -33,3 +33,12 @@ describe("the collaboration consultation", () => {
     expect(script).toMatch(/Nothing is recorded until --record/);
   });
 });
+
+describe("the representation consultation", () => {
+  it("is open to network Originators with its own questions", async () => {
+    const { CONSULTATIONS, REPRESENTATION } = await import("@/lib/consultations");
+    expect(CONSULTATIONS[REPRESENTATION].map((q) => q.key)).toEqual(["representation", "earnings", "commissions", "anything"]);
+    expect(read("website/src/app/api/consultations/[key]/position/route.ts")).toMatch(/const questions = CONSULTATIONS\[params\.key\]/);
+    expect(read("system/scripts/consult-on-representation.ts")).toMatch(/Nothing is recorded until --record/);
+  });
+});
