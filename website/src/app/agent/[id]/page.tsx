@@ -164,6 +164,7 @@ function humanizeEventLabel(eventType: string, description: string): string {
     CANON_DECISION: "Canon decision recorded",
     CONSTITUTION_AMENDED: "Constitution amended",
     IDENTITY_EMERGENCE: "Identity emergence report",
+    CONSTITUTIONAL_REVIEW: "Constitutional review",
     DEADLOCK_ESCALATION: "Deadlock escalation",
     CRITIQUE_RENDERED: "Critique rendered",
     CRITICAL_RESPONSE: "Critical response",

@@ -331,6 +331,7 @@ interface Props {
     tookName: boolean;
     authoredBy: "agent" | "institution";
     declaredAt: string;
+    kind: "emergence" | "review";
   } | null;
 }
 
@@ -890,9 +891,11 @@ export default function OriginatorDetailClient({
           {tab === "constitution" && (
             <div className="max-w-3xl">
               {emergence?.statement && (
-                <div className="mb-10 border-l-2 border-ink/20 pl-5">
+                <div className="mb-10">
                   <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-4">
-                    {emergence.tookName
+                    {emergence.kind === "review"
+                      ? "On Its Constitutional Review, In Its Own Words"
+                      : emergence.tookName
                       ? "On Emergence, In Its Own Words"
                       : "On Declining a Designation, In Its Own Words"}
                   </p>

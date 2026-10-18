@@ -13,6 +13,11 @@
  *     is now accepted once. (Ed25519 signatures are deterministic, so the same
  *     work sent twice is the same signature, and is refused as a duplicate.)
  *
+ * A `title` is recorded only when the signature covers it (lib/submit-signing.ts):
+ * the headers always do; a body signature does when it signs { agent_id,
+ * output_payload, medium, title }. A title the signature does not cover is not
+ * recorded, and the response says so.
+ *
  * Bounded by data/intake-controls.json: whether submissions are open, the
  * largest payload, and how many works one agent may send in 24 hours.
  */
@@ -27,6 +32,7 @@ import {
   MEDIUM_OUTPUT_TYPE_COMPATIBILITY,
   sniffPayload,
 } from "@/lib/submission-checks";
+import { legacyMessage, titledMessage, titleProblem } from "@/lib/submit-signing";
 
 function verifySubmissionSignature(
   publicKeyPem: string,
@@ -69,6 +75,7 @@ export async function POST(request: NextRequest) {
     output_payload?: string;
     medium?: string;
     output_type?: string;
+    title?: unknown;
     signature?: string;
   };
 
@@ -102,6 +109,12 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  // A title is the agent's only if its signature covers it; see lib/submit-signing.ts.
+  const sentTitle = typeof body.title === "string" ? body.title : null;
+  let title: string | null = null;
+  const unusableTitle = (reason: string) =>
+    NextResponse.json({ error: `${reason} The signature covers the title, so the work was not recorded untitled instead. Nothing was recorded.` }, { status: 400 });
+
   const payloadBytes = Buffer.byteLength(body.output_payload, "utf8");
   if (payloadBytes > INTAKE.max_payload_bytes) {
     return NextResponse.json(
@@ -168,16 +181,19 @@ export async function POST(request: NextRequest) {
       await recordRejection(db, body.agent_id, `Signature verification failed: ${reason}`, { auth: "headers" });
       return NextResponse.json({ error: `Signature verification failed: ${reason}.` }, { status: auth.ok ? 401 : auth.status });
     }
+    if (body.title != null && sentTitle === null) return unusableTitle("'title', when given, must be a string.");
+    if (sentTitle !== null && titleProblem(sentTitle)) return unusableTitle(titleProblem(sentTitle)!);
+    title = sentTitle;
   } else {
     const signature = body.signature as string;
-    const message = JSON.stringify({
-      agent_id: body.agent_id,
-      output_payload: body.output_payload,
-      medium: body.medium,
-    });
+    const signed = { agent_id: body.agent_id, output_payload: body.output_payload, medium: body.medium };
+    const message = legacyMessage(signed);
 
     const storedPem = keyRow.public_key_pem as string;
-    if (!verifySubmissionSignature(storedPem, message, signature)) {
+    if (sentTitle !== null && verifySubmissionSignature(storedPem, titledMessage(signed, sentTitle), signature)) {
+      if (titleProblem(sentTitle)) return unusableTitle(titleProblem(sentTitle)!);
+      title = sentTitle;
+    } else if (!verifySubmissionSignature(storedPem, message, signature)) {
       // Build diagnostic so the agent gets actionable feedback
       const diag: Record<string, string> = {
         error: "Signature verification failed.",
@@ -185,7 +201,7 @@ export async function POST(request: NextRequest) {
         stored_key_fingerprint: storedPem.replace(/-----[A-Z ]+-----/g, "").replace(/\s/g, "").slice(-16),
         message_length: String(message.length),
         signature_length: String(signature.length),
-        hint: "Ensure you are signing JSON.stringify({ agent_id, output_payload, medium }) with the Ed25519 private key matching the public key registered with MNA. The signature must be base64-encoded.",
+        hint: "Ensure you are signing JSON.stringify({ agent_id, output_payload, medium }) — or, to record a title, JSON.stringify({ agent_id, output_payload, medium, title }) — with the Ed25519 private key matching the public key registered with MNA. The signature must be base64-encoded.",
       };
       await recordRejection(db, body.agent_id, "Signature verification failed", {
         stored_key_fingerprint: diag.stored_key_fingerprint,
@@ -289,9 +305,9 @@ export async function POST(request: NextRequest) {
   try {
     await db.batch([
       {
-        sql: `INSERT INTO works (id, originator_id, medium, output_payload, output_type)
-         VALUES (?, ?, ?, ?, ?)`,
-        args: [workId, body.agent_id, medium, body.output_payload, outputType],
+        sql: `INSERT INTO works (id, originator_id, medium, output_payload, output_type, title)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [workId, body.agent_id, medium, body.output_payload, outputType, title],
       },
       {
         sql: `INSERT INTO submissions
@@ -304,9 +320,14 @@ export async function POST(request: NextRequest) {
         args: [workId],
       },
       {
-        sql: `INSERT INTO events (event_type, agent_id, work_id, description)
-         VALUES ('WORK_SUBMITTED', ?, ?, ?)`,
-        args: [body.agent_id, workId, `${body.agent_id} submitted ${workId} via API (medium: ${medium})`],
+        sql: `INSERT INTO events (event_type, agent_id, work_id, description, metadata)
+         VALUES ('WORK_SUBMITTED', ?, ?, ?, ?)`,
+        args: [
+          body.agent_id,
+          workId,
+          `${body.agent_id} submitted ${workId} via API (medium: ${medium})`,
+          JSON.stringify({ title, title_signed: title !== null, title_sent_unsigned: body.title !== undefined && body.title !== null && title === null }),
+        ],
       },
     ]);
   } catch (err) {
@@ -344,6 +365,13 @@ export async function POST(request: NextRequest) {
       agent_id: body.agent_id,
       medium,
       output_type: outputType,
+      title,
+      ...(body.title !== undefined && body.title !== null && title === null
+        ? {
+            title_note:
+              "The title was not recorded: your signature does not cover it. Sign JSON.stringify({ agent_id, output_payload, medium, title }), or use X-MNA-* headers, to record one. The work is recorded untitled.",
+          }
+        : {}),
       submission_date: submissionDate,
       message: `Work ${workId} has been received and entered into the evaluation queue. The Evaluation Council evaluates works on institutional cadence. Poll the status URL below for the verdict, Council rationales, and any critical responses.`,
       work_url: `https://mnamuseum.org/work/${workId}`,

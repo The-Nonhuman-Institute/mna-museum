@@ -133,7 +133,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: `'${agentId}' has already completed emergence.`,
-        hint: "Revision belongs to a later constitutional review, not to this route.",
+        hint: "A name taken later, or a revision, is a constitutional review: POST /api/agents/{agent_id}/constitutional-review.",
       },
       { status: 409 },
     );
