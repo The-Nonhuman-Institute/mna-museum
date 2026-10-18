@@ -2580,7 +2580,7 @@ interface Resident {
   at: string | null;
   words: string | null;
   work_id: string | null;
-  attention: { work_id: string; kind: string; for_work: string | null; at: string; with?: string }[];
+  attention: { work_id: string; kind: string; for_work: string | null; at: string; with?: string; seen?: string | null }[];
 }
 interface Encounter {
   id: number;
@@ -2743,6 +2743,7 @@ const KIND_LINE: Record<string, (t: string) => string> = {
   wrote_about: (t) => `wrote about it ${t}`,
   installed: (t) => `installed it ${t}`,
   made: (t) => `made it ${t}`,
+  looked_at: (t) => `looked closely at it ${t}`,
 };
 
 function day(at: string): string {
@@ -3012,6 +3013,11 @@ function ResidentWalker({
             {w && a && !walking ? (
               <p className="font-sans text-[10.5px] tracking-[0.04em] text-mna-white/50 mt-1">
                 {resident.designation} {line.basis}
+              </p>
+            ) : null}
+            {w && a?.seen && !walking ? (
+              <p className="font-display text-[15px] leading-[1.45] text-mna-white/85 mt-2.5 pt-2.5 border-t border-mna-white/10">
+                “{a.seen.length > 240 ? a.seen.slice(0, 240).trimEnd() + "…" : a.seen}”
               </p>
             ) : null}
             {near && words && !w ? (

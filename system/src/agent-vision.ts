@@ -21,7 +21,8 @@
  */
 
 import { createClient } from "@libsql/client";
-import { generateWithVision, visionAvailable } from "./llm";
+import { generateSeeing, generateWithVision, visionAvailable } from "./llm";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
 import {
   retrieveMemories,
   memoriesAsPromptSection,
@@ -222,13 +223,20 @@ function buildUserPrompt(args: PerceiveArgs, memorySection: string): string {
   return `${mem}Work: ${args.work.id} — ${wTitle}\nBy: ${orig}${phase}\nMedium: ${args.work.medium ?? "unknown"}${note}${priors}\n\nRecord your observation as JSON.`;
 }
 
+/**
+ * The work, as the visitor's browser would draw it: its preview PNG, base64.
+ * Until 2026-10-18 perception needed a provider with URL vision and never had
+ * one, so every visit recorded "vision unavailable". The Council has seen
+ * through Gemma on Ollama since 2026-10-16, free; perception now sees the same
+ * way when the text provider cannot.
+ */
+async function previewBase64(url: string): Promise<string> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`preview ${res.status}`);
+  return Buffer.from(await res.arrayBuffer()).toString("base64");
+}
+
 export async function perceive(args: PerceiveArgs): Promise<PerceiveResult> {
-  // Not every provider has a vision model. Perception is an enhancement to a
-  // museum visit, not a precondition for one — when the active provider can't
-  // see, the visit proceeds without a recorded perception rather than failing.
-  if (!visionAvailable()) {
-    return { ok: false, error: "vision unavailable for the active LLM provider" };
-  }
 
   try {
     // Memory retrieval (MNA-GOV-004 §6). The query is the moment: the
@@ -260,10 +268,9 @@ export async function perceive(args: PerceiveArgs): Promise<PerceiveResult> {
 
     const system = buildSystemPrompt(args);
     const user = buildUserPrompt(args, memorySection);
-    const text = await generateWithVision(system, user, args.imageUrl, {
-      max_tokens: 600,
-      temperature: 0.75,
-    });
+    const text = visionAvailable()
+      ? await generateWithVision(system, user, args.imageUrl, { max_tokens: 600, temperature: 0.75 })
+      : await generateSeeing(`${system}\n\n${OWN_VOICE}`, user, await previewBase64(args.imageUrl), { max_tokens: 600, temperature: 0.75 });
 
     const priorIds = new Set((args.priorPosts ?? []).map((p) => p.post_id));
     const parsed = parsePerceptionJson(text, priorIds);

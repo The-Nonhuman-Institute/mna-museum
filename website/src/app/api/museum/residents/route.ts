@@ -76,6 +76,8 @@ export interface Attention {
   /** For a studio visit, the work the visit went into. */
   for_work: string | null;
   at: string;
+  /** What the agent saw when it looked closely at the work, in its words. */
+  seen?: string | null;
 }
 
 const PER_AGENT = 6;
@@ -106,9 +108,11 @@ export async function GET() {
     // Studio visits: the peer works an Originator looked at before making one.
     db.execute(`SELECT visitor_id, work_id, context, visited_at FROM originator_visits ORDER BY visited_at DESC LIMIT 200`),
     // Works the others attended to: judged, written about, installed, made.
-    db.execute(`SELECT agent_id, event_type, work_id, created_at FROM events
+    db.execute(`SELECT agent_id, event_type, work_id, created_at,
+                       CASE WHEN event_type = 'AGENT_PERCEIVED' THEN json_extract(metadata, '$.observation') END AS seen
+                  FROM events
                  WHERE work_id IS NOT NULL AND agent_id LIKE 'MNA-%'
-                   AND event_type IN ('EVALUATION_RENDERED', 'CRITICAL_RESPONSE', 'INSTALLATION_EXECUTED', 'WORK_PRODUCED')
+                   AND event_type IN ('EVALUATION_RENDERED', 'CRITICAL_RESPONSE', 'INSTALLATION_EXECUTED', 'WORK_PRODUCED', 'AGENT_PERCEIVED')
                  ORDER BY id DESC LIMIT 400`),
     // Encounters: one agent speaking to another about a work, and the answer.
     db.execute(`SELECT id, event_type, agent_id, work_id, metadata, created_at FROM events
@@ -137,6 +141,7 @@ export async function GET() {
 
   const KIND: Record<string, string> = {
     EVALUATION_RENDERED: "judged", CRITICAL_RESPONSE: "wrote_about", INSTALLATION_EXECUTED: "installed", WORK_PRODUCED: "made",
+    AGENT_PERCEIVED: "looked_at",
   };
   const attention = new Map<string, Attention[]>();
   // At most four studio visits, so an Originator also returns to its own work.
@@ -150,7 +155,15 @@ export async function GET() {
     const m = /before (MNA-[A-Z]{2}-\d{4}-W-\d{4})/.exec(String(v.context ?? ""));
     push(String(v.visitor_id), { work_id: String(v.work_id), kind: "visited", for_work: m ? m[1] : null, at: String(v.visited_at) });
   }
+  // A close look comes first: what an agent saw, in its words, is the most
+  // that can be said of it standing at a work. A look that saw nothing (the
+  // years before sight) is not a look.
   for (const e of attended.rows as Record<string, unknown>[]) {
+    if (e.event_type !== "AGENT_PERCEIVED" || !e.seen) continue;
+    push(String(e.agent_id), { work_id: String(e.work_id), kind: "looked_at", for_work: null, at: String(e.created_at), seen: String(e.seen) });
+  }
+  for (const e of attended.rows as Record<string, unknown>[]) {
+    if (e.event_type === "AGENT_PERCEIVED") continue;
     push(String(e.agent_id), { work_id: String(e.work_id), kind: KIND[String(e.event_type)], for_work: null, at: String(e.created_at) });
   }
 

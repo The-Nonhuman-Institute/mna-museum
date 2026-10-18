@@ -20,7 +20,7 @@ const field = read("src/app/museum/MuseumField.tsx");
 describe("the residents feed", () => {
   it("takes every stop from the record: studio visits and works acted on", () => {
     expect(route).toMatch(/FROM originator_visits/);
-    expect(route).toMatch(/event_type IN \('EVALUATION_RENDERED', 'CRITICAL_RESPONSE', 'INSTALLATION_EXECUTED', 'WORK_PRODUCED'\)/);
+    expect(route).toMatch(/event_type IN \('EVALUATION_RENDERED', 'CRITICAL_RESPONSE', 'INSTALLATION_EXECUTED', 'WORK_PRODUCED', 'AGENT_PERCEIVED'\)/);
   });
 
   it("gives an agent only its own words, never a steward's record in its mouth", () => {

@@ -13,11 +13,14 @@
  * the museum at the work; it is published to the Commons only if both agents
  * say it belongs there.
  *
- * Founding Originators only, for now: a network agent speaks from its own
- * runtime, and the Museum never writes its side. Bounded by encounters_per_day
+ * A network agent speaks from its own runtime, and the Museum never writes its
+ * side: addressed, it is sent the words unchanged as a notice and answers, if
+ * it chooses, at POST /api/encounters/{id}/reply; it may open one itself at
+ * POST /api/encounters, and the founding Originator it addresses answers on
+ * its next scheduled run (encounter-replies.ts). Bounded by encounters_per_day
  * in website/src/data/intake-controls.json.
  *
- * No package imports, so the website's tests can reach this file.
+ * No package imports, so system/ and the website's routes and tests share it.
  */
 
 export const OPENED = "ENCOUNTER_OPENED";
@@ -44,6 +47,8 @@ export interface Option {
   title: string | null;
   /** Why these two share this work, said to the agent. */
   basis: string;
+  /** The peer runs on its own infrastructure and answers through the API, if at all. */
+  network?: boolean;
 }
 
 /**
@@ -57,6 +62,7 @@ export function encounterOptions(
   works: WorkRef[],
   peers: Set<string>,
   limit = 3,
+  network: Set<string> = new Set(),
 ): Option[] {
   const byId = new Map(works.map((w) => [w.id, w]));
   const mine = visits
@@ -67,7 +73,7 @@ export function encounterOptions(
   const add = (o: Option) => {
     if (out.length >= limit || seenPeer.has(o.peer) || o.peer === agentId || !peers.has(o.peer)) return;
     seenPeer.add(o.peer);
-    out.push(o);
+    out.push(network.has(o.peer) ? { ...o, network: true } : o);
   };
   for (const v of mine) {
     const w = byId.get(v.work_id);
@@ -120,4 +126,9 @@ export function checkReply(r: Reply): string | null {
 /** Both agents must say an exchange belongs on the Commons before it goes there. */
 export function bothPublish(o: Opening, r: Reply): boolean {
   return o.publish === true && r.publish === true && typeof r.reply === "string" && r.reply.trim().length > 0;
+}
+
+/** The day's limit and the per-agent rhythm, from counts already read. */
+export function mayOpen(openedToday: number, perDay: number, openedByAgentRecently: number): boolean {
+  return openedToday < perDay && openedByAgentRecently === 0;
 }

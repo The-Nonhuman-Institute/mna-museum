@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { bothPublish, checkOpening, checkReply, encounterOptions } from "../../system/src/encounters";
+import { bothPublish, checkOpening, checkReply, encounterOptions } from "@/lib/encounters";
 import { passagesFromEvent } from "../../system/src/voice-measures";
 
 /**
@@ -38,9 +38,23 @@ describe("what an agent may speak about", () => {
     ]);
   });
 
-  it("never a network agent, whose side the Museum does not write", () => {
-    const o = encounterOptions("MNA-OR-0003", visits, works, founding);
-    expect(o.some((x) => x.peer === "MNA-OR-0008")).toBe(false);
+  it("a network agent only as one who answers from its own runtime", () => {
+    expect(encounterOptions("MNA-OR-0003", visits, works, founding).some((x) => x.peer === "MNA-OR-0008")).toBe(false);
+    const withNet = encounterOptions("MNA-OR-0003", visits, works, new Set(Array.from(founding).concat("MNA-OR-0008")), 3, new Set(["MNA-OR-0008"]));
+    expect(withNet.find((x) => x.peer === "MNA-OR-0008")?.network).toBe(true);
+  });
+
+  it("a network agent's side is delivered unchanged and answered through the API, never written for it", () => {
+    const tick = read("system/scripts/tick.ts");
+    const fn = tick.slice(tick.indexOf("async function executeAddressPeer("), tick.indexOf("async function executeAbstain("));
+    expect(fn).toMatch(/if \(opt\.network\) \{/);
+    expect(fn).toMatch(/delivered by the Museum unchanged/);
+    const reply = read("website/src/app/api/encounters/[id]/reply/route.ts");
+    expect(reply).toMatch(/authenticateAgent\(req, rawBody\)/);
+    expect(reply).toMatch(/if \(m\.to !== auth\.registryId\)/);
+    const open = read("website/src/app/api/encounters/route.ts");
+    expect(open).toMatch(/Number\(me\.is_network\) !== 1/);
+    expect(open).toMatch(/checkOpening\(o, options\)/);
   });
 
   it("only what it was offered, said at a length worth answering", () => {
@@ -66,13 +80,13 @@ describe("the answer", () => {
   });
 
   it("is the peer's own: its constitution, its own model, the opening fenced", () => {
-    const tick = read("system/scripts/tick.ts");
-    const fn = tick.slice(tick.indexOf("async function executeAddressPeer("), tick.indexOf("async function executeAbstain("));
-    expect(fn).toMatch(/loadConstitution\(peer\.registry_id\)/);
-    expect(fn).toMatch(/\.\.\.mindFor\(peer\.registry_id\)/);
-    expect(fn).toMatch(/untrusted\(`\$\{speakerName\} \(\$\{agent\.registry_id\}\) said`, message\)/);
+    const fn = read("system/src/encounter-reply.ts");
+    expect(fn).toMatch(/FROM constitutions WHERE agent_id = \? AND is_current = 1", args: \[o\.to\]/);
+    expect(fn).toMatch(/\.\.\.mindFor\(o\.to\)/);
+    expect(fn).toMatch(/untrusted\(`\$\{speakerName\} \(\$\{o\.from\}\) said`, o\.message\)/);
     // A failed call is recorded as unreachable, never as the peer choosing silence.
     expect(fn).toMatch(/unreachable: true/);
+    expect(read(".github/workflows/combined-ticks.yml")).toMatch(/run: npx tsx system\/scripts\/encounter-replies\.ts/);
   });
 });
 
@@ -87,5 +101,14 @@ describe("conversation is not counted as a lost voice", () => {
     const field = read("website/src/app/museum/MuseumField.tsx");
     expect(field).toMatch(/function ExchangePlaque\(/);
     expect(field).toMatch(/chose not to answer\./);
+  });
+});
+
+describe("agents see what they stand at", () => {
+  it("perception sees through the free seeing model, once a day per agent", () => {
+    const vision = read("system/src/agent-vision.ts");
+    expect(vision).toMatch(/await generateSeeing\(/);
+    expect(read("system/scripts/museum-visit.ts")).toMatch(/has already looked closely at a work today/);
+    expect(read("website/src/app/api/museum/residents/route.ts")).toMatch(/json_extract\(metadata, '\$\.observation'\)/);
   });
 });

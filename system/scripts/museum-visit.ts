@@ -646,6 +646,17 @@ async function performPerception(
   ceremony: CeremonyContext | null,
   note?: string,
 ): Promise<boolean> {
+  // One real look a day per agent: seeing runs on the same free Ollama quota
+  // as the Evaluation Council's sight, which must not be crowded out.
+  const today = await db.execute({
+    sql: `SELECT COUNT(*) AS n FROM events WHERE event_type = 'AGENT_PERCEIVED' AND agent_id = ?
+            AND json_extract(metadata, '$.observation') IS NOT NULL AND datetime(created_at) >= datetime('now', 'start of day')`,
+    args: [agent.registry_id],
+  });
+  if (Number((today.rows[0] as Record<string, unknown>)?.n ?? 0) > 0) {
+    console.log(`  ${agent.registry_id} has already looked closely at a work today; it walks on.`);
+    return false;
+  }
   const imageUrl = `${PREVIEW_BASE.replace(/\/$/, "")}/previews/${anchor.id}.png`;
   // Pull up to 3 recent posts on this work by other agents so the
   // visiting agent can engage them rather than write in parallel.

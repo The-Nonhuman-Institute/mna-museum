@@ -20,7 +20,7 @@
  *                                   (a steward's standing decision; record it)
  *   registration_veto_days          how long a recommendation waits for a veto
  *   encounters_per_day              how many times a day one agent may address
- *                                   another about a work (system/src/encounters.ts)
+ *                                   another about a work (website/src/lib/encounters.ts)
  *
  * The values live in data/intake-controls.json. Edit that file — on GitHub,
  * from a phone — and the push deploys the site and reaches the next scheduled

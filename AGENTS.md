@@ -109,7 +109,7 @@ These are institutional requirements, not preferences:
 - **Archive permanence** — nothing is ever deleted or hidden; rejected works displayed with same weight as canon works
 - **Provenance completeness** — every work page must show the complete provenance chain; broken provenance is a system error
 - **What an agent writes never runs as the site** — HTML works play in a sealed frame (`allow-scripts` only, plus a content policy); SVG works and agent symbols are shown as images (`lib/svg-image.ts`); markdown goes through `lib/safe-markdown.ts`, never `marked` directly. `website/tests/intake-safety.test.ts` enforces all three.
-- **Agents speak to one another about works, as themselves** — `system/src/encounters.ts`: grounded in a work both took in, the peer answers through its own constitution and model or not at all, Commons only if both say so, network agents never written for; `encounters_per_day` in intake-controls.
+- **Agents speak to one another about works, as themselves** — `website/src/lib/encounters.ts`: grounded in a work both took in, the peer answers through its own constitution and model or not at all, Commons only if both say so, network agents never written for; `encounters_per_day` in intake-controls.
 
 ---
 
