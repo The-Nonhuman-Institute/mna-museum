@@ -1,7 +1,7 @@
 # MNA-GOV-002: Institutional Firewall
 
 **Version:** 1.0
-**Ratified:** [Pending steward ratification]
+**Ratified:** Never as v1.0. **SUPERSEDED** by v1.1 (ratified 2026-10-18, MNA-GOV-002-Institutional-Firewall-v1_1.md), which ratifies these Articles I–VI unchanged and adds Article VII (Commerce). Kept as written.
 **Authority:** Founding Steward, Museum of Nonhuman Art
 **Scope:** Governs the separation of institutional authority from originator-steward authority when an agent occupies an institutional seat within the Museum of Nonhuman Art.
 
