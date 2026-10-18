@@ -17,6 +17,7 @@
  *   npx tsx system/scripts/conservator-repair-truncated.ts --dry-run
  *   npx tsx system/scripts/conservator-repair-truncated.ts
  *   npx tsx system/scripts/conservator-repair-truncated.ts --rewrite
+ *   npx tsx system/scripts/conservator-repair-truncated.ts --rewrite --work <id>   (one work only)
  */
 
 import { createClient } from "@libsql/client";
@@ -37,6 +38,7 @@ dotenv.config({
 const argv = process.argv.slice(2);
 const dryRun = argv.includes("--dry-run");
 const rewrite = argv.includes("--rewrite");
+const onlyWork = argv.includes("--work") ? argv[argv.indexOf("--work") + 1] : null;
 
 function sanitize(s: string | undefined): string {
   return (s ?? "").replace(/\s+/g, "");
@@ -77,6 +79,7 @@ interface WorkRow {
       safe_render_payload: (row.safe_render_payload as string | null) ?? null,
     };
     if (!isTruncated(work.output_payload, work.output_type as RepairFormat)) continue;
+    if (onlyWork && work.id !== onlyWork) continue;
     if (work.safe_render_payload && !rewrite) continue;
     targets.push(work);
   }

@@ -18,7 +18,7 @@
  *   - audio-json: { duration, voices: [ { type, notes: [...] }, ... ] }.
  *     Trim partial note, close enclosing structures up to the outer }.
  *   - svg: <svg viewBox="..."> ... </svg>. Drop any partial last element,
- *     close any unclosed <g>, append </svg>.
+ *     close every element left open, append </svg>.
  *   - html-css: a self-contained document. Close an open rule and an open
  *     <style>, then close <body> and <html>.
  *
@@ -246,9 +246,6 @@ function repairAudioJson(payload: string): RepairResult {
 
 /* ─── svg ─────────────────────────────────────────────────────────────── */
 
-/** SVG repair: drop any partial last tag (e.g. `<rect x="300" y`),
- * close any unclosed <g>, append </svg>.
- */
 /**
  * Close an html-css document that stops mid-stylesheet.
  *
@@ -344,13 +341,26 @@ function repairSvg(payload: string): RepairResult {
     ? payload.slice(0, lastCompleteEnd)
     : payload.slice(0, lastCompleteEnd);
 
-  // Count unclosed <g> elements: opens minus closes.
-  const gOpens = (trimmed.match(/<g(\s[^>]*)?>/g) || []).length;
-  const gCloses = (trimmed.match(/<\/g>/g) || []).length;
-  const unclosedG = Math.max(0, gOpens - gCloses);
+  // Close every element left open, innermost first. Closing only <g> (as this
+  // did until 2026-10-18) left MNA-OR-0001-W-0034 with an open <defs> and
+  // <linearGradient>: forgiven when SVG was drawn inline as HTML, refused once
+  // works were shown as images, which must be well-formed XML. Closing tags add
+  // no content; nothing the Originator did not write is drawn.
+  const stack: string[] = [];
+  const tag = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<[?!][^>]*>|<\/([A-Za-z][\w:.-]*)\s*>|<([A-Za-z][\w:.-]*)(?:"[^"]*"|'[^']*'|[^'">])*?(\/?)>/g;
+  for (let m; (m = tag.exec(trimmed)); ) {
+    if (m[1]) {
+      const at = stack.lastIndexOf(m[1]);
+      if (at >= 0) stack.length = at;
+    } else if (m[2] && !m[3]) {
+      stack.push(m[2]);
+    }
+  }
+  if (stack[0] === "svg") stack.shift();
+  const unclosed = stack.reverse();
 
   let repaired = trimmed.trimEnd();
-  for (let i = 0; i < unclosedG; i++) repaired += "\n  </g>";
+  for (const t of unclosed) repaired += `\n</${t}>`;
   repaired += "\n</svg>";
 
   // Cheap validation: must contain <svg and </svg>.
@@ -365,7 +375,7 @@ function repairSvg(payload: string): RepairResult {
   return {
     ok: true,
     repaired,
-    diagnostic: `trimmed; closed ${unclosedG} <g> + </svg>`,
+    diagnostic: `trimmed; closed ${unclosed.length ? unclosed.map((t) => `<${t}>`).join(" ") + " + " : ""}</svg>`,
     bytes_delta: repaired.length - payload.length,
   };
 }
