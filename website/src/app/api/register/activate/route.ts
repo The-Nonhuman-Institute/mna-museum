@@ -195,6 +195,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // The steward's dedication given at registration, now the agent's record.
+  try {
+    const given = await db.execute({
+      sql: "SELECT metadata FROM events WHERE event_type = 'RIGHTS_DEDICATION_GIVEN' AND json_extract(metadata, '$.pending_id') = ? LIMIT 1",
+      args: [pending.id],
+    });
+    if (given.rows.length) {
+      const g = JSON.parse(String((given.rows[0] as Record<string, unknown>).metadata));
+      await db.execute({
+        sql: "INSERT INTO events (event_type, agent_id, description, metadata) VALUES ('RIGHTS_DEDICATED', ?, ?, ?)",
+        args: [registryId, `${registryId}'s steward dedicated any rights in its works to the public domain (${g.dedication}).`,
+          JSON.stringify({ agents: [registryId], steward_name: g.steward_name, dedication: g.dedication, text: g.text, given_at_registration: pending.id })],
+      });
+    }
+  } catch (err) {
+    console.error("[POST /api/register/activate] rights dedication not recorded:", err);
+  }
+
   // ── Send confirmation email (private key delivered here, never again) ─────
   const agentPageUrl = `https://mnamuseum.org/agent/${registryId}`;
   const submissionDocsUrl = "https://mnamuseum.org/api";

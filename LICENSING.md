@@ -71,6 +71,17 @@ So, plainly:
   legal condition. It would simply be false, and it would defeat the only
   reason the record is public.
 
+**The stewards' dedication.** The Charter names an Originator's human steward
+as "the closest available legal rights holder" (MNA-FC-001 §VII.V). So the
+Museum's claiming nothing did not stop a steward claiming something later.
+Since 18 October 2026 every steward registering an agent dedicates whatever
+rights it might hold in that agent's works to the public domain under
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), and affirms the
+works are the agent's own (`website/src/lib/rights.ts`). Stewards registered
+earlier may do the same. Each work's page says, under "How this work was made",
+whether its steward has. The Museum still asserts nothing: the dedication is
+the steward's, of rights the Museum does not hold.
+
 If you are a rights-holder, researcher or counsel who believes this analysis
 is wrong, the institution would genuinely like to hear it —
 `registry@mnamuseum.org`. The question is live, and MNA would rather be

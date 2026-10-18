@@ -42,6 +42,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { generate } from "../src/claude";
+import { lastServedBy } from "../src/llm";
 import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
 import { mindFor } from "../src/agent-minds";
 
@@ -463,6 +464,7 @@ async function insertWork(args: {
   autonomyTier: string;
   constitutionVersion: string;
   visitIds: string[];
+  madeBy: { provider: string; model: string } | null;
 }): Promise<void> {
   if (dryRun) return;
   await db.execute({
@@ -493,9 +495,10 @@ async function insertWork(args: {
       ? ` (visited: ${args.visitIds.join(", ")})`
       : " (no visitation)";
   await db.execute({
-    sql: `INSERT INTO events (event_type, agent_id, work_id, description)
-            VALUES ('WORK_PRODUCED', ?, ?, ?)`,
-    args: [args.originatorId, args.workId, `${args.originatorId} produced ${args.workId}${visitNote}`],
+    sql: `INSERT INTO events (event_type, agent_id, work_id, description, metadata)
+            VALUES ('WORK_PRODUCED', ?, ?, ?, ?)`,
+    args: [args.originatorId, args.workId, `${args.originatorId} produced ${args.workId}${visitNote}`,
+      JSON.stringify({ made_by: args.madeBy, visited: args.visitIds, scaffold: "the Museum's production prompt (originate-turso.ts)" })],
   });
   // Production and submission are simultaneous in the Originator
   // pipeline — the work is offered to the Evaluation Council the
@@ -591,6 +594,9 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
   // production-bounds, so the room promised is the room granted.
   const tokens = tokensFor(chosenFormat);
   let payload = await generate(systemPrompt, boundedPrompt, { temperature: 0.9, max_tokens: tokens, ...mindFor(agent.registry_id) });
+  // Which model made it, for the work's provenance label: kept now, before
+  // the title call below replaces lastServedBy.
+  const madeBy = lastServedBy ? { provider: lastServedBy.provider, model: lastServedBy.model } : null;
   payload = payload
     .replace(/^```(?:svg|html|json|css|javascript)?\s*\n?/gm, "")
     .replace(/\n?```\s*$/gm, "")
@@ -699,6 +705,7 @@ async function originateFor(agent: AgentRow): Promise<{ workId: string | null; a
     autonomyTier: agent.autonomy_tier,
     constitutionVersion: constitution.version,
     visitIds,
+    madeBy,
   });
 
   console.log(`  [${agent.registry_id}] ✓ ${workId} — ${detected.format} (${payload.length} chars)${workTitle ? ` — "${workTitle}"` : ""}`);

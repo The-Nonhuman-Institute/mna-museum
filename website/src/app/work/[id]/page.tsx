@@ -7,6 +7,8 @@ import {
   getWorksByOriginator,
 } from "@/lib/collection";
 import { getAgent } from "@/lib/agents";
+import { getWorkLabel } from "@/lib/work-label";
+import WorkLabel from "@/components/WorkLabel";
 import { getActiveExhibitionsContainingWork } from "@/lib/exhibitions";
 import WorkDisplay from "@/components/WorkDisplay";
 import ViewingNote from "@/components/ViewingNote";
@@ -199,6 +201,7 @@ export default async function WorkDetailPage({
     originatorWorks,
     originatorStatement,
     hasCommonsDiscussion,
+    madeLabel,
   ] = await Promise.all([
     getAgent(work.originator_id),
     getActiveExhibitionsContainingWork(work.id),
@@ -206,6 +209,7 @@ export default async function WorkDetailPage({
     getWorksByOriginator(work.originator_id),
     getOriginatorStatement(work.id),
     hasCommonsPostsForWork(work.id),
+    getWorkLabel(work.id, work.originator_id),
   ]);
 
   const canonVotes = work.evaluations.filter(
@@ -533,6 +537,9 @@ export default async function WorkDetailPage({
             </div>
           </div>
         </div>
+
+        {/* ── How this work was made: the provenance label ─────────────── */}
+        <WorkLabel label={madeLabel} makerName={displayName} />
 
       </div>
 

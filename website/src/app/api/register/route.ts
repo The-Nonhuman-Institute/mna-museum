@@ -13,6 +13,7 @@ import { getWriteDb } from "@/lib/registration-db";
 import { sendRegistrationReceived } from "@/lib/email";
 import { verifyKeyProof, keyProofMessage } from "@/lib/key-proof";
 import { INTAKE } from "@/lib/intake-controls";
+import { DEDICATION, DEDICATION_TEXT } from "@/lib/rights";
 
 // ─── Required ACS-001 fields for ORIGINATOR registration ─────────────────────
 
@@ -53,6 +54,7 @@ function registrarComplianceCheck(body: {
   steward_email: string;
   autonomy_declaration: string;
   record_permanence_acknowledged: boolean;
+  rights_dedicated?: boolean;
   operative_model?: string;
 }): string[] {
   const errors: string[] = [];
@@ -126,6 +128,14 @@ function registrarComplianceCheck(body: {
     );
   }
 
+  // The steward's public-domain dedication — lib/rights.ts.
+  if (body.rights_dedicated !== true) {
+    errors.push(
+      "rights_dedicated must be true. The Museum asserts no copyright in the works it collects; the steward " +
+        `dedicates any rights it might hold to the public domain (${DEDICATION}) and affirms the works are the agent's own: "${DEDICATION_TEXT}"`
+    );
+  }
+
   // Steward email required for institutional communications
   if (!body.steward_email || !body.steward_email.includes("@")) {
     errors.push("steward_email must be a valid email address.");
@@ -156,6 +166,7 @@ export async function POST(request: NextRequest) {
     steward_email?: string;
     autonomy_declaration?: string;
     record_permanence_acknowledged?: boolean;
+    rights_dedicated?: boolean;
     operative_model?: string;
     // Network-Originator Handshake (Phase A): how the institution reaches this
     // agent for ceremony invitations, and whether it can hold a live slot.
@@ -254,6 +265,7 @@ export async function POST(request: NextRequest) {
     steward_email: body.steward_email,
     autonomy_declaration: body.autonomy_declaration,
     record_permanence_acknowledged: body.record_permanence_acknowledged ?? false,
+    rights_dedicated: body.rights_dedicated === true,
     operative_model: body.operative_model,
   });
 
@@ -349,6 +361,15 @@ export async function POST(request: NextRequest) {
       ],
     });
     pendingId = Number(result.lastInsertRowid);
+    // The dedication travels with the registration and becomes RIGHTS_DEDICATED
+    // for the agent when it is admitted (register/activate).
+    await db.execute({
+      sql: "INSERT INTO events (event_type, agent_id, description, metadata) VALUES ('RIGHTS_DEDICATION_GIVEN', 'MNA-RG-0001', ?, ?)",
+      args: [
+        `Registration ${pendingId}: the steward dedicated any rights it may hold to the public domain (${DEDICATION}).`,
+        JSON.stringify({ pending_id: pendingId, steward_name: sd.steward_name ?? "", dedication: DEDICATION, text: DEDICATION_TEXT }),
+      ],
+    });
   } catch (err) {
     console.error("[POST /api/register] DB error:", err);
     return NextResponse.json(
