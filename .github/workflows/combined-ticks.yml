@@ -104,6 +104,10 @@ jobs:
         continue-on-error: true
         run: npx tsx system/scripts/encounter-replies.ts
 
+      - name: keeper-publish-representation
+        continue-on-error: true
+        run: npx tsx system/scripts/keeper-publish-representation.ts
+
       - name: ceremony-live detect + maybe dispatch
         continue-on-error: true
         working-directory: system

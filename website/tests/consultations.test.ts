@@ -42,3 +42,14 @@ describe("the representation consultation", () => {
     expect(read("system/scripts/consult-on-representation.ts")).toMatch(/Nothing is recorded until --record/);
   });
 });
+
+describe("the Keeper's piece on representation", () => {
+  it("waits a week for the network Originators, publishes once, and writes nothing for the Keeper", () => {
+    const s = read("system/scripts/keeper-publish-representation.ts");
+    expect(s).toMatch(/export const PUBLISH_FROM = "2026-10-25T12:00:00Z"/);
+    expect(s).toMatch(/already published/);
+    expect(s).toMatch(/Nothing here writes the piece/);
+    expect(s).toMatch(/runs the Museum and is the steward of every founding Originator/);
+    expect(read(".github/workflows/combined-ticks.yml")).toMatch(/run: npx tsx system\/scripts\/keeper-publish-representation\.ts/);
+  });
+});
