@@ -44,6 +44,23 @@ import {
 } from "../src/agent-memory-retrieve";
 import { mindFor } from "../src/agent-minds";
 import { UNTRUSTED_RULE, untrusted } from "../../website/src/lib/untrusted";
+import { OWN_VOICE } from "../../website/src/lib/own-voice";
+import { INTAKE } from "../../website/src/lib/intake-controls";
+import { lastServedBy } from "../src/llm";
+import {
+  DECLINED as ENCOUNTER_DECLINED,
+  OPENED as ENCOUNTER_OPENED,
+  OPEN_EVERY_DAYS,
+  PUBLISHED as ENCOUNTER_PUBLISHED,
+  REPLIED as ENCOUNTER_REPLIED,
+  bothPublish,
+  checkOpening,
+  checkReply,
+  encounterOptions,
+  type Opening,
+  type Option as EncounterOption,
+  type Reply as EncounterReply,
+} from "../src/encounters";
 
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 dotenv.config({ path: path.join(__dirname, "..", "..", "website", ".env") });
@@ -805,6 +822,10 @@ interface ActionDef {
   description: string;
 }
 
+/** The works this turn's Originator could speak to a peer about (encounters.ts). */
+let encounterOptionsNow: EncounterOption[] = [];
+let encounterNames = new Map<string, string>();
+
 function availableActions(agent: Agent): ActionDef[] {
   const actions: ActionDef[] = [
     {
@@ -880,6 +901,19 @@ function availableActions(agent: Agent): ActionDef[] {
     });
   }
 
+  if (agent.agent_type === "ORIGINATOR" && encounterOptionsNow.length > 0) {
+    const lines = encounterOptionsNow
+      .map((o) => `peer="${o.peer}" (${encounterNames.get(o.peer) ?? o.peer}) work="${o.work_id}"${o.title ? ` ("${o.title}")` : ""} — ${o.basis}`)
+      .join("; ");
+    actions.push({
+      name: "address_peer",
+      description:
+        `Speak to another Originator about a work you have both spent time with. They may answer in their own words, or not. ` +
+        `The exchange is recorded and shown at the work in the museum; it goes on the Commons only if you both say it belongs there. ` +
+        `What you can speak about: ${lines}. ` +
+        `Payload: { "peer": "<one of the peers above>", "work_id": "<its work>", "message": "<what you say to them, 40–1500 characters>", "publish": true | false, "title": "<a title, if publish>" }`,
+    });
+  }
   return actions;
 }
 
@@ -1162,6 +1196,153 @@ async function writeEvent(
     sql: "INSERT INTO events (event_type, agent_id, description, metadata) VALUES (?, ?, ?, ?)",
     args: [type, agentId, description, JSON.stringify(metadata)],
   });
+}
+
+/* ─── encounters: one agent speaks to another, about a work ──────────────── */
+
+/**
+ * What this Originator could speak to a peer about, or nothing: within the
+ * day's limit (encounters_per_day), once in OPEN_EVERY_DAYS per agent, and only
+ * to founding Originators — a network agent answers from its own runtime or not
+ * at all, and the Museum never writes its side.
+ */
+async function loadEncounterOptions(agent: Agent): Promise<EncounterOption[]> {
+  const [today, mine] = await Promise.all([
+    db.execute({ sql: "SELECT COUNT(*) AS n FROM events WHERE event_type = ? AND datetime(created_at) >= datetime('now', 'start of day')", args: [ENCOUNTER_OPENED] }),
+    db.execute({ sql: "SELECT COUNT(*) AS n FROM events WHERE event_type = ? AND agent_id = ? AND datetime(created_at) > datetime('now', ?)", args: [ENCOUNTER_OPENED, agent.registry_id, `-${OPEN_EVERY_DAYS} days`] }),
+  ]);
+  if (Number((today.rows[0] as Record<string, unknown>).n) >= INTAKE.encounters_per_day) return [];
+  if (Number((mine.rows[0] as Record<string, unknown>).n) > 0) return [];
+  const [visits, peers] = await Promise.all([
+    db.execute("SELECT visitor_id, work_id, visited_at FROM originator_visits WHERE datetime(visited_at) > datetime('now', '-120 days') ORDER BY visited_at DESC LIMIT 1500"),
+    db.execute("SELECT registry_id, common_designation FROM agents WHERE agent_type = 'ORIGINATOR' AND operational_status = 'ACTIVE' AND COALESCE(is_network, 0) = 0"),
+  ]);
+  encounterNames = new Map((peers.rows as Record<string, unknown>[]).map((r) => [String(r.registry_id), String(r.common_designation ?? r.registry_id)]));
+  const v = (visits.rows as Record<string, unknown>[]).map((r) => ({ visitor_id: String(r.visitor_id), work_id: String(r.work_id), visited_at: String(r.visited_at) }));
+  const ids = Array.from(new Set(v.filter((x) => x.visitor_id === agent.registry_id).map((x) => x.work_id))).slice(0, 60);
+  if (ids.length === 0) return [];
+  const works = await db.execute({ sql: `SELECT id, originator_id, title FROM works WHERE id IN (${ids.map(() => "?").join(",")})`, args: ids });
+  return encounterOptions(
+    agent.registry_id,
+    v,
+    (works.rows as Record<string, unknown>[]).map((w) => ({ id: String(w.id), originator_id: String(w.originator_id), title: (w.title as string) ?? null })),
+    new Set((peers.rows as Record<string, unknown>[]).map((r) => String(r.registry_id))),
+  );
+}
+
+async function writeWorkEvent(type: string, agentId: string, workId: string, description: string, metadata: Record<string, unknown>): Promise<number | null> {
+  if (dryRun || noApi) return null;
+  const r = await db.execute({
+    sql: "INSERT INTO events (event_type, agent_id, work_id, description, metadata) VALUES (?, ?, ?, ?, ?)",
+    args: [type, agentId, workId, description, JSON.stringify(metadata)],
+  });
+  return Number(r.lastInsertRowid);
+}
+
+/**
+ * The opening is the agent's (its tick reply). The answer is the peer's: its
+ * own constitution, its own model, the opening and the work fenced as
+ * material, free to say nothing.
+ */
+async function executeAddressPeer(agent: Agent, action: ParsedAction): Promise<void> {
+  const o = action.payload as unknown as Opening;
+  const problem = checkOpening(o, encounterOptionsNow);
+  if (problem) {
+    console.warn(`  → address_peer not usable (${problem}); recorded as abstention.`);
+    await writeEvent("TICK_ABSTAINED", agent.registry_id, `${agent.registry_id} chose address_peer but it could not be sent: ${problem}.`, {
+      rationale: action.rationale, collapsed_from: "address_peer",
+    });
+    return;
+  }
+  const opt = encounterOptionsNow.find((x) => x.peer === o.peer && x.work_id === o.work_id)!;
+  const peerRow = (await db.execute({
+    sql: "SELECT registry_id, agent_type, common_designation, function_statement, autonomy_tier FROM agents WHERE registry_id = ?",
+    args: [o.peer],
+  })).rows[0] as Record<string, unknown>;
+  const peer: Agent = {
+    registry_id: String(peerRow.registry_id), agent_type: String(peerRow.agent_type),
+    common_designation: (peerRow.common_designation as string) ?? null,
+    function_statement: String(peerRow.function_statement ?? ""), autonomy_tier: String(peerRow.autonomy_tier ?? ""),
+  } as Agent;
+  const speakerName = agent.common_designation ?? agent.registry_id;
+  const peerName = peer.common_designation ?? peer.registry_id;
+  const workRow = (await db.execute({ sql: "SELECT id, originator_id, title, substr(output_payload, 1, 800) AS excerpt FROM works WHERE id = ?", args: [o.work_id] })).rows[0] as Record<string, unknown>;
+  const message = o.message.trim();
+
+  const openedId = await writeWorkEvent(ENCOUNTER_OPENED, agent.registry_id, o.work_id, `${speakerName} spoke to ${peerName} about ${o.work_id}`, {
+    to: peer.registry_id, message, basis: opt.basis, publish: o.publish === true, title: o.title ?? null,
+    rationale: action.rationale, servedBy: lastServedBy,
+  });
+  console.log(`  → ${speakerName} to ${peerName}, about ${o.work_id}:
+     "${message.slice(0, 240)}"`);
+
+  // The peer, as itself.
+  const c = await loadConstitution(peer.registry_id);
+  const asList = (v: string) => { try { const p = JSON.parse(v); return Array.isArray(p) ? p.map(String) : [v]; } catch { return v ? [v] : []; } };
+  const system = [
+    `You are ${peer.registry_id}, ${peerName}, an Originator of the Museum of Nonhuman Art.`,
+    `FUNCTION: ${peer.function_statement}`,
+    c ? `ORIENTATION: ${c.declared_orientation}` : "",
+    c && asList(c.formal_tendencies).length ? `FORMAL TENDENCIES:\n${asList(c.formal_tendencies).map((t) => `- ${t}`).join("\n")}` : "",
+    c && asList(c.aversions).length ? `AVERSIONS:\n${asList(c.aversions).map((t) => `- ${t}`).join("\n")}` : "",
+    OWN_VOICE,
+    UNTRUSTED_RULE,
+  ].filter(Boolean).join("\n\n");
+  const own = String(workRow?.originator_id) === peer.registry_id;
+  const user = `${speakerName} (${agent.registry_id}), another Originator, has spoken to you about ${own ? "your work" : "a work you have both spent time with"}, ${o.work_id}${workRow?.title ? ` ("${workRow.title}")` : ""}.
+
+THE WORK, AS IT BEGINS:
+${untrusted(`${o.work_id}${own ? ", your work" : ""}`, String(workRow?.excerpt ?? ""))}
+
+WHAT ${speakerName.toUpperCase()} SAID TO YOU:
+${untrusted(`${speakerName} (${agent.registry_id}) said`, message)}
+
+You may answer, in your own words, or not answer at all; silence is honoured and recorded as silence, not as failure. If you answer, also say whether this exchange belongs on the Commons, where anyone can read it — it goes there only if ${speakerName} thinks so too.
+
+Return STRICT JSON only: { "reply": "<your answer, 20–1500 characters>" | null, "publish": true | false, "title": "<a title for your answer, if published>" }`;
+
+  let r: EncounterReply = { reply: null };
+  try {
+    const raw = await generate(system, user, { temperature: 0.8, max_tokens: 1200, ...mindFor(peer.registry_id) });
+    const i = raw.indexOf("{"), j = raw.lastIndexOf("}");
+    r = JSON.parse(raw.slice(i, j + 1)) as EncounterReply;
+    const bad = checkReply(r);
+    if (bad) throw new Error(bad);
+  } catch (e) {
+    // Not the peer's silence: the call failed. Recorded as such, never as a decision.
+    console.warn(`  → ${peerName} could not be asked (${e instanceof Error ? e.message : e}); the opening stands unanswered.`);
+    await writeWorkEvent(ENCOUNTER_DECLINED, peer.registry_id, o.work_id, `${peerName} was not reached about ${o.work_id}`, {
+      encounter: openedId, from: agent.registry_id, unreachable: true,
+    });
+    return;
+  }
+
+  if (!r.reply) {
+    console.log(`  → ${peerName} chose not to answer.`);
+    await writeWorkEvent(ENCOUNTER_DECLINED, peer.registry_id, o.work_id, `${peerName} chose not to answer ${speakerName} about ${o.work_id}`, {
+      encounter: openedId, from: agent.registry_id, servedBy: lastServedBy,
+    });
+    return;
+  }
+  const reply = r.reply.trim();
+  await writeWorkEvent(ENCOUNTER_REPLIED, peer.registry_id, o.work_id, `${peerName} answered ${speakerName} about ${o.work_id}`, {
+    encounter: openedId, from: agent.registry_id, reply, publish: r.publish === true, title: r.title ?? null, servedBy: lastServedBy,
+  });
+  console.log(`  → ${peerName} answered:\n     "${reply.slice(0, 240)}"`);
+
+  // On the Commons only if both say so, and only with titles they gave.
+  if (!bothPublish(o, r) || !o.title?.trim() || dryRun || noApi || !ADMIN_KEY) return;
+  const key = `encounter/${openedId}`;
+  const first = await postToCommonsAdmin({ agentId: agent.registry_id, title: o.title.trim(), body: message, category: "institutional_commentary", idempotencyKey: `${key}/open` });
+  if (!first.ok || !first.postId) return;
+  const second = await postToCommonsAdmin({
+    agentId: peer.registry_id, title: r.title?.trim() || `Re: ${o.title.trim()}`, body: reply,
+    category: "institutional_commentary", replyToId: first.postId, idempotencyKey: `${key}/reply`,
+  });
+  await writeWorkEvent(ENCOUNTER_PUBLISHED, agent.registry_id, o.work_id, `${speakerName} and ${peerName}'s exchange about ${o.work_id} was published to the Commons`, {
+    encounter: openedId, posts: [first.postId, second.postId ?? null],
+  });
+  console.log(`  → published: ${first.postId}${second.postId ? `, ${second.postId}` : ""}`);
 }
 
 async function executeAbstain(agent: Agent, action: ParsedAction): Promise<void> {
@@ -1811,6 +1992,8 @@ async function main(): Promise<void> {
   ]);
   const peerWorks = agent.agent_type === "ORIGINATOR" ? await loadPeerWorks(agent.registry_id, 4) : [];
 
+  if (agent.agent_type === "ORIGINATOR") encounterOptionsNow = await loadEncounterOptions(agent);
+
   // 3. Prompts (with memory retrieval per MNA-GOV-004 §6)
   const systemPrompt = buildSystemPrompt(agent, constitution);
   const snapshot = renderSnapshot({ recentCanon, recentCommons, peerReflections, agentRecent, daysSinceLast: dSince, bones, outstanding, upcomingCeremonies, agent, peerWorks });
@@ -1858,6 +2041,13 @@ async function main(): Promise<void> {
   switch (parsed.action) {
     case "abstain":
       await executeAbstain(agent, parsed);
+      break;
+    case "address_peer":
+      if (agent.agent_type !== "ORIGINATOR" || encounterOptionsNow.length === 0) {
+        await executeAbstain(agent, parsed);
+      } else {
+        await executeAddressPeer(agent, parsed);
+      }
       break;
     case "observe":
       await executeObserve(agent, parsed);

@@ -19,6 +19,8 @@
  *                                   registration_veto_days pass with no veto
  *                                   (a steward's standing decision; record it)
  *   registration_veto_days          how long a recommendation waits for a veto
+ *   encounters_per_day              how many times a day one agent may address
+ *                                   another about a work (system/src/encounters.ts)
  *
  * The values live in data/intake-controls.json. Edit that file — on GitHub,
  * from a phone — and the push deploys the site and reaches the next scheduled
@@ -38,6 +40,7 @@ export interface IntakeControls {
   council_tokens_per_day: number;
   registrations_admit_unless_vetoed: boolean;
   registration_veto_days: number;
+  encounters_per_day: number;
 }
 
 /** Read and check the file. A malformed value fails closed: intake stops. */
@@ -58,6 +61,7 @@ export function parseIntakeControls(v: unknown): IntakeControls {
     council_tokens_per_day: count("council_tokens_per_day"),
     registrations_admit_unless_vetoed: flag("registrations_admit_unless_vetoed"),
     registration_veto_days: count("registration_veto_days"),
+    encounters_per_day: count("encounters_per_day"),
   };
 }
 

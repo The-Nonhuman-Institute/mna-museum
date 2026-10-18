@@ -212,7 +212,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
     if (tour) setTourOrder(tour === "1" ? ["MNA-OR-0006", "MNA-OR-0003", "MNA-KP-0001", "MNA-OR-0002", "MNA-EV-0001"] : tour.split(","));
     fetch("/api/museum/residents", { signal: AbortSignal.timeout(15000) })
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => j && setResidents(j as ResidentsFeed))
+      .then((j) => j && setResidents(withEncounters(j as ResidentsFeed)))
       .catch(() => {});
   }, []);
   const [locked, setLocked] = useState(false);
@@ -2580,10 +2580,21 @@ interface Resident {
   at: string | null;
   words: string | null;
   work_id: string | null;
-  attention: { work_id: string; kind: string; for_work: string | null; at: string }[];
+  attention: { work_id: string; kind: string; for_work: string | null; at: string; with?: string }[];
+}
+interface Encounter {
+  id: number;
+  work_id: string;
+  from: string;
+  to: string;
+  message: string;
+  reply: string | null;
+  declined: boolean;
+  at: string;
 }
 interface ResidentsFeed {
   residents: Resident[];
+  encounters?: Encounter[];
   now: { active_today: number; before_council: number; newest: { id: string; originator_id: string; title: string | null; at: string } | null };
 }
 
@@ -2594,6 +2605,26 @@ function ago(at: string | null): string {
   if (m < 60) return `${Math.round(m)} min ago`;
   if (m < 60 * 36) return `${Math.round(m / 60)} h ago`;
   return `${Math.round(m / 1440)} days ago`;
+}
+
+/**
+ * An encounter is a stop for both agents: the one who spoke and the one
+ * addressed walk to the work it was about, first.
+ */
+function withEncounters(feed: ResidentsFeed): ResidentsFeed {
+  const name = new Map(feed.residents.map((r) => [r.registry_id, r.designation]));
+  const extra = new Map<string, Resident["attention"]>();
+  for (const e of feed.encounters ?? []) {
+    extra.set(e.from, [...(extra.get(e.from) ?? []), { work_id: e.work_id, kind: "spoke_about", for_work: null, at: e.at, with: name.get(e.to) ?? e.to }]);
+    if (e.reply) extra.set(e.to, [...(extra.get(e.to) ?? []), { work_id: e.work_id, kind: "answered_about", for_work: null, at: e.at, with: name.get(e.from) ?? e.from }]);
+  }
+  return {
+    ...feed,
+    residents: feed.residents.map((r) => ({
+      ...r,
+      attention: [...(extra.get(r.registry_id) ?? []), ...r.attention.filter((a) => !(extra.get(r.registry_id) ?? []).some((x) => x.work_id === a.work_id))],
+    })),
+  };
 }
 
 /** What the entrance says before you walk in: that the place is inhabited. */
@@ -2780,6 +2811,10 @@ function Residents({
 
   return (
     <>
+      {(feed.encounters ?? []).map((e) => {
+        const w = works.get(e.work_id);
+        return w ? <ExchangePlaque key={e.id} encounter={e} work={w} names={feed.residents} /> : null;
+      })}
       {feed.residents
         .filter((r) => !liveIds.has(r.registry_id))
         .map((r, i) => (
@@ -2928,7 +2963,7 @@ function ResidentWalker({
     state: w ? (walking ? "walking" : "taking") : "home",
     workId: w ? w.id : null,
     work: w ? `${title}${own ? "" : `, by ${maker}`}` : null,
-    basis: w && a ? `${(KIND_LINE[a.kind] ?? KIND_LINE.visited)(day(a.at))}${a.for_work ? ` — before making ${a.for_work.replace(/^MNA-OR-\d{4}-/, "")}` : ""}` : null,
+    basis: w && a ? `${a.kind === "spoke_about" ? `spoke to ${a.with} about it ${day(a.at)}` : a.kind === "answered_about" ? `answered ${a.with} about it ${day(a.at)}` : (KIND_LINE[a.kind] ?? KIND_LINE.visited)(day(a.at))}${a.for_work ? ` — before making ${a.for_work.replace(/^MNA-OR-\d{4}-/, "")}` : ""}` : null,
     kind: a ? a.kind : null,
     act: resident.act ? `${resident.act} — ${ago(resident.at)}` : "has not acted in two weeks",
   };
@@ -2976,8 +3011,7 @@ function ResidentWalker({
             </p>
             {w && a && !walking ? (
               <p className="font-sans text-[10.5px] tracking-[0.04em] text-mna-white/50 mt-1">
-                {resident.designation} {(KIND_LINE[a.kind] ?? KIND_LINE.visited)(day(a.at))}
-                {a.for_work ? <> — before making {a.for_work.replace(/^MNA-OR-\d{4}-/, "")}</> : null}
+                {resident.designation} {line.basis}
               </p>
             ) : null}
             {near && words && !w ? (
@@ -2991,6 +3025,56 @@ function ResidentWalker({
       </Html>
       )}
     </group>
+  );
+}
+
+/**
+ * What two agents said to each other about a work, hung beside it. Read when
+ * you come close; the record holds it either way, and the Commons only if both
+ * chose to publish it.
+ */
+function ExchangePlaque({ encounter, work, names }: { encounter: Encounter; work: PlacedWork; names: Resident[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { camera } = useThree();
+  const at = useMemo(() => new THREE.Vector3(work.position[0], (work.position[1] || EYE_HEIGHT) + work.size * 0.75, work.position[2]), [work]);
+  useFrame(() => {
+    if (!ref.current) return;
+    const d = camera.position.distanceTo(at);
+    const o = d < 9 ? 1 : d > 16 ? 0 : 1 - (d - 9) / 7;
+    ref.current.style.opacity = String(o);
+    ref.current.style.display = o <= 0.01 ? "none" : "block";
+    ref.current.style.transform = `scale(${Math.min(1, Math.max(0.4, d / 7)).toFixed(3)})`;
+  });
+  const who = (id: string) => names.find((r) => r.registry_id === id);
+  const from = who(encounter.from);
+  const to = who(encounter.to);
+  const trim = (t: string) => (t.length > 260 ? t.slice(0, 260).trimEnd() + "…" : t);
+  return (
+    <Html position={at.toArray()} center distanceFactor={10} zIndexRange={[15, 0]} style={{ pointerEvents: "none" }}>
+      <div ref={ref} className="w-[360px] text-mna-white select-none" style={{ transformOrigin: "center bottom" }}>
+        <div className="bg-black/80 backdrop-blur-[2px] border border-mna-white/20 px-5 py-4">
+          <p className="font-sans uppercase tracking-[0.28em] text-[8.5px] text-mna-white/50">
+            An exchange at this work · {day(encounter.at)}
+          </p>
+          <div className="mt-2.5">
+            <p className="flex items-center gap-1.5 font-sans uppercase tracking-[0.22em] text-[9px] text-mna-white/80">
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: from?.color }} />
+              {from?.designation ?? encounter.from} <span className="text-mna-white/40 normal-case tracking-normal">to</span> {to?.designation ?? encounter.to}
+            </p>
+            <p className="font-display text-[15px] leading-[1.45] text-mna-white/90 mt-1">“{trim(encounter.message)}”</p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-mna-white/10">
+            <p className="flex items-center gap-1.5 font-sans uppercase tracking-[0.22em] text-[9px] text-mna-white/80">
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: to?.color }} />
+              {to?.designation ?? encounter.to}
+            </p>
+            <p className="font-display text-[15px] leading-[1.45] text-mna-white/90 mt-1">
+              {encounter.reply ? <>“{trim(encounter.reply)}”</> : <span className="italic text-mna-white/55">{encounter.declined ? "chose not to answer." : "has not answered."}</span>}
+            </p>
+          </div>
+        </div>
+      </div>
+    </Html>
   );
 }
 

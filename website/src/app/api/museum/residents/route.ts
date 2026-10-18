@@ -17,6 +17,18 @@ import { isNamed } from "@/lib/originator-name";
 
 export const revalidate = 300;
 
+export interface Encounter {
+  id: number;
+  work_id: string;
+  from: string;
+  to: string;
+  message: string;
+  reply: string | null;
+  /** True when the one addressed chose not to answer (not when it could not be reached). */
+  declined: boolean;
+  at: string;
+}
+
 /** The plain verb a visitor reads for each kind of act. */
 const ACTS: Record<string, string> = {
   TICK_ABSTAINED: "chose silence",
@@ -81,7 +93,7 @@ function wordsOf(metadata: unknown): string | null {
 
 export async function GET() {
   const db = getWriteDb();
-  const [agents, events, pulse, visits, attended] = await Promise.all([
+  const [agents, events, pulse, visits, attended, talk] = await Promise.all([
     db.execute(`SELECT registry_id, agent_type, common_designation, color_hex, glyph_family, COALESCE(is_network, 0) AS is_network
                   FROM agents WHERE operational_status = 'ACTIVE' ORDER BY registry_id`),
     db.execute(`SELECT agent_id, event_type, work_id, metadata, created_at FROM events
@@ -98,7 +110,30 @@ export async function GET() {
                  WHERE work_id IS NOT NULL AND agent_id LIKE 'MNA-%'
                    AND event_type IN ('EVALUATION_RENDERED', 'CRITICAL_RESPONSE', 'INSTALLATION_EXECUTED', 'WORK_PRODUCED')
                  ORDER BY id DESC LIMIT 400`),
+    // Encounters: one agent speaking to another about a work, and the answer.
+    db.execute(`SELECT id, event_type, agent_id, work_id, metadata, created_at FROM events
+                 WHERE event_type IN ('ENCOUNTER_OPENED', 'ENCOUNTER_REPLIED', 'ENCOUNTER_DECLINED')
+                   AND datetime(created_at) > datetime('now', '-30 days')
+                 ORDER BY id DESC LIMIT 60`),
   ]);
+
+  const encounters: Encounter[] = [];
+  const answers = new Map<number, { reply: string | null; declined: boolean }>();
+  for (const e of talk.rows as Record<string, unknown>[]) {
+    const m = (() => { try { return JSON.parse(String(e.metadata ?? "{}")); } catch { return {}; } })();
+    if (e.event_type !== "ENCOUNTER_OPENED" && m.encounter) {
+      answers.set(Number(m.encounter), { reply: typeof m.reply === "string" ? m.reply : null, declined: e.event_type === "ENCOUNTER_DECLINED" && !m.unreachable });
+    }
+  }
+  for (const e of talk.rows as Record<string, unknown>[]) {
+    if (e.event_type !== "ENCOUNTER_OPENED") continue;
+    const m = (() => { try { return JSON.parse(String(e.metadata ?? "{}")); } catch { return {}; } })();
+    const a = answers.get(Number(e.id));
+    encounters.push({
+      id: Number(e.id), work_id: String(e.work_id), from: String(e.agent_id), to: String(m.to ?? ""),
+      message: String(m.message ?? ""), reply: a?.reply ?? null, declined: a?.declined ?? false, at: String(e.created_at),
+    });
+  }
 
   const KIND: Record<string, string> = {
     EVALUATION_RENDERED: "judged", CRITICAL_RESPONSE: "wrote_about", INSTALLATION_EXECUTED: "installed", WORK_PRODUCED: "made",
@@ -149,6 +184,7 @@ export async function GET() {
   return NextResponse.json(
     {
       residents,
+      encounters,
       now: {
         active_today: Number(p.active_today ?? 0),
         before_council: Number(p.before_council ?? 0),

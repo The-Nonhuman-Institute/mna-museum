@@ -32,7 +32,7 @@ describe("the residents feed", () => {
 
   it("reads live but stays inside the free tier: cached, bounded", () => {
     expect(route).toMatch(/export const revalidate = 300;/);
-    for (const m of route.match(/ORDER BY [^`]*?LIMIT \d+/g) ?? []) expect(m).toMatch(/LIMIT (1|200|400)$/);
+    for (const m of route.match(/ORDER BY [^`]*?LIMIT \d+/g) ?? []) expect(Number(/LIMIT (\d+)$/.exec(m)![1])).toBeLessThanOrEqual(400);
   });
 });
 

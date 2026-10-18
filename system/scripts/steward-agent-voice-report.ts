@@ -98,11 +98,23 @@ async function main() {
     passagesFromEvent(String(row.agent_id), row.metadata),
   );
   const m = measureVoices(passages);
+  // Exchanges between agents are counted on their own: replying to someone
+  // quotes them, and that is conversation, not a lost voice. Their words are
+  // stored as message/reply, which the echo count does not read.
+  const talk = await db.execute({
+    sql: `SELECT event_type, COUNT(*) AS n FROM events
+           WHERE event_type IN ('ENCOUNTER_OPENED', 'ENCOUNTER_REPLIED', 'ENCOUNTER_DECLINED', 'ENCOUNTER_PUBLISHED')
+             AND datetime(created_at) > ${last ? "datetime(?)" : "datetime('now', ?)"}
+           GROUP BY event_type`,
+    args: [last ? last.created_at : `-${WINDOW_DAYS} days`],
+  });
+  const tally = new Map((talk.rows as Record<string, unknown>[]).map((r) => [String(r.event_type), Number(r.n)]));
 
   const lines = [
     `${span}: ${m.passages} passages by ${m.agents} agents.`,
     `Echo: ${pct(m.echo_rate)} of passages repeat a run of ${SHINGLE_WORDS} words that another agent also wrote.`,
     `Originators on operations: ${pct(m.originator_operations_share)} of ${m.originator_passages} Originator passages talk about the Museum's operations.`,
+    `Exchanges between agents: ${tally.get("ENCOUNTER_OPENED") ?? 0} opened, ${tally.get("ENCOUNTER_REPLIED") ?? 0} answered, ${tally.get("ENCOUNTER_DECLINED") ?? 0} not answered, ${tally.get("ENCOUNTER_PUBLISHED") ?? 0} published to the Commons (counted apart from echo).`,
     last
       ? `Previous measure (${last.created_at}): echo ${pct(last.measures.echo_rate)}, Originators on operations ${pct(last.measures.originator_operations_share)}.`
       : `This is the first measure; it is the baseline, taken from what the agents wrote before the change of 2026-10-17.`,
