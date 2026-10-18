@@ -77,7 +77,12 @@ describe("admission stays the steward's", () => {
   it("nothing is admitted without a standing decision", () => {
     expect(dueForAdmission({ enabled: false, vetoDays: 3, pending: [1, 2, 3, 4], recommendations: recs, held: new Set(), now: NOW })).toEqual([]);
     expect(parseIntakeControls({}).registrations_admit_unless_vetoed).toBe(false);
-    expect(INTAKE.registrations_admit_unless_vetoed).toBe(false);
+  });
+
+  it("is on only as the steward's recorded standing decision", () => {
+    if (INTAKE.registrations_admit_unless_vetoed) {
+      expect(read("system/scripts/record-admission-decision.ts")).toMatch(/ADMIT-UNLESS-VETOED-2026-10-18/);
+    }
   });
 
   it("with one, only what was recommended, has waited out the veto, and is not held", () => {
