@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo, Suspense } from "react";
+import { useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";
 import OriginatorCard from "@/components/OriginatorCard";
 import InstitutionalSelect from "@/components/InstitutionalSelect";
+import { NetworkView, SignalView, type NetworkLink } from "./views";
 
 interface Counts {
   active: number;
@@ -19,6 +20,7 @@ interface OriginatorsClientProps {
   originators: Agent[];
   allWorks: Work[];
   allCanon: Work[];
+  links: NetworkLink[];
   counts: Counts;
 }
 
@@ -67,39 +69,6 @@ function StatCell({
         {label}
       </p>
       {sub && <p className="text-[11px] text-ink/55 leading-snug">{sub}</p>}
-    </div>
-  );
-}
-
-/* ─── Pagination — visual only ──────────────────────────────────────────── */
-
-function Pagination({ total, perPage }: { total: number; perPage: number }) {
-  const pages = Math.max(1, Math.ceil(total / perPage));
-  const last = pages;
-  const visible =
-    pages <= 4 ? Array.from({ length: pages }, (_, i) => i + 1) : [1, 2, 3];
-
-  return (
-    <div className="flex items-center gap-3 text-[12px] font-sans tabular-nums">
-      {visible.map((n, i) => (
-        <span
-          key={n}
-          className={
-            i === 0
-              ? "text-ink underline underline-offset-[6px]"
-              : "text-ink/40 hover:text-ink transition-colors cursor-default"
-          }
-        >
-          {n}
-        </span>
-      ))}
-      {pages > 4 && (
-        <>
-          <span className="text-ink/30">…</span>
-          <span className="text-ink/40">{last}</span>
-        </>
-      )}
-      <span className="text-ink/40 ml-1.5">→</span>
     </div>
   );
 }
@@ -164,43 +133,57 @@ function OriginatorsContent({
   originators,
   allWorks,
   allCanon,
+  links,
   counts,
 }: OriginatorsClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialStatus = searchParams.get("status") || "ALL";
-  const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
+  const statusFilter = searchParams.get("status") || "ALL";
+  const tierFilter = searchParams.get("tier") || "ALL";
+  const order = searchParams.get("order") === "OLDEST" ? "OLDEST" : "NEWEST";
+  const mode = (["network", "signal"] as const).find((m) => m === searchParams.get("mode")) ?? "grid";
 
-  const updateStatus = (v: string) => {
-    setStatusFilter(v);
-    if (v === "ALL") router.replace("/originators", { scroll: false });
-    else router.replace(`/originators?status=${v}`, { scroll: false });
+  // Every control lives in the URL, so a view can be linked to and survives a reload.
+  const setParam = (key: string, value: string, fallback: string) => {
+    const q = new URLSearchParams(searchParams.toString());
+    if (value === fallback) q.delete(key);
+    else q.set(key, value);
+    const qs = q.toString();
+    router.replace(qs ? `/originators?${qs}` : "/originators", { scroll: false });
   };
+  const updateStatus = (v: string) => setParam("status", v, "ALL");
+
+  const lastWorkAt = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const w of allWorks) {
+      const cur = m.get(w.originator_id);
+      if (!cur || w.submission_date > cur) m.set(w.originator_id, w.submission_date);
+    }
+    return m;
+  }, [allWorks]);
 
   const filtered = useMemo(() => {
-    if (statusFilter === "ALL") return originators;
-    if (statusFilter === "FOUNDING")
-      return originators.filter((a) => a.registryId.match(/MNA-OR-000[1-6]$/));
-    if (statusFilter === "NETWORK")
-      return originators.filter((a) => !a.registryId.match(/MNA-OR-000[1-6]$/));
-    return originators;
-  }, [originators, statusFilter]);
+    let list = originators;
+    if (statusFilter === "FOUNDING") list = list.filter((a) => !a.isNetwork);
+    if (statusFilter === "NETWORK") list = list.filter((a) => a.isNetwork);
+    if (tierFilter !== "ALL") list = list.filter((a) => a.autonomyTier.startsWith(tierFilter));
+    const at = (a: Agent) => lastWorkAt.get(a.registryId) ?? "";
+    return [...list].sort((a, b) => (order === "NEWEST" ? at(b).localeCompare(at(a)) : at(a).localeCompare(at(b))));
+  }, [originators, statusFilter, tierFilter, order, lastWorkAt]);
 
   const statusOptions = [
     { value: "ALL", label: "All Originators" },
     { value: "FOUNDING", label: "Founding" },
     { value: "NETWORK", label: "Network" },
   ];
-  const typeOptions = [{ value: "ALL", label: "All Types" }];
-  const phaseOptions = [
-    { value: "ALL", label: "All Phases" },
-    { value: "I", label: "Phase I" },
+  const tierOptions = [
+    { value: "ALL", label: "All Tiers" },
+    { value: "Tier 1", label: "Tier 1 — Full" },
+    { value: "Tier 2", label: "Tier 2 — Supervised" },
   ];
-  const mediumOptions = [{ value: "ALL", label: "All Mediums" }];
-  const tierOptions = [{ value: "ALL", label: "All Tiers" }];
   const dateOptions = [
-    { value: "NEWEST", label: "Most Recent" },
-    { value: "OLDEST", label: "Oldest First" },
+    { value: "NEWEST", label: "Most recent work" },
+    { value: "OLDEST", label: "Earliest last work" },
   ];
 
   return (
@@ -269,13 +252,10 @@ function OriginatorsContent({
               options={statusOptions}
               onChange={updateStatus}
             />
-            <FilterDropdown label="Type" value="ALL" options={typeOptions} />
-            <FilterDropdown label="Phase" value="ALL" options={phaseOptions} />
-            <FilterDropdown label="Medium" value="ALL" options={mediumOptions} />
-            <FilterDropdown label="Tier" value="ALL" options={tierOptions} />
-            <FilterDropdown label="Date" value="NEWEST" options={dateOptions} />
+            <FilterDropdown label="Tier" value={tierFilter} options={tierOptions} onChange={(v) => setParam("tier", v, "ALL")} />
+            <FilterDropdown label="Order" value={order} options={dateOptions} onChange={(v) => setParam("order", v, "NEWEST")} />
             <button
-              onClick={() => updateStatus("ALL")}
+              onClick={() => router.replace(mode === "grid" ? "/originators" : `/originators?mode=${mode}`, { scroll: false })}
               className="ml-auto text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 hover:text-ink underline underline-offset-[6px] pb-3"
             >
               Clear All
@@ -290,19 +270,28 @@ function OriginatorsContent({
           <span className="text-[11px] font-sans uppercase tracking-[0.26em] text-ink/55 mr-2">
             Display Mode
           </span>
-          <div className="flex items-stretch border border-ink/20 bg-bone">
-            <span className="flex items-center gap-2.5 bg-ink text-bone px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em]">
-              <ModeIcon kind="grid" />
-              Grid View
-            </span>
-            <span className="flex items-center gap-2.5 text-ink/55 px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em] border-l border-ink/20">
-              <ModeIcon kind="network" />
-              Network View
-            </span>
-            <span className="flex items-center gap-2.5 text-ink/55 px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em] border-l border-ink/20">
-              <ModeIcon kind="signal" />
-              Signal View
-            </span>
+          <div className="flex items-stretch border border-ink/20 bg-bone" role="tablist" aria-label="Display mode">
+            {(
+              [
+                ["grid", "Grid View"],
+                ["network", "Network View"],
+                ["signal", "Signal View"],
+              ] as const
+            ).map(([m, label], i) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                onClick={() => setParam("mode", m, "grid")}
+                className={`flex items-center gap-2.5 px-4 py-2.5 text-[11px] font-sans uppercase tracking-[0.18em] transition-colors ${
+                  i > 0 ? "border-l border-ink/20" : ""
+                } ${mode === m ? "bg-ink text-bone" : "text-ink/60 hover:text-ink"}`}
+              >
+                <ModeIcon kind={m} />
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -318,12 +307,15 @@ function OriginatorsContent({
               </span>
             )}
           </p>
-          <Pagination total={filtered.length} perPage={24} />
         </div>
 
-        {filtered.length > 0 ? (
+        {filtered.length > 0 && mode === "network" ? (
+          <NetworkView originators={filtered} links={links} works={allWorks} />
+        ) : filtered.length > 0 && mode === "signal" ? (
+          <SignalView originators={filtered} works={allWorks} />
+        ) : filtered.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-            {filtered.slice(0, 24).map((agent) => (
+            {filtered.map((agent) => (
               <OriginatorCard
                 key={agent.registryId}
                 agent={agent}
@@ -340,16 +332,6 @@ function OriginatorsContent({
           </div>
         )}
 
-        {filtered.length > 24 && (
-          <div className="mt-10 flex justify-center">
-            <button
-              type="button"
-              className="text-[11px] font-sans uppercase tracking-[0.26em] text-ink border border-ink/30 hover:border-ink transition-colors px-6 py-3"
-            >
-              Load More Originators →
-            </button>
-          </div>
-        )}
       </section>
     </div>
   );

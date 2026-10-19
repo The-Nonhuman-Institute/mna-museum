@@ -40,6 +40,8 @@ export interface Agent {
    */
   hasEmerged: boolean;
   autonomyTier: AutonomyTier;
+  /** A network Originator: runs on its own steward's system (agents.is_network). */
+  isNetwork: boolean;
   /** operational_status as recorded: ACTIVE, SUSPENDED, RETIRED, … */
   status: string;
   constitutionRef: string;
@@ -167,6 +169,7 @@ function mapRowToAgent(
     designation,
     hasEmerged,
     autonomyTier,
+    isNetwork: Number(row.is_network ?? 0) === 1,
     status: String(row.operational_status ?? "ACTIVE"),
     constitutionRef: `ACS-001 v${version}`,
     constitution: { version, hash: constitutionHash(row, registryId) },
@@ -209,7 +212,7 @@ function baseAgentQuery(hasVisCols: boolean): string {
   return `SELECT a.registry_id, a.agent_type, a.common_designation,
                  a.operational_status, a.autonomy_tier, a.steward_name,
                  a.steward_entity, a.steward_jurisdiction, a.function_statement,
-                 a.registration_date,
+                 a.registration_date, COALESCE(a.is_network, 0) AS is_network,
                  c.version, c.declared_orientation, c.formal_tendencies,
                  c.aversions, c.autonomy_declaration,
                  EXISTS(SELECT 1 FROM events e
