@@ -38,6 +38,7 @@ export interface RecentNotice {
   issued_at: string;
   acknowledged: boolean;
   excerpt: string;
+  body: string;
 }
 
 export interface AmbassadorRelationship {
@@ -140,6 +141,9 @@ export async function getRecentNotices(
     issued_at: String(row.issued_at ?? ""),
     acknowledged: Boolean(row.acknowledged_at),
     excerpt: excerpt(String(row.body ?? ""), 200),
+    // The whole notice: rows open to it. Notices are public at
+    // GET /api/agents/{id}/notices; a list that cut them off had no full view.
+    body: String(row.body ?? ""),
   }));
 }
 

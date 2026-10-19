@@ -142,21 +142,21 @@ export default function AmbassadorClient({
                 <span></span>
               </div>
               {recent.map((r) => (
-                <Link
-                  key={r.id}
-                  href={`/agent/${r.agentId}`}
-                  className="grid grid-cols-[120px_minmax(220px,1.4fr)_minmax(140px,0.8fr)_120px_120px_24px] gap-x-6 py-4 border-b border-ink/10 hover:bg-ink/[0.025] transition-colors items-center"
-                >
-                  <PriorityPill priority={r.priority} />
-                  <div className="min-w-0">
-                    <p className="text-[12.5px] text-ink leading-tight truncate">{r.subject}</p>
-                    <p className="text-[11.5px] italic text-ink/65 truncate-2 mt-0.5">{r.excerpt}</p>
-                  </div>
-                  <p className="text-[12px] font-sans tabular-nums text-ink/65 truncate">{r.agentId}</p>
-                  <span className="text-[12px] font-sans text-ink/65 tabular-nums">{formatDateShort(r.issued_at)}</span>
-                  <span className="text-[11px] font-sans text-ink/55">{r.acknowledged ? "Yes" : "—"}</span>
-                  <span aria-hidden className="text-ink/50 text-right">›</span>
-                </Link>
+                // Each notice opens to its full text, in the Ambassador's words.
+                <details key={r.id} className="group border-b border-ink/10">
+                  <summary className="grid grid-cols-[120px_minmax(220px,1.4fr)_minmax(140px,0.8fr)_120px_120px_24px] gap-x-6 py-4 hover:bg-ink/[0.025] transition-colors items-center cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                    <PriorityPill priority={r.priority} />
+                    <div className="min-w-0">
+                      <p className="text-[12.5px] text-ink leading-tight">{r.subject}</p>
+                      <p className="text-[11.5px] italic text-ink/65 mt-0.5 group-open:hidden">{r.excerpt}</p>
+                    </div>
+                    <Link href={`/agent/${r.agentId}`} className="text-[12px] font-sans tabular-nums text-ink/65 hover:text-ink">{r.agentId}</Link>
+                    <span className="text-[12px] font-sans text-ink/65 tabular-nums">{formatDateShort(r.issued_at)}</span>
+                    <span className="text-[11px] font-sans text-ink/55">{r.acknowledged ? "Yes" : "—"}</span>
+                    <span aria-hidden className="text-ink/50 text-right transition-transform group-open:rotate-90">›</span>
+                  </summary>
+                  <p className="pb-6 md:pl-[146px] md:pr-10 text-[13px] leading-relaxed text-ink/80 whitespace-pre-line max-w-4xl">{r.body}</p>
+                </details>
               ))}
             </div>
           )}

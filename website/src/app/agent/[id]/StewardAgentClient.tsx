@@ -150,8 +150,8 @@ export default function StewardAgentClient({
                   className="grid grid-cols-[140px_minmax(220px,1.2fr)_minmax(220px,1.6fr)_140px_24px] gap-x-6 py-4 border-b border-ink/10 hover:bg-ink/[0.025] transition-colors items-center"
                 >
                   <ActKindPill kind={r.kind} />
-                  <p className="text-[12.5px] text-ink truncate">{r.subject}</p>
-                  <p className="text-[12.5px] leading-[1.5] text-ink/75 truncate-2">{r.detail}</p>
+                  <p className="text-[12.5px] text-ink break-words">{r.subject}</p>
+                  <p className="text-[12.5px] leading-[1.5] text-ink/75 break-words">{r.detail}</p>
                   <span className="text-[12px] font-sans text-ink/65 tabular-nums">{formatDateShort(r.acted_at)}</span>
                   <span aria-hidden className="text-ink/50 text-right">›</span>
                 </Link>
@@ -198,7 +198,7 @@ export default function StewardAgentClient({
                   {governance.slice(0, 6).map((g) => (
                     <li key={g.id} className="flex items-baseline justify-between gap-3 border-b border-ink/10 pb-2">
                       <div className="min-w-0">
-                        <p className="text-[12.5px] text-ink truncate">{g.title}</p>
+                        <p className="text-[12.5px] text-ink">{g.title}</p>
                         <p className="text-[10.5px] font-sans uppercase tracking-[0.18em] text-ink/55">
                           v{g.version} · {g.status}
                         </p>

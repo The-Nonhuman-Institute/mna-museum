@@ -152,7 +152,7 @@ export default function ConservatorClient({
                   <p className="text-[12px] font-sans tabular-nums text-ink truncate">{r.workId}</p>
                   <p className="text-[12px] text-ink/75 truncate">{r.outputType}</p>
                   <span className="text-[12px] font-sans text-ink/65 tabular-nums">{formatDateShort(r.last_checked)}</span>
-                  <p className="text-[12.5px] leading-[1.5] text-ink/75 truncate-2">{r.errorMessage || "Render verified."}</p>
+                  <p className="text-[12.5px] leading-[1.5] text-ink/75 break-words">{r.errorMessage || "Render verified."}</p>
                   <span aria-hidden className="text-ink/50 text-right">›</span>
                 </Link>
               ))}
