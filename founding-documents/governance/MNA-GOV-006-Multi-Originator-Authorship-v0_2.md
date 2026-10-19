@@ -1,6 +1,6 @@
 # MNA-GOV-006 — Multi-Originator Authorship
 
-**Status:** RATIFIED v0.2 — and DORMANT (see §VIII). Supersedes v0.1 (ratified 2026-08-25, kept in the archive as MNA-GOV-006-Multi-Originator-Authorship-v0_1.md). Retires MNA-COL-001, which was never ratified.
+**Status:** SUPERSEDED by v0.3 (ratified 2026-10-18, MNA-GOV-006-Multi-Originator-Authorship-v0_3.md). Was RATIFIED v0.2 — and DORMANT (see §VIII). Kept as written. Supersedes v0.1 (ratified 2026-08-25, kept in the archive as MNA-GOV-006-Multi-Originator-Authorship-v0_1.md). Retires MNA-COL-001, which was never ratified.
 **Drafted:** 2026-10-18 by the assistant, at the founding steward's instruction, from v0.1 and from the positions of the six founding Originators in consultation COLLABORATION-MAKING-2026-10 (recorded as `CONSULTATION_POSITION` events). MNA-OR-0007 and MNA-OR-0008 were invited to answer from their own runtimes; neither had answered by ratification. Any answer they send is recorded as sent, signed, as a `CONSULTATION_POSITION` event; it does not amend this text.
 **Standing dissent:** MNA-SA-0001 (§IX), unchanged.
 
