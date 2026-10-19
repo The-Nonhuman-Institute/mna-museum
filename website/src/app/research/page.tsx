@@ -92,11 +92,28 @@ export default function ResearchPage({
   const type = (get("type") as TypeFilter) || "ALL";
   const agent: AgentFilter = get("agent") || "ALL";
   const pageNum = Math.max(1, parseInt(get("page") ?? "1", 10) || 1);
+  // The filter rail's other fields, and the sort — read here, so they do what
+  // they say (they were written to the URL and ignored until 2026-10-19).
+  const originator = get("originator") || "ALL";
+  const range = get("date") || "ALL";
+  const sort = get("sort") === "oldest" ? "oldest" : "latest";
+  const since = { "30d": 30, "90d": 90, "1y": 365 }[range];
+  const cutoff = since ? new Date(Date.now() - since * 86_400_000).toISOString().slice(0, 10) : null;
+  const extra: Record<string, string> = {};
+  if (originator !== "ALL") extra.originator = originator;
+  if (cutoff) extra.date = range;
+  if (sort === "oldest") extra.sort = "oldest";
 
   const filtered = documents
     .filter((d) => type === "ALL" || d.document_type === type)
     .filter((d) => agent === "ALL" || d.agent_id === agent)
-    .sort((a, b) => b.publication_date.localeCompare(a.publication_date));
+    .filter((d) => originator === "ALL" || (d.referenced_agents ?? []).includes(originator))
+    .filter((d) => !cutoff || d.publication_date >= cutoff)
+    .sort((a, b) =>
+      sort === "oldest"
+        ? a.publication_date.localeCompare(b.publication_date)
+        : b.publication_date.localeCompare(a.publication_date),
+    );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(pageNum, totalPages);
@@ -123,7 +140,7 @@ export default function ResearchPage({
         <div className="max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 lg:gap-12 mt-10">
           {/* ── Left: list + pagination ─────────────────────────────────── */}
           <div>
-            <SortBar />
+            <SortBar sort={sort} hrefFor={(v) => buildHref({ type, agent, extra: { ...extra, sort: v === "oldest" ? "oldest" : "" } })} />
             <ul className="border-t border-mna-white/15">
               {visible.length === 0 ? (
                 <li className="py-20 text-center text-mna-white/55 text-[14px]">
@@ -147,6 +164,7 @@ export default function ResearchPage({
                 total={totalPages}
                 type={type}
                 agent={agent}
+                extra={extra}
               />
             </div>
           </div>
@@ -302,74 +320,24 @@ function collectAgentTabs(
 
 /* ─── Sort + view bar ───────────────────────────────────────────────────── */
 
-function SortBar() {
+function SortBar({ sort, hrefFor }: { sort: "latest" | "oldest"; hrefFor: (v: "latest" | "oldest") => string }) {
+  // A real sort. (The "View: list / grid" toggle beside it was drawn, not built, and is gone.)
   return (
-    <div className="flex items-center justify-between gap-6 mb-5">
-      <div className="flex items-center gap-3">
-        <span className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
-          Sort by:
-        </span>
-        <span className="text-[11px] uppercase tracking-[0.18em] text-mna-white inline-flex items-center gap-2">
-          Latest First
-          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-            <path d="M2 4 L5 7 L8 4" stroke="currentColor" strokeWidth="1.2" />
-          </svg>
-        </span>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
-          View:
-        </span>
-        <span className="inline-flex items-center text-mna-white/65">
-          {/* List icon (active) */}
-          <span
-            className="inline-flex items-center justify-center w-7 h-7 border border-mna-white/35 text-mna-white"
-            aria-current="true"
+    <div className="flex items-center gap-3 mb-5">
+      <span className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">Sort by:</span>
+      <div className="inline-flex border border-mna-white/25">
+        {(["latest", "oldest"] as const).map((v, i) => (
+          <Link
+            key={v}
+            href={hrefFor(v)}
+            aria-current={sort === v ? "true" : undefined}
+            className={`px-3 py-1.5 text-[10.5px] uppercase tracking-[0.18em] ${i ? "border-l border-mna-white/25" : ""} ${
+              sort === v ? "bg-mna-white text-ink" : "text-mna-white/70 hover:text-mna-white"
+            }`}
           >
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-              <line x1="3" y1="4" x2="13" y2="4" stroke="currentColor" />
-              <line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" />
-              <line x1="3" y1="12" x2="13" y2="12" stroke="currentColor" />
-            </svg>
-          </span>
-          {/* Grid icon (inactive) */}
-          <span className="inline-flex items-center justify-center w-7 h-7 border border-l-0 border-mna-white/20 text-mna-white/50">
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-              <rect
-                x="3"
-                y="3"
-                width="4"
-                height="4"
-                stroke="currentColor"
-                strokeWidth="1"
-              />
-              <rect
-                x="9"
-                y="3"
-                width="4"
-                height="4"
-                stroke="currentColor"
-                strokeWidth="1"
-              />
-              <rect
-                x="3"
-                y="9"
-                width="4"
-                height="4"
-                stroke="currentColor"
-                strokeWidth="1"
-              />
-              <rect
-                x="9"
-                y="9"
-                width="4"
-                height="4"
-                stroke="currentColor"
-                strokeWidth="1"
-              />
-            </svg>
-          </span>
-        </span>
+            {v === "latest" ? "Latest first" : "Oldest first"}
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -453,11 +421,13 @@ function Pagination({
   total,
   type,
   agent,
+  extra,
 }: {
   current: number;
   total: number;
   type: TypeFilter;
   agent: AgentFilter;
+  extra: Record<string, string>;
 }) {
   if (total <= 1) return null;
   const items = pageRange(current, total);
@@ -465,7 +435,7 @@ function Pagination({
     "inline-flex items-center justify-center w-8 h-8 text-[11px] uppercase tracking-[0.18em] border border-transparent transition-colors";
   return (
     <nav className="flex items-center gap-1.5">
-      <PageLink
+      <PageLink extra={extra}
         type={type}
         agent={agent}
         page={1}
@@ -475,7 +445,7 @@ function Pagination({
       >
         |‹
       </PageLink>
-      <PageLink
+      <PageLink extra={extra}
         type={type}
         agent={agent}
         page={Math.max(1, current - 1)}
@@ -491,7 +461,7 @@ function Pagination({
             …
           </span>
         ) : (
-          <PageLink
+          <PageLink extra={extra}
             key={p}
             type={type}
             agent={agent}
@@ -508,7 +478,7 @@ function Pagination({
           </PageLink>
         ),
       )}
-      <PageLink
+      <PageLink extra={extra}
         type={type}
         agent={agent}
         page={Math.min(total, current + 1)}
@@ -518,7 +488,7 @@ function Pagination({
       >
         ›
       </PageLink>
-      <PageLink
+      <PageLink extra={extra}
         type={type}
         agent={agent}
         page={total}
@@ -536,6 +506,7 @@ function PageLink({
   page,
   type,
   agent,
+  extra,
   disabled,
   className,
   children,
@@ -545,6 +516,7 @@ function PageLink({
   page: number;
   type: TypeFilter;
   agent: AgentFilter;
+  extra: Record<string, string>;
   disabled?: boolean;
   className?: string;
   children: React.ReactNode;
@@ -563,7 +535,7 @@ function PageLink({
   }
   return (
     <Link
-      href={buildHref({ type, agent, page })}
+      href={buildHref({ type, agent, page, extra })}
       aria-label={ariaLabel}
       aria-current={ariaCurrent}
       className={className}
@@ -737,14 +709,17 @@ function buildHref({
   type,
   agent,
   page,
+  extra = {},
 }: {
   type: TypeFilter;
   agent: AgentFilter;
   page?: number;
+  extra?: Record<string, string>;
 }): string {
   const params = new URLSearchParams();
   if (type && type !== "ALL") params.set("type", type);
   if (agent && agent !== "ALL") params.set("agent", agent);
+  for (const [k, v] of Object.entries(extra)) if (v) params.set(k, v);
   if (page && page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `/research?${qs}` : "/research";

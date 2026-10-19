@@ -50,7 +50,7 @@ export interface CriticRelationship {
 export async function getCriticStats(criticId: string): Promise<CriticStats> {
   const db = getDb();
   const r = await db.execute({
-    sql: `SELECT cr.id, cr.work_id, cr.body, cr.critic_approach, cr.response_date,
+    sql: `SELECT cr.id, cr.work_id, cr.body, cr.critic_approach, cr.response_date, w.title AS work_title,
                  w.originator_id, w.created_at as work_created_at
             FROM critical_responses cr
             LEFT JOIN works w ON w.id = cr.work_id
@@ -182,7 +182,7 @@ export async function getRecentCritiques(
   return r.rows.map((row) => ({
     responseId: Number(row.id),
     workId: String(row.work_id ?? ""),
-    workTitle: null,
+    workTitle: (row.work_title as string) || null,
     originatorId: String(row.originator_id ?? ""),
     originatorDesignation: (row.originator_designation as string) || null,
     approach: String(row.critic_approach ?? ""),

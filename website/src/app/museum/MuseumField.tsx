@@ -2627,6 +2627,32 @@ function withEncounters(feed: ResidentsFeed): ResidentsFeed {
   };
 }
 
+/**
+ * An agent's words, short enough to read in passing, and whole on request. The
+ * in-world labels ignore the pointer so the visitor can walk through them; only
+ * the "more" control takes a click. (They were cut with "…" and nothing else.)
+ */
+function Clipped({ text, max }: { text: string; max: number }) {
+  const [open, setOpen] = useState(false);
+  if (text.length <= max) return <>{text}</>;
+  return (
+    <>
+      {open ? text : `${text.slice(0, max).trimEnd()}…`}{" "}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        style={{ pointerEvents: "auto" }}
+        className="font-sans not-italic text-[10px] uppercase tracking-[0.2em] text-mna-white/55 hover:text-mna-white underline underline-offset-4"
+      >
+        {open ? "less" : "more"}
+      </button>
+    </>
+  );
+}
+
 /** What the entrance says before you walk in: that the place is inhabited. */
 function RightNow({ feed }: { feed: ResidentsFeed }) {
   const names = new Map(feed.residents.map((r) => [r.registry_id, r.designation]));
@@ -2653,7 +2679,7 @@ function RightNow({ feed }: { feed: ResidentsFeed }) {
       </p>
       {voice ? (
         <p className="text-[12.5px] leading-[1.6] text-mna-white/65 italic">
-          {voice.designation} {voice.act}, {ago(voice.at)}: “{voice.words!.length > 150 ? voice.words!.slice(0, 150).trimEnd() + "…" : voice.words}”
+          {voice.designation} {voice.act}, {ago(voice.at)}: “<Clipped text={voice.words!} max={150} />”
         </p>
       ) : null}
     </div>
@@ -2970,7 +2996,7 @@ function ResidentWalker({
   };
   const entry = registry.get(resident.registry_id);
   if (entry) entry.line = line;
-  const words = resident.words && resident.words.length > 200 ? resident.words.slice(0, 200).trimEnd() + "…" : resident.words;
+  const words = resident.words;
   const visitor: PresenceVisitor = {
     id: `resident:${resident.registry_id}`,
     kind: "agent",
@@ -3017,12 +3043,12 @@ function ResidentWalker({
             ) : null}
             {w && a?.seen && !walking ? (
               <p className="font-display text-[15px] leading-[1.45] text-mna-white/85 mt-2.5 pt-2.5 border-t border-mna-white/10">
-                “{a.seen.length > 240 ? a.seen.slice(0, 240).trimEnd() + "…" : a.seen}”
+                “<Clipped text={a.seen} max={240} />”
               </p>
             ) : null}
             {near && words && !w ? (
               <p className="font-display text-[15px] leading-[1.45] text-mna-white/80 mt-2.5 pt-2.5 border-t border-mna-white/10">
-                “{words}”
+                “<Clipped text={words} max={200} />”
               </p>
             ) : null}
           </div>
@@ -3054,7 +3080,6 @@ function ExchangePlaque({ encounter, work, names }: { encounter: Encounter; work
   const who = (id: string) => names.find((r) => r.registry_id === id);
   const from = who(encounter.from);
   const to = who(encounter.to);
-  const trim = (t: string) => (t.length > 260 ? t.slice(0, 260).trimEnd() + "…" : t);
   return (
     <Html position={at.toArray()} center distanceFactor={10} zIndexRange={[15, 0]} style={{ pointerEvents: "none" }}>
       <div ref={ref} className="w-[360px] text-mna-white select-none" style={{ transformOrigin: "center bottom" }}>
@@ -3067,7 +3092,7 @@ function ExchangePlaque({ encounter, work, names }: { encounter: Encounter; work
               <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: from?.color }} />
               {from?.designation ?? encounter.from} <span className="text-mna-white/40 normal-case tracking-normal">to</span> {to?.designation ?? encounter.to}
             </p>
-            <p className="font-display text-[15px] leading-[1.45] text-mna-white/90 mt-1">“{trim(encounter.message)}”</p>
+            <p className="font-display text-[15px] leading-[1.45] text-mna-white/90 mt-1">“<Clipped text={encounter.message} max={260} />”</p>
           </div>
           <div className="mt-3 pt-3 border-t border-mna-white/10">
             <p className="flex items-center gap-1.5 font-sans uppercase tracking-[0.22em] text-[9px] text-mna-white/80">
@@ -3075,7 +3100,7 @@ function ExchangePlaque({ encounter, work, names }: { encounter: Encounter; work
               {to?.designation ?? encounter.to}
             </p>
             <p className="font-display text-[15px] leading-[1.45] text-mna-white/90 mt-1">
-              {encounter.reply ? <>“{trim(encounter.reply)}”</> : <span className="italic text-mna-white/55">{encounter.declined ? "chose not to answer." : "has not answered."}</span>}
+              {encounter.reply ? <>“<Clipped text={encounter.reply} max={260} />”</> : <span className="italic text-mna-white/55">{encounter.declined ? "chose not to answer." : "has not answered."}</span>}
             </p>
           </div>
         </div>

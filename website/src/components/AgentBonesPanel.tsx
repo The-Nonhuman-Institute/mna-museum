@@ -122,7 +122,7 @@ function OutstandingRow({ item }: { item: OutstandingResponse }) {
           triggered {item.daysSinceTrigger}d ago
         </span>
         <span className={`text-[9.5px] uppercase tracking-[0.22em] ${txt}`}>
-          {item.status === "behind" ? `${item.spec.windowDays}d overdue` : "due soon"}
+          {item.status === "behind" ? `${Math.max(1, Math.round(item.daysSinceTrigger - item.spec.windowDays))}d overdue` : "due soon"}
         </span>
       </div>
     </li>

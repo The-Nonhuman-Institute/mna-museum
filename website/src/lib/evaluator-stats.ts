@@ -169,7 +169,7 @@ export async function getRecentEvaluations(
   const db = getDb();
   const r = await db.execute({
     sql: `SELECT e.work_id, e.verdict, e.rationale, e.is_dissent, e.evaluation_date,
-                 w.originator_id,
+                 w.originator_id, w.title,
                  a.common_designation AS originator_designation
             FROM evaluations e
             LEFT JOIN works w     ON w.id = e.work_id
@@ -183,7 +183,7 @@ export async function getRecentEvaluations(
     work_id: String(row.work_id),
     originator_id: String(row.originator_id ?? ""),
     originator_designation: (row.originator_designation as string) || null,
-    work_title: null, // titles live in a separate table or are absent
+    work_title: (row.title as string) || null,
     verdict: String(row.verdict),
     is_dissent: Number(row.is_dissent ?? 0) === 1,
     evaluation_date: String(row.evaluation_date ?? ""),
@@ -237,6 +237,14 @@ export async function getCitationActivity(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([workId, count]) => ({ workId, count, title: null as string | null }));
+  if (top.length) {
+    const t = await db.execute({
+      sql: `SELECT id, title FROM works WHERE id IN (${top.map(() => "?").join(",")})`,
+      args: top.map((x) => x.workId),
+    });
+    const titles = new Map(t.rows.map((r) => [String(r.id), (r.title as string) || null]));
+    for (const x of top) x.title = titles.get(x.workId) ?? null;
+  }
 
   return {
     citationsMade: madeTotal,

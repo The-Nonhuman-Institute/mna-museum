@@ -231,7 +231,7 @@ export default function EvaluatorClient({
                     {r.work_id}
                   </p>
                   <p className="text-[12px] italic text-ink/65 truncate">
-                    {r.work_title || "—"}
+                    {r.work_title || "Untitled"}
                   </p>
                 </div>
                 <div className="min-w-0">

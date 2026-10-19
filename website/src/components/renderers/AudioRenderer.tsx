@@ -69,6 +69,27 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
   const masterGainRef = useRef<GainNode | null>(null);
 
   const data = useMemo(() => parseAudioJson(json), [json]);
+  // The work's own loudness over time: its duration in 32 slices, each bar the
+  // summed gain of the notes sounding then. (These bars were Math.random(),
+  // different on every load and never the work.)
+  const bars = useMemo(() => {
+    const BARS = 32;
+    const notes = data ? playableNotes(data) : [];
+    const total = data ? audioDuration(data, notes) : 0;
+    if (!total || !notes.length) return Array(BARS).fill(0) as number[];
+    const sums = Array(BARS).fill(0) as number[];
+    for (const n of notes) {
+      const g = Math.max(0, n.gain ?? 0.5);
+      for (let i = 0; i < BARS; i++) {
+        const a = (i / BARS) * total;
+        const b = ((i + 1) / BARS) * total;
+        const overlap = Math.min(b, n.start + n.duration) - Math.max(a, n.start);
+        if (overlap > 0) sums[i] += g * (overlap / (b - a));
+      }
+    }
+    const max = Math.max(...sums) || 1;
+    return sums.map((v) => Math.round((v / max) * 1000) / 1000);
+  }, [data]);
 
   // Stop audio when component unmounts
   useEffect(() => {
@@ -145,14 +166,14 @@ export default function AudioRenderer({ json }: AudioRendererProps) {
   return (
     <div className="w-full h-full bg-[#0e0c0a] flex flex-col items-center justify-center gap-4">
       <div className="flex items-end gap-[2px] h-16">
-        {Array.from({ length: 32 }).map((_, i) => (
+        {bars.map((v, i) => (
           <div
             key={i}
             className={`w-1 bg-[#4a4540] rounded-full transition-all ${
               playing ? "animate-pulse" : ""
             }`}
             style={{
-              height: `${Math.random() * 48 + 8}px`,
+              height: `${Math.round(v * 56) + 4}px`,
               opacity: playing ? 0.8 : 0.3,
             }}
           />

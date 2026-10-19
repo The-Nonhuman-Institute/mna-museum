@@ -178,7 +178,7 @@ export default function CriticClient({
                   </div>
                   <div className="min-w-0">
                     <p className="text-[12px] font-sans tabular-nums text-ink truncate">{r.workId}</p>
-                    <p className="text-[12px] italic text-ink/65 truncate">{r.workTitle || "—"}</p>
+                    <p className="text-[12px] italic text-ink/65 truncate">{r.workTitle || "Untitled"}</p>
                   </div>
                   <div className="min-w-0">
                     {isEmergencePending(r.originatorDesignation) ? (

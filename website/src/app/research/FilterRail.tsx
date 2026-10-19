@@ -37,16 +37,17 @@ export default function FilterRail() {
 
   const initialType = sp.get("type") ?? "ALL";
   const initialAgent = sp.get("agent") ?? "ALL";
-  const initialAgentType = sp.get("agentType") ?? "ALL";
+
   const initialOriginator = sp.get("originator") ?? "ALL";
   const initialDate = sp.get("date") ?? "ALL";
-  const initialTag = sp.get("tag") ?? "ALL";
+
 
   const [type, setType] = useState(initialType);
-  const [agentType, setAgentType] = useState(initialAgentType);
+  // "By Agent" lists agents, so it sets the agent filter the page reads.
+  const [agentType, setAgentType] = useState(initialAgent);
   const [originator, setOriginator] = useState(initialOriginator);
   const [date, setDate] = useState(initialDate);
-  const [tag, setTag] = useState(initialTag);
+
 
   const agentOptions: Option[] = useMemo(() => {
     const seen = new Map<string, string>();
@@ -70,16 +71,16 @@ export default function FilterRail() {
     ];
   }, []);
 
-  const tagOptions: Option[] = [{ value: "ALL", label: "All Tags" }];
+
 
   function apply() {
     const params = new URLSearchParams();
     if (type !== "ALL") params.set("type", type);
-    if (initialAgent !== "ALL") params.set("agent", initialAgent);
-    if (agentType !== "ALL") params.set("agentType", agentType);
+    if (agentType !== "ALL") params.set("agent", agentType);
     if (originator !== "ALL") params.set("originator", originator);
     if (date !== "ALL") params.set("date", date);
-    if (tag !== "ALL") params.set("tag", tag);
+    const sort = sp.get("sort");
+    if (sort) params.set("sort", sort);
     const qs = params.toString();
     router.replace(qs ? `/research?${qs}` : "/research", { scroll: false });
   }
@@ -114,7 +115,7 @@ export default function FilterRail() {
           size="compact"
         />
       </Field>
-      <Field label="By Agent Type">
+      <Field label="By Agent">
         <InstitutionalSelect
           value={agentType}
           onChange={setAgentType}
@@ -140,16 +141,6 @@ export default function FilterRail() {
           onChange={setDate}
           options={DATE_OPTIONS}
           ariaLabel="Filter by date range"
-          tone="dark"
-          size="compact"
-        />
-      </Field>
-      <Field label="By Tag">
-        <InstitutionalSelect
-          value={tag}
-          onChange={setTag}
-          options={tagOptions}
-          ariaLabel="Filter by tag"
           tone="dark"
           size="compact"
         />

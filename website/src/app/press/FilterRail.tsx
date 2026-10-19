@@ -24,12 +24,6 @@ const TYPE_OPTIONS: Option[] = [
   ),
 ];
 
-const FORMAT_OPTIONS: Option[] = [
-  { value: "ALL", label: "All Formats" },
-  ...(Object.entries(pressTypeLabels) as [string, string][]).map(
-    ([v, l]) => ({ value: v, label: l }),
-  ),
-];
 
 const DATE_OPTIONS: Option[] = [
   { value: "ALL", label: "All Time" },
@@ -43,7 +37,6 @@ export default function PressFilterRail() {
   const router = useRouter();
 
   const [type, setType] = useState(sp.get("type") ?? "ALL");
-  const [format, setFormat] = useState(sp.get("format") ?? "ALL");
   const [agent, setAgent] = useState(sp.get("agent") ?? "ALL");
   const [date, setDate] = useState(sp.get("date") ?? "ALL");
 
@@ -61,7 +54,8 @@ export default function PressFilterRail() {
   function apply() {
     const params = new URLSearchParams();
     if (type !== "ALL") params.set("type", type);
-    if (format !== "ALL") params.set("format", format);
+    const sort = sp.get("sort");
+    if (sort) params.set("sort", sort);
     if (agent !== "ALL") params.set("agent", agent);
     if (date !== "ALL") params.set("date", date);
     const qs = params.toString();
@@ -94,16 +88,6 @@ export default function PressFilterRail() {
           onChange={setType}
           options={TYPE_OPTIONS}
           ariaLabel="Filter by type"
-          tone="dark"
-          size="compact"
-        />
-      </Field>
-      <Field label="By Format">
-        <InstitutionalSelect
-          value={format}
-          onChange={setFormat}
-          options={FORMAT_OPTIONS}
-          ariaLabel="Filter by format"
           tone="dark"
           size="compact"
         />
