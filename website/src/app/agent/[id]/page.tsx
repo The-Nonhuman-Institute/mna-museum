@@ -26,6 +26,7 @@ import {
 import OriginatorDetailClient from "./originator-client";
 import { getEmergenceDeclaration } from "@/lib/emergence-declaration";
 import { getNetworkLinks } from "@/lib/originator-network";
+import { getAgentDates } from "@/lib/agent-dates";
 import EvaluatorClient from "./EvaluatorClient";
 import CuratorClient from "./CuratorClient";
 import KeeperClient from "./KeeperClient";
@@ -265,6 +266,7 @@ export default async function AgentDetailPage({
 }) {
   const agent = await getAgent(params.id);
   if (!agent) notFound();
+  const dates = await getAgentDates(agent.registryId, formatDatePretty);
 
   // Recent institutional decisions for this agent — surfaces tick
   // observations, abstentions, publications, and constitution
@@ -365,8 +367,8 @@ export default async function AgentDetailPage({
           citations={citations}
           timeline={timeline}
           relationships={relationships}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalEvaluationsLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
@@ -415,8 +417,8 @@ export default async function AgentDetailPage({
           output={output}
           relationships={relationships}
           timeline={timeline}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalRecordsLink="/archive"
         />
       </WithDecisions>
@@ -456,8 +458,8 @@ export default async function AgentDetailPage({
           relationships={relationships}
           principles={principles}
           timeline={timeline}
-          registrationDate={formatDatePretty("2026-04-17")}
-          lastAmended={formatDatePretty("2026-04-17")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           operatingPrinciple={operatingPrinciple}
           totalExhibitionsLink="/exhibitions"
         />
@@ -483,8 +485,8 @@ export default async function AgentDetailPage({
           recent={recent}
           relationships={relationships}
           timeline={timelineRaw}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalCritiquesLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
@@ -525,8 +527,8 @@ export default async function AgentDetailPage({
           spaceLoad={spaceLoad}
           relationships={relationships}
           timeline={timelineRaw}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalInstallationsLink="/museum"
         />
       </WithDecisions>
@@ -551,8 +553,8 @@ export default async function AgentDetailPage({
           recent={recent}
           relationships={relationships}
           timeline={timelineRaw}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalValidationsLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
@@ -577,8 +579,8 @@ export default async function AgentDetailPage({
           recent={recent}
           relationships={relationships}
           timeline={timelineRaw}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalNoticesLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
@@ -603,8 +605,8 @@ export default async function AgentDetailPage({
           recent={recent}
           relationships={relationships}
           timeline={timelineRaw}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalRegistrationsLink="/agents"
         />
       </WithDecisions>
@@ -631,8 +633,8 @@ export default async function AgentDetailPage({
           governance={governance}
           relationships={relationships}
           timeline={timelineRaw}
-          registrationDate={formatDatePretty("2026-04-21")}
-          lastAmended={formatDatePretty("2026-04-21")}
+          registrationDate={dates.registered}
+          lastAmended={dates.lastAmended}
           totalActsLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>

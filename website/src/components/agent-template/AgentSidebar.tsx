@@ -66,7 +66,11 @@ export default function AgentSidebar({
 
         {/* Status */}
         <div className="inline-flex items-center gap-2 mb-3">
-          <span className="inline-block w-[6px] h-[6px] rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.65)]" />
+          <span
+            className={`inline-block w-[6px] h-[6px] rounded-full ${
+              agent.status === "ACTIVE" ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.65)]" : "bg-mna-white/40"
+            }`}
+          />
           <span className="text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/85">
             {agent.status}
           </span>
