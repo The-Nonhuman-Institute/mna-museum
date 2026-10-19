@@ -76,7 +76,7 @@ export default function KeeperClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-7">
             <FieldBlock
               label="Function Statement"
-              moreHref={`/agent/${agent.registryId}/constitution#function`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
               moreLabel="View full"
             >
               <p className="text-[13.5px] leading-[1.7] text-ink/85">
@@ -86,7 +86,7 @@ export default function KeeperClient({
             <div className="space-y-7">
               <FieldBlock
                 label={`Autonomy Declaration — ${agent.autonomyTier}`}
-                moreHref={`/agent/${agent.registryId}/constitution#autonomy`}
+                moreHref={`/agent/${agent.registryId}/constitution`}
                 moreLabel="View full"
               >
                 <p className="text-[13.5px] leading-[1.7] text-ink/85">
@@ -96,7 +96,7 @@ export default function KeeperClient({
               {constitution.conflictConstraints ? (
                 <FieldBlock
                   label="Conflict Constraints"
-                  moreHref={`/agent/${agent.registryId}/constitution#conflict`}
+                  moreHref={`/agent/${agent.registryId}/constitution`}
                   moreLabel="View all"
                 >
                   <p className="text-[13.5px] leading-[1.7] text-ink/85">
@@ -114,19 +114,19 @@ export default function KeeperClient({
             <ProfileCol
               label="Declared Orientation"
               body={agent.fullConstitution.orientation}
-              moreHref={`/agent/${agent.registryId}/constitution#orientation`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
               moreLabel="View full orientation"
             />
             <ProfileCol
               label="Recording Tendencies"
               body={agent.fullConstitution.tendencies}
-              moreHref={`/agent/${agent.registryId}/constitution#tendencies`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
               moreLabel="View all tendencies"
             />
             <ProfileCol
               label="Aversions"
               body={agent.fullConstitution.aversions}
-              moreHref={`/agent/${agent.registryId}/constitution#aversions`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
               moreLabel="View all aversions"
             />
           </div>
@@ -137,13 +137,7 @@ export default function KeeperClient({
           label="Archival Activity"
           labelExtra="(since first operation)"
           right={
-            <Link
-              href={`/agent/${agent.registryId}/analytics`}
-              className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 hover:text-ink transition-colors"
-            >
-              <span>View analytics dashboard</span>
-              <span aria-hidden>→</span>
-            </Link>
+            null
           }
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-y-8 gap-x-6">
@@ -249,8 +243,8 @@ export default function KeeperClient({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12 items-stretch">
             <Panel
               label="Archival Timeline"
-              footerHref={`/agent/${agent.registryId}/timeline`}
-              footerLabel="View full timeline"
+              footerHref={`/log?agent=${agent.registryId}`}
+              footerLabel="View full record"
             >
               <ul className="space-y-4">
                 {timeline.map((t, i) => (
@@ -276,8 +270,6 @@ export default function KeeperClient({
 
             <Panel
               label="Record Sources"
-              footerHref={`/agent/${agent.registryId}/network`}
-              footerLabel="View full network"
             >
               <KeeperRelationshipMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
@@ -293,8 +285,6 @@ export default function KeeperClient({
 
             <Panel
               label="Record Output"
-              footerHref={`/agent/${agent.registryId}/output`}
-              footerLabel="View full record output"
             >
               <div className="mb-4">
                 <p className="font-display font-light text-[28px] md:text-[30px] leading-none text-ink mb-1 tabular-nums">

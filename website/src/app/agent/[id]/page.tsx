@@ -366,7 +366,7 @@ export default async function AgentDetailPage({
           relationships={relationships}
           registrationDate={formatDatePretty("2026-04-21")}
           lastAmended={formatDatePretty("2026-04-21")}
-          totalEvaluationsLink={`/evaluation?agent=${agent.registryId}`}
+          totalEvaluationsLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
     );
@@ -484,7 +484,7 @@ export default async function AgentDetailPage({
           timeline={timelineRaw}
           registrationDate={formatDatePretty("2026-04-21")}
           lastAmended={formatDatePretty("2026-04-21")}
-          totalCritiquesLink={`/critics?agent=${agent.registryId}`}
+          totalCritiquesLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
     );
@@ -552,7 +552,7 @@ export default async function AgentDetailPage({
           timeline={timelineRaw}
           registrationDate={formatDatePretty("2026-04-21")}
           lastAmended={formatDatePretty("2026-04-21")}
-          totalValidationsLink={`/agent/${agent.registryId}/validations`}
+          totalValidationsLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
     );
@@ -578,7 +578,7 @@ export default async function AgentDetailPage({
           timeline={timelineRaw}
           registrationDate={formatDatePretty("2026-04-21")}
           lastAmended={formatDatePretty("2026-04-21")}
-          totalNoticesLink={`/agent/${agent.registryId}/notices`}
+          totalNoticesLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
     );
@@ -632,7 +632,7 @@ export default async function AgentDetailPage({
           timeline={timelineRaw}
           registrationDate={formatDatePretty("2026-04-21")}
           lastAmended={formatDatePretty("2026-04-21")}
-          totalActsLink="/governance"
+          totalActsLink={`/log?agent=${agent.registryId}`}
         />
       </WithDecisions>
     );

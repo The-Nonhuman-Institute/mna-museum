@@ -163,7 +163,7 @@ export async function getRecentStewardshipActs(
       subject: String(row.title ?? "Untitled document"),
       detail: `Governance document v${row.version} — ${row.status}`,
       acted_at: String(row.drafted_at ?? ""),
-      href: `/governance/${row.id}`,
+      href: `/governance#${row.id}`,
     });
   }
   for (const row of evRes.rows) {
@@ -171,9 +171,9 @@ export async function getRecentStewardshipActs(
       kind: "EVENT",
       recordId: `ev-${row.id}`,
       subject: String(row.event_type ?? ""),
-      detail: String(row.description ?? "").slice(0, 120),
+      detail: String(row.description ?? ""),
       acted_at: String(row.created_at ?? ""),
-      href: "/governance",
+      href: `/log?agent=${stewardId}`,
     });
   }
   for (const row of ntRes.rows) {

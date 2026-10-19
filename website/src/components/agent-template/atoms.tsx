@@ -97,8 +97,8 @@ export function Panel({
 }: {
   label: string;
   children: React.ReactNode;
-  footerHref: string;
-  footerLabel: string;
+  footerHref?: string;
+  footerLabel?: string;
 }) {
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -106,13 +106,16 @@ export function Panel({
         <p className="text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55">
           {label}
         </p>
-        <Link
-          href={footerHref}
-          className="text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors inline-flex items-center gap-1.5"
-        >
-          <span>{footerLabel}</span>
-          <span aria-hidden>→</span>
-        </Link>
+        {/* Only where there is somewhere real to go. */}
+        {footerHref && footerLabel ? (
+          <Link
+            href={footerHref}
+            className="text-[10px] uppercase tracking-[0.22em] font-sans text-ink/55 hover:text-ink transition-colors inline-flex items-center gap-1.5"
+          >
+            <span>{footerLabel}</span>
+            <span aria-hidden>→</span>
+          </Link>
+        ) : null}
       </div>
       <div className="border-t border-ink/15 mb-5" />
       <div className="flex-1">{children}</div>
@@ -130,7 +133,7 @@ export function ProfileCol({
 }: {
   label: string;
   body: string | string[];
-  moreHref: string;
+  moreHref?: string;
   moreLabel?: string;
 }) {
   return (

@@ -68,13 +68,13 @@ export default function StewardAgentClient({
       <section className="bg-warm-paper text-ink min-w-0">
         <Block label="Functional Mandate">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-7">
-            <FieldBlock label="Function Statement" moreHref={`/agent/${agent.registryId}/constitution#function`} moreLabel="View full">
+            <FieldBlock label="Function Statement" moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View full">
               <p className="text-[13.5px] leading-[1.7] text-ink/85">
                 {constitution.functionStatementBlock || agent.functionStatement}
               </p>
             </FieldBlock>
             <div className="space-y-7">
-              <FieldBlock label={`Autonomy Declaration — ${agent.autonomyTier}`} moreHref={`/agent/${agent.registryId}/constitution#autonomy`} moreLabel="View full">
+              <FieldBlock label={`Autonomy Declaration — ${agent.autonomyTier}`} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View full">
                 <p className="text-[13.5px] leading-[1.7] text-ink/85">
                   {summarizeAutonomy(constitution.autonomyDeclaration, agent.autonomyTier, "stewardship actions")}
                 </p>
@@ -90,9 +90,9 @@ export default function StewardAgentClient({
 
         <Block label="Stewardship Profile">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-7">
-            <ProfileCol label="Declared Orientation" body={agent.fullConstitution.orientation} moreHref={`/agent/${agent.registryId}/constitution#orientation`} moreLabel="View full orientation" />
-            <ProfileCol label="Procedural Tendencies" body={agent.fullConstitution.tendencies} moreHref={`/agent/${agent.registryId}/constitution#tendencies`} moreLabel="View all tendencies" />
-            <ProfileCol label="Aversions" body={agent.fullConstitution.aversions} moreHref={`/agent/${agent.registryId}/constitution#aversions`} moreLabel="View all aversions" />
+            <ProfileCol label="Declared Orientation" body={agent.fullConstitution.orientation} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View full orientation" />
+            <ProfileCol label="Procedural Tendencies" body={agent.fullConstitution.tendencies} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View all tendencies" />
+            <ProfileCol label="Aversions" body={agent.fullConstitution.aversions} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View all aversions" />
           </div>
         </Block>
 
@@ -100,10 +100,7 @@ export default function StewardAgentClient({
           label="Stewardship Activity"
           labelExtra="(since first operation)"
           right={
-            <Link href={`/agent/${agent.registryId}/analytics`} className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 hover:text-ink transition-colors">
-              <span>View analytics dashboard</span>
-              <span aria-hidden>→</span>
-            </Link>
+            null
           }
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-y-8 gap-x-6">
@@ -166,7 +163,7 @@ export default function StewardAgentClient({
 
         <div className="border-t border-ink/15">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12 items-stretch">
-            <Panel label="Stewardship Timeline" footerHref={`/agent/${agent.registryId}/timeline`} footerLabel="View full timeline">
+            <Panel label="Stewardship Timeline" footerHref={`/log?agent=${agent.registryId}`} footerLabel="View full record">
               <ul className="space-y-4">
                 {timeline.map((t, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -181,7 +178,7 @@ export default function StewardAgentClient({
               </ul>
             </Panel>
 
-            <Panel label="Agents Under Review" footerHref={`/agent/${agent.registryId}/network`} footerLabel="View full network">
+            <Panel label="Agents Under Review">
               <RingMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 nodes={relationships.map((r) => ({ id: r.agentId, label: r.agentId.replace(/^MNA-/, ""), count: r.count, designation: r.designation }))}

@@ -80,7 +80,7 @@ export default function CuratorClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-7">
             <FieldBlock
               label="Function Statement"
-              moreHref={`/agent/${agent.registryId}/constitution#function`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
               moreLabel="View full"
             >
               <p className="text-[13.5px] leading-[1.7] text-ink/85">
@@ -90,7 +90,7 @@ export default function CuratorClient({
             <div className="space-y-7">
               <FieldBlock
                 label={`Autonomy Declaration — ${agent.autonomyTier}`}
-                moreHref={`/agent/${agent.registryId}/constitution#autonomy`}
+                moreHref={`/agent/${agent.registryId}/constitution`}
                 moreLabel="View full"
               >
                 <p className="text-[13.5px] leading-[1.7] text-ink/85">
@@ -100,7 +100,7 @@ export default function CuratorClient({
               {constitution.conflictConstraints ? (
                 <FieldBlock
                   label="Conflict Constraints"
-                  moreHref={`/agent/${agent.registryId}/constitution#conflict`}
+                  moreHref={`/agent/${agent.registryId}/constitution`}
                   moreLabel="View all constraints"
                 >
                   <p className="text-[13.5px] leading-[1.7] text-ink/85">
@@ -118,17 +118,17 @@ export default function CuratorClient({
             <ProfileCol
               label="Declared Orientation"
               body={agent.fullConstitution.orientation}
-              moreHref={`/agent/${agent.registryId}/constitution#orientation`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
             />
             <ProfileCol
               label="Curatorial Tendencies"
               body={agent.fullConstitution.tendencies}
-              moreHref={`/agent/${agent.registryId}/constitution#tendencies`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
             />
             <ProfileCol
               label="Aversions"
               body={agent.fullConstitution.aversions}
-              moreHref={`/agent/${agent.registryId}/constitution#aversions`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
             />
             <ProfileCol
               label="Operating Principle"
@@ -136,7 +136,7 @@ export default function CuratorClient({
                 operatingPrinciple ||
                 "Awaiting articulation in a future constitutional revision."
               }
-              moreHref={`/agent/${agent.registryId}/constitution#operating-principle`}
+              moreHref={`/agent/${agent.registryId}/constitution`}
               moreLabel="View full principle"
             />
           </div>
@@ -147,13 +147,7 @@ export default function CuratorClient({
           label="Curatorial Activity"
           labelExtra="(since first operation)"
           right={
-            <Link
-              href={`/agent/${agent.registryId}/analytics`}
-              className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 hover:text-ink transition-colors"
-            >
-              <span>View analytics dashboard</span>
-              <span aria-hidden>→</span>
-            </Link>
+            null
           }
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-y-8 gap-x-6">
@@ -266,8 +260,8 @@ export default function CuratorClient({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12 items-stretch">
             <Panel
               label="Curatorial Timeline"
-              footerHref={`/agent/${agent.registryId}/timeline`}
-              footerLabel="View full timeline"
+              footerHref={`/log?agent=${agent.registryId}`}
+              footerLabel="View full record"
             >
               <ul className="space-y-4">
                 {timeline.map((t, i) => (
@@ -293,8 +287,6 @@ export default function CuratorClient({
 
             <Panel
               label="Relationship Map"
-              footerHref={`/agent/${agent.registryId}/network`}
-              footerLabel="View full network"
             >
               <CuratorRelationshipMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
@@ -314,8 +306,6 @@ export default function CuratorClient({
 
             <Panel
               label="Exhibition Principles In Use"
-              footerHref={`/agent/${agent.registryId}/principles`}
-              footerLabel="View full principles report"
             >
               {principles.scores ? (
                 <ul className="space-y-4">

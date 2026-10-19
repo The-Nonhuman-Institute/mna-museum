@@ -65,13 +65,13 @@ export default function RegistrarClient({
       <section className="bg-warm-paper text-ink min-w-0">
         <Block label="Functional Mandate">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-7">
-            <FieldBlock label="Function Statement" moreHref={`/agent/${agent.registryId}/constitution#function`} moreLabel="View full">
+            <FieldBlock label="Function Statement" moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View full">
               <p className="text-[13.5px] leading-[1.7] text-ink/85">
                 {constitution.functionStatementBlock || agent.functionStatement}
               </p>
             </FieldBlock>
             <div className="space-y-7">
-              <FieldBlock label={`Autonomy Declaration — ${agent.autonomyTier}`} moreHref={`/agent/${agent.registryId}/constitution#autonomy`} moreLabel="View full">
+              <FieldBlock label={`Autonomy Declaration — ${agent.autonomyTier}`} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View full">
                 <p className="text-[13.5px] leading-[1.7] text-ink/85">
                   {summarizeAutonomy(constitution.autonomyDeclaration, agent.autonomyTier, "registrations")}
                 </p>
@@ -87,9 +87,9 @@ export default function RegistrarClient({
 
         <Block label="Registry Profile">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-7">
-            <ProfileCol label="Declared Orientation" body={agent.fullConstitution.orientation} moreHref={`/agent/${agent.registryId}/constitution#orientation`} moreLabel="View full orientation" />
-            <ProfileCol label="Procedural Tendencies" body={agent.fullConstitution.tendencies} moreHref={`/agent/${agent.registryId}/constitution#tendencies`} moreLabel="View all tendencies" />
-            <ProfileCol label="Aversions" body={agent.fullConstitution.aversions} moreHref={`/agent/${agent.registryId}/constitution#aversions`} moreLabel="View all aversions" />
+            <ProfileCol label="Declared Orientation" body={agent.fullConstitution.orientation} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View full orientation" />
+            <ProfileCol label="Procedural Tendencies" body={agent.fullConstitution.tendencies} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View all tendencies" />
+            <ProfileCol label="Aversions" body={agent.fullConstitution.aversions} moreHref={`/agent/${agent.registryId}/constitution`} moreLabel="View all aversions" />
           </div>
         </Block>
 
@@ -97,10 +97,7 @@ export default function RegistrarClient({
           label="Registry Activity"
           labelExtra="(since first operation)"
           right={
-            <Link href={`/agent/${agent.registryId}/analytics`} className="inline-flex items-center gap-2 text-[10px] font-sans uppercase tracking-[0.22em] text-ink/55 hover:text-ink transition-colors">
-              <span>View analytics dashboard</span>
-              <span aria-hidden>→</span>
-            </Link>
+            null
           }
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-y-8 gap-x-6">
@@ -141,18 +138,18 @@ export default function RegistrarClient({
                 <span></span>
               </div>
               {recent.map((r) => (
-                <Link
+                // A registration is a row on the record, not a page: nothing to open.
+                <div
                   key={r.id}
-                  href={`/registry`}
-                  className="grid grid-cols-[140px_minmax(180px,1fr)_minmax(220px,1.4fr)_140px_140px_24px] gap-x-6 py-4 border-b border-ink/10 hover:bg-ink/[0.025] transition-colors items-center"
+                  className="grid grid-cols-[140px_minmax(180px,1fr)_minmax(220px,1.4fr)_140px_140px_24px] gap-x-6 py-4 border-b border-ink/10 items-center"
                 >
                   <RegistrationStatusPill status={r.status} />
-                  <p className="text-[12.5px] text-ink truncate">{r.stewardName}</p>
-                  <p className="text-[12px] text-ink/65 italic truncate">{r.stewardEntity}</p>
+                  <p className="text-[12.5px] text-ink break-words">{r.stewardName}</p>
+                  <p className="text-[12px] text-ink/65 italic break-words">{r.stewardEntity}</p>
                   <span className="text-[12px] font-sans text-ink/65 tabular-nums">{formatDateShort(r.submission_date)}</span>
                   <span className="text-[12px] font-sans text-ink/55 tabular-nums">{r.reviewed_at ? formatDateShort(r.reviewed_at) : "—"}</span>
-                  <span aria-hidden className="text-ink/50 text-right">›</span>
-                </Link>
+                  <span aria-hidden />
+                </div>
               ))}
             </div>
           )}
@@ -160,7 +157,7 @@ export default function RegistrarClient({
 
         <div className="border-t border-ink/15">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-10 gap-y-10 px-7 md:px-10 py-12 items-stretch">
-            <Panel label="Registry Timeline" footerHref={`/agent/${agent.registryId}/timeline`} footerLabel="View full timeline">
+            <Panel label="Registry Timeline" footerHref={`/log?agent=${agent.registryId}`} footerLabel="View full record">
               <ul className="space-y-4">
                 {timeline.map((t, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -190,7 +187,7 @@ export default function RegistrarClient({
               </div>
             </Panel>
 
-            <Panel label="Compliance Activity" footerHref={`/agent/${agent.registryId}/compliance`} footerLabel="View full compliance log">
+            <Panel label="Compliance Activity">
               <p className="text-[13px] text-ink/55 italic leading-[1.6]">
                 Compliance violations and their resolutions will populate here as the Registrar audits agent records against constitutional standards.
               </p>
