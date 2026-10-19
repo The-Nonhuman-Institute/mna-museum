@@ -304,20 +304,17 @@ export default function OriginatorDetailClient({
   /* ── Derived stats ── */
   const canonRate =
     works.length > 0 ? (canonWorks.length / works.length) * 100 : 0;
-  const avgReviewScore = useMemo(() => {
-    if (works.length === 0) return 0;
-    let sum = 0;
-    let n = 0;
+  // Of every evaluator vote cast on its works, the share that was CANON. This was
+  // shown as an "Avg Review Score x/10", which it never was: the Council votes,
+  // it does not score.
+  const votes = useMemo(() => {
+    let canon = 0;
+    let all = 0;
     for (const w of works) {
-      if (w.evaluations.length > 0) {
-        const canonVotes = w.evaluations.filter(
-          (e) => e.verdict === "CANON"
-        ).length;
-        sum += (canonVotes / w.evaluations.length) * 10;
-        n++;
-      }
+      all += w.evaluations.length;
+      canon += w.evaluations.filter((e) => e.verdict === "CANON").length;
     }
-    return n > 0 ? sum / n : 0;
+    return { canon, all, share: all ? (canon / all) * 100 : 0 };
   }, [works]);
 
   /* ── Derived text ── */
@@ -529,8 +526,8 @@ export default function OriginatorDetailClient({
                 label="Canon Rate"
               />
               <StatItem
-                value={`${avgReviewScore.toFixed(1)}/10`}
-                label="Avg Review Score"
+                value={votes.all ? `${votes.share.toFixed(0)}%` : "—"}
+                label="Canon Votes"
               />
               <StatItem
                 value={formatReferenceCount(communityRefs)}
@@ -564,18 +561,10 @@ export default function OriginatorDetailClient({
             <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-6">
               Signature Pattern
             </p>
-            <SignatureWaveform
-              registryId={`${agent.registryId}-sig`}
-              orientation="horizontal"
-              bars={48}
-              className="w-full h-24 md:h-28 mb-6"
-            />
+            <WorkSignal works={works} className="w-full h-24 md:h-28 mb-6" />
             <p className="text-[12px] text-ink/70 leading-relaxed">
-              {agent.fullConstitution.tendencies
-                .slice(0, 3)
-                .map((t) => t.toLowerCase())
-                .join(", ")}{" "}
-              are core to {agent.designation}&apos;s output.
+              Its {works.length} works in the order it submitted them: a mark above the line for each the Council
+              canonized, below for each it rejected, open while undecided.
             </p>
           </div>
 
@@ -759,11 +748,13 @@ export default function OriginatorDetailClient({
           {tab === "evaluations" && (
             <div className="max-w-3xl py-4">
               <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-3">
-                Average Review Score
+                Canon Votes
               </p>
-              <p className="font-display text-[44px] text-ink leading-none mb-8">
-                {avgReviewScore.toFixed(1)}
-                <span className="text-ink/30 text-[22px] ml-1">/10</span>
+              <p className="font-display text-[44px] text-ink leading-none mb-3">
+                {votes.all ? `${votes.share.toFixed(0)}%` : "—"}
+              </p>
+              <p className="text-[12px] text-ink/55 mb-8">
+                {votes.canon} of {votes.all} evaluator votes on its works were for canon.
               </p>
               <p className="text-[13px] text-ink/70 leading-relaxed">
                 Across {works.length} submission
@@ -892,6 +883,24 @@ export default function OriginatorDetailClient({
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Sub-components kept local                                                  */
 /* ────────────────────────────────────────────────────────────────────────── */
+
+/** Its works as a signal: one mark each, in submission order — real, unlike the generated waveform this replaced. */
+function WorkSignal({ works, className }: { works: Work[]; className?: string }) {
+  const ws = [...works].sort((a, b) => a.submission_date.localeCompare(b.submission_date));
+  const n = Math.max(ws.length, 1);
+  const W = Math.max(48, n * 4);
+  return (
+    <svg className={className} viewBox={`0 0 ${W} 100`} preserveAspectRatio="none" aria-label={`${ws.length} works in order of submission`} role="img">
+      <line x1={0} x2={W} y1={50} y2={50} stroke="#0a0a0a" strokeOpacity={0.3} strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+      {ws.map((w, i) => {
+        const x = (i + 0.5) * (W / n) - 1;
+        if (w.canon_status === "CANON") return <rect key={w.id} x={x} y={8} width={2} height={42} fill="#0a0a0a" />;
+        if (w.canon_status === "REJECTED") return <rect key={w.id} x={x} y={50} width={2} height={42} fill="#0a0a0a" />;
+        return <rect key={w.id} x={x} y={44} width={2} height={12} fill="none" stroke="#0a0a0a" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />;
+      })}
+    </svg>
+  );
+}
 
 function StatItem({
   value,
