@@ -15,7 +15,6 @@ import {
   Panel,
   ProfileCol,
   Stat,
-  Legend,
   RingMap,
   formatDateShort,
   summarizeAutonomy,
@@ -182,15 +181,11 @@ export default function StewardAgentClient({
               <RingMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 nodes={relationships.map((r) => ({ id: r.agentId, label: r.agentId.replace(/^MNA-/, ""), count: r.count, designation: r.designation }))}
-                colorFn={(_n, i) => spokeColor(i)}
+                colorFn={() => "#0A0A0A"}
                 tooltipFn={(n) => `${(n as { designation: string }).designation || n.id} — ${n.count} notice${n.count === 1 ? "" : "s"}`}
                 emptyText="No agents reviewed yet."
               />
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
-                <Legend dot="bg-emerald-600" label="Active" />
-                <Legend dot="bg-amber-500" label="Under audit" />
-                <Legend dot="bg-ink/40" label="Other" />
-              </div>
+              {/* One colour: the ring shows counts only. Its legend once named statuses the colours never carried. */}
             </Panel>
 
             <Panel label="Governance Index" footerHref={`/governance`} footerLabel="View governance archive">
@@ -238,7 +233,3 @@ function ActKindPill({ kind }: { kind: string }) {
   );
 }
 
-function spokeColor(i: number): string {
-  const palette = ["#059669", "#D97706", "#DC2626", "#0A0A0A"];
-  return palette[i % palette.length];
-}

@@ -235,14 +235,14 @@ export default function CriticClient({
                   count: r.count,
                   designation: r.designation,
                 }))}
-                colorFn={(_n, i) => spokeColor(i)}
+                colorFn={(n) => (n.count > 1 ? "#D97706" : "rgba(10,10,10,0.4)")}
                 tooltipFn={(n) => `${(n as { designation: string }).designation || n.id} — ${n.count} response${n.count === 1 ? "" : "s"}`}
                 emptyText="No originators engaged yet."
               />
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
-                <Legend dot="bg-emerald-600" label="Originators" />
-                <Legend dot="bg-amber-500" label="Frequent subjects" />
-                <Legend dot="bg-ink/40" label="Single-engagement" />
+                {/* Colour by what the record holds: how often it responded. */}
+                <Legend dot="bg-amber-600" label="More than one response" />
+                <Legend dot="bg-ink/40" label="One response" />
               </div>
             </Panel>
 
@@ -258,10 +258,6 @@ export default function CriticClient({
   );
 }
 
-function spokeColor(i: number): string {
-  const palette = ["#059669", "#D97706", "#0A0A0A", "#DC2626"];
-  return palette[i % palette.length];
-}
 
 function ApproachBreakdown({ recent }: { recent: RecentCritique[] }) {
   /* Group recent critiques by approach to give a sense of methodological

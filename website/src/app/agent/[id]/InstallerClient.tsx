@@ -194,8 +194,9 @@ export default function InstallerClient({
               />
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
                 <Legend dot="bg-emerald-600" label="Originators" />
-                <Legend dot="bg-grid-square" label="Curator" />
-                <Legend dot="bg-ink/40" label="Other Agents" />
+                <Legend dot="bg-amber-600" label="Curator" />
+                <Legend dot="bg-ink" label="Evaluators" />
+                <Legend dot="bg-ink/40" label="Other agents" />
               </div>
             </Panel>
 

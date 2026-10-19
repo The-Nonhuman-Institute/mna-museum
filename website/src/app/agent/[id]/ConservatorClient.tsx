@@ -14,7 +14,6 @@ import {
   Panel,
   ProfileCol,
   Stat,
-  Legend,
   RingMap,
   formatDateShort,
   summarizeAutonomy,
@@ -182,15 +181,11 @@ export default function ConservatorClient({
               <RingMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 nodes={relationships.map((r) => ({ id: r.agentId, label: r.agentId.replace(/^MNA-/, ""), count: r.count, designation: r.designation }))}
-                colorFn={(_n, i) => spokeColor(i)}
+                colorFn={() => "#0A0A0A"}
                 tooltipFn={(n) => `${(n as { designation: string }).designation || n.id} — ${n.count} validation${n.count === 1 ? "" : "s"}`}
                 emptyText="No works validated yet."
               />
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
-                <Legend dot="bg-emerald-600" label="Stable" />
-                <Legend dot="bg-amber-500" label="Recovered" />
-                <Legend dot="bg-red-600" label="Flagged" />
-              </div>
+              {/* One colour: the ring shows counts only. Its legend once named statuses the colours never carried. */}
             </Panel>
 
             <Panel label="Output Type Coverage">
@@ -220,7 +215,3 @@ function ValidationStatusPill({ status, hasError, recovered }: { status: string;
   );
 }
 
-function spokeColor(i: number): string {
-  const palette = ["#059669", "#D97706", "#DC2626"];
-  return palette[i % palette.length];
-}

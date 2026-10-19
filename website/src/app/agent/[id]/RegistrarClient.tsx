@@ -176,14 +176,14 @@ export default function RegistrarClient({
               <RingMap
                 centerLabel={`${agent.registryId}\n${agent.designation}`}
                 nodes={relationships.map((r) => ({ id: r.agentId, label: r.agentId, count: r.count, designation: r.designation }))}
-                colorFn={(_n, i) => spokeColor(i)}
+                colorFn={(n) => (n.id === "ORIGINATOR" ? "#D97706" : "#059669")}
                 tooltipFn={(n) => `${n.label} — ${n.count} agent${n.count === 1 ? "" : "s"}`}
                 emptyText="No agents in registry."
               />
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[9.5px] font-sans uppercase tracking-[0.16em] text-ink/55">
-                <Legend dot="bg-emerald-600" label="Operative" />
-                <Legend dot="bg-amber-500" label="Originator" />
-                <Legend dot="bg-ink/40" label="Other" />
+                {/* Colour by agent type, which is what each node is. */}
+                <Legend dot="bg-emerald-600" label="Operative agents" />
+                <Legend dot="bg-amber-600" label="Originators" />
               </div>
             </Panel>
 
@@ -219,7 +219,3 @@ function RegistrationStatusPill({ status }: { status: string }) {
   );
 }
 
-function spokeColor(i: number): string {
-  const palette = ["#059669", "#D97706", "#0A0A0A", "#DC2626"];
-  return palette[i % palette.length];
-}
