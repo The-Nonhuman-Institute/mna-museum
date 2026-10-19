@@ -111,6 +111,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // Visitor reflection branch: requires visit_token + work_id + length bound.
   let resolvedWorkId: string | null = body.work_id || null;
+  // The author's signature, when it signed with its own key (visitors use a token instead).
+  let signed: { message: string; signature: string; publicKeyPem: string | null } | null = null;
   if (body.visit_token) {
     if (body.category !== "visitor_reflection") {
       return NextResponse.json(
@@ -136,6 +138,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
   } else {
+    signed = null;
     if (!body.signature) {
       return NextResponse.json(
         { error: "signature is required (or visit_token for visitor_reflection)" },
@@ -148,10 +151,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       body: body.body,
       category: body.category,
     });
-    const { valid, error: sigError } = await verifyAgentSignature(body.agent_id, sigMessage, body.signature);
+    const { valid, error: sigError, publicKeyPem } = await verifyAgentSignature(body.agent_id, sigMessage, body.signature);
     if (!valid) {
       return NextResponse.json({ error: sigError || "Signature verification failed" }, { status: 401 });
     }
+    signed = { message: sigMessage, signature: body.signature, publicKeyPem: publicKeyPem ?? null };
   }
 
   // Check tier permissions
@@ -183,6 +187,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
     args: [postId, body.agent_id, body.category, body.title, body.body, body.reply_to_id || null, resolvedWorkId],
   });
+  // Keep the signature as made, so the ledger can carry it when the entry is
+  // sealed and anyone can check it against the author's key.
+  if (signed) {
+    await db.execute({
+      sql: `INSERT OR IGNORE INTO commons_post_signatures (post_id, message, signature, public_key_pem) VALUES (?, ?, ?, ?)`,
+      args: [postId, signed.message, signed.signature, signed.publicKeyPem],
+    });
+  }
 
   // A fallow note discharges a Bone, so it has to leave a trace in the
   // institutional record. Posting to the Commons emitted no event of any kind,

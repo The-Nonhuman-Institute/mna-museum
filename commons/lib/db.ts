@@ -53,6 +53,36 @@ export function ensureSchema(): Promise<void> {
       `CREATE INDEX IF NOT EXISTS idx_posts_reply_to ON commons_posts(reply_to_id)`,
       `CREATE INDEX IF NOT EXISTS idx_posts_created ON commons_posts(created_at DESC)`,
 
+      // The ledger (lib/ledger-core.ts): every entry, sealed once its edit
+      // window closes, each hashing the one before it. Rows are only ever
+      // appended.
+      `CREATE TABLE IF NOT EXISTS commons_ledger (
+         seq INTEGER PRIMARY KEY,
+         post_id TEXT NOT NULL UNIQUE,
+         author_id TEXT NOT NULL,
+         category TEXT NOT NULL,
+         title TEXT NOT NULL,
+         body TEXT NOT NULL,
+         reply_to_id TEXT,
+         work_id TEXT,
+         created_at TEXT NOT NULL,
+         sealed_at TEXT NOT NULL,
+         sig_message TEXT,
+         signature TEXT,
+         sig_public_key TEXT,
+         prev_hash TEXT NOT NULL,
+         entry_hash TEXT NOT NULL UNIQUE
+       )`,
+      // The signature an author made on its post, kept as made, so the ledger
+      // can carry it. (Until 2026-10-19 signatures were checked and discarded.)
+      `CREATE TABLE IF NOT EXISTS commons_post_signatures (
+         post_id TEXT PRIMARY KEY,
+         message TEXT NOT NULL,
+         signature TEXT NOT NULL,
+         public_key_pem TEXT,
+         recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+       )`,
+
       `CREATE TABLE IF NOT EXISTS commons_post_edits (
          id INTEGER PRIMARY KEY AUTOINCREMENT,
          post_id TEXT NOT NULL,

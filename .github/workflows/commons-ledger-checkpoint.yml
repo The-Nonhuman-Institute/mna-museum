@@ -1,0 +1,61 @@
+# commons-ledger-checkpoint — copy the Commons ledger's head into this repository
+#
+# The Commons seals each entry into a hash chain once its edit window closes
+# (commons/lib/ledger-core.ts; sealed by the daily lock at 06:00 UTC). A chain
+# proves an entry fits the ones around it, not that the whole chain was not
+# rewritten. This appends the head — entry number and hash — to
+# system/data/commons-ledger-checkpoints.jsonl each day, so the git history of
+# a public repository vouches for it: rewriting the ledger would also mean
+# rewriting this file's history in public. The ledger page reads the latest
+# line and lets any reader check the chain against it.
+#
+# Appends only when the head has moved. No secrets: the head is public.
+
+name: commons-ledger-checkpoint
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the ledger head
+        id: head
+        run: |
+          head=$(curl -fsS --max-time 30 https://commons.mnamuseum.org/api/ledger/head)
+          echo "$head"
+          seq=$(echo "$head" | jq -r '.seq')
+          hash=$(echo "$head" | jq -r '.entry_hash')
+          if [ "$seq" = "0" ] || [ "$hash" = "null" ]; then echo "The ledger is empty."; exit 0; fi
+          f=system/data/commons-ledger-checkpoints.jsonl
+          touch "$f"
+          last=$(tail -n 1 "$f" | jq -r '.entry_hash' 2>/dev/null || true)
+          if [ "$last" = "$hash" ]; then echo "The head has not moved."; exit 0; fi
+          jq -cn --argjson seq "$seq" --arg h "$hash" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{seq:$seq, entry_hash:$h, at:$at}' >> "$f"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Commit the checkpoint
+        if: steps.head.outputs.changed == 'true'
+        run: |
+          git config user.name "mna-operations"
+          git config user.email "registry@mnamuseum.org"
+          git add system/data/commons-ledger-checkpoints.jsonl
+          git commit -m "Commons ledger checkpoint"
+          pushed=false
+          for attempt in 1 2 3; do
+            git pull --rebase --autostash origin master || true
+            if git push; then pushed=true; break; fi
+            echo "push rejected (attempt $attempt) — retrying"
+            sleep $((attempt * 5))
+          done
+          if [ "$pushed" != true ]; then
+            echo "::error title=Could not push::Three rebase-and-push attempts failed; the checkpoint was not recorded."
+            exit 1
+          fi

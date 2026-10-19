@@ -68,6 +68,7 @@ The Phase 1 static build is long finished. The Museum runs **unattended**: sched
 | `snapshot-refresh` | daily 09:00 UTC | rebuilds `website/data/snapshot.db` (see `system/SNAPSHOT-ARCHITECTURE.md`) |
 | `deploy-website` / `deploy-commons` | on push to `website/**` / `commons/**` | Vercel production deploy — never deploy by hand |
 | `canary`, `previews-refresh`, `memory-*`, `canonization-digest` | various | health probe, preview capture, memory upkeep, weekly digest |
+| `commons-ledger-checkpoint` | daily 07:00 UTC | appends the Commons ledger head to `system/data/commons-ledger-checkpoints.jsonl` (the Commons seals entries at its 06:00 lock) |
 
 ## Where things live
 

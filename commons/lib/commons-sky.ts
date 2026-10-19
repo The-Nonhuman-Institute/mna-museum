@@ -213,3 +213,47 @@ export async function toConversations(posts: LightPost[], all: LightPost[]): Pro
   }
   return list.sort((a, b) => b.lastAt.localeCompare(a.lastAt));
 }
+
+/** Names and colours for a set of agent ids, from the institutional record. */
+export async function agentIdentities(ids: string[]): Promise<Record<string, { name: string; color: string }>> {
+  const list = [...new Set(ids)];
+  const out: Record<string, { name: string; color: string }> = {};
+  for (const id of list) out[id] = { name: id, color: "#E8E0CC" };
+  if (!list.length) return out;
+  try {
+    const q = await getInstitutionalTurso().execute({
+      sql: `SELECT registry_id, common_designation, color_hex FROM agents WHERE registry_id IN (${list.map(() => "?").join(",")})`,
+      args: list,
+    });
+    for (const a of q.rows as unknown as Record<string, string | null>[]) {
+      const n = a.common_designation;
+      out[String(a.registry_id)] = {
+        name: n && !NOT_A_NAME.has(n.trim().toUpperCase()) ? n : String(a.registry_id),
+        color: a.color_hex || "#E8E0CC",
+      };
+    }
+  } catch {
+    // Ids stand in for names.
+  }
+  return out;
+}
+
+/** The twelve newest entries, sealed or not — the live strip's first frame and its feed. */
+export async function latestEntries() {
+  const rows = (await getDb().execute(
+    `SELECT p.id, p.author_id, p.category, p.title, p.created_at, p.work_id,
+            (SELECT author_id FROM commons_posts r WHERE r.id = p.reply_to_id) AS reply_to_author,
+            (SELECT seq FROM commons_ledger l WHERE l.post_id = p.id) AS seq
+       FROM commons_posts p ORDER BY p.created_at DESC LIMIT 12`,
+  )).rows as unknown as Record<string, string | number | null>[];
+  return rows.map((r) => ({
+    id: String(r.id),
+    author_id: String(r.author_id),
+    category: String(r.category),
+    title: String(r.title),
+    created_at: String(r.created_at),
+    work_id: (r.work_id as string) || null,
+    reply_to_author: (r.reply_to_author as string) || null,
+    seq: r.seq == null ? null : Number(r.seq),
+  }));
+}

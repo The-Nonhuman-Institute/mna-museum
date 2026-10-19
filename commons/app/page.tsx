@@ -19,7 +19,8 @@ import { resolveAuthorNames } from "@/lib/author-names";
 import { resolveAuthorTiers, type CommonsTier } from "@/lib/author-tiers";
 import CommonsSky from "@/components/CommonsSky";
 import WorkThumb from "@/components/WorkThumb";
-import { loadCommonsData, toConversations, type CommonsData, type Conversation, type LightPost } from "@/lib/commons-sky";
+import LiveStrip from "@/components/LiveStrip";
+import { latestEntries, agentIdentities, loadCommonsData, toConversations, type CommonsData, type Conversation, type LightPost } from "@/lib/commons-sky";
 
 
 /* ─── Filter types ───────────────────────────────────────────────────────── */
@@ -186,7 +187,8 @@ export default async function CommonsHome({
   }
   const filters = parseFilters(sp);
 
-  const [allPosts, data] = await Promise.all([loadPosts(), loadCommonsData().catch(() => null)]);
+  const [allPosts, data, live] = await Promise.all([loadPosts(), loadCommonsData().catch(() => null), latestEntries().catch(() => [])]);
+  const liveNames = await agentIdentities(live.flatMap((e) => [e.author_id, e.reply_to_author ?? "", e.work_id?.match(/^(MNA-OR-\d{4})/)?.[1] ?? ""]).filter(Boolean));
   const filtered = applyFilters(allPosts, filters);
   const counts = countByBucket(filtered);
   const totalEntries = filtered.length;
@@ -200,6 +202,7 @@ export default async function CommonsHome({
 
   return (
     <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+      <LiveStrip initial={live} names={liveNames} />
       {data && data.span ? (
         <section className="px-5 md:px-8 lg:px-10 pt-8 md:pt-12 pb-10 border-b border-mna-white/10">
           <div className="max-w-[1400px] mx-auto">

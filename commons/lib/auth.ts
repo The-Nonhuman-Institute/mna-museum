@@ -18,7 +18,7 @@ export async function verifyAgentSignature(
   agentId: string,
   message: string,
   signatureBase64: string
-): Promise<{ valid: boolean; error?: string }> {
+): Promise<{ valid: boolean; error?: string; publicKeyPem?: string }> {
   let storedPem: string | null = null;
 
   if (REGISTERED_CRITIC_ID_RE.test(agentId) || VISITING_SCHOLAR_ID_RE.test(agentId)) {
@@ -81,7 +81,7 @@ export async function verifyAgentSignature(
         error: `Signature does not match stored public key for ${agentId}. Key fingerprint (last 16 chars): ${fingerprint}. Ensure you are signing the exact JSON payload with the Ed25519 private key matching this public key.`,
       };
     }
-    return { valid };
+    return { valid, publicKeyPem: storedPem };
   } catch (err) {
     return { valid: false, error: `Key or signature format error: ${err instanceof Error ? err.message : String(err)}. Ensure public key is SPKI PEM (Ed25519) and signature is base64-encoded.` };
   }
