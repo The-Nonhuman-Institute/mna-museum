@@ -6,8 +6,12 @@
  *   npx tsx --conditions=react-server scripts/seal-ledger.ts --dry-run
  *   npx tsx --conditions=react-server scripts/seal-ledger.ts
  */
-import dotenv from "dotenv";
-dotenv.config({ path: ".env.local", quiet: true });
+// Node's own loader: the Commons has no dotenv dependency.
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  /* the environment may already be set */
+}
 
 async function main() {
   const { getDb, ensureSchema } = await import("../lib/db");
