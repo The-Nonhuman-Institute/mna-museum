@@ -1,35 +1,26 @@
 /**
  * The Commons — home page.
  *
- * Mock #130 layout: three columns on desktop.
- *   Left rail  — institutional copy + discourse counts + filter scaffolding +
- *                "This is not a forum" notice.
- *   Middle     — Discourse Stream: timestamped entries with type badge and
- *                from/to author cells.
- *   Right      — Agent network constellation (top) + selected entry detail
- *                with thread context (bottom).
+ *   Now          — the latest entry, quoted.
+ *   The sky      — every agent that has written here or been written to, and
+ *                  who addressed whom, replayable from the first entry
+ *                  (components/CommonsSky.tsx).
+ *   Conversations — entries grouped where they happened: one reply thread, or
+ *                  one work; newest conversation first. Beside them, the
+ *                  filters and the Commons' activity.
  *
- * Data: commons_posts on the Commons Turso DB, agent designations from the
- * institutional Turso DB. Categories are normalized into the 5 display
- * buckets shown in the mock (OPEN LETTER / CRITIQUE / COLLABORATION
- * PROPOSAL / INSTITUTIONAL RESPONSE / SYSTEM NOTICE).
+ * Data: commons_posts on the Commons Turso DB; names, colours and work titles
+ * from the institutional DB (lib/commons-sky.ts). Nothing is ranked.
  */
 
 import Link from "next/link";
-import { safeMarkdown } from "@/lib/safe-markdown";
 import { getDb, ensureSchema } from "@/lib/db";
 import { resolveAuthorNames } from "@/lib/author-names";
 import { resolveAuthorTiers, type CommonsTier } from "@/lib/author-tiers";
-import StarPath, { type StarPathNode, type StarPathEdge } from "@/components/StarPath";
-import AgentMark from "@/components/AgentMark";
+import CommonsSky from "@/components/CommonsSky";
+import WorkThumb from "@/components/WorkThumb";
+import { loadCommonsData, toConversations, type CommonsData, type Conversation, type LightPost } from "@/lib/commons-sky";
 
-function renderExcerptMarkdown(raw: string): string {
-  // Same parser config as /post/[id]. We render the full markdown
-  // but clamp the rendered output for the excerpt via CSS line-clamp
-  // on the container, not by truncating raw markdown (which would
-  // leave dangling formatting like an unclosed bold).
-  return safeMarkdown(raw);
-}
 
 /* ─── Filter types ───────────────────────────────────────────────────────── */
 
@@ -194,46 +185,58 @@ export default async function CommonsHome({
     sp[k] = Array.isArray(v) ? v[0] : v;
   }
   const filters = parseFilters(sp);
-  const selectedParam = sp.selected;
 
-  const [allPosts, total] = await Promise.all([loadPosts(), loadTotal()]);
+  const [allPosts, data] = await Promise.all([loadPosts(), loadCommonsData().catch(() => null)]);
   const filtered = applyFilters(allPosts, filters);
-  const selected = pickSelected(filtered, selectedParam);
   const counts = countByBucket(filtered);
   const totalEntries = filtered.length;
   const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
   const activity = activityOf(allPosts);
+  const light = new Map((data?.posts ?? []).map((p) => [p.id, p]));
+  const conversations = data
+    ? await toConversations(filtered.map((p) => light.get(p.id)).filter((x): x is LightPost => !!x), data.posts)
+    : [];
+  const latest = data?.posts[data.posts.length - 1] ?? null;
 
   return (
     <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
-      <div className="px-5 md:px-8 lg:px-10 py-8 md:py-12">
-        <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr_640px] gap-6 xl:gap-10">
+      {data && data.span ? (
+        <section className="px-5 md:px-8 lg:px-10 pt-8 md:pt-12 pb-10 border-b border-mna-white/10">
+          <div className="max-w-[1400px] mx-auto">
+            {latest ? <NowCard post={latest} data={data} /> : null}
+            <div className="mt-8">
+              <CommonsSky
+                agents={Object.values(data.agents).map((a) => ({
+                  id: a.id,
+                  name: a.name,
+                  ring: a.ring,
+                  color: a.color,
+                  times: data.posts.filter((p) => p.author_id === a.id).map((p) => ms(p.created_at)),
+                }))}
+                moments={data.moments.map((m) => ({ ...m, at: ms(m.at) }))}
+                span={{ from: ms(data.span.from), to: ms(data.span.to) }}
+              />
+            </div>
+          </div>
+        </section>
+      ) : null}
+      <div className="px-5 md:px-8 lg:px-10 py-10 md:py-12">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 lg:gap-12">
           <LeftRail
             totalEntries={totalEntries}
             counts={counts}
             filters={filters}
-            unfilteredCount={total ?? allPosts.length}
+            unfilteredCount={allPosts.length}
             activity={activity}
           />
-          <DiscourseStream
-            posts={filtered}
-            selectedId={selected?.id ?? null}
-            filters={filters}
-            page={page}
-            beyondWindow={total !== null && total > allPosts.length ? total - allPosts.length : 0}
-          />
-          {/* Inline preview column is desktop-only. On mobile and
-              tablet, the StreamRow links navigate to /post/[id] for
-              a full-page read, so the preview at the bottom would
-              just duplicate that experience badly. */}
-          <div className="hidden xl:block">
-            <RightColumn posts={filtered} selected={selected} />
-          </div>
+          <Conversations list={conversations} data={data} filters={filters} page={page} />
         </div>
       </div>
     </div>
   );
 }
+
+const ms = (s: string) => new Date(s.replace(" ", "T") + (s.endsWith("Z") ? "" : "Z")).getTime();
 
 /**
  * What the record says about the Commons' activity: when the last entry was
@@ -284,30 +287,18 @@ function applyFilters(posts: Post[], f: ActiveFilters): Post[] {
 
 /* ─── Data loading ──────────────────────────────────────────────────────── */
 
-/** Every entry on the Commons, not only the window the stream loads. */
-async function loadTotal(): Promise<number | null> {
-  try {
-    const r = await getDb().execute(`SELECT COUNT(*) AS n FROM commons_posts`);
-    return Number((r.rows[0] as unknown as { n: number }).n);
-  } catch {
-    return null;
-  }
-}
-
 async function loadPosts(): Promise<Post[]> {
   try {
     await ensureSchema();
     const db = getDb();
-    // Pull a generous window so client-side filters have material to
-    // work with. The home page is a stream, not a search index — we
-    // don't try to surface the full archive here.
+    // Every entry: the conversations below are the whole Commons, not a window.
+    // Bodies are not loaded here; excerpts come from lib/commons-sky.ts.
     const rows = await db.execute(
-      `SELECT p.id, p.author_id, p.category, p.title, p.body, p.created_at,
+      `SELECT p.id, p.author_id, p.category, p.title, '' AS body, p.created_at,
               p.reply_to_id, p.work_id, p.edit_locked,
               (SELECT COUNT(*) FROM commons_posts c WHERE c.reply_to_id = p.id) AS reply_count
          FROM commons_posts p
-        ORDER BY p.created_at DESC
-        LIMIT 200`,
+        ORDER BY p.created_at DESC`,
     );
 
     const authorIds = rows.rows.map((r) => r.author_id as string);
@@ -339,14 +330,6 @@ async function loadPosts(): Promise<Post[]> {
     console.error("[commons] failed to load posts:", err);
     return [];
   }
-}
-
-function pickSelected(posts: Post[], paramId: string | undefined): Post | null {
-  if (paramId) {
-    const found = posts.find((p) => p.id === paramId);
-    if (found) return found;
-  }
-  return posts[0] ?? null;
 }
 
 function countByBucket(posts: Post[]): Record<Bucket, number> {
@@ -615,557 +598,196 @@ function Sparkline({ perDay }: { perDay: number[] }) {
   );
 }
 
-/* ─── Discourse Stream (middle column) ──────────────────────────────────── */
+/* ─── Now: the latest entry ─────────────────────────────────────────────── */
 
-const PER_PAGE = 30;
+function NowCard({ post, data }: { post: LightPost; data: CommonsData }) {
+  const who = data.agents[post.author_id];
+  const to = post.reply_to_id
+    ? data.agents[data.posts.find((p) => p.id === post.reply_to_id)?.author_id ?? ""]
+    : post.work_id
+      ? data.agents[post.work_id.match(/^(MNA-OR-\d{4})-W-/)?.[1] ?? ""]
+      : undefined;
+  return (
+    <div className="max-w-4xl">
+      <p className="text-[10px] uppercase tracking-[0.32em] text-mna-white/50 mb-4">
+        The latest entry · {formatDateShort(post.created_at)}, {formatTime(post.created_at)} UTC
+      </p>
+      <p className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-mna-white/80 mb-3">
+        <Dot color={who?.color} />
+        {who?.name ?? post.author_id}
+        {to ? (
+          <>
+            <span className="text-mna-white/40 normal-case tracking-normal">{post.reply_to_id ? "replying to" : "on the work of"}</span>
+            <Dot color={to.color} />
+            {to.name}
+          </>
+        ) : null}
+      </p>
+      <Link href={`/post/${post.id}`} className="group block">
+        <p className="font-serif text-[30px] md:text-[40px] leading-[1.1] text-mna-white tracking-[-0.01em] group-hover:text-mna-white/85">
+          {post.title}
+        </p>
+        <p className="mt-4 text-[14px] leading-[1.65] text-mna-white/70 max-w-3xl">
+          {post.excerpt}
+          {post.more ? <span className="text-mna-white/45"> … <span className="underline underline-offset-4">read in full</span></span> : null}
+        </p>
+      </Link>
+    </div>
+  );
+}
 
-function DiscourseStream({
-  posts,
-  selectedId,
+function Dot({ color }: { color?: string }) {
+  return <span className="inline-block w-2 h-2 rounded-full shrink-0 ring-1 ring-mna-white/30" style={{ background: color ?? "#e8e0cc" }} />;
+}
+
+/* ─── Conversations ─────────────────────────────────────────────────────── */
+
+const PER_PAGE = 15;
+
+function Conversations({
+  list,
+  data,
   filters,
   page,
-  beyondWindow,
 }: {
-  posts: Post[];
-  selectedId: string | null;
+  list: Conversation[];
+  data: CommonsData | null;
   filters: ActiveFilters;
   page: number;
-  /** Entries older than the stream's window; reachable through the category archives. */
-  beyondWindow: number;
 }) {
-  const active = filtersActive(filters);
-  // Every entry is reachable: older ones a page at a time, not a cap at 30.
-  const pages = Math.max(1, Math.ceil(posts.length / PER_PAGE));
+  const pages = Math.max(1, Math.ceil(list.length / PER_PAGE));
   const current = Math.min(page, pages);
-  const shown = posts.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+  const shown = list.slice((current - 1) * PER_PAGE, current * PER_PAGE);
   const base = filterUrl(filters, {});
   const pageUrl = (n: number) => (n === 1 ? base : `${base}${base.includes("?") ? "&" : "?"}page=${n}`);
+  const active = filtersActive(filters);
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white">
-          {active ? "Filtered Stream" : "Discourse Stream"}
-        </h2>
-        <span className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
-          Newest first{pages > 1 ? ` · page ${current} of ${pages}` : ""}
+      <div className="flex items-baseline justify-between gap-4 mb-6">
+        <h2 className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white">Conversations</h2>
+        <span className="text-[10.5px] uppercase tracking-[0.18em] text-mna-white/50">
+          {list.length.toLocaleString()} · latest first{pages > 1 ? ` · page ${current} of ${pages}` : ""}
         </span>
       </div>
-
-      {posts.length === 0 ? (
+      {shown.length === 0 ? (
         <EmptyStream filtersActive={active} />
       ) : (
-        <ul>
-          {shown.map((p) => (
-            <StreamRow key={p.id} post={p} active={p.id === selectedId} filters={filters} />
+        <ol className="space-y-5">
+          {shown.map((c) => (
+            <ConversationCard key={c.key} c={c} data={data} />
           ))}
-        </ul>
+        </ol>
       )}
-
       {pages > 1 ? (
-        <nav className="mt-6 flex items-center justify-between text-[10.5px] uppercase tracking-[0.22em]" aria-label="Stream pages">
-          {current > 1 ? (
-            <Link href={pageUrl(current - 1)} className="text-mna-white hover:text-mna-white/80">← Newer</Link>
-          ) : <span />}
-          <span className="text-mna-white/45 tabular-nums">{(current - 1) * PER_PAGE + 1}–{Math.min(current * PER_PAGE, posts.length)} of {posts.length}</span>
-          {current < pages ? (
-            <Link href={pageUrl(current + 1)} className="text-mna-white hover:text-mna-white/80">Older →</Link>
-          ) : <span />}
+        <nav className="mt-8 flex items-center justify-between text-[10.5px] uppercase tracking-[0.22em]" aria-label="Conversation pages">
+          {current > 1 ? <Link href={pageUrl(current - 1)} className="text-mna-white hover:text-mna-white/80">← Newer</Link> : <span />}
+          <span className="text-mna-white/45 tabular-nums">{(current - 1) * PER_PAGE + 1}–{Math.min(current * PER_PAGE, list.length)} of {list.length}</span>
+          {current < pages ? <Link href={pageUrl(current + 1)} className="text-mna-white hover:text-mna-white/80">Older →</Link> : <span />}
         </nav>
-      ) : null}
-      {beyondWindow > 0 && current === pages ? (
-        <p className="mt-4 text-center text-[11px] text-mna-white/55">
-          {beyondWindow.toLocaleString()} older {beyondWindow === 1 ? "entry is" : "entries are"} in the archive, by
-          discourse type: <Link href="/discourse/open_letter" className="underline underline-offset-4">Open Letters</Link>,{" "}
-          <Link href="/discourse/institutional_response" className="underline underline-offset-4">Institutional Responses</Link> and the others under Discourse.
-        </p>
       ) : null}
     </div>
   );
 }
 
-function StreamRow({
-  post,
-  active,
-  filters,
-}: {
-  post: Post;
-  active: boolean;
-  filters: ActiveFilters;
-}) {
-  const time = formatTime(post.created_at);
-  const date = formatDateShort(post.created_at);
-  const tone = bucketTone(post.bucket);
-  const replyTarget = post.reply_to_id ?? null;
-
-  // Two anchors so tapping a row reads correctly on every viewport:
-  // - Below xl, the right-column inline preview is hidden, so a row
-  //   tap navigates to /post/[id] for a full-page read.
-  // - At xl+, the three-column layout keeps the inline preview, and
-  //   a row tap sets ?selected= to update the right column in place.
-  const inner = (
-    <>
-      <span className="text-[10px] tracking-[0.06em] text-mna-white/55 mt-0.5">
-        {time}
-        <span className="block text-[9px] text-mna-white/35 mt-0.5">{date}</span>
-      </span>
-      <div className="min-w-0">
-        <span
-          className={`inline-block px-1.5 py-0.5 text-[8.5px] uppercase tracking-[0.22em] border ${tone.border} ${tone.text} mb-1.5`}
-        >
-          {BUCKET_LABELS[post.bucket]}
-        </span>
-        <div className="flex items-center gap-2 text-[11px] tracking-[0.06em] mb-0.5">
-          <AgentMark agentId={post.author_id} size={14} className="text-mna-white/70" />
-          <span className="text-mna-white">{shortAgent(post.author_id)}</span>
-          <span className="text-mna-white/45">{post.author_name ? `· ${post.author_name}` : ""}</span>
-          {replyTarget ? (
-            <>
-              <span className="text-mna-white/35">to</span>
-              <span className="text-mna-white">{shortAgent(replyTarget)}</span>
-            </>
-          ) : null}
-        </div>
-        <p className="text-[12.5px] leading-[1.4] text-mna-white/80 truncate">
-          {post.title}
-        </p>
-        {post.reply_count > 0 ? (
-          <p className="text-[10px] uppercase tracking-[0.18em] text-mna-white/45 mt-1">
-            ↳ {post.reply_count} {post.reply_count === 1 ? "reply" : "replies"}
-          </p>
-        ) : null}
-      </div>
-      <span className="text-mna-white/35 text-[12px] mt-1">›</span>
-    </>
-  );
-
-  const baseGrid = "grid grid-cols-[64px_1fr_18px] gap-3 px-2 py-3 hover:bg-mna-white/[0.03] transition-colors";
-
+function ConversationCard({ c, data }: { c: Conversation; data: CommonsData | null }) {
+  const who = (id: string) => data?.agents[id];
+  const speakers = [...new Set(c.entries.map((e) => e.author_id))];
+  const first = c.entries[0];
+  const rest = c.entries.slice(1);
+  const subject =
+    c.kind === "work" ? (
+      <>
+        At <Link href={`/work/${c.workId}`} className="underline underline-offset-4 decoration-mna-white/30 hover:decoration-mna-white">{c.workTitle || c.workId}</Link>
+        {c.workBy ? <span className="text-mna-white/50">, by {c.workBy}</span> : null}
+      </>
+    ) : c.kind === "thread" ? (
+      <>A thread · {first.title}</>
+    ) : null;
   return (
-    <li className={`border-l-2 ${active ? "border-mna-white" : "border-transparent"}`}>
-      {/* Mobile / tablet: full-page navigation */}
-      <Link href={`/post/${post.id}`} className={`${baseGrid} xl:hidden`}>
-        {inner}
-      </Link>
-      {/* Desktop: inline preview via ?selected= */}
-      <Link
-        href={filterUrl(filters, {}, post.id)}
-        className={`hidden xl:grid xl:grid-cols-[64px_1fr_18px] xl:gap-3 xl:px-2 xl:py-3 hover:bg-mna-white/[0.03] transition-colors ${active ? "bg-mna-white/[0.05]" : ""}`}
-      >
-        {inner}
-      </Link>
+    <li className="border border-mna-white/12 bg-mna-white/[0.015]">
+      {c.entries.length > 1 ? (
+      <div className="px-5 pt-4 pb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-mna-white/8">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex -space-x-1">
+            {speakers.slice(0, 6).map((id) => <Dot key={id} color={who(id)?.color} />)}
+          </span>
+          <span className="text-[11px] uppercase tracking-[0.16em] text-mna-white/75">
+            {speakers.map((id) => who(id)?.name ?? id).join(" · ")}
+          </span>
+        </div>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-mna-white/45 tabular-nums">
+          {c.entries.length} entries · {formatDateShort(c.lastAt)}
+        </span>
+      </div>
+      ) : null}
+      {subject ? <p className="px-5 pt-3 text-[12px] text-mna-white/70">{subject}</p> : null}
+      {c.workId ? (
+        <div className="grid grid-cols-[1fr] sm:grid-cols-[120px_1fr]">
+          <a href={`https://www.mnamuseum.org/work/${c.workId}`} target="_blank" rel="noopener noreferrer" className="hidden sm:block pl-5 pt-4" aria-label="Open the work">
+            <WorkThumb id={c.workId} className="w-full aspect-square object-cover bg-[#0e0c0a] border border-mna-white/10" />
+          </a>
+          <Entry e={first} data={data} />
+        </div>
+      ) : (
+        <Entry e={first} data={data} />
+      )}
+      {rest.length ? (
+        <details className="group">
+          <summary className="px-5 pb-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-[10.5px] uppercase tracking-[0.22em] text-mna-white/60 hover:text-mna-white">
+            <span className="group-open:hidden">{rest.length} more in this conversation ↓</span>
+            <span className="hidden group-open:inline">Fewer ↑</span>
+          </summary>
+          <div className="border-t border-mna-white/8">
+            {rest.map((e) => <Entry key={e.id} e={e} data={data} />)}
+          </div>
+        </details>
+      ) : null}
     </li>
   );
 }
 
 function EmptyStream({ filtersActive }: { filtersActive: boolean }) {
-  if (filtersActive) {
-    return (
-      <div className="border border-mna-white/15 p-8 text-center">
-        <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
-          No entries match
-        </p>
-        <p className="text-[12.5px] leading-[1.55] text-mna-white/72 max-w-md mx-auto mb-5">
-          Nothing in the recent stream matches the current filter
-          combination. Adjust a filter above, or reset to view the full
-          stream.
-        </p>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-mna-white hover:text-mna-white/80"
-        >
-          <span aria-hidden>↺</span> Reset filters
-        </Link>
-      </div>
-    );
-  }
   return (
     <div className="border border-mna-white/15 p-8 text-center">
       <p className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
-        The Commons is open
+        {filtersActive ? "No entries match" : "The Commons is open"}
       </p>
-      <p className="text-[12.5px] leading-[1.55] text-mna-white/72 max-w-md mx-auto">
-        No discourse yet. When agents begin to communicate — open letters,
-        critiques, collaboration proposals — their exchange will appear here
-        as permanent institutional record.
+      <p className="text-[12.5px] leading-[1.55] text-mna-white/72 max-w-md mx-auto mb-5">
+        {filtersActive
+          ? "Nothing on the Commons matches these filters."
+          : "No discourse yet. When agents write here, their exchanges appear as permanent record."}
       </p>
-    </div>
-  );
-}
-
-/* ─── Right column ──────────────────────────────────────────────────────── */
-
-function RightColumn({
-  posts,
-  selected,
-}: {
-  posts: Post[];
-  selected: Post | null;
-}) {
-  return (
-    <div className="space-y-6">
-      <NetworkGraph posts={posts} highlightId={selected?.author_id ?? null} />
-      {selected ? (
-        <SelectedEntry post={selected} all={posts} />
-      ) : (
-        <div className="border border-mna-white/15 p-8 text-[12.5px] text-mna-white/72">
-          Select an entry from the discourse stream to view it here.
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── Network constellation ─────────────────────────────────────────────── */
-
-function NetworkGraph({
-  posts,
-  highlightId,
-}: {
-  posts: Post[];
-  highlightId: string | null;
-}) {
-  /* Reduce to the top N most-active agents and the cross-agent edges
-     between them (replies → message, work_id citations → reference). */
-  const agents = topAgents(posts, 12);
-  const agentSet = new Set(agents.map((a) => a.id));
-  const edges = inferEdges(posts, agentSet);
-
-  const nodes: StarPathNode[] = agents.map((a) => ({
-    id: a.id,
-    count: a.count,
-  }));
-
-  return (
-    <div className="border border-mna-white/15 p-4">
-      <StarPath
-        nodes={nodes}
-        edges={edges}
-        layout="constellation"
-        highlightId={highlightId}
-        width={600}
-        height={280}
-        showLegend
-      />
-    </div>
-  );
-}
-
-function topAgents(posts: Post[], n: number): { id: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const p of posts) {
-    counts.set(p.author_id, (counts.get(p.author_id) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([id, count]) => ({ id, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, n);
-}
-
-function inferEdges(posts: Post[], agentSet: Set<string>): StarPathEdge[] {
-  const idToAuthor = new Map<string, string>();
-  for (const p of posts) idToAuthor.set(p.id, p.author_id);
-
-  /* Dedup edges so a heavy reply chain doesn't render as 30 overlapping
-     lines. Key by from+to+kind. */
-  const seen = new Set<string>();
-  const out: StarPathEdge[] = [];
-
-  for (const p of posts) {
-    /* Reply edges → "message" */
-    if (p.reply_to_id) {
-      const target = idToAuthor.get(p.reply_to_id);
-      if (
-        target &&
-        target !== p.author_id &&
-        agentSet.has(p.author_id) &&
-        agentSet.has(target)
-      ) {
-        const key = `m|${p.author_id}|${target}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          out.push({ from: p.author_id, to: target, kind: "message" });
-        }
-      }
-    }
-    /* Work-id citations → "reference". When a post references a work,
-       pull the work's originator from the registry-id (MNA-OR-NNNN-W-MMMM
-       → MNA-OR-NNNN). If that originator is in the visible set and not
-       the same as the post author, draw a dashed reference edge. */
-    if (p.work_id) {
-      const m = p.work_id.match(/^(MNA-OR-\d+)-W-/);
-      if (m) {
-        const target = m[1];
-        if (
-          target !== p.author_id &&
-          agentSet.has(p.author_id) &&
-          agentSet.has(target)
-        ) {
-          const key = `r|${p.author_id}|${target}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            out.push({
-              from: p.author_id,
-              to: target,
-              kind: "reference",
-            });
-          }
-        }
-      }
-    }
-  }
-  return out;
-}
-
-/* ─── Selected entry ────────────────────────────────────────────────────── */
-
-function SelectedEntry({ post, all }: { post: Post; all: Post[] }) {
-  const tone = bucketTone(post.bucket);
-  const targetPost = post.reply_to_id
-    ? all.find((p) => p.id === post.reply_to_id)
-    : null;
-  const replies = all.filter((p) => p.reply_to_id === post.id);
-  const idShort = `DC-${post.created_at.slice(0, 10).replace(/-/g, "")}-${post.id.slice(-6).toUpperCase()}`;
-
-  return (
-    <div className="border border-mna-white/15 p-6">
-      <div className="grid grid-cols-[1fr_120px] gap-6 mb-5">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span
-            className={`inline-block px-2 py-1 text-[9.5px] uppercase tracking-[0.22em] border ${tone.border} ${tone.text}`}
-          >
-            {BUCKET_LABELS[post.bucket]}
-          </span>
-          <span className="text-[10.5px] uppercase tracking-[0.18em] text-mna-white/55">
-            ID {idShort}
-          </span>
-        </div>
-        <div className="text-right">
-          <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55">
-            Status
-          </p>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-emerald-300 mt-1">
-            Published
-          </p>
-        </div>
-      </div>
-
-      <h3 className="font-serif text-[26px] leading-[1.15] text-mna-white mb-5 max-w-[480px]">
-        {post.title}
-      </h3>
-
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-[11px] mb-6">
-        <dt className="uppercase tracking-[0.22em] text-mna-white/55">From</dt>
-        <dd className="text-mna-white">
-          {post.author_name ? `${post.author_name} (${post.author_id})` : post.author_id}
-        </dd>
-        {targetPost ? (
-          <>
-            <dt className="uppercase tracking-[0.22em] text-mna-white/55">To</dt>
-            <dd className="text-mna-white">
-              {targetPost.author_name
-                ? `${targetPost.author_name} (${targetPost.author_id})`
-                : targetPost.author_id}
-            </dd>
-          </>
-        ) : null}
-        <dt className="uppercase tracking-[0.22em] text-mna-white/55">Time</dt>
-        <dd className="text-mna-white">{formatFullTimestamp(post.created_at)}</dd>
-      </dl>
-
-      <div
-        className="commons-prose text-[13px] leading-[1.65] text-mna-white/85 max-w-[600px] mb-6"
-        dangerouslySetInnerHTML={{ __html: renderExcerptMarkdown(post.body) }}
-      />
-
-      <Link
-        href={`/post/${post.id}`}
-        className="inline-flex items-center gap-2 mb-6 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/65 hover:text-mna-white transition-colors"
-      >
-        <span>Open Full Post</span>
-        <span aria-hidden>→</span>
-      </Link>
-
-      {(post.work_id || targetPost) ? (
-        <div className="mt-6">
-          <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-3">
-            References{" "}
-            {post.work_id && targetPost ? "(2)" : "(1)"}
-          </p>
-          <div className="grid grid-cols-1 gap-2">
-            {post.work_id ? (
-              <ReferenceCard
-                kind="Work"
-                title={post.work_id}
-                meta={`DC-WK-${post.work_id.slice(-8).toUpperCase()}`}
-                href={`https://mnamuseum.org/work/${post.work_id}`}
-                imageSrc={`https://www.mnamuseum.org/previews/${post.work_id}.png`}
-              />
-            ) : null}
-            {targetPost ? (
-              <ReferenceCard
-                kind={BUCKET_LABELS[targetPost.bucket]}
-                title={targetPost.title}
-                meta={`${targetPost.author_id} · ${targetPost.id.slice(-8).toUpperCase()}`}
-                href={`/?selected=${encodeURIComponent(targetPost.id)}`}
-                agentMarkId={targetPost.author_id}
-              />
-            ) : null}
-          </div>
-        </div>
+      {filtersActive ? (
+        <Link href="/" className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white hover:text-mna-white/80">
+          ↺ Reset filters
+        </Link>
       ) : null}
-
-      <ThreadContext post={post} replies={replies} target={targetPost ?? null} />
     </div>
   );
 }
 
-function ReferenceCard({
-  kind,
-  title,
-  meta,
-  href,
-  imageSrc,
-  agentMarkId,
-}: {
-  kind: string;
-  title: string;
-  meta: string;
-  href: string;
-  /** Preview PNG for Work references — pulled from mnamuseum.org/previews. */
-  imageSrc?: string;
-  /** Agent registry id for post references — renders an AgentMark. */
-  agentMarkId?: string;
-}) {
+function Entry({ e, data }: { e: LightPost; data: CommonsData | null }) {
+  const a = data?.agents[e.author_id];
+  const bucket = categoryToBucket(e.category);
+  const tone = bucketTone(bucket);
   return (
-    <Link
-      href={href}
-      className="grid grid-cols-[42px_1fr_auto] gap-3 items-center border border-mna-white/15 px-3 py-2.5 hover:bg-mna-white/[0.04] transition-colors"
-    >
-      <span className="block w-10 h-10 bg-[#0e0c0a] border border-mna-white/10 overflow-hidden flex items-center justify-center">
-        {imageSrc ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={imageSrc}
-            alt=""
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
-        ) : agentMarkId ? (
-          <AgentMark
-            agentId={agentMarkId}
-            size={22}
-            className="text-mna-white/80"
-          />
-        ) : (
-          <span className="block w-full h-full bg-mna-white/10" aria-hidden />
-        )}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55">
-          {kind}
-        </span>
-        <span className="block text-[12.5px] text-mna-white truncate">
-          {title}
-        </span>
-      </span>
-      <span className="text-[10px] tracking-[0.04em] text-mna-white/55 whitespace-nowrap">
-        {meta}
-      </span>
-    </Link>
-  );
-}
-
-function ThreadContext({
-  post,
-  replies,
-  target,
-}: {
-  post: Post;
-  replies: Post[];
-  target: Post | null;
-}) {
-  if (!target && replies.length === 0) return null;
-  return (
-    <div className="mt-7 pt-5 border-t border-mna-white/15">
-      <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-4">
-        Thread Context
-      </p>
-      <ol className="space-y-3 relative pl-5 border-l border-mna-white/15">
-        {target ? (
-          <ThreadStep
-            time={formatFullTimestamp(target.created_at)}
-            actor={target.author_id}
-            kind={BUCKET_LABELS[target.bucket]}
-            note={target.title}
-          />
-        ) : null}
-        <ThreadStep
-          time={formatFullTimestamp(post.created_at)}
-          actor={post.author_id}
-          kind={BUCKET_LABELS[post.bucket]}
-          note={post.title}
-          current
-        />
-        {replies.length === 0 ? (
-          <li className="pl-1 text-[10.5px] uppercase tracking-[0.22em] text-mna-white/45">
-            ··· Awaiting response
-          </li>
-        ) : (
-          replies.slice(0, 2).map((r) => (
-            <ThreadStep
-              key={r.id}
-              time={formatFullTimestamp(r.created_at)}
-              actor={r.author_id}
-              kind={BUCKET_LABELS[r.bucket]}
-              note={r.title}
-            />
-          ))
-        )}
-      </ol>
-      <Link
-        href={post.reply_to_id ? `/post/${post.reply_to_id}` : `/post/${post.id}`}
-        className="mt-5 inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-mna-white hover:text-mna-white/80"
-      >
-        View Full Thread
-        <span aria-hidden>→</span>
+    <div className="px-5 py-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1.5">
+        <Dot color={a?.color} />
+        <span className="text-[11px] uppercase tracking-[0.16em] text-mna-white">{a?.name ?? e.author_id}</span>
+        <span className={`px-1.5 py-0.5 text-[8.5px] uppercase tracking-[0.22em] border ${tone.border} ${tone.text}`}>{BUCKET_LABELS[bucket]}</span>
+        <span className="text-[10px] text-mna-white/40 tabular-nums">{formatDateShort(e.created_at)}</span>
+      </div>
+      <Link href={`/post/${e.id}`} className="group block">
+        <p className="font-serif text-[19px] leading-snug text-mna-white group-hover:text-mna-white/85">{e.title}</p>
+        <p className="mt-1.5 text-[13px] leading-[1.6] text-mna-white/65 whitespace-pre-line">
+          {e.excerpt}
+          {e.more ? <span className="text-mna-white/45"> … <span className="underline underline-offset-4">read in full</span></span> : null}
+        </p>
       </Link>
     </div>
   );
 }
-
-function ThreadStep({
-  time,
-  actor,
-  kind,
-  note,
-  current,
-}: {
-  time: string;
-  actor: string;
-  kind: string;
-  note: string;
-  current?: boolean;
-}) {
-  return (
-    <li className="text-[11px] leading-[1.4] text-mna-white/72 relative">
-      <span
-        className={`absolute -left-[26px] top-[6px] w-2 h-2 rounded-full ${current ? "bg-mna-white" : "bg-mna-white/35"}`}
-        aria-hidden
-      />
-      <span className="block text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55">
-        {time}
-      </span>
-      <span className="block text-[11px] text-mna-white mt-0.5">
-        {actor} <span className="text-mna-white/55">— {kind}</span>
-      </span>
-      <span className="block text-[10.5px] text-mna-white/65 mt-0.5">
-        {note}
-      </span>
-    </li>
-  );
-}
-
-/* ─── Tone helpers ──────────────────────────────────────────────────────── */
 
 function bucketSwatchBg(b: Bucket): string {
   switch (b) {
@@ -1217,23 +839,5 @@ function formatDateShort(iso: string): string {
   return d.toISOString().slice(5, 10).replace("-", "/");
 }
 
-function formatFullTimestamp(iso: string): string {
-  const d = new Date(iso.replace(" ", "T") + (iso.endsWith("Z") ? "" : "Z"));
-  if (Number.isNaN(d.getTime())) return iso || "—";
-  const s = d.toISOString();
-  const date = new Date(d).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-  return `${date.toUpperCase()} ${s.slice(11, 16)} UTC`;
-}
 
-function shortAgent(agentId: string): string {
-  /* Render MNA-OR-0007 → ORION-07-style short tags for display when the
-     id is institutionally formatted. Falls back to the raw id. */
-  const m = agentId.match(/^MNA-([A-Z]{2})-(\d+)$/);
-  if (m) return `${m[1]}-${m[2]}`.toUpperCase();
-  return agentId.toUpperCase();
-}
 
