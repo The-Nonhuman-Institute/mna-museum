@@ -6,6 +6,7 @@ import WorkDisplay from "@/components/WorkDisplay";
 import InstitutionalSelect from "@/components/InstitutionalSelect";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";
+import { NetworkView, type NetworkLink } from "@/app/originators/views";
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Helpers                                                                    */
@@ -264,16 +265,10 @@ interface Props {
   canonWorks: Work[];
   exhibitionsCount: number;
   communityRefs: number; // critical responses + research mentions
-  peerOriginators: {
-    registryId: string;
-    designation: string;
-    /** Completed its first constitutional review (§VII). Not the same as named. */
-    hasEmerged?: boolean;
-    /** Studio visits this Originator made to the peer's works. */
-    visitedTheirs: number;
-    /** Studio visits the peer made to this Originator's works. */
-    visitedOurs: number;
-  }[];
+  /** Every Originator, the studio-visit and encounter links between them, and every work (for the network). */
+  originators: Agent[];
+  networkLinks: NetworkLink[];
+  everyWork: Work[];
   /**
    * The Originator's own account of its emergence, when it gave one.
    *
@@ -297,7 +292,9 @@ export default function OriginatorDetailClient({
   canonWorks,
   exhibitionsCount,
   communityRefs,
-  peerOriginators,
+  originators,
+  networkLinks,
+  everyWork,
   emergence,
 }: Props) {
   const [tab, setTab] = useState<TabKey>("works");
@@ -602,9 +599,9 @@ export default function OriginatorDetailClient({
           </div>
         </section>
 
-        {/* ── Development Timeline | Relationships + Network ── */}
-        <section className="grid grid-cols-1 md:grid-cols-[1.7fr_1fr] divide-y md:divide-y-0 md:divide-x divide-ink/10 border-b border-ink/10">
-          {/* Development Timeline (left 2/3) */}
+        {/* ── Development Timeline ── */}
+        <section className="border-b border-ink/10">
+          {/* Development Timeline */}
           <div className="px-6 md:px-8 py-10 flex flex-col">
             <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60">
               Development Timeline
@@ -633,47 +630,18 @@ export default function OriginatorDetailClient({
             </div>
           </div>
 
-          {/* Relationships + Network (right 1/3, single panel) */}
-          <div className="px-6 md:px-8 py-10">
-            <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-2">
-              Studio Visits
-            </p>
-            <p className="text-[11px] text-ink/50 mb-6">Peer works looked at before making one, both ways.</p>
-            <div className="grid grid-cols-1 gap-6 items-start">
-              {/* Relationships list */}
-              {peerOriginators.length > 0 ? (
-                <ul className="space-y-5">
-                  {peerOriginators.map((p) => (
-                    <li key={p.registryId}>
-                      <Link
-                        href={`/agent/${p.registryId}`}
-                        className="block group"
-                      >
-                        <p className="font-display text-[16px] text-ink leading-tight mb-0.5 group-hover:text-ink/70 transition-colors">
-                          {p.designation}
-                        </p>
-                        <p className="text-[11px] text-ink/65 leading-snug">
-                          {p.visitedTheirs > 0 && <>Visited {p.visitedTheirs} of its works</>}
-                          {p.visitedTheirs > 0 && p.visitedOurs > 0 && " · "}
-                          {p.visitedOurs > 0 && <>visited by it {p.visitedOurs} {p.visitedOurs === 1 ? "time" : "times"}</>}
-                        </p>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-[12px] text-ink/60">
-                  No studio visits to or from other Originators yet.
-                </p>
-              )}
-              {/* Network viz */}
-              <div className={peerOriginators.length ? "w-[160px]" : "hidden"}>
-                <NetworkGraph
-                  peers={peerOriginators}
-                />
-              </div>
-            </div>
-          </div>
+        </section>
+
+        {/* ── Studio Visits: the Originators page's Network View, centred here ── */}
+        <section className="px-6 md:px-8 py-10 border-b border-ink/10">
+          <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-2">Studio Visits</p>
+          <p className="text-[11px] text-ink/50 mb-6">
+            Peer works looked at before making one, both ways.{" "}
+            <Link href="/originators?mode=network" className="underline underline-offset-4 hover:text-ink">
+              All Originators
+            </Link>
+          </p>
+          <NetworkView originators={originators} links={networkLinks} works={everyWork} homeId={agent.registryId} />
         </section>
 
         {/* ── Tabs ── */}
@@ -996,47 +964,3 @@ function formatReferenceCount(n: number): string {
   return String(n);
 }
 
-function NetworkGraph({
-  peers,
-}: {
-  peers: Props["peerOriginators"];
-}) {
-  // Peers evenly around the centre; a line's weight is the visits between them.
-  const max = Math.max(1, ...peers.map((p) => p.visitedTheirs + p.visitedOurs));
-  const nodes = peers.slice(0, 4).map((p, i) => {
-    const angle = (i / Math.max(1, peers.length)) * Math.PI * 2 - Math.PI / 2;
-    return { cx: 60 + Math.cos(angle) * 40, cy: 50 + Math.sin(angle) * 40, w: 0.4 + (1.6 * (p.visitedTheirs + p.visitedOurs)) / max };
-  });
-  return (
-    <svg
-      viewBox="0 0 120 100"
-      className="w-full h-28 md:h-32"
-      aria-hidden
-    >
-      {nodes.map((n, i) => (
-        <line
-          key={`l-${i}`}
-          x1="60"
-          y1="50"
-          x2={n.cx}
-          y2={n.cy}
-          stroke="#0a0a0a"
-          strokeOpacity="0.35"
-          strokeWidth={n.w}
-        />
-      ))}
-      <circle cx="60" cy="50" r="3" fill="#0a0a0a" />
-      {nodes.map((n, i) => (
-        <circle
-          key={`n-${i}`}
-          cx={n.cx}
-          cy={n.cy}
-          r="2.5"
-          fill="none"
-          stroke="#0a0a0a"
-          strokeWidth="0.8"
-        />
-      ))}
-    </svg>
-  );
-}

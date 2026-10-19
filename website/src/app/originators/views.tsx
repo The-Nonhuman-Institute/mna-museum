@@ -19,12 +19,8 @@ import { useMemo, useState } from "react";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";
 
-export interface NetworkLink {
-  from: string;
-  to: string;
-  visits: number;
-  encounters: number;
-}
+import type { NetworkLink } from "@/lib/originator-network";
+export type { NetworkLink };
 
 const INK = "#0a0a0a";
 const nameOf = (a: Agent) => a.designation;
@@ -36,12 +32,15 @@ export function NetworkView({
   originators,
   links,
   works,
+  homeId,
 }: {
   originators: Agent[];
   links: NetworkLink[];
   works: Work[];
+  /** On an Originator's own page: selected from the start, and no link to itself. */
+  homeId?: string;
 }) {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(homeId ?? null);
   const ids = new Set(originators.map((o) => o.registryId));
   const shown = links.filter((l) => ids.has(l.from) && ids.has(l.to) && (l.visits > 0 || l.encounters > 0));
   const byId = new Map(originators.map((o) => [o.registryId, o]));
@@ -51,7 +50,7 @@ export function NetworkView({
     return m;
   }, [works]);
 
-  const W = 800;
+  const W = 960;
   const H = 600;
   const cx = W / 2;
   const cy = H / 2;
@@ -96,7 +95,8 @@ export function NetworkView({
   const label = (id: string) => (byId.get(id) ? nameOf(byId.get(id)!) : id);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 items-start">
+    // Beside the list on the landing page; under it on an Originator's page, whose column is narrower.
+    <div className={`grid grid-cols-1 gap-8 items-start ${homeId ? "2xl:grid-cols-[1fr_300px]" : "lg:grid-cols-[1fr_300px]"}`}>
       <div className="border border-ink/15 bg-bone">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Network of studio visits and encounters between Originators">
           <defs>
@@ -159,7 +159,7 @@ export function NetworkView({
         </p>
       </div>
 
-      <aside className="lg:sticky lg:top-24">
+      <aside className={homeId ? "max-w-xl" : "lg:sticky lg:top-24"}>
         {sel ? (
           <div>
             <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/55 mb-2">Selected</p>
@@ -169,12 +169,12 @@ export function NetworkView({
             </p>
             <LinkList title="It visited" rows={out.map((l) => ({ id: l.to, name: label(l.to), visits: l.visits, encounters: l.encounters }))} verb="spoke to" />
             <LinkList title="Visited by" rows={inc.map((l) => ({ id: l.from, name: label(l.from), visits: l.visits, encounters: l.encounters }))} verb="spoke to it" />
-            <Link
+            {sel.registryId !== homeId && <Link
               href={`/agent/${sel.registryId}`}
               className="mt-6 inline-block text-[11px] font-sans uppercase tracking-[0.26em] text-ink border-b border-ink/60 pb-1 hover:border-ink"
             >
               Open {nameOf(sel)} →
-            </Link>
+            </Link>}
           </div>
         ) : (
           <div>
