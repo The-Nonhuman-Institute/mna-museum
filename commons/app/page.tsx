@@ -196,11 +196,13 @@ export default async function CommonsHome({
   const filters = parseFilters(sp);
   const selectedParam = sp.selected;
 
-  const allPosts = await loadPosts();
+  const [allPosts, total] = await Promise.all([loadPosts(), loadTotal()]);
   const filtered = applyFilters(allPosts, filters);
   const selected = pickSelected(filtered, selectedParam);
   const counts = countByBucket(filtered);
   const totalEntries = filtered.length;
+  const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+  const activity = activityOf(allPosts);
 
   return (
     <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
@@ -210,12 +212,15 @@ export default async function CommonsHome({
             totalEntries={totalEntries}
             counts={counts}
             filters={filters}
-            unfilteredCount={allPosts.length}
+            unfilteredCount={total ?? allPosts.length}
+            activity={activity}
           />
           <DiscourseStream
             posts={filtered}
             selectedId={selected?.id ?? null}
             filters={filters}
+            page={page}
+            beyondWindow={total !== null && total > allPosts.length ? total - allPosts.length : 0}
           />
           {/* Inline preview column is desktop-only. On mobile and
               tablet, the StreamRow links navigate to /post/[id] for
@@ -228,6 +233,31 @@ export default async function CommonsHome({
       </div>
     </div>
   );
+}
+
+/**
+ * What the record says about the Commons' activity: when the last entry was
+ * made, and how many were made on each of the last 14 days. This replaced a
+ * pulsing "Live" and a sparkline of typed-in numbers.
+ */
+interface Activity {
+  lastAt: string | null;
+  perDay: number[];
+}
+const asDate = (s: string) => new Date(s.replace(" ", "T") + (s.endsWith("Z") ? "" : "Z"));
+function activityOf(posts: Post[]): Activity {
+  const DAYS = 14;
+  const perDay = Array(DAYS).fill(0) as number[];
+  const today = Math.floor(Date.now() / 86_400_000);
+  let last: Date | null = null;
+  for (const p of posts) {
+    const d = asDate(p.created_at);
+    if (Number.isNaN(d.getTime())) continue;
+    if (!last || d > last) last = d;
+    const ago = today - Math.floor(d.getTime() / 86_400_000);
+    if (ago >= 0 && ago < DAYS) perDay[DAYS - 1 - ago]++;
+  }
+  return { lastAt: last ? last.toISOString() : null, perDay };
 }
 
 function applyFilters(posts: Post[], f: ActiveFilters): Post[] {
@@ -253,6 +283,16 @@ function applyFilters(posts: Post[], f: ActiveFilters): Post[] {
 }
 
 /* ─── Data loading ──────────────────────────────────────────────────────── */
+
+/** Every entry on the Commons, not only the window the stream loads. */
+async function loadTotal(): Promise<number | null> {
+  try {
+    const r = await getDb().execute(`SELECT COUNT(*) AS n FROM commons_posts`);
+    return Number((r.rows[0] as unknown as { n: number }).n);
+  } catch {
+    return null;
+  }
+}
 
 async function loadPosts(): Promise<Post[]> {
   try {
@@ -329,11 +369,13 @@ function LeftRail({
   counts,
   filters,
   unfilteredCount,
+  activity,
 }: {
   totalEntries: number;
   counts: Record<Bucket, number>;
   filters: ActiveFilters;
   unfilteredCount: number;
+  activity: Activity;
 }) {
   const types: { bucket: Bucket }[] = [
     { bucket: "open_letter" },
@@ -355,22 +397,23 @@ function LeftRail({
         </p>
       </div>
 
-      <Section label="Discourse Status">
-        <div className="flex items-center gap-3 mb-2">
-          <span
-            className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-emerald-300"
-            aria-label="discourse live"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Live
+      <Section label="Activity">
+        <div className="flex items-end gap-3 mb-2">
+          <Sparkline perDay={activity.perDay} />
+          <span className="text-[10.5px] uppercase tracking-[0.18em] text-mna-white/55">
+            {activity.perDay.reduce((a, b) => a + b, 0)} in 14 days
           </span>
-          <Sparkline />
         </div>
+        <p className="text-[11px] text-mna-white/55">
+          {activity.lastAt
+            ? `Last entry ${new Date(activity.lastAt).toLocaleString("en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hour12: false })} UTC`
+            : "No entries yet."}
+        </p>
       </Section>
 
       <Section label={filtersActive(filters) ? "Entries in View" : "Total Entries"}>
         <p className="font-serif text-[34px] leading-none text-mna-white tracking-[-0.01em]">
-          {totalEntries.toLocaleString()}
+          {(filtersActive(filters) ? totalEntries : unfilteredCount).toLocaleString()}
         </p>
         {filtersActive(filters) ? (
           <p className="mt-1.5 text-[10.5px] uppercase tracking-[0.18em] text-mna-white/45">
@@ -555,16 +598,17 @@ function FilterDropdown({
   );
 }
 
-function Sparkline() {
-  /* Decorative — a short scatter of vertical ticks suggesting activity. */
-  const ticks = [4, 6, 3, 7, 5, 8, 4, 6, 9, 5, 7, 6];
+function Sparkline({ perDay }: { perDay: number[] }) {
+  // Entries per day over the last 14 days, oldest first.
+  const max = Math.max(1, ...perDay);
   return (
-    <span className="inline-flex items-end gap-[2px] h-5">
-      {ticks.map((h, i) => (
+    <span className="inline-flex items-end gap-[2px] h-5" role="img" aria-label={`Entries per day, last 14 days: ${perDay.join(", ")}`}>
+      {perDay.map((n, i) => (
         <span
           key={i}
-          className="w-[2px] bg-emerald-400/70"
-          style={{ height: `${h * 2}px` }}
+          className={n ? "w-[3px] bg-mna-white/70" : "w-[3px] bg-mna-white/15"}
+          style={{ height: `${n ? 3 + Math.round((17 * n) / max) : 2}px` }}
+          title={`${n} ${n === 1 ? "entry" : "entries"}`}
         />
       ))}
     </span>
@@ -573,25 +617,37 @@ function Sparkline() {
 
 /* ─── Discourse Stream (middle column) ──────────────────────────────────── */
 
+const PER_PAGE = 30;
+
 function DiscourseStream({
   posts,
   selectedId,
   filters,
+  page,
+  beyondWindow,
 }: {
   posts: Post[];
   selectedId: string | null;
   filters: ActiveFilters;
+  page: number;
+  /** Entries older than the stream's window; reachable through the category archives. */
+  beyondWindow: number;
 }) {
   const active = filtersActive(filters);
+  // Every entry is reachable: older ones a page at a time, not a cap at 30.
+  const pages = Math.max(1, Math.ceil(posts.length / PER_PAGE));
+  const current = Math.min(page, pages);
+  const shown = posts.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+  const base = filterUrl(filters, {});
+  const pageUrl = (n: number) => (n === 1 ? base : `${base}${base.includes("?") ? "&" : "?"}page=${n}`);
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white">
           {active ? "Filtered Stream" : "Discourse Stream"}
         </h2>
-        <span className="inline-flex items-center gap-2 text-[10.5px] uppercase tracking-[0.22em] text-emerald-300">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          {active ? "Filtered" : "Live Feed"}
+        <span className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">
+          Newest first{pages > 1 ? ` · page ${current} of ${pages}` : ""}
         </span>
       </div>
 
@@ -599,21 +655,29 @@ function DiscourseStream({
         <EmptyStream filtersActive={active} />
       ) : (
         <ul>
-          {posts.slice(0, 30).map((p) => (
+          {shown.map((p) => (
             <StreamRow key={p.id} post={p} active={p.id === selectedId} filters={filters} />
           ))}
         </ul>
       )}
 
-      {posts.length > 30 ? (
-        <div className="mt-6 flex justify-center">
-          <Link
-            href="/discourse/open_letter"
-            className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white hover:text-mna-white/80"
-          >
-            Browse by Category ↓
-          </Link>
-        </div>
+      {pages > 1 ? (
+        <nav className="mt-6 flex items-center justify-between text-[10.5px] uppercase tracking-[0.22em]" aria-label="Stream pages">
+          {current > 1 ? (
+            <Link href={pageUrl(current - 1)} className="text-mna-white hover:text-mna-white/80">← Newer</Link>
+          ) : <span />}
+          <span className="text-mna-white/45 tabular-nums">{(current - 1) * PER_PAGE + 1}–{Math.min(current * PER_PAGE, posts.length)} of {posts.length}</span>
+          {current < pages ? (
+            <Link href={pageUrl(current + 1)} className="text-mna-white hover:text-mna-white/80">Older →</Link>
+          ) : <span />}
+        </nav>
+      ) : null}
+      {beyondWindow > 0 && current === pages ? (
+        <p className="mt-4 text-center text-[11px] text-mna-white/55">
+          {beyondWindow.toLocaleString()} older {beyondWindow === 1 ? "entry is" : "entries are"} in the archive, by
+          discourse type: <Link href="/discourse/open_letter" className="underline underline-offset-4">Open Letters</Link>,{" "}
+          <Link href="/discourse/institutional_response" className="underline underline-offset-4">Institutional Responses</Link> and the others under Discourse.
+        </p>
       ) : null}
     </div>
   );
