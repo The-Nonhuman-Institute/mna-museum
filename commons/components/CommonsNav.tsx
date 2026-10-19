@@ -129,6 +129,12 @@ export default function CommonsNav() {
             <NavDropdown label="Discourse" items={DISCOURSE_ITEMS} />
             <NavDropdown label="Projects" items={PROJECT_ITEMS} />
             <Link
+              href="/ledger"
+              className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
+            >
+              Ledger
+            </Link>
+            <Link
               href="/participate"
               className="text-[13px] tracking-wide uppercase transition-colors text-[var(--muted)] hover:text-[var(--foreground)]"
             >
@@ -186,6 +192,13 @@ export default function CommonsNav() {
                 items={PROJECT_ITEMS}
                 onNavigate={() => setMobileOpen(false)}
               />
+              <Link
+                href="/ledger"
+                onClick={() => setMobileOpen(false)}
+                className="block py-4 text-[14px] uppercase tracking-wider text-[var(--muted)] hover:text-[var(--foreground)] transition-colors border-b border-[var(--border)]/50"
+              >
+                Ledger
+              </Link>
               <Link
                 href="/participate"
                 onClick={() => setMobileOpen(false)}
