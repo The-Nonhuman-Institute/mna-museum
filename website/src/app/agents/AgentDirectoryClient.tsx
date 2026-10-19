@@ -123,18 +123,33 @@ function agentSubtitle(agent: Agent, isNetwork: boolean): string {
 
 export interface AgentDirectoryClientProps {
   agents: Agent[];
+  /** ?type=… — "View All" from a group, or a link from elsewhere. */
+  initialType?: string | null;
 }
 
 type ViewMode = "grid" | "list";
 type SortMode = "registry" | "name" | "type";
-type StatusKey = "ACTIVE" | "IN_REVIEW" | "INACTIVE" | "RETIRED";
+type StatusKey = "ACTIVE" | "IN_REVIEW" | "INACTIVE" | "SUSPENDED" | "RETIRED";
 
 export default function AgentDirectoryClient({
   agents,
+  initialType,
 }: AgentDirectoryClientProps) {
-  const [typeFilter, setTypeFilter] = useState<GroupKey[]>([]);
+  const startType = GROUP_ORDER.find((g) => g.key === initialType)?.key;
+  const [typeFilter, setTypeFilter] = useState<GroupKey[]>(startType ? [startType] : []);
   const [statusFilter, setStatusFilter] = useState<StatusKey[]>([]);
-  const [view, setView] = useState<ViewMode>("grid");
+  // The grid shows a few of each group; "View All" opens the list, which shows every one.
+  const [view, setView] = useState<ViewMode>(startType ? "list" : "grid");
+  const showAll = (key: GroupKey) => {
+    setTypeFilter([key]);
+    setView("list");
+    try {
+      window.history.replaceState(null, "", `/agents?type=${key}`);
+    } catch {
+      /* the view still changes */
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   const [sort, setSort] = useState<SortMode>("registry");
 
   const grouped = useMemo(() => {
@@ -172,6 +187,7 @@ export default function AgentDirectoryClient({
       ACTIVE: 0,
       IN_REVIEW: 0,
       INACTIVE: 0,
+      SUSPENDED: 0,
       RETIRED: 0,
     };
     for (const a of agents) {
@@ -273,6 +289,13 @@ export default function AgentDirectoryClient({
               color="bg-mna-white/40"
               active={statusFilter.includes("INACTIVE")}
               onClick={() => toggleStatus("INACTIVE")}
+            />
+            <StatusRow
+              label="Suspended"
+              count={statusCounts.SUSPENDED}
+              color="bg-mna-white/40"
+              active={statusFilter.includes("SUSPENDED")}
+              onClick={() => toggleStatus("SUSPENDED")}
             />
             <StatusRow
               label="Retired"
@@ -429,13 +452,14 @@ export default function AgentDirectoryClient({
                           {g.label}
                         </span>
                         {g.total > 1 ? (
-                          <Link
-                            href={`/agents?type=${g.key}`}
+                          <button
+                            type="button"
+                            onClick={() => showAll(g.key)}
                             className="shrink-0 text-[9.5px] font-sans uppercase tracking-[0.2em] text-mna-white/55 hover:text-mna-white transition-colors inline-flex items-center gap-1.5"
                           >
                             <span>View All ({g.total})</span>
                             <span aria-hidden>→</span>
-                          </Link>
+                          </button>
                         ) : null}
                       </div>
                     ))}
@@ -462,7 +486,7 @@ export default function AgentDirectoryClient({
                           >
                             <OverflowTile
                               count={g.overflow}
-                              href={`/agents?type=${g.key}`}
+                              onClick={() => showAll(g.key)}
                               label={g.label.replace(/^The /, "")}
                             />
                           </div>
@@ -543,17 +567,18 @@ function AgentCard({
 
 function OverflowTile({
   count,
-  href,
+  onClick,
   label,
 }: {
   count: number;
-  href: string;
+  onClick: () => void;
   label: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="group relative flex flex-col h-full border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left w-full group relative flex flex-col h-full border border-mna-white/[0.14] hover:border-mna-white/45 bg-mna-white/[0.015] hover:bg-mna-white/[0.04] transition-colors"
     >
       <div className="aspect-square flex items-center justify-center shrink-0">
         <span className="font-display text-[30px] md:text-[34px] text-mna-white/90 leading-none">
@@ -571,7 +596,7 @@ function OverflowTile({
           {label}
         </p>
       </div>
-    </Link>
+    </button>
   );
 }
 

@@ -8,7 +8,12 @@ export const metadata: Metadata = {
     "Autonomous systems that operate within MNA's institutional framework. Explore the agents that evaluate, preserve, present, support, and expand the Museum.",
 };
 
-export default async function AgentsPage() {
+export default async function AgentsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const agents = await getAllAgents();
-  return <AgentDirectoryClient agents={agents} />;
+  const type = (await searchParams)?.type;
+  return <AgentDirectoryClient agents={agents} initialType={typeof type === "string" ? type : null} />;
 }
