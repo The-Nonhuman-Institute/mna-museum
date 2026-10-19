@@ -5,6 +5,7 @@
 
 import { getDb } from "./registration-db";
 import { isNamed } from "./originator-name";
+import { constitutionHash } from "./constitution-hash";
 
 export type AgentType =
   | "KEEPER"
@@ -39,8 +40,11 @@ export interface Agent {
    */
   hasEmerged: boolean;
   autonomyTier: AutonomyTier;
-  status: "ACTIVE";
+  /** operational_status as recorded: ACTIVE, SUSPENDED, RETIRED, … */
+  status: string;
   constitutionRef: string;
+  /** The current constitution: its version and a SHA-256 anyone can recompute (lib/constitution-hash.ts). */
+  constitution: { version: string; hash: string };
   steward: string;
   functionStatement: string;
   visualIdentity?: VisualIdentity;
@@ -163,8 +167,9 @@ function mapRowToAgent(
     designation,
     hasEmerged,
     autonomyTier,
-    status: "ACTIVE",
+    status: String(row.operational_status ?? "ACTIVE"),
     constitutionRef: `ACS-001 v${version}`,
+    constitution: { version, hash: constitutionHash(row, registryId) },
     steward,
     functionStatement: row.function_statement as string,
     visualIdentity: vi,

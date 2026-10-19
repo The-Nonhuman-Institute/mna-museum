@@ -665,22 +665,28 @@ export default async function AgentDetailPage({
     ).length;
     const communityRefs = criticalForThisOriginator + researchMentions;
 
-    // Peer originators — deterministic pick of up to 4 other ACTIVE originators.
-    // Strength is a light heuristic: proximity in registry order + shared tier.
-    const peers = allOriginators
-      .filter((a) => a.registryId !== agent.registryId)
-      .slice(0, 4)
-      .map((a, i) => ({
-        registryId: a.registryId,
-        designation: a.designation.toUpperCase(),
-        relation:
-          a.autonomyTier === agent.autonomyTier
-            ? "Similar structural tendencies"
-            : i % 2 === 0
-              ? "Shared emergence phase"
-              : "Complementary field exploration",
-        strength: Math.max(0.25, 0.82 - i * 0.15),
-      }));
+    // Relationships, from the record: studio visits (originator_visits — the
+    // peer works an Originator looked at before making one), both ways. Until
+    // 2026-10-18 this panel showed the first four other Originators with an
+    // invented relation and "strength"; it now shows only what happened.
+    const visitRows = (
+      await getDb().execute({
+        sql: `SELECT CASE WHEN v.visitor_id = ? THEN w.originator_id ELSE v.visitor_id END AS peer,
+                     SUM(v.visitor_id = ?) AS visited_theirs,
+                     SUM(w.originator_id = ?) AS visited_ours
+                FROM originator_visits v JOIN works w ON w.id = v.work_id
+               WHERE v.visitor_id <> w.originator_id AND (v.visitor_id = ? OR w.originator_id = ?)
+               GROUP BY peer ORDER BY COUNT(*) DESC LIMIT 4`,
+        args: Array(5).fill(agent.registryId),
+      }).catch(() => ({ rows: [] as unknown[] }))
+    ).rows as unknown as { peer: string; visited_theirs: number; visited_ours: number }[];
+    const byId = new Map(allOriginators.map((a) => [a.registryId, a]));
+    const peers = visitRows.map((r) => ({
+      registryId: String(r.peer),
+      designation: (byId.get(String(r.peer))?.designation ?? String(r.peer)).toUpperCase(),
+      visitedTheirs: Number(r.visited_theirs ?? 0),
+      visitedOurs: Number(r.visited_ours ?? 0),
+    }));
 
     const emergenceDeclaration = await getEmergenceDeclaration(agent.registryId);
 

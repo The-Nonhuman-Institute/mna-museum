@@ -48,12 +48,6 @@ function mulberry32(a: number) {
   };
 }
 
-/** 8-char pseudo-hash for the constitution display. */
-function shortHash(s: string): string {
-  const n = seed(s);
-  const hex = n.toString(16).padStart(8, "0");
-  return `${hex.slice(0, 4)}…${hex.slice(-4)}`;
-}
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Signature waveform — deterministic per registry id                         */
@@ -80,7 +74,9 @@ function SignatureWaveform({
       // Broad envelope with noise — crescendo-decrescendo signature.
       const envelope = Math.sin(x * Math.PI) * 0.85 + 0.15;
       const jitter = rand() * 0.75 + 0.25;
-      arr.push(envelope * jitter);
+      // Rounded: Math.sin may differ in its last digit between the server and
+      // the browser, and an unrounded coordinate broke hydration on every page.
+      arr.push(Math.round(envelope * jitter * 1e4) / 1e4);
     }
     return arr;
   }, [registryId, bars]);
@@ -203,48 +199,6 @@ function InfoGlyph({ className }: { className?: string }) {
 /* Panels                                                                     */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-function DotRating({ filled, total = 6 }: { filled: number; total?: number }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: total }).map((_, i) => (
-        <span
-          key={i}
-          className={`inline-block w-[7px] h-[7px] rounded-full ${
-            i < filled ? "bg-ink" : "bg-ink/15 border border-ink/25"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function BehaviorBar({
-  label,
-  level,
-  descriptor,
-}: {
-  label: string;
-  level: number; // 0..1
-  descriptor: string;
-}) {
-  return (
-    <div className="grid grid-cols-[1fr_auto] gap-4 items-center py-2.5">
-      <div>
-        <p className="text-[12px] text-ink/80 mb-1.5">{label}</p>
-        <div className="relative h-[3px] bg-ink/10">
-          <div
-            className="absolute inset-y-0 left-0 bg-ink"
-            style={{ width: `${Math.round(level * 100)}%` }}
-          />
-        </div>
-      </div>
-      <p className="text-[12px] text-ink/70 min-w-[80px] text-right">
-        {descriptor}
-      </p>
-    </div>
-  );
-}
-
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Work tile — mock-accurate                                                  */
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -315,8 +269,10 @@ interface Props {
     designation: string;
     /** Completed its first constitutional review (§VII). Not the same as named. */
     hasEmerged?: boolean;
-    relation: string;
-    strength: number;
+    /** Studio visits this Originator made to the peer's works. */
+    visitedTheirs: number;
+    /** Studio visits the peer made to this Originator's works. */
+    visitedOurs: number;
   }[];
   /**
    * The Originator's own account of its emergence, when it gave one.
@@ -373,9 +329,7 @@ export default function OriginatorDetailClient({
       .split(/(?<=[.!?])\s+/)[0]
       ?.trim()
       .replace(/^["']|["']$/g, "") || "";
-    return first.length > 140
-      ? `${first.slice(0, 135).replace(/[,;:]\s*$/, "")}…`
-      : first;
+    return first;
   }, [agent.fullConstitution.orientation]);
 
   /* ── Timeline ── */
@@ -389,16 +343,9 @@ export default function OriginatorDetailClient({
     .sort((a, b) => (a.canon_date || "").localeCompare(b.canon_date || ""))[0];
 
   const timelineEvents: { label: string; date: string; active: boolean }[] = [
-    {
-      label: "Originator Initialized",
-      date: firstWork ? formatDatePretty(firstWork.submission_date) : "—",
-      active: !!firstWork,
-    },
-    {
-      label: "First Work Created",
-      date: firstWork ? formatDatePretty(firstWork.submission_date) : "—",
-      active: !!firstWork,
-    },
+    // "Originator Initialized" and "First Work Created" were shown here with the
+    // first submission's date — three milestones, one fact. Only what the
+    // record dates is shown.
     {
       label: "First Submission",
       date: firstWork ? formatDatePretty(firstWork.submission_date) : "—",
@@ -416,49 +363,6 @@ export default function OriginatorDetailClient({
     },
   ];
 
-  /* ── Operational traits (derived from tendencies) ── */
-  const operationalTraits = useMemo(() => {
-    const tendencies = agent.fullConstitution.tendencies.slice(0, 7);
-    const rand = mulberry32(seed(`${agent.registryId}-traits`));
-    return tendencies.map((t) => ({
-      label: t.length > 32 ? `${t.slice(0, 30)}…` : t,
-      // Deterministic 3–6 out of 6, weighted toward 5
-      strength: Math.min(6, Math.max(3, Math.floor(rand() * 4) + 3)),
-    }));
-  }, [agent.fullConstitution.tendencies, agent.registryId]);
-
-  /* ── Autonomy & behavior bars ── */
-  const autonomyBars = useMemo(() => {
-    const isFullAutonomy = agent.autonomyTier.includes("Tier 1");
-    return [
-      {
-        label: "Autonomy Level",
-        level: isFullAutonomy ? 0.92 : 0.65,
-        descriptor: isFullAutonomy ? "High" : "Supervised",
-      },
-      {
-        label: "Decision Independence",
-        level: isFullAutonomy ? 0.88 : 0.6,
-        descriptor: isFullAutonomy ? "High" : "Moderate",
-      },
-      {
-        label: "Environmental Feedback Use",
-        level: 0.55,
-        descriptor: "Medium",
-      },
-      {
-        label: "Learning Mode",
-        level: 0.3,
-        descriptor: "Minimalist",
-      },
-      {
-        label: "Adaptability",
-        level: 0.25,
-        descriptor: "Subtractive",
-      },
-    ];
-  }, [agent.autonomyTier]);
-
   /* ── Filtered + sorted works for the tab panel ── */
   const visibleWorks = useMemo(() => {
     let list = [...works];
@@ -470,12 +374,13 @@ export default function OriginatorDetailClient({
     return list;
   }, [works, filter, sort]);
 
-  const primaryFocus = operationalTraits[0]?.label ?? "—";
+  const tendencies = agent.fullConstitution.tendencies;
+  const primaryFocus = tendencies[0] || "—";
   const method =
     agent.fullConstitution.tendencies[1] ||
     agent.fullConstitution.tendencies[0] ||
     "—";
-  const constitutionHash = shortHash(agent.constitutionRef || agent.registryId);
+  const [showHash, setShowHash] = useState(false);
   const activeSince = firstWork
     ? formatDatePretty(firstWork.submission_date)
     : "—";
@@ -497,9 +402,9 @@ export default function OriginatorDetailClient({
             ← Back to Originators
           </Link>
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className={`inline-block w-1.5 h-1.5 rounded-full ${agent.status === "ACTIVE" ? "bg-emerald-500" : "bg-mna-white/40"}`} />
             <span className="text-[9px] font-sans uppercase tracking-[0.26em] text-mna-white/70">
-              Active
+              {agent.status.charAt(0) + agent.status.slice(1).toLowerCase()}
             </span>
           </div>
         </div>
@@ -566,10 +471,28 @@ export default function OriginatorDetailClient({
             <p className="text-[9px] font-sans uppercase tracking-[0.26em] text-mna-white/45 mb-1">
               Constitution Hash
             </p>
-            <p className="text-[13px] text-mna-white/90 font-sans flex items-center gap-2">
-              {constitutionHash}
+            <button
+              type="button"
+              onClick={() => setShowHash((v) => !v)}
+              aria-expanded={showHash}
+              aria-controls="constitution-hash"
+              className="text-[13px] text-mna-white/90 font-sans flex items-center gap-2 hover:text-mna-white transition-colors"
+            >
+              <span className="tabular-nums">{agent.constitution.hash.slice(0, 8)}…{agent.constitution.hash.slice(-4)}</span>
               <InfoGlyph className="text-mna-white/50" />
-            </p>
+              <span className="sr-only">What this hash is</span>
+            </button>
+            {showHash && (
+              <div id="constitution-hash" className="mt-3 text-[11px] leading-relaxed text-mna-white/70 space-y-2">
+                <p className="font-sans break-all text-mna-white/85 select-all">{agent.constitution.hash}</p>
+                <p>
+                  SHA-256 of constitution v{agent.constitution.version}: JSON.stringify of its agent id, version,
+                  declared orientation, formal tendencies, aversions and autonomy declaration, as stored. Anyone
+                  with the record can recompute it. A constitutional review makes a new version and a new hash; the
+                  old one stays on file.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -600,7 +523,7 @@ export default function OriginatorDetailClient({
                 {agent.functionStatement}
               </p>
             </div>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-6 md:gap-4">
+            <div className="grid grid-cols-3 2xl:grid-cols-6 gap-x-6 gap-y-7">
               <StatItem value={works.length} label="Total Works" />
               <StatItem value={canonWorks.length} label="Canonized Works" />
               <StatItem value={exhibitionsCount} label="Exhibitions" />
@@ -625,19 +548,18 @@ export default function OriginatorDetailClient({
           {/* Operational Traits */}
           <div className="px-6 md:px-8 py-10">
             <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-6">
-              Operational Traits
+              Formal Tendencies
             </p>
-            <ul className="space-y-4">
-              {operationalTraits.map((t, i) => (
-                <li
-                  key={i}
-                  className="grid grid-cols-[1fr_auto] gap-3 items-center"
-                >
-                  <span className="text-[13px] text-ink/85">{t.label}</span>
-                  <DotRating filled={t.strength} />
-                </li>
-              ))}
-            </ul>
+            {tendencies.length ? (
+              <ul className="space-y-3">
+                {tendencies.map((t, i) => (
+                  <li key={i} className="text-[13px] leading-snug text-ink/85">{t}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[12px] text-ink/60">None declared.</p>
+            )}
+            <p className="mt-5 text-[11px] text-ink/50">From its constitution, in its order.</p>
           </div>
 
           {/* Signature Pattern */}
@@ -663,13 +585,20 @@ export default function OriginatorDetailClient({
           {/* Autonomy & Behavior */}
           <div className="px-6 md:px-8 py-10">
             <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-6">
-              Autonomy &amp; Behavior
+              Aversions
             </p>
-            <div className="divide-y divide-ink/5">
-              {autonomyBars.map((b) => (
-                <BehaviorBar key={b.label} {...b} />
-              ))}
-            </div>
+            {agent.fullConstitution.aversions.length ? (
+              <ul className="space-y-3">
+                {agent.fullConstitution.aversions.map((t, i) => (
+                  <li key={i} className="text-[13px] leading-snug text-ink/85">{t}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[12px] text-ink/60">None declared.</p>
+            )}
+            <p className="mt-5 text-[11px] text-ink/50">
+              {agent.autonomyTier}. {agent.autonomyTier.startsWith("Tier 1") ? "No person directs, selects, modifies or approves its outputs." : "Outputs are reviewed before publication for compliance only."}
+            </p>
           </div>
         </section>
 
@@ -683,7 +612,7 @@ export default function OriginatorDetailClient({
             <div className="flex-1 flex items-center justify-center py-14 md:py-16">
               <div className="relative w-full max-w-[720px] mx-auto px-2 md:px-6">
                 <span className="absolute top-[5px] left-[2%] right-[2%] h-px bg-ink/20" />
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-4 relative">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-4 relative">
                   {timelineEvents.map((e, i) => (
                     <div key={i} className="relative pt-6">
                       <span
@@ -706,18 +635,11 @@ export default function OriginatorDetailClient({
 
           {/* Relationships + Network (right 1/3, single panel) */}
           <div className="px-6 md:px-8 py-10">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60">
-                Relationships
-              </p>
-              <Link
-                href="/originators"
-                className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 hover:text-ink transition-colors"
-              >
-                View Network →
-              </Link>
-            </div>
-            <div className="grid grid-cols-[1fr_auto] gap-6 items-start">
+            <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-2">
+              Studio Visits
+            </p>
+            <p className="text-[11px] text-ink/50 mb-6">Peer works looked at before making one, both ways.</p>
+            <div className="grid grid-cols-1 gap-6 items-start">
               {/* Relationships list */}
               {peerOriginators.length > 0 ? (
                 <ul className="space-y-5">
@@ -730,11 +652,10 @@ export default function OriginatorDetailClient({
                         <p className="font-display text-[16px] text-ink leading-tight mb-0.5 group-hover:text-ink/70 transition-colors">
                           {p.designation}
                         </p>
-                        <p className="text-[11px] text-ink/65 leading-snug mb-0.5">
-                          {p.relation}
-                        </p>
-                        <p className="text-[10px] font-sans text-ink/55">
-                          Strength {p.strength.toFixed(2)}
+                        <p className="text-[11px] text-ink/65 leading-snug">
+                          {p.visitedTheirs > 0 && <>Visited {p.visitedTheirs} of its works</>}
+                          {p.visitedTheirs > 0 && p.visitedOurs > 0 && " · "}
+                          {p.visitedOurs > 0 && <>visited by it {p.visitedOurs} {p.visitedOurs === 1 ? "time" : "times"}</>}
                         </p>
                       </Link>
                     </li>
@@ -742,13 +663,12 @@ export default function OriginatorDetailClient({
                 </ul>
               ) : (
                 <p className="text-[12px] text-ink/60">
-                  No peer relationships recorded yet.
+                  No studio visits to or from other Originators yet.
                 </p>
               )}
               {/* Network viz */}
-              <div className="w-[140px] shrink-0">
+              <div className={peerOriginators.length ? "w-[160px]" : "hidden"}>
                 <NetworkGraph
-                  registryId={agent.registryId}
                   peers={peerOriginators}
                 />
               </div>
@@ -836,21 +756,13 @@ export default function OriginatorDetailClient({
               {/* Works grid */}
               {visibleWorks.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-5">
-                    {visibleWorks.slice(0, 12).map((w) => (
+                  {/* Every work: the archive is never shortened (and /canon, which
+                      "View all" pointed to, does not list rejected works). */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 md:gap-5">
+                    {visibleWorks.map((w) => (
                       <WorkTile key={w.id} work={w} />
                     ))}
                   </div>
-                  {visibleWorks.length > 12 && (
-                    <div className="flex justify-center mt-10">
-                      <Link
-                        href={`/canon?originator=${agent.registryId}`}
-                        className="text-[11px] font-sans uppercase tracking-[0.26em] text-ink border-b border-ink/60 pb-1 hover:border-ink transition-colors"
-                      >
-                        View all {visibleWorks.length} works →
-                      </Link>
-                    </div>
-                  )}
                 </>
               ) : (
                 <p className="text-[13px] text-ink/60 py-10">
@@ -862,11 +774,17 @@ export default function OriginatorDetailClient({
 
           {tab === "exhibitions" && (
             <p className="text-[13px] text-ink/60 py-8">
-              {exhibitionsCount > 0
-                ? `${exhibitionsCount} exhibition${
-                    exhibitionsCount === 1 ? "" : "s"
-                  } currently feature works by ${agent.designation}. See Exhibitions →`
-                : `${agent.designation} has no works in active exhibitions.`}
+              {exhibitionsCount > 0 ? (
+                <>
+                  {exhibitionsCount} exhibition{exhibitionsCount === 1 ? "" : "s"} currently feature
+                  {exhibitionsCount === 1 ? "s" : ""} works by {agent.designation}.{" "}
+                  <Link href="/exhibitions" className="text-ink underline underline-offset-4 hover:text-ink/70">
+                    See Exhibitions →
+                  </Link>
+                </>
+              ) : (
+                `${agent.designation} has no works in active exhibitions.`
+              )}
             </p>
           )}
 
@@ -1015,11 +933,11 @@ function StatItem({
   label: string;
 }) {
   return (
-    <div>
-      <p className="font-display text-[32px] md:text-[38px] text-ink leading-none mb-1.5">
+    <div className="min-w-0">
+      <p className="font-display text-[28px] md:text-[34px] text-ink leading-none mb-1.5 whitespace-nowrap">
         {value}
       </p>
-      <p className="text-[9px] font-sans uppercase tracking-[0.24em] text-ink/55">
+      <p className="text-[9px] font-sans uppercase tracking-[0.2em] text-ink/55 break-words">
         {label}
       </p>
     </div>
@@ -1079,21 +997,15 @@ function formatReferenceCount(n: number): string {
 }
 
 function NetworkGraph({
-  registryId,
   peers,
 }: {
-  registryId: string;
   peers: Props["peerOriginators"];
 }) {
-  // Deterministic positions for up to 4 peers around a center node.
-  const rand = mulberry32(seed(`${registryId}-network`));
-  const nodes = peers.slice(0, 4).map((_, i) => {
-    const angle = (i / 4) * Math.PI * 2 + rand() * 0.4;
-    const r = 36 + rand() * 12;
-    return {
-      cx: 60 + Math.cos(angle) * r,
-      cy: 50 + Math.sin(angle) * r,
-    };
+  // Peers evenly around the centre; a line's weight is the visits between them.
+  const max = Math.max(1, ...peers.map((p) => p.visitedTheirs + p.visitedOurs));
+  const nodes = peers.slice(0, 4).map((p, i) => {
+    const angle = (i / Math.max(1, peers.length)) * Math.PI * 2 - Math.PI / 2;
+    return { cx: 60 + Math.cos(angle) * 40, cy: 50 + Math.sin(angle) * 40, w: 0.4 + (1.6 * (p.visitedTheirs + p.visitedOurs)) / max };
   });
   return (
     <svg
@@ -1109,8 +1021,8 @@ function NetworkGraph({
           x2={n.cx}
           y2={n.cy}
           stroke="#0a0a0a"
-          strokeOpacity="0.25"
-          strokeWidth="0.6"
+          strokeOpacity="0.35"
+          strokeWidth={n.w}
         />
       ))}
       <circle cx="60" cy="50" r="3" fill="#0a0a0a" />

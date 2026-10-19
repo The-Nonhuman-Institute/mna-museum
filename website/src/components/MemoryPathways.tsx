@@ -289,14 +289,8 @@ export default function MemoryPathways({
                     stroke={node.is_locked ? "#1a1a1a" : "rgba(26,26,26,0.4)"}
                     strokeWidth={node.is_locked ? 1.5 : 0.6}
                   >
-                    <title>
-                      {node.id} · {node.memory_type}
-                      {node.is_locked ? " (anchor)" : ""}
-                      {"\n"}
-                      access: {node.access_count}
-                      {"\n\n"}
-                      {snippet(node.content, 180)}
-                    </title>
+                    {/* One string: a <title> with several text children fails hydration. */}
+                    <title>{`${node.id} · ${node.memory_type}${node.is_locked ? " (anchor)" : ""}\naccess: ${node.access_count}\n\n${snippet(node.content, 180)}`}</title>
                   </circle>
                 </g>
               );
