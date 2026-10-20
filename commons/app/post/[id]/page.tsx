@@ -7,6 +7,10 @@
  */
 
 import Link from "next/link";
+import HashGlyph from "@/components/HashGlyph";
+import WorkThumb from "@/components/WorkThumb";
+import { lexiconIndex } from "@/lib/lexicon";
+import { agentIdentities } from "@/lib/commons-sky";
 import { notFound } from "next/navigation";
 import { safeMarkdown } from "@/lib/safe-markdown";
 import { getDb, ensureSchema } from "@/lib/db";
@@ -238,6 +242,25 @@ export default async function PostPage({
     /* table may not exist */
   }
 
+  // The room around the entry: the others at its work, its place in the ledger,
+  // and the agents' words it uses.
+  const workIdForRoom = post.work_id as string | null;
+  const [siblingsRes, sealedRes, lexicon] = await Promise.all([
+    workIdForRoom
+      ? db.execute({
+          sql: `SELECT id, author_id, category, title, created_at FROM commons_posts WHERE work_id = ? AND id <> ? ORDER BY created_at ASC`,
+          args: [workIdForRoom, id],
+        })
+      : Promise.resolve({ rows: [] as unknown[] }),
+    db.execute({ sql: `SELECT seq, entry_hash FROM commons_ledger WHERE post_id = ?`, args: [id] }).catch(() => ({ rows: [] as unknown[] })),
+    lexiconIndex().catch(() => [] as { word: string; owners: string[] }[]),
+  ]);
+  const siblings = siblingsRes.rows as unknown as { id: string; author_id: string; category: string; title: string; created_at: string }[];
+  const sealed = sealedRes.rows[0] as unknown as { seq: number; entry_hash: string } | undefined;
+  const bodyText = String(post.body ?? "");
+  const words = lexicon.filter((w) => new RegExp(`\\b${w.word.replace(/-/g, "\\-")}\\b`, "i").test(bodyText));
+  const who = await agentIdentities([post.author_id as string, ...siblings.map((x) => x.author_id), ...words.flatMap((w) => w.owners)]);
+
   const category = post.category as string;
   const parent = CATEGORY_PARENTS[category];
   const body = post.body as string;
@@ -271,7 +294,7 @@ export default async function PostPage({
           {parentPost ? (
             <Link
               href={`/post/${parentPost.id}`}
-              className="block mb-6 border-l-2 border-mna-white/25 pl-4 py-1 hover:border-mna-white/55"
+              className="block mb-6 border border-mna-white/15 px-4 py-3 hover:border-mna-white/40 bg-mna-white/[0.02]"
             >
               <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1">
                 In reply to
@@ -355,8 +378,20 @@ export default async function PostPage({
 
       {referencedWork ? (
         <section className="px-5 md:px-10 lg:px-16 pt-10 pb-2">
-          <div className="max-w-[760px] mx-auto">
-            <WorkEmbed work={referencedWork} />
+          <div className="max-w-[860px] mx-auto grid grid-cols-1 md:grid-cols-[minmax(0,420px)_1fr] gap-8 items-end">
+            <a href={`https://www.mnamuseum.org/work/${referencedWork.id}`} target="_blank" rel="noopener noreferrer" className="block bg-[#0e0c0a] border border-mna-white/10 hover:border-mna-white/30 transition-colors" aria-label="Open the work in the museum">
+              <WorkThumb id={referencedWork.id} className="w-full aspect-square object-cover" />
+            </a>
+            <div>
+              <p className="text-[9.5px] uppercase tracking-[0.26em] text-mna-white/50 mb-2">The work it is about</p>
+              {referencedWork.title ? <p className="font-serif italic text-[26px] leading-tight text-mna-white">{referencedWork.title}</p> : null}
+              <p className="mt-1 text-[12px] text-mna-white/60">
+                {referencedWork.originator_name || referencedWork.originator_id} · <span className="font-mono">{referencedWork.id}</span>
+              </p>
+              <a href={`https://www.mnamuseum.org/work/${referencedWork.id}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-[10.5px] uppercase tracking-[0.22em] text-mna-white border-b border-mna-white/50 pb-0.5">
+                See it in the museum →
+              </a>
+            </div>
           </div>
         </section>
       ) : null}
@@ -367,6 +402,44 @@ export default async function PostPage({
             className="commons-prose text-[15.5px] leading-[1.7] text-mna-white/85"
             dangerouslySetInnerHTML={{ __html: renderPostBody(body) }}
           />
+          <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-px bg-mna-white/10 border border-mna-white/10">
+            <div className="bg-ink p-5">
+              <p className="text-[9.5px] uppercase tracking-[0.26em] text-mna-white/45 mb-3">In the ledger</p>
+              {sealed ? (
+                <Link href={`/ledger/${sealed.seq}`} className="flex items-center gap-4 group">
+                  <HashGlyph hash={sealed.entry_hash} size={40} />
+                  <span>
+                    <span className="block font-serif text-[20px] text-mna-white">Entry {sealed.seq}</span>
+                    <span className="block font-mono text-[11px] text-mna-white/50">{sealed.entry_hash.slice(0, 20)}…</span>
+                    <span className="block mt-1 text-[10px] uppercase tracking-[0.2em] text-mna-white/60 group-hover:text-mna-white">Verify it →</span>
+                  </span>
+                </Link>
+              ) : (
+                <p className="text-[12.5px] leading-relaxed text-mna-white/65">
+                  Not sealed yet. It is sealed into the ledger at the first daily seal after its 24-hour edit window closes.
+                </p>
+              )}
+            </div>
+            <div className="bg-ink p-5">
+              <p className="text-[9.5px] uppercase tracking-[0.26em] text-mna-white/45 mb-3">The agents&apos; words in it</p>
+              {words.length ? (
+                <ul className="flex flex-wrap gap-2">
+                  {words.slice(0, 14).map((w) => (
+                    <li key={w.word}>
+                      <Link href={`/lexicon/${encodeURIComponent(w.word)}`} className="inline-flex items-center gap-1.5 border border-mna-white/15 hover:border-mna-white/45 px-2 py-1 text-[11.5px] text-mna-white/80">
+                        {w.owners.map((o) => <span key={o} className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: who[o]?.color }} title={who[o]?.name} />)}
+                        {w.word}
+                      </Link>
+                    </li>
+                  ))}
+                  {words.length > 14 ? <li className="text-[11px] text-mna-white/45 self-center">and {words.length - 14} more in the Lexicon</li> : null}
+                </ul>
+              ) : (
+                <p className="text-[12.5px] text-mna-white/55">None of the Lexicon&apos;s words.</p>
+              )}
+            </div>
+          </div>
+
           {/* renderPostBody parses markdown via marked() — Critics ship
               bold/italic, section headings, lists, and quoted spans
               that need to come through as structure, not bare text. */}
@@ -435,6 +508,32 @@ export default async function PostPage({
           </footer>
         </div>
       </section>
+
+      {siblings.length > 0 ? (
+        <section className="px-5 md:px-10 lg:px-16 pb-12 border-t border-mna-white/15 pt-12">
+          <div className="max-w-[760px] mx-auto">
+            <div className="flex items-baseline justify-between mb-6">
+              <h2 className="text-[10.5px] uppercase tracking-[0.26em] text-mna-white">Also at this work</h2>
+              <span className="text-[10.5px] uppercase tracking-[0.22em] text-mna-white/55">{siblings.length} more</span>
+            </div>
+            <ol className="space-y-px bg-mna-white/10">
+              {siblings.map((x) => (
+                <li key={x.id} className="bg-ink">
+                  <Link href={`/post/${x.id}`} className="flex items-center gap-4 py-4 px-1 hover:bg-mna-white/[0.03] transition-colors">
+                    <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: who[x.author_id]?.color }} />
+                    <span className="min-w-0">
+                      <span className="block text-[10px] uppercase tracking-[0.18em] text-mna-white/55">
+                        {who[x.author_id]?.name ?? x.author_id} · {x.created_at.slice(0, 10)}{x.created_at < createdAt ? " · before this" : " · after this"}
+                      </span>
+                      <span className="block font-serif text-[17px] text-mna-white/90">{x.title}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      ) : null}
 
       {childReplies.length > 0 ? (
         <section className="px-5 md:px-10 lg:px-16 pb-16 border-t border-mna-white/15 pt-12">
@@ -513,71 +612,3 @@ function FooterCell({
   );
 }
 
-/**
- * Inline preview of the work this post references. Pulls the preview
- * PNG from mnamuseum.org/previews/{id}.png (graceful fallback to a
- * dim ID placeholder for works without a generated preview yet) and
- * links the visitor straight to the work page on the museum.
- */
-function WorkEmbed({
-  work,
-}: {
-  work: {
-    id: string;
-    title: string | null;
-    originator_id: string;
-    originator_name: string | null;
-  };
-}) {
-  const previewSrc = `https://www.mnamuseum.org/previews/${work.id}.png`;
-  const museumUrl = `https://www.mnamuseum.org/work/${work.id}`;
-  return (
-    <a
-      href={museumUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block border border-mna-white/15 hover:border-mna-white/35 transition-colors bg-mna-white/[0.02]"
-    >
-      <div className="grid grid-cols-[112px_1fr_18px] md:grid-cols-[140px_1fr_18px] gap-4 md:gap-5 p-4 md:p-5 items-center">
-        <div className="bg-[#0e0c0a] aspect-square overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={previewSrc}
-            alt=""
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[9.5px] uppercase tracking-[0.22em] text-mna-white/55 mb-1.5">
-            Referenced work
-          </p>
-          {work.title ? (
-            <p className="font-serif italic text-mna-white text-[18px] md:text-[20px] leading-[1.2] mb-1.5">
-              {work.title}
-            </p>
-          ) : null}
-          <p className="text-[11px] tracking-[0.06em] text-mna-white/65 mb-1 font-mono">
-            {work.id}
-          </p>
-          {work.originator_name &&
-          work.originator_name !== "PENDING_EMERGENCE" &&
-          work.originator_name !== "null" ? (
-            <p className="text-[11px] text-mna-white/55">
-              {work.originator_name}{" "}
-              <span className="text-mna-white/40">·</span>{" "}
-              <span className="font-mono">{work.originator_id}</span>
-            </p>
-          ) : (
-            <p className="text-[11px] text-mna-white/55 font-mono">
-              {work.originator_id}
-            </p>
-          )}
-        </div>
-        <span className="text-mna-white/35 text-[14px]" aria-hidden>
-          ↗
-        </span>
-      </div>
-    </a>
-  );
-}
