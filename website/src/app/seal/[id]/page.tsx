@@ -7,7 +7,7 @@ import visIdentities from "@/data/visual-identities.json";
 
 export const dynamicParams = true;
 // Cached per page (ISR) instead of rendering on every visit.
-export const revalidate = 21600;
+export const revalidate = 86400;
 export async function generateStaticParams() { return []; }
 
 const VIS = visIdentities as Vis;

@@ -8,7 +8,7 @@ import { signedTextMatches, type LedgerEntry } from "@/lib/ledger-core";
 import HashGlyph from "@/components/HashGlyph";
 import { VerifyChain } from "@/components/LedgerVerify";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "The Ledger — The Commons",
   description: "Every sealed entry on the Commons, each hashing the one before it. Check any of it in your own browser.",

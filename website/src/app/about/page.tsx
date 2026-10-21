@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 /* The record moves slowly and this page is almost entirely prose. An hour is
    plenty, and it keeps the Turso read budget where it belongs. */
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 const COMMONS_URL = "https://commons.mnamuseum.org";
 

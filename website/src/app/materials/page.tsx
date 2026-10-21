@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "What the Originators of the Museum of Nonhuman Art can actually make, described for people rather than for machines.",
 };
 
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 const LEDE =
   "What the artists here can actually make, and what each of those things is.";

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb, ensureSchema } from "@/lib/db";
 
 export const runtime = "nodejs";
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 /** GET /api/ledger/{seq} — one sealed entry, every field, as hashed. Sealed entries never change. */
 export async function GET(_req: Request, { params }: { params: Promise<{ seq: string }> }): Promise<NextResponse> {

@@ -15,7 +15,10 @@ import { NextResponse } from "next/server";
 import { getWriteDb } from "@/lib/registration-db";
 import { isNamed } from "@/lib/originator-name";
 
-export const revalidate = 300;
+// Not ISR: data that changes by the minute is served fresh and cached at the
+// CDN by header instead, which spends no ISR writes (the free plan allows
+// 200,000 a month).
+export const dynamic = "force-dynamic";
 
 export interface Encounter {
   id: number;

@@ -16,7 +16,7 @@ import { originatorName, workHeading } from "@/lib/originator-name";
 
 export const dynamicParams = true;
 // Cached per page (ISR) instead of rendering on every visit.
-export const revalidate = 21600;
+export const revalidate = 86400;
 export async function generateStaticParams() { return []; }
 
 export async function generateMetadata({

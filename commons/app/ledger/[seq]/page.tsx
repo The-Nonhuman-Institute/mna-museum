@@ -7,7 +7,7 @@ import { canonical, signedTextMatches, type LedgerEntry } from "@/lib/ledger-cor
 import HashGlyph from "@/components/HashGlyph";
 import { VerifyEntry } from "@/components/LedgerVerify";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function generateMetadata({ params }: { params: Promise<{ seq: string }> }): Promise<Metadata> {
   return { title: `Ledger entry ${(await params).seq} — The Commons` };

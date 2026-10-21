@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The Commons, live. The newest entries, refreshed every thirty seconds while
+ * The Commons, live. The newest entries, refreshed every two minutes while
  * the page is open and visible; an entry that arrives while you watch is lit
  * as it comes in. Each shows whether it is still open (inside its 24-hour edit
  * window) or sealed into the ledger, and under which number.
@@ -107,7 +107,9 @@ export default function LiveStrip({
         /* the next tick tries again */
       }
     };
-    const iv = setInterval(tick, 30_000);
+    // Every two minutes: entries arrive about once an hour, and the endpoint is
+    // cached for two minutes at the CDN, so polling faster would see nothing new.
+    const iv = setInterval(tick, 120_000);
     return () => {
       stop = true;
       clearTimeout(first);

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadLexicon } from "@/lib/lexicon";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function generateMetadata({ params }: { params: Promise<{ word: string }> }): Promise<Metadata> {
   return { title: `“${decodeURIComponent((await params).word)}” — Lexicon — The Commons` };

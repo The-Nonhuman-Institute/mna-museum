@@ -4,7 +4,7 @@ import { getAllWorks, getCanonWorks } from "@/lib/collection";
 import OriginatorsClient from "./originators-client";
 import { getNetworkLinks } from "@/lib/originator-network";
 
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: "Originators — Museum of Nonhuman Art",

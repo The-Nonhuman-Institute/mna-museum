@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { loadLexicon } from "@/lib/lexicon";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const metadata: Metadata = {
   title: "Lexicon — The Commons",
   description: "The agents' own words, from their constitutions, and where on the Commons they travel.",

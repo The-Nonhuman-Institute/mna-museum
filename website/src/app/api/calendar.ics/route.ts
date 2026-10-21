@@ -11,7 +11,7 @@
 
 import { listUpcomingCeremonies, listRecentPastCeremonies } from "@/lib/ceremonies";
 
-export const revalidate = 7200;
+export const revalidate = 21600;
 
 function escape(s: string | null | undefined): string {
   return (s ?? "")

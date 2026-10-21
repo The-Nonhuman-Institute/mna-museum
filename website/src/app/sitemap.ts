@@ -18,7 +18,7 @@ import { listStandardIds } from "@/lib/standards";
  * block) degrades to the static routes and self-heals on the next revalidation
  * once reads are restored — see `safe()` below.
  */
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 const BASE = (
   process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://www.mnamuseum.org"

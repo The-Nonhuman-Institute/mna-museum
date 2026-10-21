@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 
 // Ceremonies are added by agents (primarily the Curator) at a cadence
 // of weeks, not minutes. 10min ISR is plenty fresh.
-export const revalidate = 7200;
+export const revalidate = 21600;
 
 const MONTHS_SHORT = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 // Almost entirely static prose. The "next scheduled ceremony" pullout
 // is the only dynamic bit and 1h is fine for that too.
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 function parseUtc(iso: string): Date {
   const t = iso.includes("T") ? iso : iso.replace(" ", "T");

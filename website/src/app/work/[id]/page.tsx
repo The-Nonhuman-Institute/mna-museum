@@ -37,7 +37,7 @@ import {
 
 export const dynamicParams = true;
 // Cached per work (ISR): rendered on the first visit, refreshed at most every 6 hours.
-export const revalidate = 21600;
+export const revalidate = 86400;
 export async function generateStaticParams() { return []; }
 
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

@@ -28,7 +28,7 @@ function renderPostBody(raw: string): string {
   return safeMarkdown(raw);
 }
 
-export const revalidate = 900;
+export const revalidate = 21600;
 // Cache each page the first time it's visited (ISR); without this, every visit re-renders on the server.
 export async function generateStaticParams() { return []; }
 

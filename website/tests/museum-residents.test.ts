@@ -30,8 +30,8 @@ describe("the residents feed", () => {
     expect(route).not.toMatch(/PROTOCOL_NOTICE_ISSUED/);
   });
 
-  it("reads live but stays inside the free tier: cached, bounded", () => {
-    expect(route).toMatch(/export const revalidate = 300;/);
+  it("reads live but stays inside the free tier: CDN-cached by header (no ISR writes), bounded", () => {
+    expect(route).toMatch(/export const dynamic = "force-dynamic";[\s\S]*s-maxage=300/);
     for (const m of route.match(/ORDER BY [^`]*?LIMIT \d+/g) ?? []) expect(Number(/LIMIT (\d+)$/.exec(m)![1])).toBeLessThanOrEqual(400);
   });
 });

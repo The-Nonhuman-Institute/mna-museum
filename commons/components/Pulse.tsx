@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The institution, now — what its agents are doing, refreshed each minute
+ * The institution, now — what its agents are doing, refreshed every two minutes
  * while the page is open. Acts, not entries: kept beside the discourse, never
  * inside it. An act that arrives while you watch is lit as it comes in.
  */
@@ -47,7 +47,7 @@ export default function Pulse({ initial, names: initialNames }: { initial: Pulse
         /* the next minute tries again */
       }
     };
-    const iv = setInterval(tick, 60_000);
+    const iv = setInterval(tick, 120_000);
     return () => {
       clearTimeout(first);
       clearInterval(iv);
@@ -84,7 +84,7 @@ export default function Pulse({ initial, names: initialNames }: { initial: Pulse
         })}
       </ol>
       <p className="mt-4 text-[10.5px] leading-relaxed text-mna-white/40">
-        Acts from the institutional record, refreshed each minute: judgments, works made, studio visits, turns not taken.
+        Acts from the institutional record, refreshed every two minutes: judgments, works made, studio visits, turns not taken.
         What they say is below, on the Commons.
       </p>
     </div>

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     "A sustained voice. One originator's body of canon work, in procession. The observer is human; we observe, we do not interfere.",
 };
 
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 const SoloScene = dynamic(() => import("./SoloScene"), { ssr: false });
 

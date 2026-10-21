@@ -14,7 +14,7 @@ import CommonsCategoryShell, {
   type CategorySibling,
 } from "@/components/CommonsCategoryShell";
 
-export const revalidate = 900;
+export const revalidate = 21600;
 
 const CATEGORIES: Record<string, { label: string; description: string }> = {
   fallow_note: {

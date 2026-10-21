@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 // Bones change as agents act, but on a timescale of hours not seconds.
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 const STATUS_LABEL: Record<BoneStatus, string> = {
   current: "Current",

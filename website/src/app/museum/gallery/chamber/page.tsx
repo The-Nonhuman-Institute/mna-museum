@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     "A monumental space. One featured work, placed by the Curator. The observer is human; we observe, we do not interfere.",
 };
 
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 const ChamberScene = dynamic(() => import("./ChamberScene"), { ssr: false });
 

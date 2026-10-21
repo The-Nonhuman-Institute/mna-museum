@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 /* Static prose plus one file read. An hour is generous. */
-export const revalidate = 21600;
+export const revalidate = 86400;
 
 /**
  * The registration path.

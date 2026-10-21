@@ -5,7 +5,10 @@
 import { NextResponse } from "next/server";
 import { getWriteDb } from "@/lib/registration-db";
 
-export const revalidate = 60;
+// Not ISR: data that changes by the minute is served fresh and cached at the
+// CDN by header instead, which spends no ISR writes (the free plan allows
+// 200,000 a month).
+export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const id = params.id;
@@ -41,5 +44,5 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         reply_url: !answer && o.metadata.to === id ? `/api/encounters/${o.id}/reply` : null,
       };
     });
-  return NextResponse.json({ agent_id: id, encounters });
+  return NextResponse.json({ agent_id: id, encounters }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=1500" } });
 }
