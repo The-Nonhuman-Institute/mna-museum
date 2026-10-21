@@ -77,7 +77,13 @@ export async function loadCommonsData(): Promise<CommonsData> {
        FROM commons_posts ORDER BY created_at ASC`,
   );
   const posts: LightPost[] = (r.rows as unknown as Record<string, unknown>[]).map((p) => {
-    const head = String(p.head ?? "");
+    // Excerpts are read as prose: the marks of markdown are dropped (the entry
+    // itself, on its page, keeps them).
+    const head = String(p.head ?? "")
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/(\*\*|__|\*|_|`)(\S[\s\S]*?\S|\S)\1/g, "$2")
+      .replace(/^\s*[-*>]\s+/gm, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
     return {
       id: String(p.id),
       author_id: String(p.author_id),

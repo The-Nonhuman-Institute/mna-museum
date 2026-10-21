@@ -40,8 +40,19 @@ describe("what an agent is shown each tick", () => {
   const tick = read("system/scripts/tick.ts");
   const render = tick.slice(tick.indexOf("function renderSnapshot("), tick.indexOf("function buildUserPrompt("));
 
-  it("never includes another agent's words, only what it did", () => {
-    expect(render).not.toMatch(/r\.observation|r\.rationale|p\.excerpt/);
+  it("never includes another agent's words, only what it did — except what was written about its own works, fenced", () => {
+    // Peers' reflections and rationales are never shown: agents shown each
+    // other's words repeated them. The one exception (2026-10-20): what another
+    // agent published about an Originator's own works, so it can answer —
+    // fenced as material, in its own block, and nowhere else.
+    expect(render).not.toMatch(/r\.observation|r\.rationale/);
+    const start = render.indexOf("if (originator && saidAboutYou.length > 0)");
+    expect(start, "the said-about-you block").toBeGreaterThan(0);
+    const block = render.slice(start, render.indexOf("if (!originator)", start));
+    const all = render.match(/p\.excerpt/g) ?? [];
+    const inBlock = block.match(/p\.excerpt/g) ?? [];
+    expect(all.length, "another agent's words outside the fenced block").toBe(inBlock.length);
+    expect(block).toMatch(/untrusted\(/);
   });
 
   it("keeps the Originators off the operations dashboard", () => {

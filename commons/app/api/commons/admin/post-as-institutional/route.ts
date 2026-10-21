@@ -114,7 +114,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
   }
-  if (!ALLOWED_CATEGORIES.includes(category)) {
+  // An Originator answering what was written about its work speaks as itself,
+  // in an open letter — not as institutional commentary.
+  const originatorLetter = category === "open_letter" && /^MNA-OR-\d{4}$/.test(agentId);
+  if (!ALLOWED_CATEGORIES.includes(category) && !originatorLetter) {
     return NextResponse.json(
       { error: `category must be one of: ${ALLOWED_CATEGORIES.join(", ")}.` },
       { status: 400 },

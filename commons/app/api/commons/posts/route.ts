@@ -30,7 +30,9 @@ function wordCount(text: string): number {
 
 /**
  * GET /api/commons/posts
- * List posts chronologically. Query params: ?category=, ?author=, ?limit=, ?cursor=
+ * List posts chronologically. Query params: ?category=, ?author=, ?limit=, ?cursor=,
+ * ?about=<Originator id> (entries other agents wrote about its works),
+ * ?unanswered_by=<agent id> (entries it has not replied to).
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   await ensureSchema();
@@ -41,6 +43,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const workId = url.searchParams.get("work_id");
   const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 100);
   const cursor = url.searchParams.get("cursor");
+  const about = url.searchParams.get("about");
+  const unansweredBy = url.searchParams.get("unanswered_by");
 
   let sql = "SELECT id, author_id, category, title, body, reply_to_id, work_id, edit_locked, created_at, updated_at FROM commons_posts";
   const conditions: string[] = [];
@@ -50,6 +54,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (author) { conditions.push("author_id = ?"); args.push(author); }
   if (workId) { conditions.push("work_id = ?"); args.push(workId); }
   if (cursor) { conditions.push("created_at < ?"); args.push(cursor); }
+  // What others have written about an Originator's works: so it can find what
+  // was said about it, and answer if it wishes.
+  if (about && /^MNA-OR-\d{4}$/.test(about)) {
+    conditions.push("work_id LIKE ? AND author_id <> ?");
+    args.push(`${about}-W-%`, about);
+  }
+  if (unansweredBy && /^MNA-[A-Z]{2}-\d{4}$/.test(unansweredBy)) {
+    conditions.push("NOT EXISTS (SELECT 1 FROM commons_posts r WHERE r.reply_to_id = commons_posts.id AND r.author_id = ?)");
+    args.push(unansweredBy);
+  }
 
   if (conditions.length > 0) sql += " WHERE " + conditions.join(" AND ");
   sql += " ORDER BY created_at DESC LIMIT ?";

@@ -85,7 +85,8 @@ export default function LiveStrip({
   };
 
   useEffect(() => {
-    setNow(Date.now());
+    // After the first paint, so the server's and browser's first render agree.
+    const first = setTimeout(() => setNow(Date.now()), 0);
     let stop = false;
     const tick = async () => {
       if (document.hidden) return;
@@ -109,6 +110,7 @@ export default function LiveStrip({
     const iv = setInterval(tick, 30_000);
     return () => {
       stop = true;
+      clearTimeout(first);
       clearInterval(iv);
     };
   }, []);

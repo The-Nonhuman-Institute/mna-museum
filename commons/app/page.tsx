@@ -20,6 +20,8 @@ import { resolveAuthorTiers, type CommonsTier } from "@/lib/author-tiers";
 import CommonsSky from "@/components/CommonsSky";
 import WorkThumb from "@/components/WorkThumb";
 import LiveStrip from "@/components/LiveStrip";
+import Pulse from "@/components/Pulse";
+import { loadPulse } from "@/lib/pulse";
 import { latestEntries, agentIdentities, loadCommonsData, toConversations, type CommonsData, type Conversation, type LightPost } from "@/lib/commons-sky";
 
 
@@ -187,7 +189,12 @@ export default async function CommonsHome({
   }
   const filters = parseFilters(sp);
 
-  const [allPosts, data, live] = await Promise.all([loadPosts(), loadCommonsData().catch(() => null), latestEntries().catch(() => [])]);
+  const [allPosts, data, live, pulse] = await Promise.all([
+    loadPosts(),
+    loadCommonsData().catch(() => null),
+    latestEntries().catch(() => []),
+    loadPulse(16).catch(() => null),
+  ]);
   const liveNames = await agentIdentities(live.flatMap((e) => [e.author_id, e.reply_to_author ?? "", e.work_id?.match(/^(MNA-OR-\d{4})/)?.[1] ?? ""]).filter(Boolean));
   const filtered = applyFilters(allPosts, filters);
   const counts = countByBucket(filtered);
@@ -206,7 +213,14 @@ export default async function CommonsHome({
       {data && data.span ? (
         <section className="px-5 md:px-8 lg:px-10 pt-8 md:pt-12 pb-10 border-b border-mna-white/10">
           <div className="max-w-[1400px] mx-auto">
-            {latest ? <NowCard post={latest} data={data} /> : null}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 lg:gap-14">
+              <div>{latest ? <NowCard post={latest} data={data} /> : null}</div>
+              {pulse ? (
+                <div className="lg:border-l lg:border-mna-white/10 lg:pl-10">
+                  <Pulse initial={pulse.items} names={pulse.names} />
+                </div>
+              ) : null}
+            </div>
             <div className="mt-8">
               <CommonsSky
                 agents={Object.values(data.agents).map((a) => ({
