@@ -38,7 +38,7 @@ export default function InstitutionalReader({
   children,
 }: InstitutionalReaderProps) {
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero
         eyebrow={eyebrow}
         title={title}

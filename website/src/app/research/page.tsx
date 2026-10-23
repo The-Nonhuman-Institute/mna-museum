@@ -131,7 +131,7 @@ export default function ResearchPage({
   );
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero />
       <PrimaryTabs current={type} agent={agent} />
       <SecondaryTabs tabs={agentTabs} current={agent} type={type} />

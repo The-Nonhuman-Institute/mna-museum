@@ -117,7 +117,7 @@ export default function StandardClient({
   }, [activeTab, currentSections]);
 
   return (
-    <article className="min-h-screen">
+    <article className="min-h-svh">
       {/* ───── Hero (dark) ───── */}
       <header className="relative bg-ink text-mna-white border-b border-mna-white/10 overflow-hidden">
         {/* Vertical rail caption on the right edge */}
@@ -233,7 +233,7 @@ export default function StandardClient({
       <div className="bg-warm-paper text-ink">
         <div className="max-w-[1440px] mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-16 grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-12 lg:gap-16">
           {/* Sticky TOC */}
-          <aside className="lg:sticky lg:top-[152px] lg:self-start lg:max-h-[calc(100vh-176px)] lg:overflow-y-auto pr-1">
+          <aside className="lg:sticky lg:top-[152px] lg:self-start lg:max-h-[calc(100dvh-176px)] lg:overflow-y-auto pr-1">
             <p className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/55 mb-5">
               On This Page
             </p>

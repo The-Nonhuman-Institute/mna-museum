@@ -105,7 +105,7 @@ export default async function EventsPage() {
   const all = [...upcoming, ...past];
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero upcomingCount={upcoming.length} />
 
       <section className="px-5 md:px-10 lg:px-16 pb-24">

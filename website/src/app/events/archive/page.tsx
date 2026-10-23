@@ -93,7 +93,7 @@ export default async function EventsArchivePage() {
   const grouped = groupByYear(all);
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero total={counts.total} />
 
       <section className="px-5 md:px-10 lg:px-16 pb-24">

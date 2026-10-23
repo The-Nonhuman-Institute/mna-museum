@@ -270,7 +270,7 @@ export default async function PostPage({
   const workId = post.work_id as string | null;
 
   return (
-    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)] bg-ink text-mna-white">
+    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)] bg-ink text-mna-white">
       <section className="px-5 md:px-10 lg:px-16 pt-12 md:pt-16 pb-10 border-b border-mna-white/15">
         <div className="max-w-[860px] mx-auto">
           <Link
@@ -378,7 +378,7 @@ export default async function PostPage({
 
       {referencedWork ? (
         <section className="px-5 md:px-10 lg:px-16 pt-10 pb-2">
-          <div className="max-w-[860px] mx-auto grid grid-cols-1 md:grid-cols-[minmax(0,420px)_1fr] gap-8 items-end">
+          <div data-spread className="max-w-[860px] mx-auto grid grid-cols-1 md:grid-cols-[minmax(0,420px)_1fr] gap-8 items-end">
             <a href={`https://www.mnamuseum.org/work/${referencedWork.id}`} target="_blank" rel="noopener noreferrer" className="block bg-[#0e0c0a] border border-mna-white/10 hover:border-mna-white/30 transition-colors" aria-label="Open the work in the museum">
               <WorkThumb id={referencedWork.id} className="w-full aspect-square object-cover" />
             </a>

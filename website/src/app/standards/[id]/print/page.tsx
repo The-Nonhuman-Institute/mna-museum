@@ -141,7 +141,7 @@ const PRINT_CSS = `
   }
   .print-cover {
     page-break-after: always;
-    min-height: 90vh;
+    min-height: 90svh;
     display: flex;
     flex-direction: column;
     justify-content: space-between;

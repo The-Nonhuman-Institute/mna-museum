@@ -380,12 +380,12 @@ export default function OriginatorDetailClient({
     : "—";
 
   return (
-    <div className="min-h-screen bg-warm-paper flex flex-col md:flex-row">
+    <div className="min-h-svh bg-warm-paper flex flex-col md:flex-row">
       {/* ────────────────────────────────────────────────────────────── */}
       {/* LEFT DARK SIDEBAR                                              */}
       {/* ────────────────────────────────────────────────────────────── */}
       <aside
-        className="bg-ink text-mna-white w-full md:w-[320px] lg:w-[340px] shrink-0 md:sticky md:top-[72px] md:self-start md:h-[calc(100vh-72px)] md:overflow-y-auto flex flex-col"
+        className="bg-ink text-mna-white w-full md:w-[320px] lg:w-[340px] shrink-0 md:sticky md:top-[72px] md:self-start md:h-[calc(100dvh-72px)] md:overflow-y-auto flex flex-col"
       >
         {/* Top bar: back + active status */}
         <div className="flex items-start justify-between px-7 pt-8 pb-4">

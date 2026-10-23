@@ -83,7 +83,7 @@ export default function Harness() {
   }, [render]);
 
   return (
-    <div style={{ background: "#0A0A0A", minHeight: "100vh", padding: 0, margin: 0 }}>
+    <div style={{ background: "#0A0A0A", minHeight: "100svh", padding: 0, margin: 0 }}>
       <div
         id="harness-target"
         key={nonce.current}

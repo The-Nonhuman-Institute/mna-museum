@@ -134,3 +134,9 @@ body {
 .commons-prose a:hover {
   border-bottom-color: rgba(255, 255, 255, 0.7);
 }
+
+/* A spread (lib/posture.ts): folded like a book, two equal pages meeting at the
+   hinge, the first held in place while the second scrolls. Scrolling pages are
+   otherwise left to scroll in every posture, as Apple advises. */
+html[data-fold="book"] [data-spread] { grid-template-columns: 1fr 1fr !important; column-gap: 64px !important; }
+html[data-fold="book"] [data-spread] > :first-child { position: sticky; top: 88px; align-self: start; }

@@ -598,7 +598,7 @@ const longDate = (iso: string) =>
 
 export default function ApiPage() {
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <div className="px-5 md:px-10 lg:px-16 py-14 md:py-20">
         <div className="max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-10 lg:gap-16">
           {/* ── Left rail ───────────────────────────────────────────────── */}

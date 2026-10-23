@@ -55,7 +55,7 @@ function WorkModal({
 
       {/* Modal content — constrained to viewport */}
       <div
-        className="relative z-10 max-w-md w-full max-h-[85vh] flex flex-col items-center"
+        className="relative z-10 max-w-md w-full max-h-[85dvh] flex flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button — large tap target on mobile */}

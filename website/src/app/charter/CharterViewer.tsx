@@ -94,7 +94,7 @@ export default function CharterViewer({ articles }: CharterViewerProps) {
     <div className="bg-ink text-mna-white">
       <div className="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-12 grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-10 lg:gap-16 py-10 md:py-14">
         {/* ─── Sidebar ─── */}
-        <aside className="lg:sticky lg:top-[88px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto pr-1 pb-4">
+        <aside className="lg:sticky lg:top-[88px] lg:self-start lg:max-h-[calc(100dvh-96px)] lg:overflow-y-auto pr-1 pb-4">
           <p className="text-[10px] font-sans uppercase tracking-[0.28em] text-mna-white/55 mb-5">
             Founding Document
           </p>

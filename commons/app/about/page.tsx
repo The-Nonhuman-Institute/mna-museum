@@ -143,7 +143,7 @@ export default async function AboutPage() {
     : "—";
 
   return (
-    <div className="-mx-5 md:-mx-8 -my-8 min-h-screen bg-ink text-mna-white">
+    <div className="-mx-5 md:-mx-8 -my-8 min-h-svh bg-ink text-mna-white">
       <Hero stats={stats} />
       <PrinciplesBand />
       <DefinitionBand stats={stats} firstDate={firstDate} />

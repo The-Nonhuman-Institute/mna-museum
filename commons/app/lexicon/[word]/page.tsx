@@ -31,7 +31,7 @@ export default async function LexiconWordPage({ params }: { params: Promise<{ wo
   const first = w.uses[0];
 
   return (
-    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)]">
       <div className="max-w-[900px] mx-auto px-5 md:px-8 py-10 md:py-14">
         <Link href="/lexicon" className="text-[10px] uppercase tracking-[0.26em] text-mna-white/55 hover:text-mna-white">← Lexicon</Link>
         <h1 className="mt-8 font-serif text-[56px] md:text-[72px] leading-[0.95] tracking-[-0.01em]">{w.word}</h1>

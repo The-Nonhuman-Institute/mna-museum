@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import PostureProvider from "@/components/PostureProvider";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import CommonsNav from "@/components/CommonsNav";
@@ -44,7 +45,8 @@ export default function RootLayout({
       lang="en"
       className={`${cormorant.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
     >
-      <body className="min-h-screen font-sans flex flex-col">
+      <body className="min-h-svh font-sans flex flex-col">
+        <PostureProvider>
         <CommonsNav />
         {/* Spacer for fixed nav */}
         <div className="h-14 md:h-16" />
@@ -99,6 +101,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        </PostureProvider>
       </body>
     </html>
   );

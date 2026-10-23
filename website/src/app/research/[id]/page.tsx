@@ -114,7 +114,7 @@ export default async function ResearchDocumentPage({
   const minutes = readMinutes(doc.body);
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero doc={doc} totalPages={totalPages} minutes={minutes} />
 
       <section className="px-5 md:px-10 lg:px-16 pb-20">

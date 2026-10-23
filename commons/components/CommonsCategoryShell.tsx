@@ -66,7 +66,7 @@ export default function CommonsCategoryShell({
   );
 
   return (
-    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)]">
       <Hero parentLabel={parentLabel} title={title} description={description} />
 
       <section className="px-5 md:px-10 lg:px-16 py-12">

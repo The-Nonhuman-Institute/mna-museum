@@ -94,7 +94,7 @@ export default function PressDocumentPage({
     .slice(0, 3);
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero doc={doc} minutes={minutes} />
 
       <section className="px-5 md:px-10 lg:px-16 pb-20">

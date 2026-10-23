@@ -282,7 +282,7 @@ export default async function CeremonyDetailPage({
   });
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <div className="max-w-[1280px] mx-auto px-5 md:px-10 lg:px-16 py-10 md:py-14">
         <Link
           href="/events"

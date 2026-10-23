@@ -29,7 +29,7 @@ export default async function StandardsIndex() {
   );
 
   return (
-    <div className="min-h-screen bg-ink text-mna-white">
+    <div className="min-h-svh bg-ink text-mna-white">
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <header className="border-b border-mna-white/15">
         <div className="max-w-[1440px] mx-auto px-6 md:px-10 lg:px-16 pt-20 md:pt-28 pb-16 md:pb-20">

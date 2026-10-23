@@ -178,7 +178,7 @@ export default async function LogPage({
   const sliceEnd = Math.min(sliceStart + events.length, total);
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero glance={glance} />
       <PrimaryTabs current={category} agent={agent} glance={glance} />
 

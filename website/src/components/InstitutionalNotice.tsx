@@ -29,7 +29,7 @@ export default function InstitutionalNotice({
   tone = "info",
 }: InstitutionalNoticeProps) {
   return (
-    <div className="bg-ink text-mna-white min-h-screen flex items-center justify-center px-5 md:px-6 py-24">
+    <div className="bg-ink text-mna-white min-h-svh flex items-center justify-center px-5 md:px-6 py-24">
       <div className="w-full max-w-[520px]">
         <div className="border border-mna-white/15 bg-black/30 px-7 md:px-10 py-12 md:py-14">
           <div className="flex items-center justify-center mb-7">

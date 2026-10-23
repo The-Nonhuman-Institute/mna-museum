@@ -187,7 +187,7 @@ function OriginatorsContent({
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-svh">
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="border-b border-ink/10 bg-bone">
         <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-10">

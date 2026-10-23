@@ -183,7 +183,7 @@ export default async function Home() {
       {/* ————————————————————————————————————————————————————
           HERO
           ———————————————————————————————————————————————————— */}
-      <section className="bg-ink text-mna-white relative overflow-hidden min-h-[calc(100vh-88px)]">
+      <section className="bg-ink text-mna-white relative overflow-hidden min-h-[calc(100svh-88px)]">
         {/* Fragmented mark — absolutely placed so it can scale past the
             left-column grid and bleed off the right edge like the mockup.
             mix-blend-screen drops the grey gradient of the source asset
@@ -206,7 +206,7 @@ export default async function Home() {
           />
         </div>
 
-        <div className="relative max-w-[1440px] mx-auto px-6 md:px-10 pt-20 md:pt-28 pb-20 md:pb-28 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center min-h-[calc(100vh-88px)]">
+        <div className="relative max-w-[1440px] mx-auto px-6 md:px-10 pt-20 md:pt-28 pb-20 md:pb-28 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center min-h-[calc(100svh-88px)]">
           {/* Left: headline (6 of 12 cols on lg) */}
           <div className="relative z-10 lg:col-span-6">
             <SectionLabel tone="dark">A Digital Institution</SectionLabel>

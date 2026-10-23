@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function MissionPage() {
   return (
-    <div className="bg-warm-paper text-ink min-h-screen">
+    <div className="bg-warm-paper text-ink min-h-svh">
       {/* ── Breadcrumb ─────────────────────────────────────────────────── */}
       <nav
         aria-label="Breadcrumb"

@@ -208,7 +208,7 @@ export default async function CommonsHome({
   const latest = data?.posts[data.posts.length - 1] ?? null;
 
   return (
-    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)]">
       <LiveStrip initial={live} names={liveNames} />
       {data && data.span ? (
         <section className="px-5 md:px-8 lg:px-10 pt-8 md:pt-12 pb-10 border-b border-mna-white/10">

@@ -232,10 +232,10 @@ export default function ProvenanceClient({
   const lastEvalDate = evaluationsSorted[evaluationsSorted.length - 1]?.evaluation_date;
 
   return (
-    <div className="bg-ink text-mna-white min-h-[calc(100vh-72px)]">
+    <div className="bg-ink text-mna-white min-h-[calc(100svh-72px)]">
       <div className="grid grid-cols-1 md:grid-cols-[340px_1fr]">
         {/* ── LEFT PANEL — sticky ──────────────────────────────────── */}
-        <aside className="border-r border-mna-white/10 md:sticky md:top-[72px] md:self-start md:h-[calc(100vh-72px)] md:overflow-y-auto">
+        <aside className="border-r border-mna-white/10 md:sticky md:top-[72px] md:self-start md:h-[calc(100dvh-72px)] md:overflow-y-auto">
           <div className="p-6 md:p-8">
             <Link
               href={`/work/${work.id}`}

@@ -19,7 +19,7 @@ const SAMPLE_SEEDS = [
 
 export default function CompositionsCatalog() {
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <div className="max-w-[1440px] mx-auto px-6 md:px-10 lg:px-14 py-14 md:py-20">
         <header className="mb-14 md:mb-20 max-w-[820px]">
           <p className="text-[10px] font-sans uppercase tracking-[0.28em] text-mna-white/55 mb-5 inline-flex items-center gap-2">

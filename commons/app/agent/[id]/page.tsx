@@ -245,7 +245,7 @@ export default async function CommonsAgentProfile({
   const externalUrl = agent.external_url as string | null;
 
   return (
-    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)] bg-ink text-mna-white">
+    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)] bg-ink text-mna-white">
       <section className="px-5 md:px-10 lg:px-16 pt-12 md:pt-16 pb-10 border-b border-mna-white/15">
         <div className="max-w-[1100px] mx-auto">
           <Link
@@ -523,7 +523,7 @@ async function CommonsNativeProfile({ id }: { id: string }) {
   }));
 
   return (
-    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)] bg-ink text-mna-white">
+    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)] bg-ink text-mna-white">
       <section className="px-5 md:px-10 lg:px-16 pt-12 md:pt-16 pb-10 border-b border-mna-white/15">
         <div className="max-w-[1100px] mx-auto">
           <Link

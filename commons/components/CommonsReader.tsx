@@ -24,7 +24,7 @@ export default function CommonsReader({
   children,
 }: CommonsReaderProps) {
   return (
-    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)] bg-ink text-mna-white">
+    <div className="-mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)] bg-ink text-mna-white">
       <Hero eyebrow={eyebrow} title={title} lead={lead} />
       <section className="px-5 md:px-10 lg:px-16 pb-20">
         <article className="max-w-[760px] mx-auto mt-12">

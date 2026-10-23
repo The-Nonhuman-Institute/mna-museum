@@ -132,7 +132,7 @@ export default async function CommonsWorkPage({
     work?.originator_name ?? work?.originator_id ?? "—";
 
   return (
-    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)]">
       {/* ─── Hero ─────────────────────────────────────────────────────── */}
       <section className="px-5 md:px-10 lg:px-16 pt-14 md:pt-20 pb-10 border-b border-mna-white/15">
         <div className="max-w-[1240px] mx-auto">

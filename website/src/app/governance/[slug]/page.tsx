@@ -19,7 +19,7 @@ export default async function GovernanceDocPage({ params }: { params: Promise<{ 
   if (!d) notFound();
   const versions = (await listGovernanceDocs()).filter((x) => x.docId === d.docId);
   return (
-    <main className="bg-warm-paper min-h-screen">
+    <main className="bg-warm-paper min-h-svh">
       <div className="max-w-3xl mx-auto px-5 md:px-8 py-14">
         <Link href={`/governance#${d.docId}`} className="text-[10px] font-sans uppercase tracking-[0.26em] text-ink/60 hover:text-ink">
           ← Governance

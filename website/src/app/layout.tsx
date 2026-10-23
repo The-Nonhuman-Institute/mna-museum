@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import PostureProvider from "@/components/PostureProvider";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import LayoutShell from "@/components/LayoutShell";
 import "./globals.css";
@@ -55,7 +56,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${cormorant.variable} font-sans antialiased`}
       >
-        <LayoutShell>{children}</LayoutShell>
+        <PostureProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </PostureProvider>
       </body>
     </html>
   );

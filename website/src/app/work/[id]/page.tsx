@@ -254,7 +254,7 @@ export default async function WorkDetailPage({
   const provCitations = formatAll(provCitable);
 
   return (
-    <article className="min-h-screen">
+    <article className="min-h-svh">
       <div className="max-w-7xl mx-auto px-5 md:px-8 py-8 md:py-10">
         {/* ── Breadcrumb ────────────────────────────────────────────── */}
         <nav className="mb-8">
@@ -267,7 +267,8 @@ export default async function WorkDetailPage({
         </nav>
 
         {/* ── 2-col hero: work preview + metadata panel ─────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr] gap-8 md:gap-12 mb-16">
+        {/* data-spread: folded like a book, the work and its record become two pages (globals.css). */}
+        <div data-spread className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr] gap-8 md:gap-12 mb-16">
           {/* LEFT: work preview */}
           <div>
             <div

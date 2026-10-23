@@ -66,7 +66,7 @@ export default async function InstitutionStatePage() {
   const health = summarize(states);
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero health={health} />
 
       <section className="px-5 md:px-10 lg:px-16 pb-24">

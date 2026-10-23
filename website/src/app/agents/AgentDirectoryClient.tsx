@@ -233,10 +233,10 @@ export default function AgentDirectoryClient({
   const total = agents.length;
 
   return (
-    <div className="bg-ink text-mna-white min-h-[calc(100vh-72px)]">
+    <div className="bg-ink text-mna-white min-h-[calc(100svh-72px)]">
       <div className="max-w-[1440px] mx-auto px-5 md:px-10 lg:px-12 grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-10 lg:gap-14 py-10 md:py-14">
         {/* ═══ Sidebar ═══ */}
-        <aside className="lg:sticky lg:top-[88px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto pr-1 pb-4">
+        <aside className="lg:sticky lg:top-[88px] lg:self-start lg:max-h-[calc(100dvh-96px)] lg:overflow-y-auto pr-1 pb-4">
           <p className="text-[10px] font-sans uppercase tracking-[0.28em] text-mna-white/55 inline-flex items-center gap-2 mb-5">
             <span>Agent Directory</span>
             <span className="inline-block w-[5px] h-[5px] rounded-full bg-mna-white" />

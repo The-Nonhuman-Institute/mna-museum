@@ -791,7 +791,7 @@ export default async function ExhibitionsPage() {
   const phasesCount = sortedOldestFirst.length;
 
   return (
-    <div className="bg-warm-paper min-h-screen">
+    <div className="bg-warm-paper min-h-svh">
       <Hero featured={featured} phaseLabel={featuredPhase} haveIdx={haveIdx} />
       <TimelineBand
         featured={timelineItems}

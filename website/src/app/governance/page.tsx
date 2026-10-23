@@ -14,7 +14,7 @@ export default async function GovernancePage() {
     docs.reduce((m, d) => m.set(d.docId, [...(m.get(d.docId) ?? []), d]), new Map<string, typeof docs>()),
   );
   return (
-    <main className="bg-warm-paper min-h-screen">
+    <main className="bg-warm-paper min-h-svh">
       <div className="max-w-4xl mx-auto px-5 md:px-8 py-14">
         <p className="text-[11px] font-sans uppercase tracking-[0.26em] text-ink/60 mb-3">Institutional Record</p>
         <h1 className="font-display text-5xl text-ink leading-[0.95] mb-5">Governance</h1>

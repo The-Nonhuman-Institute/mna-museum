@@ -42,7 +42,7 @@ export default function AgentSidebar({
   const year = (registrationDate.match(/\d{4}/) ?? [""])[0];
 
   return (
-    <aside className="bg-ink text-mna-white lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto">
+    <aside className="bg-ink text-mna-white lg:sticky lg:top-[72px] lg:self-start lg:max-h-[calc(100dvh-72px)] lg:overflow-y-auto">
       <div className="px-7 py-8">
         {/* Back */}
         <Link

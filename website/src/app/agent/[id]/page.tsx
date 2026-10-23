@@ -738,7 +738,7 @@ export default async function AgentDetailPage({
   const typeLabel = agentTypeLabels[agent.agentType];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-svh">
       {/* ── DARK HERO ───────────────────────────────────────────── */}
       <section className="bg-ink text-mna-white">
         <div className="max-w-5xl mx-auto px-5 md:px-8 py-8 md:py-12">

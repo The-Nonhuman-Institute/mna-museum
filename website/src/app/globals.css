@@ -300,3 +300,63 @@ body {
     1px 0 4px rgba(0, 0, 0, 0.1),
     -1px 0 4px rgba(0, 0, 0, 0.1);
 }
+
+/* ─── Postures (lib/posture.ts) ─────────────────────────────────────────────
+   The museum in every way a screen is held. <html> carries data-fold
+   ("flat" | "book" | "stand") and --hinge-x / --hinge-y. A posture only moves
+   things: every control exists in every posture (Apple's rule for the iPhone
+   Duo). Inline positions (the joystick's safe-area padding) are overridden
+   with !important only here. */
+
+[data-museum-deck] { display: none; }
+
+/* Stand: propped up, hinge across. The view above, the controls below. */
+html[data-fold="stand"] [data-museum-view] { bottom: auto !important; height: var(--hinge-y); }
+html[data-fold="stand"] [data-museum-deck] {
+  display: block; position: absolute; left: 0; right: 0; top: var(--hinge-y); bottom: 0;
+  background: #0b0a09; border-top: 1px solid rgb(232 224 204 / 0.12); z-index: 10;
+}
+html[data-fold="stand"] [data-hud="joystick"] {
+  left: 28px !important; right: auto !important; bottom: auto !important;
+  top: calc(var(--hinge-y) + (100dvh - var(--hinge-y)) / 2 - 64px) !important;
+}
+html[data-fold="stand"] [data-hud="minimap"] { top: calc(var(--hinge-y) + 16px) !important; right: 16px !important; }
+html[data-fold="stand"] [data-hud="card"] {
+  bottom: auto !important; top: calc(var(--hinge-y) + 20px) !important;
+  max-width: min(520px, calc(100vw - 360px)) !important;
+}
+html[data-fold="stand"] [data-hud="footer"] { bottom: 10px !important; z-index: 11; }
+html[data-fold="stand"] [data-hud="time"] { display: none; }
+html[data-fold="stand"] [data-hud="work"] { flex-direction: column !important; width: 100vw !important; max-width: none !important; height: 100dvh !important; max-height: none !important; }
+html[data-fold="stand"] [data-hud="work-image"] { width: 100% !important; height: var(--hinge-y) !important; aspect-ratio: auto !important; }
+html[data-fold="stand"] [data-hud="work"] > :last-child { overflow-y: auto; }
+
+/* Book: folded like a book, hinge top to bottom. The view on the left page;
+   the field's panels on the right; movement stays under the left thumb. */
+html[data-fold="book"] [data-museum-view] { right: auto !important; width: var(--hinge-x); }
+html[data-fold="book"] [data-museum-deck] {
+  display: block; position: absolute; top: 0; bottom: 0; right: 0; left: var(--hinge-x);
+  background: #0b0a09; border-left: 1px solid rgb(232 224 204 / 0.12); z-index: 10;
+}
+html[data-fold="book"] [data-hud="panel"] { left: calc(var(--hinge-x) + 24px) !important; top: 64px !important; max-width: calc(100vw - var(--hinge-x) - 48px) !important; }
+html[data-fold="book"] [data-hud="minimap"] { top: auto !important; bottom: 48px !important; right: 24px !important; }
+html[data-fold="book"] [data-hud="footer"] { right: calc(100vw - var(--hinge-x)) !important; }
+html[data-fold="book"] [data-hud="card"] {
+  left: calc(var(--hinge-x) + (100vw - var(--hinge-x)) / 2) !important;
+  bottom: auto !important; top: 42% !important;
+  width: calc((100vw - var(--hinge-x)) - 48px) !important;
+}
+html[data-fold="book"] [data-hud="time"] { display: none; }
+html[data-fold="book"] [data-hud="work"] { flex-direction: row !important; width: 100vw !important; max-width: none !important; height: 100dvh !important; max-height: none !important; }
+html[data-fold="book"] [data-hud="work-image"] { width: var(--hinge-x) !important; height: 100% !important; aspect-ratio: auto !important; }
+html[data-fold="book"] [data-hud="work"] > :last-child { overflow-y: auto; }
+
+/* Before entering, the entry card sits on one page, never across the fold. */
+html[data-fold="book"] [data-hud="entry"] { left: var(--hinge-x) !important; }
+html[data-fold="stand"] [data-hud="entry"] { top: var(--hinge-y) !important; overflow-y: auto; justify-content: flex-start !important; padding-top: 16px; z-index: 12; }
+
+/* A spread (lib/posture.ts): folded like a book, two equal pages meeting at the
+   hinge, the first held in place while the second scrolls. Scrolling pages are
+   otherwise left to scroll in every posture, as Apple advises. */
+html[data-fold="book"] [data-spread] { grid-template-columns: 1fr 1fr !important; column-gap: 64px !important; }
+html[data-fold="book"] [data-spread] > :first-child { position: sticky; top: 88px; align-self: start; }

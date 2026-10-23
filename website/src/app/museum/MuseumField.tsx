@@ -30,6 +30,8 @@
  * trail what the browser actually did.
  */
 
+import { usePosture } from "@/components/PostureProvider";
+import { chooseFold } from "@/lib/posture";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   PointerLockControls,
@@ -480,6 +482,7 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
           mobile. */}
       <div
         className="absolute inset-0 select-none"
+        data-museum-view
         style={{ touchAction: "none" }}
         onClick={handleCanvasMaybeRelock}
       >
@@ -583,6 +586,16 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
         </Canvas>
       </div>
 
+      {/* The other half of the screen when it is folded (globals.css,
+          "Postures"): below the view when stood up, the right page when
+          folded like a book. Empty by itself; the controls move onto it. */}
+      <div data-museum-deck aria-hidden />
+
+      {/* How the screen is held, where the browser cannot say (Safari on
+          the iPhone Duo reports a fold only behind a flag). Offered on
+          large screens; a browser's own report always wins. */}
+      {started && !selectedWork ? <PostureChoiceControl /> : null}
+
       {/* Entry overlay — only visible until first Begin. */}
       {!started ? (
         <EntryOverlay onEnter={handleBegin} isTouch={isTouch} feed={residentsProto ? residents : null} />
@@ -672,6 +685,39 @@ export default function MuseumField({ works, galleries }: MuseumFieldProps) {
           onClose={() => setSelectedWork(null)}
         />
       ) : null}
+    </div>
+  );
+}
+
+/* ─── Posture choice ─────────────────────────────────────────────────────── */
+
+function PostureChoiceControl() {
+  const p = usePosture();
+  if (p.screen !== "spread" || p.source === "browser") return null;
+  const options: { fold: "flat" | "book" | "stand"; label: string; hint: string }[] = [
+    { fold: "flat", label: "Open", hint: "The whole screen is the view" },
+    { fold: "book", label: "Book", hint: "Folded like a book: the view on the left page, the field's panels on the right" },
+    { fold: "stand", label: "Stand", hint: "Propped up: the view above, the controls below" },
+  ];
+  return (
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+      <div className="flex border border-mna-white/25 bg-black/60 backdrop-blur-[3px]" role="radiogroup" aria-label="How the screen is held">
+        {options.map((o, i) => (
+          <button
+            key={o.fold}
+            type="button"
+            role="radio"
+            aria-checked={p.fold === o.fold}
+            title={o.hint}
+            onClick={() => chooseFold(o.fold === "flat" ? "auto" : o.fold)}
+            className={`px-3 py-1.5 text-[9.5px] font-sans uppercase tracking-[0.22em] ${i ? "border-l border-mna-white/20" : ""} ${
+              p.fold === o.fold ? "bg-mna-white text-ink" : "text-mna-white/70 hover:text-mna-white"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -2539,6 +2585,7 @@ export function VirtualJoystick({
         pointerIdRef.current = e.pointerId;
         setFromPointer(e.clientX, e.clientY);
       }}
+      data-hud="joystick"
       className="pointer-events-auto absolute w-32 h-32 rounded-full border border-mna-white/25 bg-black/40 backdrop-blur-[2px] select-none z-20"
       style={{
         // iOS Safari floats its URL bar over the bottom of the viewport
@@ -3188,7 +3235,7 @@ function EntryOverlay({
   }, [isTouch]);
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-mna-white pointer-events-none px-5">
+    <div data-hud="entry" className="absolute inset-0 z-20 flex flex-col items-center justify-center text-mna-white pointer-events-none px-5">
       <div
         className={`bg-black/80 backdrop-blur-[3px] border border-mna-white/15 max-w-[480px] w-full text-center pointer-events-auto ${
           compact
@@ -3284,7 +3331,7 @@ function EntryOverlay({
 function FocusedWorkCard({ work }: { work: PlacedWork }) {
   const tint = originatorTint(work.originator_id);
   return (
-    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 z-20 max-w-[520px] w-[88vw]">
+    <div data-hud="card" className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 z-20 max-w-[520px] w-[88vw]">
       <div className="bg-black/68 backdrop-blur-[3px] border border-mna-white/15 px-6 py-4">
         <div className="flex items-baseline gap-3 mb-1.5">
           <span
@@ -3353,7 +3400,7 @@ function Reticle() {
 
 function FooterLine() {
   return (
-    <div className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-between items-center px-6 text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40">
+    <div data-hud="footer" className="pointer-events-none absolute bottom-4 left-0 right-0 flex justify-between items-center px-6 text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/40">
       <span>The Observer is Human. We Observe. We Do Not Interfere.</span>
       <span>Museum of Nonhuman Art</span>
     </div>
@@ -3381,7 +3428,7 @@ function CanonFieldPanel({
   // the same card, just folded.
   if (isTouch) {
     return (
-      <div className="pointer-events-none absolute top-4 left-4 z-20 max-w-[220px]">
+      <div data-hud="panel" className="pointer-events-none absolute top-4 left-4 z-20 max-w-[220px]">
         <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 px-4 py-3">
           <p className="text-[9px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-1">
             Canon Field
@@ -3418,7 +3465,7 @@ function CanonFieldPanel({
   }
 
   return (
-    <div className="pointer-events-none absolute top-5 left-5 z-20 max-w-[290px]">
+    <div data-hud="panel" className="pointer-events-none absolute top-5 left-5 z-20 max-w-[290px]">
       <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 px-5 py-4">
         <p className="text-[10px] font-sans uppercase tracking-[0.32em] text-mna-white/55 mb-1.5">
           Canon Field
@@ -3488,7 +3535,7 @@ function SystemTimeStrip() {
     timeZone: "UTC",
   });
   return (
-    <div className="pointer-events-none absolute bottom-12 right-5 z-20">
+    <div data-hud="time" className="pointer-events-none absolute bottom-12 right-5 z-20">
       <div className="bg-black/60 backdrop-blur-[3px] border border-mna-white/15 px-5 py-4 min-w-[180px] text-right">
         <p className="text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55 mb-1.5">
           System Time
@@ -3548,7 +3595,7 @@ function MinimapRadar({
     return { x: px, y: py };
   }
   return (
-    <div className={`pointer-events-none absolute z-20 ${isTouch ? "top-4 right-4" : "top-5 right-5"}`}>
+    <div data-hud="minimap" className={`pointer-events-none absolute z-20 ${isTouch ? "top-4 right-4" : "top-5 right-5"}`}>
       <div className={`bg-black/60 backdrop-blur-[3px] border border-mna-white/15 ${isTouch ? "p-2.5" : "p-3"}`}>
         <div className="flex items-baseline justify-between mb-2 px-1">
           <p className="text-[9.5px] font-sans uppercase tracking-[0.26em] text-mna-white/55">
@@ -3925,7 +3972,7 @@ function Census({ visitors }: { visitors: PresenceVisitor[] }) {
 
 function ResumeHint() {
   return (
-    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20">
+    <div data-hud="card" className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20">
       <div className="bg-black/60 border border-mna-white/15 px-4 py-2 text-[10px] font-sans uppercase tracking-[0.26em] text-mna-white/75">
         Click anywhere to resume
       </div>
@@ -3948,7 +3995,7 @@ function GalleryLabel({
   const config = CONSTELLATION_CONFIGS[gallery.id];
   const tint = config?.tint ?? "#cdb798";
   return (
-    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 z-20 max-w-[520px] w-[88vw]">
+    <div data-hud="card" className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-12 z-20 max-w-[520px] w-[88vw]">
       <div className="pointer-events-auto bg-black/72 backdrop-blur-[3px] border border-mna-white/20 px-6 py-4">
         <div className="flex items-baseline gap-3 mb-1.5">
           <span
@@ -4020,6 +4067,7 @@ function DragControlsHint({ isTouch }: { isTouch: boolean }) {
     : "Drag to look · WASD to walk · Esc to exit";
   return (
     <div
+      data-hud="card"
       className={`pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-14 z-20 transition-opacity duration-700 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
@@ -4078,10 +4126,11 @@ function WorkOverlay({
       </button>
 
       <div
-        className="relative bg-ink/95 border border-mna-white/15 max-w-[860px] w-[92vw] max-h-[88vh] flex flex-col md:flex-row overflow-hidden"
+        data-hud="work"
+        className="relative bg-ink/95 border border-mna-white/15 max-w-[860px] w-[92vw] max-h-[88dvh] flex flex-col md:flex-row overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="md:w-[420px] aspect-square md:aspect-auto bg-[#0a0908] flex items-center justify-center flex-shrink-0">
+        <div data-hud="work-image" className="md:w-[420px] aspect-square md:aspect-auto bg-[#0a0908] flex items-center justify-center flex-shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/previews/${work.id}.png`}

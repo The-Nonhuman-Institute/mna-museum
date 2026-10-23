@@ -119,7 +119,7 @@ export default function PressPage({
   );
 
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <Hero />
       <PrimaryTabs current={type} />
 

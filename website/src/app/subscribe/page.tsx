@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function SubscribePage() {
   return (
-    <div className="bg-ink text-mna-white min-h-screen">
+    <div className="bg-ink text-mna-white min-h-svh">
       <section className="px-5 md:px-10 lg:px-16 pt-14 md:pt-20 pb-24">
         <div className="max-w-[760px] mx-auto">
           <div className="flex items-center gap-3 mb-5">

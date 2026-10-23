@@ -28,7 +28,7 @@ export default async function LedgerEntryPage({ params }: { params: Promise<{ se
   const same = signedTextMatches(e);
 
   return (
-    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)]">
       <div className="max-w-[900px] mx-auto px-5 md:px-8 py-10 md:py-14">
         <Link href="/ledger" className="text-[10px] uppercase tracking-[0.26em] text-mna-white/55 hover:text-mna-white">← The Ledger</Link>
         <div className="mt-8 flex items-center gap-5">

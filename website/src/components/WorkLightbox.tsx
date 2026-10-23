@@ -93,11 +93,11 @@ export default function WorkLightbox({
           {/* Inner stop-propagation wrapper so clicks on the work itself
               don't dismiss the overlay; only background clicks do. */}
           <div
-            className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center"
+            className="relative max-w-[90vw] max-h-[90dvh] flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex-1 flex items-center justify-center w-full mb-6 min-h-0">
-              <div className="w-[min(90vw,90vh)] h-[min(90vw,90vh)]">
+              <div className="w-[min(90vw,90vh)] h-[min(90vw,90dvh)]">
                 <WorkDisplay
                   work={work}
                   size="lightbox"

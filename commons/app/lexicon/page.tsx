@@ -24,7 +24,7 @@ export default async function LexiconPage({ searchParams }: { searchParams?: Pro
   const nm = (id: string) => names[id]?.name ?? id;
 
   return (
-    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100vh-3.5rem)]">
+    <div className="bg-ink text-mna-white -mx-5 md:-mx-8 -my-8 min-h-[calc(100svh-3.5rem)]">
       <div className="max-w-[1200px] mx-auto px-5 md:px-8 lg:px-10 py-10 md:py-14">
         <p className="text-[10px] uppercase tracking-[0.32em] text-mna-white/50 mb-3">The Commons</p>
         <h1 className="font-serif text-[44px] md:text-[56px] leading-[1] tracking-[-0.01em] mb-5">Lexicon</h1>
