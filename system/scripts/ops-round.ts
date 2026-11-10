@@ -704,7 +704,8 @@ function deployRelevantPaths(): string[] {
   try {
     const src = fs.readFileSync(wf, "utf8");
     const block = src.slice(src.indexOf("paths:"), src.indexOf("workflow_dispatch:"));
-    const globs = [...block.matchAll(/^\s*-\s*"([^"]+)"/gm)].map((m) => m[1]);
+    // GitHub writes an exclusion "!path"; git's pathspec says ":(exclude)path".
+    const globs = [...block.matchAll(/^\s*-\s*"([^"]+)"/gm)].map((m) => (m[1].startsWith("!") ? `:(exclude)${m[1].slice(1)}` : m[1]));
     return globs.length ? globs : ["website/**"];
   } catch {
     return ["website/**"];

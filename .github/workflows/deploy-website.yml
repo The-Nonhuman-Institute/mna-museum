@@ -28,6 +28,8 @@ on:
     # public site. Saves Vercel build minutes and our own time.
     paths:
       - "website/**"
+      # Tests never reach the site; a test-only change must not spend a deploy.
+      - "!website/tests/**"
       - "founding-documents/**"
       - "party/**"
       - "package.json"

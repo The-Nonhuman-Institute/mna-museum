@@ -28,6 +28,7 @@
  *                       override the tier→model mapping directly.
  */
 
+import { RETRYABLE, OUT_OF_FUNDS, TOO_LARGE, isQuotaError } from "./llm-errors";
 import Anthropic from "@anthropic-ai/sdk";
 import { groqBudget } from "./budget";
 import dotenv from "dotenv";
@@ -110,11 +111,7 @@ export interface GenOptions {
 
 /* ─── shared retry ────────────────────────────────────────────────────── */
 
-const RETRYABLE = /rate.?limit|429|content filtering|blocked|overloaded|503|502|timeout|ECONNRESET|fetch failed|high demand|UNAVAILABLE|empty content/i;
-/** Non-retryable and worth saying plainly — the institution halted on this once. */
-const OUT_OF_FUNDS = /credit balance is too low|insufficient_quota|insufficient_credits/i;
-/** Retrying cannot fix a request that is structurally too large. */
-const TOO_LARGE = /request too large|reduce your message size/i;
+// RETRYABLE, OUT_OF_FUNDS, TOO_LARGE and isQuotaError live in llm-errors.ts, where tests can reach them.
 
 type FailureKind = "empty" | "other" | null;
 
@@ -401,13 +398,6 @@ export function providerConfigured(p: Provider): boolean {
   }
 }
 
-/** Quota exhaustion, as distinct from any other failure. */
-function isQuotaError(msg: string): boolean {
-  return (
-    /rate.?limit|quota|429|tokens per (day|minute)|TPD|TPM|RPD|resource_exhausted/i.test(msg) ||
-    OUT_OF_FUNDS.test(msg)
-  );
-}
 
 /**
  * Seconds until retry, if the provider volunteered one.
