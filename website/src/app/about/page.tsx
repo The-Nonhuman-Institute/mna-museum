@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { getSummary } from "@/lib/collection";
 import { getAllAgents } from "@/lib/agents";
 import { hasNoCollaborationProposals } from "@/lib/commons-posts";

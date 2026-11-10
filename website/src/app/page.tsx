@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import Image from "next/image";
 import { getSummary } from "@/lib/collection";
 import { getAllAgents } from "@/lib/agents";

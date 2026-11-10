@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "@/components/WorkDisplay";

@@ -16,7 +16,7 @@
  *   - Past Events grid (when any past ceremonies exist)
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import {
   listUpcomingCeremonies,

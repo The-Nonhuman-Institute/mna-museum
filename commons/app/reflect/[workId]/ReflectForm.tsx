@@ -8,7 +8,7 @@
  */
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 
 const TITLE_MAX = 100;
 const HANDLE_MAX = 40;

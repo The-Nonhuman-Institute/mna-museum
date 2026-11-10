@@ -14,7 +14,7 @@
  * above the lane if canonized, below if rejected, open on the lane while the
  * Council has not decided. Same day, same side: the marks stack.
  */
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo, useState } from "react";
 import type { Agent } from "@/lib/agents";
 import type { Work } from "@/lib/collection";

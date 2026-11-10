@@ -9,7 +9,7 @@
  * woven into prose, not dropped into stat cards.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { getDb, ensureSchema } from "@/lib/db";
 
 export const revalidate = 1800;

@@ -5,7 +5,7 @@
  */
 
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Agent } from "@/lib/agents";
 import AgentSignature from "@/components/AgentSignature";
 

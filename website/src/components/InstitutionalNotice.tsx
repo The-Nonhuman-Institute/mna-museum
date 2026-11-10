@@ -9,7 +9,7 @@
  */
 
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 
 export interface InstitutionalNoticeProps {
   eyebrow: string;

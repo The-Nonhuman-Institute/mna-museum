@@ -12,7 +12,7 @@
  */
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 
 // We intentionally don't import from @/lib/ceremonies — that module
 // pulls in the server-only DB client. Define the minimum shape the

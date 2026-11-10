@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Agent } from "@/lib/agents";

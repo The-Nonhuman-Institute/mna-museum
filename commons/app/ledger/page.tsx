@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { getDb, ensureSchema } from "@/lib/db";
 import { agentIdentities, latestEntries } from "@/lib/commons-sky";
 import LiveStrip from "@/components/LiveStrip";

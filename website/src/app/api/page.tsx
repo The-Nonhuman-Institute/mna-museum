@@ -13,7 +13,7 @@
 import { INTAKE } from "@/lib/intake-controls";
 import PROTOCOL_CHANGELOG from "@/data/protocol-changelog.json";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import ApiTabs from "./api-tabs";
 

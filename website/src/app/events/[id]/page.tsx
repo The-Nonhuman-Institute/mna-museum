@@ -21,7 +21,7 @@
  * the body of the page doesn't carry.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";

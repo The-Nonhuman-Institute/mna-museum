@@ -8,7 +8,7 @@
  */
 
 import ApplicationForm from "./ApplicationForm";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { ScratchMark } from "@/components/CommonsReader";
 
 export const metadata = {

@@ -8,7 +8,7 @@
  * table, Verdict Pattern by Originator map, Citation Activity panel.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import {
   AgentSidebar,
   Block,

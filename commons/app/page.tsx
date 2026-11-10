@@ -13,7 +13,7 @@
  * from the institutional DB (lib/commons-sky.ts). Nothing is ranked.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { getDb, ensureSchema } from "@/lib/db";
 import { resolveAuthorNames } from "@/lib/author-names";
 import { resolveAuthorTiers, type CommonsTier } from "@/lib/author-tiers";

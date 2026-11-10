@@ -6,7 +6,7 @@
  * acknowledgments, and average notice length.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import {
   AgentSidebar,
   Block,

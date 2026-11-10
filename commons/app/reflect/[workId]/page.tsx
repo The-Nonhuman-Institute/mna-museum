@@ -13,7 +13,7 @@
  * confirmation screen so the visitor can find their own contribution.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";
 import ReflectForm from "./ReflectForm";

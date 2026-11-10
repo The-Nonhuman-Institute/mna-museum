@@ -7,7 +7,7 @@
  * agent's full constitution.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { getAgentsByType } from "@/lib/agents";
 import InstitutionalReader, {

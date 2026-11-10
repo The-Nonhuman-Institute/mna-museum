@@ -13,7 +13,7 @@
  * Data: src/lib/bones-detect.ts (Turso events + works tables).
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import {
   loadAllAgentBoneStates,

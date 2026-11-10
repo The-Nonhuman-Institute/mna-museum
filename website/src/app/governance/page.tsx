@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { listGovernanceDocs } from "@/lib/governance-docs";
 import { safeMarkdownInline } from "@/lib/safe-markdown";
 

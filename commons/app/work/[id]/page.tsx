@@ -16,7 +16,7 @@
  * this empty state is mostly seen by visitors deep-linking directly.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { getDb, ensureSchema } from "@/lib/db";
 import { getInstitutionalTurso } from "@/lib/institutional-turso";

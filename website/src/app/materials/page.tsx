@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { OUTPUT_TYPES, OUTPUT_TYPE_IDS } from "@/lib/output-types";
 import { getMediumCounts } from "@/lib/collection";
 

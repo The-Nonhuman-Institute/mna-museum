@@ -11,7 +11,7 @@
  * doesn't render an empty card.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type {
   AgentBoneState,
   BoneState,

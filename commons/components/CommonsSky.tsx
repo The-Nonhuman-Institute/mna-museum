@@ -13,7 +13,7 @@
  * entry. The faint drift of the stars is decoration, and stops for anyone who
  * asks the system for less motion.
  */
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export interface SkyAgentIn {

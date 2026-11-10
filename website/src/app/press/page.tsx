@@ -10,7 +10,7 @@
  * Data: src/data/press.json. Filter state lives in URL query params.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { pressDocuments, pressTypeLabels } from "@/lib/press";

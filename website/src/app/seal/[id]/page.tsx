@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { getSeal } from "@/lib/seal-db";
 import { sealPlateSvg, type Vis } from "@/lib/seal";
 import visIdentities from "@/data/visual-identities.json";

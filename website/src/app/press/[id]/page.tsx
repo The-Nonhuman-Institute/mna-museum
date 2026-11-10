@@ -15,7 +15,7 @@
  *   - End-of-record marker + sibling press from the same conductor
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { safeMarkdownInline } from "@/lib/safe-markdown";

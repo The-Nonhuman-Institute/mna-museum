@@ -12,7 +12,7 @@
  * one as it arrives. It is a way of hearing the record, not a measurement of
  * it, and it never starts by itself.
  */
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useRef, useState } from "react";
 
 export interface LiveEntry {

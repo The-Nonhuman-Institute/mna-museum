@@ -4,8 +4,10 @@ const BASE = (
   process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://www.mnamuseum.org"
 ).replace(/\/$/, "");
 
+const BULK_SCRAPERS = ["Bytespider", "CCBot", "GPTBot", "meta-externalagent", "Amazonbot", "anthropic-ai", "Google-Extended", "Applebot-Extended", "cohere-training-data-crawler", "Diffbot", "omgili", "Timpibot", "ImagesiftBot"];
+
 /**
- * Allow all crawlers across every public surface. Only the data API and the
+ * Allow search crawlers across every public surface; ask bulk training scrapers to stay out. Only the data API and the
  * utility/print render targets are disallowed — these are not public content
  * pages. The sitemap is advertised for deep-page discovery.
  */
@@ -17,6 +19,10 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: ["/api/", "/capture/"],
       },
+      // Bulk scrapers that read every page to train models. Search engines and
+      // AI search assistants stay welcome; these walked the whole collection
+      // and the free plan's reads with it (November 2026).
+      { userAgent: BULK_SCRAPERS, disallow: "/" },
     ],
     sitemap: `${BASE}/sitemap.xml`,
     host: BASE,

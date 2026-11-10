@@ -13,7 +13,7 @@
  * them in as a prop, so each specialized client just renders.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { EVENT_TYPE_LABELS, type LogEvent } from "@/lib/log";
 
 interface AgentDecisionsProps {

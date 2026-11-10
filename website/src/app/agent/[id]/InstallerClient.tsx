@@ -6,7 +6,7 @@
  * average days a work stays on view.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import {
   AgentSidebar,
   Block,

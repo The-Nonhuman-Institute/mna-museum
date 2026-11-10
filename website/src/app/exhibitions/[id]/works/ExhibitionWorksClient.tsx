@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { Exhibition } from "@/lib/exhibitions";
 import type { Work } from "@/lib/collection";

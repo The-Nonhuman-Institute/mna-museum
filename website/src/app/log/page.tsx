@@ -21,7 +21,7 @@
  * event is ever hidden. Abstentions sit alongside canonizations.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MNAGlyph, { type GlyphFamily } from "@/components/MNAGlyph";
 import CiteButton from "@/components/CiteButton";

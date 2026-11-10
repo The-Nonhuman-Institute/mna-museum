@@ -12,7 +12,7 @@
  *   Protocol, Registry ID System, Related Documents.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

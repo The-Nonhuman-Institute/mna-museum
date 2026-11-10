@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Work } from "@/lib/collection";
 import WorkCard from "@/components/WorkCard";
 import InstitutionalSelect from "@/components/InstitutionalSelect";

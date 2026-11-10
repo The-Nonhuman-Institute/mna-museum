@@ -1,7 +1,7 @@
 "use client";
 // The context-aware "← Back to …" link, resolved in the browser from ?from=…, so the page around it can be
 // cached (ISR) instead of rendering on the server for every visit.
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useSearchParams } from "next/navigation";
 import { resolveBackContext, type BackContext } from "@/lib/nav-context";
 

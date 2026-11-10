@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo, useState } from "react";
 import type { Agent, AgentType } from "@/lib/agents";
 import AgentSignature from "@/components/AgentSignature";

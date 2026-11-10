@@ -3,7 +3,7 @@
  * reader with API examples.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import CommonsReader, { ReaderSection } from "@/components/CommonsReader";
 
 const codeBlockClass =

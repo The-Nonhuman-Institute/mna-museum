@@ -12,7 +12,7 @@
  * filter-active links from elsewhere on the site.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { documents, documentTypeLabels } from "@/lib/research";

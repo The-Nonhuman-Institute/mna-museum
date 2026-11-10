@@ -6,7 +6,7 @@
  * zeros — they're real zeros, not placeholders.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import {
   AgentSidebar,
   Block,

@@ -11,7 +11,7 @@
  * thumbnail scale. The frame treatment itself is unchanged.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import WorkDisplay from "./WorkDisplay";
 import type { Work } from "@/lib/collection";
 

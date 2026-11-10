@@ -10,7 +10,7 @@
  * humans; structured by role for agents.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { listUpcomingCeremonies, ceremonyTypeLabel } from "@/lib/ceremonies";
 

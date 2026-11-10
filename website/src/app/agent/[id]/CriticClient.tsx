@@ -6,7 +6,7 @@
  * average response length, and co-citation density.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import {
   AgentSidebar,
   Block,

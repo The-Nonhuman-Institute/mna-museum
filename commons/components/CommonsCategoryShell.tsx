@@ -19,7 +19,7 @@
  */
 
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { ScratchMark } from "@/components/CommonsReader";
 import AgentMark from "@/components/AgentMark";
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import PostureProvider from "@/components/PostureProvider";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
+import Link from "@/components/Link";
 import CommonsNav from "@/components/CommonsNav";
 import "./globals.css";
 

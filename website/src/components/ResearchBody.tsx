@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { safeMarkdownInline } from "@/lib/safe-markdown";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "./WorkDisplay";

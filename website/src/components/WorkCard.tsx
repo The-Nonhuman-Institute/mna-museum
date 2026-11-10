@@ -16,7 +16,7 @@
  * single literal marker.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Work } from "@/lib/collection";
 import WorkDisplay from "./WorkDisplay";
 import { kindFor, type IconKind } from "./MediumIcon";

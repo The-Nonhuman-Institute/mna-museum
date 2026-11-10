@@ -8,7 +8,7 @@
  * `agentTypeLabel` (the value shown for the "Agent Type" dl row).
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import AgentSignature from "@/components/AgentSignature";
 import CiteButton from "@/components/CiteButton";
 import type { Agent } from "@/lib/agents";

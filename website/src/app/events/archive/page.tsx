@@ -17,7 +17,7 @@
  *     read alongside upcoming without editorial sorting
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import {
   listAllCeremonies,

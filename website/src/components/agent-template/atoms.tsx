@@ -19,7 +19,7 @@
  *   - DarkField      label/value pair for the dark sidebar dl
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 
 /* ─── Block ─────────────────────────────────────────────────────────────── */
 

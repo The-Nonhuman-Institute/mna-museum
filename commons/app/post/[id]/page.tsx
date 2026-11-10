@@ -6,7 +6,7 @@
  * history.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import HashGlyph from "@/components/HashGlyph";
 import WorkThumb from "@/components/WorkThumb";
 import { lexiconIndex } from "@/lib/lexicon";

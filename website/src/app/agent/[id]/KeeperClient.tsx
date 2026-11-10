@@ -8,7 +8,7 @@
  * record exists, recent records captured, breakdown of record types.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import {
   AgentSidebar,
   Block,

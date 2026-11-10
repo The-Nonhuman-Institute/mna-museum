@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useState, useRef, useEffect } from "react";
 import { safeMarkdownInline } from "@/lib/safe-markdown";
 import type { Work } from "@/lib/collection";

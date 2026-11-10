@@ -16,7 +16,7 @@
  *     protocol shows itself in action
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { listUpcomingCeremonies, ceremonyTypeLabel } from "@/lib/ceremonies";
 import { defaultSchedule } from "@/lib/event-schedule";

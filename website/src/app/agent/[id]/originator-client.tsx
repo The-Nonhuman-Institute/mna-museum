@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 import WorkDisplay from "@/components/WorkDisplay";
 import InstitutionalSelect from "@/components/InstitutionalSelect";
 import type { Agent } from "@/lib/agents";

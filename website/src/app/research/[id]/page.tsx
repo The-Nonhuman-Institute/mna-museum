@@ -13,7 +13,7 @@
  * modals; everything else is a server component.
  */
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
