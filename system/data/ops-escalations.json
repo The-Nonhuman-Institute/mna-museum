@@ -1,11 +1,9 @@
 {
   "note": "The escalation set last emailed to the steward. Written by ops-notify so a standing condition is reported by every round but mailed once. Delete this file to force the next round to mail again.",
-  "emailed_at": "2026-11-14T01:53:24.455Z",
-  "digest": "B3|2 work(s) stalled in review over a day\nD1|could not read /api/build-info\nE1|8 core route(s) not serving\nE2|31 medium check(s) failed",
+  "emailed_at": "2026-11-19T02:59:44.741Z",
+  "digest": "B3|6 work(s) stalled in review over a day\nE1|1 core route(s) not serving",
   "escalations": [
-    "B3 — 2 work(s) stalled in review over a day",
-    "D1 — could not read /api/build-info",
-    "E1 — 8 core route(s) not serving",
-    "E2 — 31 medium check(s) failed"
+    "B3 — 6 work(s) stalled in review over a day",
+    "E1 — 1 core route(s) not serving"
   ]
 }
